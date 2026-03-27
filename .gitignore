@@ -91,3 +91,6 @@ android-sdk/-e
 # Environment files
 *.env
 *.env.*
+
+# Allow Kodi addon zips
+!zips/**/*.zip
