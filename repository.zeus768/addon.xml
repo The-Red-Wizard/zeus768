@@ -8,8 +8,20 @@
         </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary>Zeus768 Repository</summary>
-        <description>Zeus768's Kodi addon repository featuring SALTS, Orion, Strike Zone, The Accountant and more.</description>
+        <summary>Zeus768 Repository - Kodi Addons</summary>
+        <description>Zeus768's Kodi addon repository.
+
+Available Addons:
+- SALTS (Stream All The Sources) - Multi-source video addon with torrent scrapers, Jackett/Prowlarr support, Real-Debrid/Premiumize/AllDebrid, and Trakt.tv integration
+- Orion - Torrent and usenet indexer
+- Strike Zone - Sports streaming addon
+- The Accountant - Kodi maintenance and debrid management tool
+- ResolveURL - URL resolver module
+
+Also includes Gujal Repository and ResolveURL Repository for dependencies.</description>
         <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
     </extension>
 </addon>
