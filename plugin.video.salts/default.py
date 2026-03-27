@@ -21,6 +21,8 @@ import xbmcaddon
 import xbmcvfs
 
 from urllib.parse import parse_qsl, urlencode, quote_plus
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
 
 # Add addon lib to path
 ADDON = xbmcaddon.Addon()
@@ -122,40 +124,43 @@ def search_menu():
 
 def tmdb_list(list_type, media_type='movie', page=1):
     """Get list from TMDB API (free, no key needed for basic lists)"""
-    import requests
     
-    # TMDB API (v3) - using discover endpoint which works without auth for basic queries
+    # TMDB API (v3)
     base_url = 'https://api.themoviedb.org/3'
     
-    # Free API key for demo purposes (limited, users should get their own)
+    # Free API key for demo purposes
     api_key = '8265bd1679663a7ea12ac168da84d2e8'
     
     try:
         if media_type == 'movie':
             if list_type == 'popular':
-                url = f'{base_url}/movie/popular?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/movie/popular?api_key={api_key}&page={page}'
             elif list_type == 'trending':
-                url = f'{base_url}/trending/movie/week?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/trending/movie/week?api_key={api_key}&page={page}'
             elif list_type == 'top_rated':
-                url = f'{base_url}/movie/top_rated?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/movie/top_rated?api_key={api_key}&page={page}'
             elif list_type == 'now_playing':
-                url = f'{base_url}/movie/now_playing?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/movie/now_playing?api_key={api_key}&page={page}'
             else:
-                url = f'{base_url}/movie/popular?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/movie/popular?api_key={api_key}&page={page}'
         else:  # tvshow
             if list_type == 'popular':
-                url = f'{base_url}/tv/popular?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/tv/popular?api_key={api_key}&page={page}'
             elif list_type == 'trending':
-                url = f'{base_url}/trending/tv/week?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/trending/tv/week?api_key={api_key}&page={page}'
             elif list_type == 'top_rated':
-                url = f'{base_url}/tv/top_rated?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/tv/top_rated?api_key={api_key}&page={page}'
             elif list_type == 'airing_today':
-                url = f'{base_url}/tv/airing_today?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/tv/airing_today?api_key={api_key}&page={page}'
             else:
-                url = f'{base_url}/tv/popular?api_key={api_key}&page={page}'
+                api_url = f'{base_url}/tv/popular?api_key={api_key}&page={page}'
         
-        response = requests.get(url, timeout=10)
-        data = response.json()
+        log_utils.log(f'TMDB URL: {api_url}', xbmc.LOGDEBUG)
+        
+        # Use urllib instead of requests
+        req = Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
+        response = urlopen(req, timeout=15)
+        data = json.loads(response.read().decode('utf-8'))
         
         results = data.get('results', [])
         
@@ -198,33 +203,33 @@ def tmdb_list(list_type, media_type='movie', page=1):
             info_tag.setMediaType('movie' if media_type == 'movie' else 'tvshow')
             
             if media_type == 'movie':
-                url = build_url({
+                item_url = build_url({
                     'mode': 'get_sources',
                     'title': title,
                     'year': year,
                     'media_type': 'movie'
                 })
             else:
-                url = build_url({
+                item_url = build_url({
                     'mode': 'tv_seasons',
                     'title': title,
                     'year': year,
                     'tmdb_id': item.get('id', '')
                 })
             
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
         
         # Add next page
         if data.get('page', 1) < data.get('total_pages', 1):
             li = xbmcgui.ListItem('[B]>> Next Page[/B]')
             li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-            url = build_url({
+            next_url = build_url({
                 'mode': 'tmdb_list',
                 'list_type': list_type,
                 'media_type': media_type,
                 'page': page + 1
             })
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            xbmcplugin.addDirectoryItem(HANDLE, next_url, li, isFolder=True)
         
         xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movie' else 'tvshows')
         xbmcplugin.endOfDirectory(HANDLE)
@@ -245,19 +250,22 @@ def search(media_type='movie'):
 
 def search_tmdb(query, media_type='movie'):
     """Search TMDB and show results"""
-    import requests
     
     base_url = 'https://api.themoviedb.org/3'
     api_key = '8265bd1679663a7ea12ac168da84d2e8'
     
     try:
         if media_type == 'movie':
-            url = f'{base_url}/search/movie?api_key={api_key}&query={quote_plus(query)}'
+            api_url = f'{base_url}/search/movie?api_key={api_key}&query={quote_plus(query)}'
         else:
-            url = f'{base_url}/search/tv?api_key={api_key}&query={quote_plus(query)}'
+            api_url = f'{base_url}/search/tv?api_key={api_key}&query={quote_plus(query)}'
         
-        response = requests.get(url, timeout=10)
-        data = response.json()
+        log_utils.log(f'Search URL: {api_url}', xbmc.LOGDEBUG)
+        
+        # Use urllib instead of requests
+        req = Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
+        response = urlopen(req, timeout=15)
+        data = json.loads(response.read().decode('utf-8'))
         
         results = data.get('results', [])
         
@@ -300,21 +308,21 @@ def search_tmdb(query, media_type='movie'):
             info_tag.setMediaType('movie' if media_type == 'movie' else 'tvshow')
             
             if media_type == 'movie':
-                url = build_url({
+                item_url = build_url({
                     'mode': 'get_sources',
                     'title': title,
                     'year': year,
                     'media_type': 'movie'
                 })
             else:
-                url = build_url({
+                item_url = build_url({
                     'mode': 'tv_seasons',
                     'title': title,
                     'year': year,
                     'tmdb_id': item.get('id', '')
                 })
             
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
         
         xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movie' else 'tvshows')
         xbmcplugin.endOfDirectory(HANDLE)
@@ -325,16 +333,16 @@ def search_tmdb(query, media_type='movie'):
 
 def tv_seasons(title, year='', tmdb_id=''):
     """Show seasons for a TV show"""
-    import requests
     
     base_url = 'https://api.themoviedb.org/3'
     api_key = '8265bd1679663a7ea12ac168da84d2e8'
     
     try:
         if tmdb_id:
-            url = f'{base_url}/tv/{tmdb_id}?api_key={api_key}'
-            response = requests.get(url, timeout=10)
-            data = response.json()
+            api_url = f'{base_url}/tv/{tmdb_id}?api_key={api_key}'
+            req = Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
+            response = urlopen(req, timeout=15)
+            data = json.loads(response.read().decode('utf-8'))
             
             seasons = data.get('seasons', [])
             backdrop = data.get('backdrop_path', '')
@@ -360,7 +368,7 @@ def tv_seasons(title, year='', tmdb_id=''):
                     'fanart': backdrop_url
                 })
                 
-                url = build_url({
+                item_url = build_url({
                     'mode': 'tv_episodes',
                     'title': title,
                     'year': year,
@@ -368,7 +376,7 @@ def tv_seasons(title, year='', tmdb_id=''):
                     'season': season_num
                 })
                 
-                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+                xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
             
             xbmcplugin.setContent(HANDLE, 'seasons')
             xbmcplugin.endOfDirectory(HANDLE)
@@ -377,13 +385,13 @@ def tv_seasons(title, year='', tmdb_id=''):
             for i in range(1, 11):
                 li = xbmcgui.ListItem(f'Season {i}')
                 li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-                url = build_url({
+                item_url = build_url({
                     'mode': 'tv_episodes',
                     'title': title,
                     'year': year,
                     'season': i
                 })
-                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+                xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
             
             xbmcplugin.setContent(HANDLE, 'seasons')
             xbmcplugin.endOfDirectory(HANDLE)
@@ -394,29 +402,29 @@ def tv_seasons(title, year='', tmdb_id=''):
         for i in range(1, 11):
             li = xbmcgui.ListItem(f'Season {i}')
             li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-            url = build_url({
+            item_url = build_url({
                 'mode': 'tv_episodes',
                 'title': title,
                 'year': year,
                 'season': i
             })
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
         
         xbmcplugin.setContent(HANDLE, 'seasons')
         xbmcplugin.endOfDirectory(HANDLE)
 
 def tv_episodes(title, year='', tmdb_id='', season=1):
     """Show episodes for a season"""
-    import requests
     
     base_url = 'https://api.themoviedb.org/3'
     api_key = '8265bd1679663a7ea12ac168da84d2e8'
     
     try:
         if tmdb_id:
-            url = f'{base_url}/tv/{tmdb_id}/season/{season}?api_key={api_key}'
-            response = requests.get(url, timeout=10)
-            data = response.json()
+            api_url = f'{base_url}/tv/{tmdb_id}/season/{season}?api_key={api_key}'
+            req = Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
+            response = urlopen(req, timeout=15)
+            data = json.loads(response.read().decode('utf-8'))
             
             episodes = data.get('episodes', [])
             
@@ -445,7 +453,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
                 info_tag.setEpisode(ep_num)
                 info_tag.setMediaType('episode')
                 
-                url = build_url({
+                item_url = build_url({
                     'mode': 'get_sources',
                     'title': title,
                     'year': year,
@@ -454,7 +462,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
                     'media_type': 'tvshow'
                 })
                 
-                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+                xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
             
             xbmcplugin.setContent(HANDLE, 'episodes')
             xbmcplugin.endOfDirectory(HANDLE)
@@ -463,7 +471,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
             for i in range(1, 21):
                 li = xbmcgui.ListItem(f'Episode {i}')
                 li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-                url = build_url({
+                item_url = build_url({
                     'mode': 'get_sources',
                     'title': title,
                     'year': year,
@@ -471,7 +479,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
                     'episode': i,
                     'media_type': 'tvshow'
                 })
-                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+                xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
             
             xbmcplugin.setContent(HANDLE, 'episodes')
             xbmcplugin.endOfDirectory(HANDLE)
@@ -482,7 +490,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
         for i in range(1, 21):
             li = xbmcgui.ListItem(f'Episode {i}')
             li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-            url = build_url({
+            item_url = build_url({
                 'mode': 'get_sources',
                 'title': title,
                 'year': year,
@@ -490,7 +498,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
                 'episode': i,
                 'media_type': 'tvshow'
             })
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
         
         xbmcplugin.setContent(HANDLE, 'episodes')
         xbmcplugin.endOfDirectory(HANDLE)
