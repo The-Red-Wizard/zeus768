@@ -1,112 +1,73 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<settings version="2">
-    <section id="general">
-        <category id="general" label="General">
-            <group id="1" label="General Settings">
-                <setting id="auto_play" type="boolean" label="Auto-play first source" default="false"/>
-                <setting id="source_timeout" type="integer" label="Source timeout (seconds)" default="30"/>
-                <setting id="max_results" type="integer" label="Maximum results per scraper" default="50"/>
-            </group>
-        </category>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="auto_play" type="bool" label="Auto-play first source" default="false"/>
+        <setting id="source_timeout" type="slider" label="Source timeout (seconds)" default="30" range="10,5,120"/>
+        <setting id="max_results" type="slider" label="Maximum results per scraper" default="50" range="10,10,100"/>
+    </category>
+    
+    <category label="Trakt">
+        <setting id="trakt_enabled" type="bool" label="Enable Trakt" default="false"/>
+        <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="trakt_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="trakt_expires" type="text" label="Expires" default="0" visible="false"/>
+        <setting id="trakt_sync_watchlist" type="bool" label="Sync Watchlist" default="true" enable="eq(-4,true)"/>
+        <setting id="trakt_sync_collection" type="bool" label="Sync Collection" default="true" enable="eq(-5,true)"/>
+        <setting id="trakt_scrobble" type="bool" label="Scrobble playback" default="true" enable="eq(-6,true)"/>
+    </category>
+    
+    <category label="Debrid Services">
+        <setting id="realdebrid_enabled" type="bool" label="Enable Real-Debrid" default="false"/>
+        <setting id="realdebrid_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="realdebrid_refresh" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="realdebrid_expires" type="text" label="Expires" default="0" visible="false"/>
         
-        <category id="trakt" label="Trakt">
-            <group id="1" label="Trakt.tv">
-                <setting id="trakt_enabled" type="boolean" label="Enable Trakt" default="false"/>
-                <setting id="trakt_access_token" type="string" label="Access Token" default="" visible="false"/>
-                <setting id="trakt_refresh_token" type="string" label="Refresh Token" default="" visible="false"/>
-                <setting id="trakt_expires" type="string" label="Expires" default="0" visible="false"/>
-            </group>
-            <group id="2" label="Trakt Features">
-                <setting id="trakt_sync_watchlist" type="boolean" label="Sync Watchlist" default="true" visible="eq(-5,true)"/>
-                <setting id="trakt_sync_collection" type="boolean" label="Sync Collection" default="true" visible="eq(-6,true)"/>
-                <setting id="trakt_scrobble" type="boolean" label="Scrobble playback" default="true" visible="eq(-7,true)"/>
-            </group>
-        </category>
+        <setting id="premiumize_enabled" type="bool" label="Enable Premiumize" default="false"/>
+        <setting id="premiumize_token" type="text" label="API Key" default="" visible="false"/>
         
-        <category id="debrid" label="Debrid Services">
-            <group id="1" label="Real-Debrid">
-                <setting id="realdebrid_enabled" type="boolean" label="Enable Real-Debrid" default="false"/>
-                <setting id="realdebrid_token" type="string" label="Access Token" default="" visible="eq(-1,true)"/>
-                <setting id="realdebrid_refresh" type="string" label="Refresh Token" default="" visible="false"/>
-                <setting id="realdebrid_expires" type="string" label="Expires" default="0" visible="false"/>
-            </group>
-            
-            <group id="2" label="Premiumize">
-                <setting id="premiumize_enabled" type="boolean" label="Enable Premiumize" default="false"/>
-                <setting id="premiumize_token" type="string" label="API Key" default="" visible="eq(-1,true)"/>
-            </group>
-            
-            <group id="3" label="AllDebrid">
-                <setting id="alldebrid_enabled" type="boolean" label="Enable AllDebrid" default="false"/>
-                <setting id="alldebrid_token" type="string" label="API Key" default="" visible="eq(-1,true)"/>
-            </group>
-        </category>
+        <setting id="alldebrid_enabled" type="bool" label="Enable AllDebrid" default="false"/>
+        <setting id="alldebrid_token" type="text" label="API Key" default="" visible="false"/>
+    </category>
+    
+    <category label="Torrent Scrapers">
+        <setting id="1337x_enabled" type="bool" label="1337x" default="true"/>
+        <setting id="yts_enabled" type="bool" label="YTS (Movies only)" default="true"/>
+        <setting id="eztv_enabled" type="bool" label="EZTV (TV only)" default="true"/>
+        <setting id="torrentgalaxy_enabled" type="bool" label="TorrentGalaxy" default="true"/>
+        <setting id="thepiratebay_enabled" type="bool" label="ThePirateBay" default="true"/>
+        <setting id="limetorrents_enabled" type="bool" label="LimeTorrents" default="true"/>
+        <setting id="torrentz2_enabled" type="bool" label="Torrentz2" default="true"/>
+        <setting id="rarbg_enabled" type="bool" label="RARBG (Mirrors)" default="true"/>
+        <setting id="nyaa_enabled" type="bool" label="Nyaa (Anime)" default="true"/>
+    </category>
+    
+    <category label="Streaming Scrapers">
+        <setting id="primewire_enabled" type="bool" label="PrimeWire" default="true"/>
+        <setting id="watchseries_enabled" type="bool" label="WatchSeries (TV)" default="true"/>
+        <setting id="movie4k_enabled" type="bool" label="Movie4K" default="true"/>
+        <setting id="solarmovie_enabled" type="bool" label="SolarMovie" default="true"/>
+    </category>
+    
+    <category label="Indexer Aggregators">
+        <setting id="jackett_enabled" type="bool" label="Enable Jackett" default="false"/>
+        <setting id="jackett_url" type="text" label="Jackett URL" default="http://localhost:9117" enable="eq(-1,true)"/>
+        <setting id="jackett_api_key" type="text" label="Jackett API Key" default="" enable="eq(-2,true)"/>
         
-        <category id="scrapers" label="Scrapers">
-            <group id="1" label="Torrent Sites">
-                <setting id="1337x_enabled" type="boolean" label="1337x" default="true"/>
-                <setting id="yts_enabled" type="boolean" label="YTS (Movies only)" default="true"/>
-                <setting id="eztv_enabled" type="boolean" label="EZTV (TV only)" default="true"/>
-                <setting id="torrentgalaxy_enabled" type="boolean" label="TorrentGalaxy" default="true"/>
-                <setting id="thepiratebay_enabled" type="boolean" label="ThePirateBay" default="true"/>
-                <setting id="limetorrents_enabled" type="boolean" label="LimeTorrents" default="true"/>
-                <setting id="torrentz2_enabled" type="boolean" label="Torrentz2" default="true"/>
-                <setting id="rarbg_enabled" type="boolean" label="RARBG (Mirrors)" default="true"/>
-                <setting id="nyaa_enabled" type="boolean" label="Nyaa (Anime)" default="true"/>
-            </group>
-            
-            <group id="2" label="Streaming Sites">
-                <setting id="primewire_enabled" type="boolean" label="PrimeWire" default="true"/>
-                <setting id="watchseries_enabled" type="boolean" label="WatchSeries (TV)" default="true"/>
-                <setting id="movie4k_enabled" type="boolean" label="Movie4K" default="true"/>
-                <setting id="solarmovie_enabled" type="boolean" label="SolarMovie" default="true"/>
-            </group>
-            
-            <group id="3" label="Indexer Aggregators">
-                <setting id="jackett_enabled" type="boolean" label="Enable Jackett" default="false"/>
-                <setting id="jackett_url" type="string" label="Jackett URL" default="http://localhost:9117" visible="eq(-1,true)"/>
-                <setting id="jackett_api_key" type="string" label="Jackett API Key" default="" visible="eq(-2,true)"/>
-                
-                <setting id="prowlarr_enabled" type="boolean" label="Enable Prowlarr" default="false"/>
-                <setting id="prowlarr_url" type="string" label="Prowlarr URL" default="http://localhost:9696" visible="eq(-1,true)"/>
-                <setting id="prowlarr_api_key" type="string" label="Prowlarr API Key" default="" visible="eq(-2,true)"/>
-            </group>
-            
-            <group id="4" label="APIs">
-                <setting id="torrentapi_enabled" type="boolean" label="TorrentAPI" default="false"/>
-            </group>
-        </category>
+        <setting id="prowlarr_enabled" type="bool" label="Enable Prowlarr" default="false"/>
+        <setting id="prowlarr_url" type="text" label="Prowlarr URL" default="http://localhost:9696" enable="eq(-1,true)"/>
+        <setting id="prowlarr_api_key" type="text" label="Prowlarr API Key" default="" enable="eq(-2,true)"/>
         
-        <category id="playback" label="Playback">
-            <group id="1" label="Quality Filters">
-                <setting id="filter_cam" type="boolean" label="Filter CAM/TS quality" default="true"/>
-                <setting id="min_quality" type="select" label="Minimum quality" default="0">
-                    <option value="0">Any</option>
-                    <option value="1">480p</option>
-                    <option value="2">720p</option>
-                    <option value="3">1080p</option>
-                    <option value="4">4K</option>
-                </setting>
-            </group>
-            
-            <group id="2" label="Sorting">
-                <setting id="sort_by" type="select" label="Sort sources by" default="0">
-                    <option value="0">Seeds</option>
-                    <option value="1">Quality</option>
-                    <option value="2">Size</option>
-                </setting>
-            </group>
-        </category>
-        
-        <category id="advanced" label="Advanced">
-            <group id="1" label="Cache">
-                <setting id="cache_duration" type="integer" label="Cache duration (hours)" default="8"/>
-                <setting id="clear_cache" type="action" label="Clear cache" action="RunPlugin(plugin://plugin.video.salts/?mode=clear_cache)"/>
-            </group>
-            
-            <group id="2" label="Debug">
-                <setting id="debug_enabled" type="boolean" label="Enable debug logging" default="false"/>
-            </group>
-        </category>
-    </section>
+        <setting id="torrentapi_enabled" type="bool" label="TorrentAPI" default="false"/>
+    </category>
+    
+    <category label="Playback">
+        <setting id="filter_cam" type="bool" label="Filter CAM/TS quality" default="true"/>
+        <setting id="min_quality" type="labelenum" label="Minimum quality" values="Any|480p|720p|1080p|4K" default="Any"/>
+        <setting id="sort_by" type="labelenum" label="Sort sources by" values="Seeds|Quality|Size" default="Seeds"/>
+    </category>
+    
+    <category label="Advanced">
+        <setting id="cache_duration" type="slider" label="Cache duration (hours)" default="8" range="1,1,24"/>
+        <setting id="debug_enabled" type="bool" label="Enable debug logging" default="false"/>
+    </category>
 </settings>
