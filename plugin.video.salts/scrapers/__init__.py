@@ -1,9 +1,13 @@
 """
-SALTS Scrapers Package
+SALTS Scrapers Package - STREAM ALL THE SOURCES!
 Revived by zeus768 for Kodi 21+
 
-Includes scrapers for:
-- Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, Nyaa, ThePirateBay, LimeTorrents, Torrentz2, RARBG
+Total Scrapers: 30+
+
+Includes:
+- Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, Nyaa, ThePirateBay, LimeTorrents, Torrentz2, RARBG, Kickass, MagnetDL, GLODLS, iDope, SolidTorrents, TorrentDownload, TorrentProject, Zooqle, BTDigg
+- International: RuTracker, RuTor, NNM-Club (Russian), DyTT, BTBTT (Chinese)
+- Anime: Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex
 - Streaming Sites: PrimeWire, WatchSeries, Movie4K, SolarMovie
 - Indexer Aggregators: Jackett, Prowlarr
 - APIs: TorrentAPI
@@ -11,7 +15,7 @@ Includes scrapers for:
 
 from .base_scraper import BaseScraper, TorrentScraper
 
-# Import torrent scrapers
+# Core torrent scrapers
 from .x1337_scraper import X1337Scraper
 from .yts_scraper import YTSScraper
 from .eztv_scraper import EZTVScraper
@@ -21,40 +25,92 @@ from .tpb_scraper import TPBScraper
 from .limetorrents_scraper import LimeTorrentsScraper
 from .torrentz2_scraper import Torrentz2Scraper
 from .rarbg_scraper import RARBGScraper
-from .jackett_scraper import JackettScraper
-from .prowlarr_scraper import ProwlarrScraper
-from .torrentapi_scraper import TorrentAPIScraper
 
-# Import streaming site scrapers (modernized legacy scrapers)
+# Extra torrent scrapers
+from .extra_scrapers import (
+    KickassScraper,
+    RuTrackerScraper,
+    BTDiggScraper,
+    ZooqleScraper,
+    MagnetDLScraper,
+    GlodLSScraper,
+    iDopeScraper,
+    SolidTorrentsScraper,
+    TorrentDownloadScraper,
+    TorrentProjectScraper,
+)
+
+# International scrapers
+from .international_scrapers import (
+    RuTorScraper,
+    NNMClubScraper,
+    DyTTScraper,
+    BTBTTScraper,
+    SubsPleaseScaper,
+    TokyoToshoScraper,
+    AnimeToshoScraper,
+    AniDexScraper,
+)
+
+# Streaming site scrapers
 from .primewire_scraper import PrimeWireScraper
 from .watchseries_scraper import WatchSeriesScraper
 from .movie4k_scraper import Movie4KScraper
 from .solarmovie_scraper import SolarMovieScraper
 
-# List of all scraper classes
+# Aggregators
+from .jackett_scraper import JackettScraper
+from .prowlarr_scraper import ProwlarrScraper
+from .torrentapi_scraper import TorrentAPIScraper
+
+# List of all scraper classes - ORDER MATTERS (faster/better first)
 ALL_SCRAPERS = [
-    # Primary torrent sites
+    # PRIMARY - Fast and reliable
     X1337Scraper,
     YTSScraper,
     EZTVScraper,
     TorrentGalaxyScraper,
     TPBScraper,
+    SolidTorrentsScraper,
     
-    # Secondary torrent sites
+    # SECONDARY - Good sources
     LimeTorrentsScraper,
     Torrentz2Scraper,
     RARBGScraper,
+    KickassScraper,
+    MagnetDLScraper,
+    GlodLSScraper,
+    iDopeScraper,
+    TorrentDownloadScraper,
     
-    # Anime
+    # META SEARCH
+    BTDiggScraper,
+    ZooqleScraper,
+    TorrentProjectScraper,
+    
+    # ANIME SPECIFIC
     NyaaScraper,
+    SubsPleaseScaper,
+    TokyoToshoScraper,
+    AnimeToshoScraper,
+    AniDexScraper,
     
-    # Streaming sites (modernized legacy)
+    # RUSSIAN SOURCES
+    RuTrackerScraper,
+    RuTorScraper,
+    NNMClubScraper,
+    
+    # CHINESE SOURCES
+    DyTTScraper,
+    BTBTTScraper,
+    
+    # STREAMING SITES
     PrimeWireScraper,
     WatchSeriesScraper,
     Movie4KScraper,
     SolarMovieScraper,
     
-    # Indexer aggregators (requires user setup)
+    # AGGREGATORS (require setup)
     JackettScraper,
     ProwlarrScraper,
     

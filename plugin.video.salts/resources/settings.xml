@@ -11,9 +11,6 @@
         <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false"/>
         <setting id="trakt_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
         <setting id="trakt_expires" type="text" label="Expires" default="0" visible="false"/>
-        <setting id="trakt_sync_watchlist" type="bool" label="Sync Watchlist" default="true" enable="eq(-4,true)"/>
-        <setting id="trakt_sync_collection" type="bool" label="Sync Collection" default="true" enable="eq(-5,true)"/>
-        <setting id="trakt_scrobble" type="bool" label="Scrobble playback" default="true" enable="eq(-6,true)"/>
     </category>
     
     <category label="Debrid Services">
@@ -21,42 +18,71 @@
         <setting id="realdebrid_token" type="text" label="Access Token" default="" visible="false"/>
         <setting id="realdebrid_refresh" type="text" label="Refresh Token" default="" visible="false"/>
         <setting id="realdebrid_expires" type="text" label="Expires" default="0" visible="false"/>
-        
         <setting id="premiumize_enabled" type="bool" label="Enable Premiumize" default="false"/>
         <setting id="premiumize_token" type="text" label="API Key" default="" visible="false"/>
-        
         <setting id="alldebrid_enabled" type="bool" label="Enable AllDebrid" default="false"/>
         <setting id="alldebrid_token" type="text" label="API Key" default="" visible="false"/>
     </category>
     
-    <category label="Torrent Scrapers">
+    <category label="Primary Scrapers">
         <setting id="1337x_enabled" type="bool" label="1337x" default="true"/>
-        <setting id="yts_enabled" type="bool" label="YTS (Movies only)" default="true"/>
-        <setting id="eztv_enabled" type="bool" label="EZTV (TV only)" default="true"/>
+        <setting id="yts_enabled" type="bool" label="YTS (Movies)" default="true"/>
+        <setting id="eztv_enabled" type="bool" label="EZTV (TV)" default="true"/>
         <setting id="torrentgalaxy_enabled" type="bool" label="TorrentGalaxy" default="true"/>
         <setting id="thepiratebay_enabled" type="bool" label="ThePirateBay" default="true"/>
-        <setting id="limetorrents_enabled" type="bool" label="LimeTorrents" default="true"/>
-        <setting id="torrentz2_enabled" type="bool" label="Torrentz2" default="true"/>
-        <setting id="rarbg_enabled" type="bool" label="RARBG (Mirrors)" default="true"/>
-        <setting id="nyaa_enabled" type="bool" label="Nyaa (Anime)" default="true"/>
+        <setting id="solidtorrents_enabled" type="bool" label="SolidTorrents" default="true"/>
     </category>
     
-    <category label="Streaming Scrapers">
+    <category label="Secondary Scrapers">
+        <setting id="limetorrents_enabled" type="bool" label="LimeTorrents" default="true"/>
+        <setting id="torrentz2_enabled" type="bool" label="Torrentz2" default="true"/>
+        <setting id="rarbg_enabled" type="bool" label="RARBG" default="true"/>
+        <setting id="kickass_enabled" type="bool" label="Kickass" default="true"/>
+        <setting id="magnetdl_enabled" type="bool" label="MagnetDL" default="true"/>
+        <setting id="glodls_enabled" type="bool" label="GLODLS" default="true"/>
+        <setting id="idope_enabled" type="bool" label="iDope" default="true"/>
+        <setting id="torrentdownload_enabled" type="bool" label="TorrentDownload" default="true"/>
+    </category>
+    
+    <category label="Meta Search">
+        <setting id="btdigg_enabled" type="bool" label="BTDigg" default="true"/>
+        <setting id="zooqle_enabled" type="bool" label="Zooqle" default="true"/>
+        <setting id="torrentproject_enabled" type="bool" label="TorrentProject" default="true"/>
+    </category>
+    
+    <category label="Anime Scrapers">
+        <setting id="nyaa_enabled" type="bool" label="Nyaa" default="true"/>
+        <setting id="subsplease_enabled" type="bool" label="SubsPlease" default="true"/>
+        <setting id="tokyotosho_enabled" type="bool" label="TokyoTosho" default="true"/>
+        <setting id="animetosho_enabled" type="bool" label="AnimeTosho" default="true"/>
+        <setting id="anidex_enabled" type="bool" label="AniDex" default="true"/>
+    </category>
+    
+    <category label="Russian Sources">
+        <setting id="rutracker_enabled" type="bool" label="RuTracker" default="true"/>
+        <setting id="rutor_enabled" type="bool" label="RuTor" default="true"/>
+        <setting id="nnm-club_enabled" type="bool" label="NNM-Club" default="true"/>
+    </category>
+    
+    <category label="Chinese Sources">
+        <setting id="dytt_enabled" type="bool" label="DyTT (电影天堂)" default="true"/>
+        <setting id="btbtt_enabled" type="bool" label="BTBTT" default="true"/>
+    </category>
+    
+    <category label="Streaming Sites">
         <setting id="primewire_enabled" type="bool" label="PrimeWire" default="true"/>
-        <setting id="watchseries_enabled" type="bool" label="WatchSeries (TV)" default="true"/>
+        <setting id="watchseries_enabled" type="bool" label="WatchSeries" default="true"/>
         <setting id="movie4k_enabled" type="bool" label="Movie4K" default="true"/>
         <setting id="solarmovie_enabled" type="bool" label="SolarMovie" default="true"/>
     </category>
     
-    <category label="Indexer Aggregators">
+    <category label="Aggregators">
         <setting id="jackett_enabled" type="bool" label="Enable Jackett" default="false"/>
         <setting id="jackett_url" type="text" label="Jackett URL" default="http://localhost:9117" enable="eq(-1,true)"/>
         <setting id="jackett_api_key" type="text" label="Jackett API Key" default="" enable="eq(-2,true)"/>
-        
         <setting id="prowlarr_enabled" type="bool" label="Enable Prowlarr" default="false"/>
         <setting id="prowlarr_url" type="text" label="Prowlarr URL" default="http://localhost:9696" enable="eq(-1,true)"/>
         <setting id="prowlarr_api_key" type="text" label="Prowlarr API Key" default="" enable="eq(-2,true)"/>
-        
         <setting id="torrentapi_enabled" type="bool" label="TorrentAPI" default="false"/>
     </category>
     
