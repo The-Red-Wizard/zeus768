@@ -1,0 +1,72 @@
+[v1.9.0]
+- NEW: Skin & Widget Backup (isolate your layout from the full build).
+- NEW: Help & Instructions Manual (integrated into menu).
+- RESTORED: All previous tools (Sync, Vault, Backup, Refresh).
+- IMPROVED: Clearer categorization in the main menu.
+
+[v1.8.1]
+- RESTORED: Widget Refresh (Skin Reload) tool.
+- FIXED: Menu spacer alignment.
+- IMPROVED: Backup engine stability for larger builds.
+
+[v1.8.0]
+- NEW: Full Build Backup tool. Create a .zip of your entire Kodi setup.
+- IMPROVED: Excluded junk (Thumbnails/Packages) from backup to save space.
+- FIXED: Sync engine support for Umbrella and Gears.
+- VISUAL: New high-quality icons support in resources/media/.
+
+[v1.7.0]
+- NEW: Sync Engine for Umbrella, Gears, and Fen.
+- NEW: XML Injection technology to "force save" keys into other addons.
+- ADDED: Support for specific Gears/Umbrella setting IDs.
+- IMPROVED: Menu visual structure with spacers and icons.
+
+[v1.6.0]
+- UNIVERSAL PAIRING: Added /device OAuth pairing for RD, Trakt, AllDebrid, and Premiumize.
+- EXPORT TOOL: Save all your keys/tokens to a .txt file on USB or local storage.
+- DEEP VAULT: All pairings persist in special://userdata/ for build safety.
+- MAINTENANCE: Integrated Cache and Thumbnail cleaner.
+
+[v1.6.0]
+- NEW: Unified OAuth2 Engine for Real-Debrid, Trakt, and AllDebrid.
+- NEW: PIN/Device activation workflow (No more typing keys).
+- ADDED: Deep Vaulting for all OAuth token bundles.
+- FIXED: Premiumize and TMDB key manual entry logic.
+- IMPROVED: Menu speed and error handling.
+
+[v1.4.0]
+- ADDED: Database Vacuum tool (optimizes .db files for faster menu loading).
+- ADDED: Thumbnail Wipe tool (deletes cached images and Textures13.db to reclaim storage).
+- IMPROVED: Visual Menu with dividers and colored text.
+- FIXED: SQLite library handling for Python 3.
+
+[v1.3.0]
+- ADDED: Deep Vault recovery (special://userdata/ backup).
+- ADDED: Restore button.
+
+[v1.3.0]
+- NEW: Deep Vault technology (saves keys to special://userdata/)
+- NEW: Recovery engine to retrieve keys after build wipes.
+- ADDED: Force Close and Widget Reset tools.
+
+[v1.3.0]
+- NEW: "Deep Vault" technology. Keys are now backed up to special://userdata/ 
+  allowing them to survive Build wipes and Addon uninstalls.
+- NEW: "Restore" button added to main menu for one-click key recovery.
+- IMPROVED: Cache cleaner now targets core temp files more aggressively.
+
+[v1.2.0]
+- ADDED: JSON Vault system for local storage.
+- ADDED: TMDB API key support.
+
+[v1.2.0]
+- ADDED: JSON Vault system to save keys directly to device memory.
+- ADDED: TMDB API key support.
+- FIXED: Force close function now saves settings before exiting.
+
+[v1.1.0]
+- ADDED: Account Manager for Debrid and Trakt.
+- ADDED: Clear Cache and Reset Widget tools.
+
+[v1.0.0]
+- Initial Release by zeus768.

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.strikezone" name="Strike Zone" version="1.2.0" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.resolveurl"/>
+        <import addon="script.module.requests"/>
+        <import addon="script.module.beautifulsoup4"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Strike Zone by zeus768 - Watch Fight Replays</summary>
+        <description lang="en_GB">Watch UFC, MMA, Boxing, Kickboxing, and more fight replays. Features include:\n- Auto-scrape all categories from FullFightReplays\n- Infinite scroll pagination\n- Search functionality\n- Local favourites\n- Fight metadata and thumbnails\n- Multiple video sources with ResolveURL\n- Custom category images support</description>
+        <disclaimer lang="en_GB">This addon does not host any content. All videos are third-party links available free on the Internet.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <website>https://fullfightreplays.com</website>
+        <source>https://github.com/zeus768/plugin.video.strikezone</source>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

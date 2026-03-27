@@ -1,0 +1,43 @@
+[B]v1.2.0[/B] - January 2026
+- Improved video link formatting with section headers
+- Color coded servers: Server #1 (blue), Server #2 (gold)
+- Organized links by section (Main Event, Prelims, Full Event)
+- Added Recently Watched history feature
+- Added Clear All Favourites option
+- Added Clear All History option
+- Better section detection (Main Card, Prelims, Full Event)
+- UI improvements with colored labels
+
+[B]v1.1.0[/B] - January 2026
+- Complete rewrite of scraper for FullFightReplays.com
+- Auto-scrape all categories from website
+- Added infinite scroll/pagination on all category listings
+- Enhanced video link extraction (OK.ru, Dailymotion, Byse, Vibuxer, etc.)
+- Added full fight metadata scraping (title, image, views, rating, description)
+- Added local Favourites system (add/remove from context menu)
+- Improved Search functionality
+- Added support for custom category images in resources/media/categories/
+- Using fanart.jpg as default for all categories
+- Added Buy Me a Beer QR code support
+- Better error handling and notifications
+- ResolveURL integration for video playback
+
+[B]v1.0.4[/B]
+- Bug fixes
+
+[B]v1.0.3[/B]
+- Performance improvements
+
+[B]v1.0.2[/B]
+- Added more video hosts support
+
+[B]v1.0.1[/B]
+- Added infinite scroll
+- Integrated search function
+- Added ResolveURL support for fight links
+- Added Donation QR code for zeus768
+
+[B]v1.0.0[/B]
+- Initial release
+- Basic category browsing
+- Video playback
