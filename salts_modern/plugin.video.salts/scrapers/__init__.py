@@ -4,13 +4,14 @@ Revived by zeus768 for Kodi 21+
 
 Includes scrapers for:
 - Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, Nyaa, ThePirateBay, LimeTorrents, Torrentz2, RARBG
+- Streaming Sites: PrimeWire, WatchSeries, Movie4K, SolarMovie
 - Indexer Aggregators: Jackett, Prowlarr
 - APIs: TorrentAPI
 """
 
 from .base_scraper import BaseScraper, TorrentScraper
 
-# Import all scrapers
+# Import torrent scrapers
 from .x1337_scraper import X1337Scraper
 from .yts_scraper import YTSScraper
 from .eztv_scraper import EZTVScraper
@@ -23,6 +24,12 @@ from .rarbg_scraper import RARBGScraper
 from .jackett_scraper import JackettScraper
 from .prowlarr_scraper import ProwlarrScraper
 from .torrentapi_scraper import TorrentAPIScraper
+
+# Import streaming site scrapers (modernized legacy scrapers)
+from .primewire_scraper import PrimeWireScraper
+from .watchseries_scraper import WatchSeriesScraper
+from .movie4k_scraper import Movie4KScraper
+from .solarmovie_scraper import SolarMovieScraper
 
 # List of all scraper classes
 ALL_SCRAPERS = [
@@ -40,6 +47,12 @@ ALL_SCRAPERS = [
     
     # Anime
     NyaaScraper,
+    
+    # Streaming sites (modernized legacy)
+    PrimeWireScraper,
+    WatchSeriesScraper,
+    Movie4KScraper,
+    SolarMovieScraper,
     
     # Indexer aggregators (requires user setup)
     JackettScraper,

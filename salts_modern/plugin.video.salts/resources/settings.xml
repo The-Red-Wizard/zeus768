@@ -9,6 +9,20 @@
             </group>
         </category>
         
+        <category id="trakt" label="Trakt">
+            <group id="1" label="Trakt.tv">
+                <setting id="trakt_enabled" type="boolean" label="Enable Trakt" default="false"/>
+                <setting id="trakt_access_token" type="string" label="Access Token" default="" visible="false"/>
+                <setting id="trakt_refresh_token" type="string" label="Refresh Token" default="" visible="false"/>
+                <setting id="trakt_expires" type="string" label="Expires" default="0" visible="false"/>
+            </group>
+            <group id="2" label="Trakt Features">
+                <setting id="trakt_sync_watchlist" type="boolean" label="Sync Watchlist" default="true" visible="eq(-5,true)"/>
+                <setting id="trakt_sync_collection" type="boolean" label="Sync Collection" default="true" visible="eq(-6,true)"/>
+                <setting id="trakt_scrobble" type="boolean" label="Scrobble playback" default="true" visible="eq(-7,true)"/>
+            </group>
+        </category>
+        
         <category id="debrid" label="Debrid Services">
             <group id="1" label="Real-Debrid">
                 <setting id="realdebrid_enabled" type="boolean" label="Enable Real-Debrid" default="false"/>
@@ -41,7 +55,14 @@
                 <setting id="nyaa_enabled" type="boolean" label="Nyaa (Anime)" default="true"/>
             </group>
             
-            <group id="2" label="Indexer Aggregators">
+            <group id="2" label="Streaming Sites">
+                <setting id="primewire_enabled" type="boolean" label="PrimeWire" default="true"/>
+                <setting id="watchseries_enabled" type="boolean" label="WatchSeries (TV)" default="true"/>
+                <setting id="movie4k_enabled" type="boolean" label="Movie4K" default="true"/>
+                <setting id="solarmovie_enabled" type="boolean" label="SolarMovie" default="true"/>
+            </group>
+            
+            <group id="3" label="Indexer Aggregators">
                 <setting id="jackett_enabled" type="boolean" label="Enable Jackett" default="false"/>
                 <setting id="jackett_url" type="string" label="Jackett URL" default="http://localhost:9117" visible="eq(-1,true)"/>
                 <setting id="jackett_api_key" type="string" label="Jackett API Key" default="" visible="eq(-2,true)"/>
@@ -51,7 +72,7 @@
                 <setting id="prowlarr_api_key" type="string" label="Prowlarr API Key" default="" visible="eq(-2,true)"/>
             </group>
             
-            <group id="3" label="APIs">
+            <group id="4" label="APIs">
                 <setting id="torrentapi_enabled" type="boolean" label="TorrentAPI" default="false"/>
             </group>
         </category>

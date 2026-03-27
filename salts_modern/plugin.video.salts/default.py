@@ -57,6 +57,7 @@ def main_menu():
         {'title': 'Movies', 'mode': 'movies_menu', 'icon': 'movies.png'},
         {'title': 'TV Shows', 'mode': 'tvshows_menu', 'icon': 'television.png'},
         {'title': 'Search', 'mode': 'search_menu', 'icon': 'search.png'},
+        {'title': 'Trakt', 'mode': 'trakt_menu', 'icon': 'trakt.png'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu', 'icon': 'scraper.png'},
         {'title': 'Debrid Services', 'mode': 'debrid_menu', 'icon': 'debrid.png'},
         {'title': 'Tools', 'mode': 'tools_menu', 'icon': 'settings.png'},
@@ -304,13 +305,16 @@ def play(url='', magnet='', title='', scraper=''):
                 if stream_url:
                     log_utils.log(f'Resolved via AllDebrid: {stream_url}', xbmc.LOGINFO)
     
-    # Try URL resolver for direct links
+    # Try ResolveURL for direct links (NOT urlresolver - that's deprecated)
     if not stream_url and url:
         try:
             import resolveurl
             stream_url = resolveurl.resolve(url)
+            if stream_url:
+                log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
         except Exception as e:
             log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
+            # Fall back to direct URL if resolveurl fails
             stream_url = url
     
     if not stream_url:
@@ -457,6 +461,276 @@ def settings():
     """Open addon settings"""
     ADDON.openSettings()
 
+# ==================== Trakt Functions ====================
+
+def trakt_menu():
+    """Trakt.tv menu"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    # Check authorization status
+    if trakt.is_authorized():
+        auth_status = '[COLOR green]Authorized[/COLOR]'
+    else:
+        auth_status = '[COLOR red]Not Authorized[/COLOR]'
+    
+    items = [
+        {'title': f'Authorization Status: {auth_status}', 'mode': 'trakt_auth'},
+        {'title': 'My Watchlist (Movies)', 'mode': 'trakt_watchlist', 'media_type': 'movies'},
+        {'title': 'My Watchlist (TV Shows)', 'mode': 'trakt_watchlist', 'media_type': 'shows'},
+        {'title': 'My Collection (Movies)', 'mode': 'trakt_collection', 'media_type': 'movies'},
+        {'title': 'My Collection (TV Shows)', 'mode': 'trakt_collection', 'media_type': 'shows'},
+        {'title': 'Trending Movies', 'mode': 'trakt_trending', 'media_type': 'movies'},
+        {'title': 'Trending TV Shows', 'mode': 'trakt_trending', 'media_type': 'shows'},
+        {'title': 'Popular Movies', 'mode': 'trakt_popular', 'media_type': 'movies'},
+        {'title': 'Popular TV Shows', 'mode': 'trakt_popular', 'media_type': 'shows'},
+        {'title': 'Recommended Movies', 'mode': 'trakt_recommended', 'media_type': 'movies'},
+        {'title': 'Recommended TV Shows', 'mode': 'trakt_recommended', 'media_type': 'shows'},
+        {'title': 'My Lists', 'mode': 'trakt_lists'},
+        {'title': 'Calendar', 'mode': 'trakt_calendar'},
+    ]
+    
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url(item)
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+def trakt_auth():
+    """Authorize Trakt"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    trakt.authorize()
+    xbmc.executebuiltin('Container.Refresh')
+
+def trakt_watchlist(media_type='movies'):
+    """Show Trakt watchlist"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    if not trakt.is_authorized():
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Please authorize Trakt first', ADDON_ICON)
+        return
+    
+    items = trakt.get_watchlist(media_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Watchlist is empty', ADDON_ICON)
+        return
+    
+    _show_trakt_items(items, media_type)
+
+def trakt_collection(media_type='movies'):
+    """Show Trakt collection"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    if not trakt.is_authorized():
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Please authorize Trakt first', ADDON_ICON)
+        return
+    
+    items = trakt.get_collection(media_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Collection is empty', ADDON_ICON)
+        return
+    
+    _show_trakt_items(items, media_type)
+
+def trakt_trending(media_type='movies'):
+    """Show trending on Trakt"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    items = trakt.get_trending(media_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No trending items', ADDON_ICON)
+        return
+    
+    _show_trakt_items(items, media_type, key='movie' if media_type == 'movies' else 'show')
+
+def trakt_popular(media_type='movies'):
+    """Show popular on Trakt"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    items = trakt.get_popular(media_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No popular items', ADDON_ICON)
+        return
+    
+    _show_trakt_items(items, media_type)
+
+def trakt_recommended(media_type='movies'):
+    """Show recommended on Trakt"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    if not trakt.is_authorized():
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Please authorize Trakt first', ADDON_ICON)
+        return
+    
+    items = trakt.get_recommended(media_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No recommendations', ADDON_ICON)
+        return
+    
+    _show_trakt_items(items, media_type)
+
+def trakt_lists():
+    """Show user's Trakt lists"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    if not trakt.is_authorized():
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Please authorize Trakt first', ADDON_ICON)
+        return
+    
+    lists = trakt.get_lists()
+    
+    if not lists:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No lists found', ADDON_ICON)
+        return
+    
+    for lst in lists:
+        name = lst.get('name', 'Unknown')
+        list_id = lst.get('ids', {}).get('slug', '')
+        item_count = lst.get('item_count', 0)
+        
+        label = f'{name} ({item_count} items)'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'trakt_list', 'list_id': list_id})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+def trakt_list(list_id):
+    """Show items in a Trakt list"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    items = trakt.get_list(list_id)
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'List is empty', ADDON_ICON)
+        return
+    
+    for item in items:
+        item_type = item.get('type', 'movie')
+        data = item.get(item_type, {})
+        
+        title = data.get('title', 'Unknown')
+        year = data.get('year', '')
+        
+        label = f'{title} ({year})' if year else title
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        url = build_url({
+            'mode': 'show_sources',
+            'title': title,
+            'year': year,
+            'media_type': 'movie' if item_type == 'movie' else 'tvshow'
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+def trakt_calendar():
+    """Show Trakt calendar"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    items = trakt.get_calendar_shows()
+    
+    if not items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No calendar items', ADDON_ICON)
+        return
+    
+    for item in items:
+        episode = item.get('episode', {})
+        show = item.get('show', {})
+        
+        show_title = show.get('title', 'Unknown')
+        ep_title = episode.get('title', '')
+        season = episode.get('season', 1)
+        ep_num = episode.get('number', 1)
+        air_date = item.get('first_aired', '')[:10]
+        
+        label = f'[{air_date}] {show_title} S{season:02d}E{ep_num:02d}'
+        if ep_title:
+            label += f' - {ep_title}'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        url = build_url({
+            'mode': 'show_sources',
+            'title': show_title,
+            'year': show.get('year', ''),
+            'season': season,
+            'episode': ep_num,
+            'media_type': 'tvshow'
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'episodes')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+def _show_trakt_items(items, media_type, key=None):
+    """Helper to display Trakt items"""
+    for item in items:
+        if key:
+            data = item.get(key, item)
+        else:
+            # Handle different response formats
+            if 'movie' in item:
+                data = item['movie']
+            elif 'show' in item:
+                data = item['show']
+            else:
+                data = item
+        
+        title = data.get('title', 'Unknown')
+        year = data.get('year', '')
+        
+        label = f'{title} ({year})' if year else title
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        # Set info labels
+        info = {
+            'title': title,
+            'year': year,
+            'plot': data.get('overview', ''),
+            'rating': data.get('rating', 0)
+        }
+        li.setInfo('video', info)
+        
+        url = build_url({
+            'mode': 'show_sources',
+            'title': title,
+            'year': str(year),
+            'media_type': 'movie' if media_type == 'movies' else 'tvshow'
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movies' else 'tvshows')
+    xbmcplugin.endOfDirectory(HANDLE)
+
 def router(params):
     """Route to appropriate function based on mode"""
     mode = params.get('mode', '')
@@ -504,6 +778,27 @@ def router(params):
         test_scrapers()
     elif mode == 'settings':
         settings()
+    # Trakt modes
+    elif mode == 'trakt_menu':
+        trakt_menu()
+    elif mode == 'trakt_auth':
+        trakt_auth()
+    elif mode == 'trakt_watchlist':
+        trakt_watchlist(params.get('media_type', 'movies'))
+    elif mode == 'trakt_collection':
+        trakt_collection(params.get('media_type', 'movies'))
+    elif mode == 'trakt_trending':
+        trakt_trending(params.get('media_type', 'movies'))
+    elif mode == 'trakt_popular':
+        trakt_popular(params.get('media_type', 'movies'))
+    elif mode == 'trakt_recommended':
+        trakt_recommended(params.get('media_type', 'movies'))
+    elif mode == 'trakt_lists':
+        trakt_lists()
+    elif mode == 'trakt_list':
+        trakt_list(params.get('list_id', ''))
+    elif mode == 'trakt_calendar':
+        trakt_calendar()
     else:
         log_utils.log(f'Unknown mode: {mode}', xbmc.LOGWARNING)
         main_menu()

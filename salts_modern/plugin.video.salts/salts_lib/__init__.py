@@ -7,3 +7,4 @@ from . import log_utils
 from . import db_utils
 from . import utils
 from . import debrid
+from . import trakt_api
