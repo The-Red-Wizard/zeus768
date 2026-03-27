@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <string id="30000">General</string>
+    <string id="30001">Movies</string>
+    <string id="30002">TV Shows</string>
+    <string id="30003">Search</string>
+    <string id="30004">Settings</string>
+    <string id="30005">Scrapers</string>
+    <string id="30006">Debrid Services</string>
+    <string id="30007">Tools</string>
+    
+    <string id="30010">Searching sources...</string>
+    <string id="30011">No sources found</string>
+    <string id="30012">Source found</string>
+    <string id="30013">Resolving link...</string>
+    <string id="30014">Playing...</string>
+    
+    <string id="30020">Real-Debrid</string>
+    <string id="30021">Premiumize</string>
+    <string id="30022">AllDebrid</string>
+    <string id="30023">Authorization successful</string>
+    <string id="30024">Authorization failed</string>
+    
+    <string id="30030">Clear Cache</string>
+    <string id="30031">Cache cleared</string>
+    <string id="30032">Test Scrapers</string>
+    
+    <string id="30040">Jackett</string>
+    <string id="30041">Prowlarr</string>
+    <string id="30042">Connection successful</string>
+    <string id="30043">Connection failed</string>
+</strings>

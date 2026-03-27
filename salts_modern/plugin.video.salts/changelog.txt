@@ -1,0 +1,60 @@
+SALTS - Stream All The Sources
+=============================
+Revived and Modernized by zeus768 for Kodi 21+
+
+CHANGELOG
+=========
+
+v2.0.0 (2026)
+-------------
+Complete rewrite for modern Kodi:
+
+New Features:
+- Full Python 3 compatibility (Kodi 21 Omega and above)
+- Modern torrent site scrapers:
+  * 1337x - General torrent site
+  * YTS/YIFY - High quality movie torrents
+  * EZTV - TV show torrents
+  * TorrentGalaxy - General torrents
+  * ThePirateBay - Classic torrent site
+  * LimeTorrents - General torrents
+  * Torrentz2 - Meta-search engine
+  * RARBG - Mirrors/clones of the original
+  * Nyaa - Anime torrents
+
+- Indexer Aggregator Support:
+  * Jackett integration - Connect to any Jackett-supported indexer
+  * Prowlarr integration - Alternative indexer aggregator
+
+- Debrid Service Integration:
+  * Real-Debrid - Full OAuth support
+  * Premiumize - API key authentication
+  * AllDebrid - PIN-based authentication
+
+- Improved Features:
+  * Automatic mirror detection for torrent sites
+  * Quality parsing and sorting
+  * Size display for all sources
+  * Seed/peer count display
+  * Cached torrent detection for debrid services
+
+Removed:
+- Old dead streaming site scrapers
+- Python 2 specific code
+- Deprecated Kodi APIs
+
+Technical Changes:
+- Updated to xbmc.python version 3.0.0
+- Replaced script.module.urlresolver with script.module.resolveurl
+- Modern requests library for HTTP
+- BeautifulSoup4 for HTML parsing
+- JSON-based settings (Kodi 19+ format)
+
+Credits:
+- Original addon by tknorris
+- Revived and modernized by zeus768
+
+v0.0.32 (Original)
+------------------
+- Final release by original author tknorris
+- Python 2 / Kodi 18 and below
