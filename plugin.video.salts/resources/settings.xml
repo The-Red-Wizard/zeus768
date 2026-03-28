@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <settings>
     <category label="General">
-        <setting id="auto_play" type="bool" label="Auto-play first source" default="false"/>
+        <setting id="auto_play" type="bool" label="Autoplay (auto-select best source)" default="false"/>
         <setting id="source_timeout" type="slider" label="Source timeout (seconds)" default="30" range="10,5,120"/>
         <setting id="max_results" type="slider" label="Maximum results per scraper" default="50" range="10,10,100"/>
+    </category>
+    
+    <category label="Free Streams">
+        <setting id="freestream_enabled" type="bool" label="Enable Free Streams (no debrid needed)" default="true"/>
     </category>
     
     <category label="Trakt">

@@ -207,7 +207,8 @@ def tmdb_list(list_type, media_type='movie', page=1):
                     'mode': 'get_sources',
                     'title': title,
                     'year': year,
-                    'media_type': 'movie'
+                    'media_type': 'movie',
+                    'tmdb_id': item.get('id', '')
                 })
             else:
                 item_url = build_url({
@@ -312,7 +313,8 @@ def search_tmdb(query, media_type='movie'):
                     'mode': 'get_sources',
                     'title': title,
                     'year': year,
-                    'media_type': 'movie'
+                    'media_type': 'movie',
+                    'tmdb_id': item.get('id', '')
                 })
             else:
                 item_url = build_url({
@@ -459,7 +461,8 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
                     'year': year,
                     'season': season,
                     'episode': ep_num,
-                    'media_type': 'tvshow'
+                    'media_type': 'tvshow',
+                    'tmdb_id': tmdb_id
                 })
                 
                 xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
@@ -503,9 +506,10 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
         xbmcplugin.setContent(HANDLE, 'episodes')
         xbmcplugin.endOfDirectory(HANDLE)
 
-def get_sources(title, year='', season='', episode='', media_type='movie'):
-    """Get all available sources for a title with custom source dialog"""
+def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_id=''):
+    """Get all available sources for a title with custom source dialog and autoplay"""
     from scrapers import get_all_scrapers
+    from scrapers.freestream_scraper import FreeStreamScraper
     
     # Build search query
     if media_type == 'movie':
@@ -523,6 +527,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
     total = len(scrapers)
     sources_found = 0
     scraper_count = 0
+    free_count = 0
     
     for i, scraper_cls in enumerate(scrapers):
         if progress.iscanceled():
@@ -537,15 +542,26 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
             
             scraper_count += 1
             percent = int((i / total) * 100)
-            progress.update(percent, f'Searching: {scraper_name}...\nScrapers: {scraper_count} | Sources: {sources_found}')
+            progress.update(percent, f'Searching: {scraper_name}...\nScrapers: {scraper_count} | Sources: {sources_found} | Free: {free_count}')
             
             try:
-                results = scraper.search(query, media_type)
+                # FreeStream scraper gets extra params (tmdb_id, etc.)
+                if isinstance(scraper, FreeStreamScraper):
+                    results = scraper.search(
+                        query, media_type,
+                        tmdb_id=tmdb_id,
+                        title=title, year=year,
+                        season=season, episode=episode
+                    )
+                else:
+                    results = scraper.search(query, media_type)
                 
                 for result in results:
                     result['scraper'] = scraper_name
                     all_sources.append(result)
                     sources_found += 1
+                    if result.get('direct'):
+                        free_count += 1
                 
             except Exception as e:
                 log_utils.log(f'{scraper_name}: Error - {e}', xbmc.LOGERROR)
@@ -553,7 +569,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         except Exception as e:
             log_utils.log(f'Error loading scraper: {e}', xbmc.LOGERROR)
     
-    progress.update(100, f'Found {sources_found} sources from {scraper_count} scrapers')
+    progress.update(100, f'Found {sources_found} sources ({free_count} free) from {scraper_count} scrapers')
     time.sleep(0.5)
     progress.close()
     
@@ -561,8 +577,33 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         xbmcgui.Dialog().notification(ADDON_NAME, 'No sources found', ADDON_ICON)
         return
     
-    # Sort by quality then seeds
-    all_sources.sort(key=lambda x: (QUALITY_ORDER.get(x.get('quality', 'SD'), 0), x.get('seeds', 0)), reverse=True)
+    # Sort: free direct streams first, then by quality and seeds
+    def sort_key(x):
+        is_free = 1 if x.get('direct') else 0
+        quality = QUALITY_ORDER.get(x.get('quality', 'SD'), 0)
+        seeds = x.get('seeds', 0)
+        return (is_free, quality, seeds)
+    
+    all_sources.sort(key=sort_key, reverse=True)
+    
+    # Autoplay: if enabled, pick the best source and play immediately
+    autoplay = ADDON.getSetting('auto_play') == 'true'
+    if autoplay and all_sources:
+        chosen = all_sources[0]
+        log_utils.log(f'Autoplay: picking {chosen.get("scraper")} - {chosen.get("quality")}', xbmc.LOGINFO)
+        _play_source(
+            url=chosen.get('url', ''),
+            magnet=chosen.get('magnet', ''),
+            title=search_title,
+            scraper=chosen.get('scraper', ''),
+            media_type=media_type,
+            show_title=title,
+            year=year,
+            season=season,
+            episode=episode,
+            tmdb_id=tmdb_id
+        )
+        return
     
     # Count quality breakdown
     quality_counts = {}
@@ -585,9 +626,13 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         quality = source.get('quality', 'SD')
         seeds = source.get('seeds', 0)
         size = source.get('size', '')
+        is_free = source.get('direct', False)
         
-        label_parts = [f'[{quality}]', f'[{scraper_name}]']
-        if seeds:
+        label_parts = [f'[{quality}]']
+        if is_free:
+            label_parts.append('[FREE]')
+        label_parts.append(f'[{scraper_name}]')
+        if seeds and not is_free:
             label_parts.append(f'Seeds: {seeds}')
         if size:
             label_parts.append(size)
@@ -595,8 +640,10 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         
         label = ' | '.join(label_parts)
         
-        # Color coding
-        if quality in ['4K', '2160p']:
+        # Color coding - free streams get special color
+        if is_free:
+            label = f'[COLOR orange]{label}[/COLOR]'
+        elif quality in ['4K', '2160p']:
             label = f'[COLOR gold]{label}[/COLOR]'
         elif quality in ['1080p', 'HD']:
             label = f'[COLOR lime]{label}[/COLOR]'
@@ -608,7 +655,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         display_list.append(label)
     
     # Custom select dialog with source summary header
-    header = f'SALTS: {sources_found} sources from {scraper_count} scrapers  [{quality_summary}]'
+    header = f'SALTS: {sources_found} sources ({free_count} free) from {scraper_count} scrapers  [{quality_summary}]'
     selected = xbmcgui.Dialog().select(header, display_list, useDetails=False)
     
     if selected < 0:
@@ -626,11 +673,12 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         show_title=title,
         year=year,
         season=season,
-        episode=episode
+        episode=episode,
+        tmdb_id=tmdb_id
     )
 
 def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
-                  show_title='', year='', season='', episode=''):
+                  show_title='', year='', season='', episode='', tmdb_id=''):
     """Resolve and play a source using xbmc.Player().play() to avoid rescrape loop"""
     log_utils.log(f'Playing: url={url}, magnet={magnet}, title={title}', xbmc.LOGINFO)
     
@@ -678,17 +726,22 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
     
     # Try ResolveURL for direct links
     if not stream_url and url:
-        try:
-            import resolveurl
-            progress = xbmcgui.DialogProgress()
-            progress.create('SALTS', 'Resolving link...')
-            stream_url = resolveurl.resolve(url)
-            progress.close()
-            if stream_url:
-                log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
-        except Exception as e:
-            log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
+        # Check if URL is already a direct stream (m3u8, mp4) from free providers
+        if any(ext in url.lower() for ext in ['.m3u8', '.mp4', '.mkv', '.avi']):
             stream_url = url
+            log_utils.log(f'Direct stream URL: {stream_url}', xbmc.LOGINFO)
+        else:
+            try:
+                import resolveurl
+                progress = xbmcgui.DialogProgress()
+                progress.create('SALTS', 'Resolving link...')
+                stream_url = resolveurl.resolve(url)
+                progress.close()
+                if stream_url:
+                    log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
+            except Exception as e:
+                log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
+                stream_url = url  # Fallback to raw URL
     
     if not stream_url:
         xbmcgui.Dialog().notification(ADDON_NAME, 'Could not resolve source', ADDON_ICON)
@@ -1148,7 +1201,8 @@ def router(params):
             params.get('year', ''),
             params.get('season', ''),
             params.get('episode', ''),
-            params.get('media_type', 'movie')
+            params.get('media_type', 'movie'),
+            params.get('tmdb_id', '')
         )
     elif mode == 'play':
         play(

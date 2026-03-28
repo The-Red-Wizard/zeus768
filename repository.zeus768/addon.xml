@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="repository.zeus768" name="Zeus768 Repository" version="1.0.6" provider-name="zeus768">
+<addon id="repository.zeus768" name="Zeus768 Repository" version="1.0.7" provider-name="zeus768">
     <extension point="xbmc.addon.repository" name="Zeus768 Repository">
         <dir>
             <info compressed="false">https://raw.githubusercontent.com/Zeus768/zeus768/main/addons.xml</info>
@@ -12,13 +12,11 @@
         <description>Zeus768's Kodi addon repository.
 
 Available Addons:
-- SALTS (Stream All The Sources) - Multi-source video addon with torrent scrapers, Jackett/Prowlarr support, Real-Debrid/Premiumize/AllDebrid, and Trakt.tv integration
+- SALTS (Stream All The Sources) v2.1.1 - 35+ scrapers, free streams, autoplay, Up Next, Skip Intro, Trakt, debrid support
 - Orion - Torrent and usenet indexer
 - Strike Zone - Sports streaming addon
 - The Accountant - Kodi maintenance and debrid management tool
-- ResolveURL - URL resolver module
-
-Also includes Gujal Repository and ResolveURL Repository for dependencies.</description>
+- ResolveURL - URL resolver module</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>

@@ -2,11 +2,15 @@ v2.1.1 (2026-03-28)
 - Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop after video ends
 - Fixed: Trakt API now uses native urllib instead of requests module (prevents import crash)
 - Fixed: Removed repository.gujal from repository addons.xml
-- Added: Custom source selection dialog with quality breakdown and source/scraper counts
+- Added: Free Stream providers (VidSrc, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink) - no debrid needed
+- Added: Autoplay mode (toggle in Settings > General) - auto-selects best source
+- Added: Custom source dialog showing source/scraper count, free stream count, and quality breakdown
+- Added: Free streams highlighted in orange, sorted first in source list
 - Added: Up Next - auto prompt to play next episode for TV series
 - Added: Skip Intro prompt during first 90 seconds of TV episodes (configurable)
-- Updated: Settings with new Playback options for Up Next and Skip Intro
-- Updated: addon.xml with detailed feature list and changelog
+- Added: TMDB ID pass-through for free stream provider lookups
+- Updated: Repository version to 1.0.7
+- Updated: Settings with Free Streams, Autoplay, Up Next, and Skip Intro categories
 
 v2.1.0 (2026-03-27)
 - Added 34+ scrapers including Russian (RuTracker, RuTor, NNM-Club), Chinese (DyTT, BTBTT), Anime (Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex)

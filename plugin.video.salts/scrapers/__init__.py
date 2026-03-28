@@ -2,9 +2,10 @@
 SALTS Scrapers Package - STREAM ALL THE SOURCES!
 Revived by zeus768 for Kodi 21+
 
-Total Scrapers: 30+
+Total Scrapers: 35+
 
 Includes:
+- Free Streams: VidSrc, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink (direct play, no debrid)
 - Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, Nyaa, ThePirateBay, LimeTorrents, Torrentz2, RARBG, Kickass, MagnetDL, GLODLS, iDope, SolidTorrents, TorrentDownload, TorrentProject, Zooqle, BTDigg
 - International: RuTracker, RuTor, NNM-Club (Russian), DyTT, BTBTT (Chinese)
 - Anime: Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex
@@ -14,6 +15,9 @@ Includes:
 """
 
 from .base_scraper import BaseScraper, TorrentScraper
+
+# Free stream scraper (no debrid needed)
+from .freestream_scraper import FreeStreamScraper
 
 # Core torrent scrapers
 from .x1337_scraper import X1337Scraper
@@ -65,6 +69,9 @@ from .torrentapi_scraper import TorrentAPIScraper
 
 # List of all scraper classes - ORDER MATTERS (faster/better first)
 ALL_SCRAPERS = [
+    # FREE STREAMS (no debrid needed - direct play)
+    FreeStreamScraper,
+    
     # PRIMARY - Fast and reliable
     X1337Scraper,
     YTSScraper,

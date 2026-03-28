@@ -90,7 +90,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="repository.zeus768" name="Zeus768 Repository" version="1.0.5" provider-name="zeus768">
+    <addon id="repository.zeus768" name="Zeus768 Repository" version="1.0.7" provider-name="zeus768">
         <requires>
             <import addon="xbmc.addon" version="17.9.910"/>
         </requires>
