@@ -55,6 +55,7 @@ def main_menu():
     items = [
         {'title': '[B]Movies[/B]', 'mode': 'movies_menu'},
         {'title': '[B]TV Shows[/B]', 'mode': 'tvshows_menu'},
+        {'title': '[B]Favorites[/B]', 'mode': 'favorites_menu'},
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu'},
@@ -202,6 +203,14 @@ def tmdb_list(list_type, media_type='movie', page=1):
             info_tag.setRating(rating)
             info_tag.setMediaType('movie' if media_type == 'movie' else 'tvshow')
             
+            # Context menu - Add to Favorites
+            _fav_url = build_url({
+                'mode': 'add_favorite', 'media_type': media_type if media_type == 'movie' else 'tvshow',
+                'title': title, 'year': year, 'tmdb_id': str(item.get('id', '')),
+                'poster': poster_url, 'overview': overview[:200], 'rating': str(rating)
+            })
+            li.addContextMenuItems([('Add to Favorites', f'RunPlugin({_fav_url})')])
+            
             if media_type == 'movie':
                 item_url = build_url({
                     'mode': 'get_sources',
@@ -307,6 +316,14 @@ def search_tmdb(query, media_type='movie'):
             info_tag.setPlot(overview)
             info_tag.setRating(rating)
             info_tag.setMediaType('movie' if media_type == 'movie' else 'tvshow')
+            
+            # Context menu - Add to Favorites
+            _fav_url2 = build_url({
+                'mode': 'add_favorite', 'media_type': media_type if media_type == 'movie' else 'tvshow',
+                'title': title, 'year': year, 'tmdb_id': str(item.get('id', '')),
+                'poster': poster_url, 'overview': overview[:200], 'rating': str(rating)
+            })
+            li.addContextMenuItems([('Add to Favorites', f'RunPlugin({_fav_url2})')])
             
             if media_type == 'movie':
                 item_url = build_url({
@@ -507,7 +524,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
         xbmcplugin.endOfDirectory(HANDLE)
 
 def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_id=''):
-    """Get all available sources for a title with custom source dialog and autoplay"""
+    """Get all available sources for a title with caching, custom dialog, and autoplay"""
     from scrapers import get_all_scrapers
     from scrapers.freestream_scraper import FreeStreamScraper
     
@@ -519,11 +536,51 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
         query = f'{title} S{int(season):02d}E{int(episode):02d}'
         search_title = f'{title} S{int(season):02d}E{int(episode):02d}'
     
+    # Check source cache first
+    cache_key = f'{media_type}|{title}|{year}|{season}|{episode}'
+    db = db_utils.DB_Connection()
+    use_cache = ADDON.getSetting('source_cache_enabled') != 'false'
+    
+    if use_cache:
+        cache_hours = float(ADDON.getSetting('source_cache_hours') or 2)
+        cached_sources, cache_time = db.get_cached_sources(cache_key, cache_hours)
+        if cached_sources:
+            import datetime as dt
+            cache_age = int((time.time() - cache_time) / 60)
+            log_utils.log(f'Source cache hit for {cache_key}: {len(cached_sources)} sources ({cache_age}m old)', xbmc.LOGINFO)
+            
+            # Ask user: use cache or re-scrape?
+            use_cached = xbmcgui.Dialog().yesno(
+                'SALTS - Cached Sources',
+                f'{len(cached_sources)} cached sources found ({cache_age} min old)\n\nUse cached or re-scrape?',
+                yeslabel='Use Cached',
+                nolabel='Re-Scrape',
+                autoclose=10000
+            )
+            
+            if use_cached:
+                all_sources = cached_sources
+                # Jump straight to display/autoplay
+                return _display_or_autoplay_sources(all_sources, search_title, media_type,
+                                                     title, year, season, episode, tmdb_id)
+    
     progress = xbmcgui.DialogProgress()
     progress.create('SALTS', f'Searching for: {search_title}')
     
     all_sources = []
     scrapers = get_all_scrapers()
+    
+    # Apply scraper priority ordering
+    priorities = db.get_all_scraper_priorities()
+    if priorities:
+        def scraper_sort_key(cls):
+            try:
+                s = cls()
+                return priorities.get(s.get_name(), 100)
+            except Exception:
+                return 100
+        scrapers.sort(key=scraper_sort_key)
+    
     total = len(scrapers)
     sources_found = 0
     scraper_count = 0
@@ -545,7 +602,6 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
             progress.update(percent, f'Searching: {scraper_name}...\nScrapers: {scraper_count} | Sources: {sources_found} | Free: {free_count}')
             
             try:
-                # FreeStream scraper gets extra params (tmdb_id, etc.)
                 if isinstance(scraper, FreeStreamScraper):
                     results = scraper.search(
                         query, media_type,
@@ -577,6 +633,17 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
         xbmcgui.Dialog().notification(ADDON_NAME, 'No sources found', ADDON_ICON)
         return
     
+    # Cache the results
+    if use_cache:
+        db.cache_sources(cache_key, all_sources)
+    
+    _display_or_autoplay_sources(all_sources, search_title, media_type,
+                                 title, year, season, episode, tmdb_id)
+
+
+def _display_or_autoplay_sources(all_sources, search_title, media_type,
+                                  title, year, season, episode, tmdb_id):
+    """Sort, display source dialog or autoplay"""
     # Sort: free direct streams first, then by quality and seeds
     def sort_key(x):
         is_free = 1 if x.get('direct') else 0
@@ -605,20 +672,23 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
         )
         return
     
+    # Count totals
+    free_count = sum(1 for s in all_sources if s.get('direct'))
+    sources_found = len(all_sources)
+    
     # Count quality breakdown
     quality_counts = {}
     for s in all_sources:
         q = s.get('quality', 'SD')
         quality_counts[q] = quality_counts.get(q, 0) + 1
     
-    # Build quality summary line
     q_parts = []
     for q in ['4K', '2160p', '1080p', 'HD', '720p', '480p', 'SD']:
         if q in quality_counts:
             q_parts.append(f'{q}: {quality_counts[q]}')
     quality_summary = ' | '.join(q_parts) if q_parts else 'Mixed'
     
-    # Build display list for custom dialog
+    # Build display list
     display_list = []
     for source in all_sources:
         scraper_name = source.get('scraper', 'Unknown')
@@ -640,7 +710,6 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
         
         label = ' | '.join(label_parts)
         
-        # Color coding - free streams get special color
         if is_free:
             label = f'[COLOR orange]{label}[/COLOR]'
         elif quality in ['4K', '2160p']:
@@ -654,8 +723,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
         
         display_list.append(label)
     
-    # Custom select dialog with source summary header
-    header = f'SALTS: {sources_found} sources ({free_count} free) from {scraper_count} scrapers  [{quality_summary}]'
+    header = f'SALTS: {sources_found} sources ({free_count} free)  [{quality_summary}]'
     selected = xbmcgui.Dialog().select(header, display_list, useDetails=False)
     
     if selected < 0:
@@ -663,7 +731,6 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
     
     chosen = all_sources[selected]
     
-    # Play the selected source
     _play_source(
         url=chosen.get('url', ''),
         magnet=chosen.get('magnet', ''),
@@ -769,14 +836,17 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
 
 
 def _monitor_playback(player, media_type, show_title, year, season, episode):
-    """Monitor playback for skip intro button and next episode prompt"""
+    """Monitor playback for skip intro, next episode, and pre-emptive scraping"""
     skip_intro_shown = False
     next_ep_shown = False
+    preemptive_done = False
     skip_intro_seconds = int(ADDON.getSetting('skip_intro_duration') or 90)
     next_ep_enabled = ADDON.getSetting('next_episode_enabled') == 'true'
     skip_intro_enabled = ADDON.getSetting('skip_intro_enabled') == 'true'
+    preemptive_enabled = ADDON.getSetting('preemptive_scrape') == 'true'
     
     total_time = 0
+    preemptive_sources = None
     
     while player.isPlaying():
         try:
@@ -791,14 +861,6 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
             if (skip_intro_enabled and media_type == 'tvshow' and not skip_intro_shown
                     and 5 < current_time < skip_intro_seconds):
                 skip_intro_shown = True
-                # Non-blocking: use a background approach
-                # Show a notification-style prompt
-                xbmc.executebuiltin(
-                    f'Notification(SALTS,Press SELECT/ENTER to skip intro,5000,{ADDON_ICON})'
-                )
-                # We can't really block here, but we inform the user
-                # A true skip would need chapter marks or a fixed offset
-                # For now, offer a configurable skip forward
                 if xbmcgui.Dialog().yesno('SALTS', 'Skip Intro?', 
                                            yeslabel='Skip', nolabel='Watch',
                                            autoclose=8000):
@@ -806,7 +868,21 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
                     player.seekTime(skip_to)
                     log_utils.log(f'Skipped intro to {skip_to}s', xbmc.LOGINFO)
             
-            # Next Episode: prompt when 90% through or last 120 seconds
+            # Pre-emptive scraping: start scraping next episode at 75% through
+            if (preemptive_enabled and media_type == 'tvshow' and not preemptive_done
+                    and total_time > 0 and season and episode):
+                progress_pct = (current_time / total_time) * 100
+                if progress_pct > 75:
+                    preemptive_done = True
+                    next_ep = int(episode) + 1
+                    log_utils.log(f'Pre-emptive scrape: {show_title} S{int(season):02d}E{next_ep:02d}', xbmc.LOGINFO)
+                    # Pre-scrape next episode sources in background (cache only)
+                    try:
+                        _preemptive_scrape(show_title, year, season, str(next_ep))
+                    except Exception as e:
+                        log_utils.log(f'Pre-emptive scrape error: {e}', xbmc.LOGDEBUG)
+            
+            # Next Episode: prompt when last 120 seconds
             if (next_ep_enabled and media_type == 'tvshow' and not next_ep_shown
                     and total_time > 0 and season and episode):
                 remaining = total_time - current_time
@@ -820,18 +896,56 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
                         nolabel='Stop',
                         autoclose=30000
                     ):
-                        # Stop current and play next
                         player.stop()
                         xbmc.sleep(500)
                         get_sources(show_title, year, season, str(next_ep), 'tvshow')
                         return
             
         except Exception as e:
-            # Player may have stopped
             log_utils.log(f'Playback monitor: {e}', xbmc.LOGDEBUG)
             break
         
-        xbmc.sleep(2000)  # Check every 2 seconds
+        xbmc.sleep(2000)
+
+
+def _preemptive_scrape(title, year, season, episode):
+    """Pre-emptively scrape next episode and cache results (no UI)"""
+    from scrapers import get_all_scrapers
+    from scrapers.freestream_scraper import FreeStreamScraper
+    
+    cache_key = f'tvshow|{title}|{year}|{season}|{episode}'
+    db = db_utils.DB_Connection()
+    
+    # Skip if already cached
+    cached, _ = db.get_cached_sources(cache_key, 2)
+    if cached:
+        return
+    
+    query = f'{title} S{int(season):02d}E{int(episode):02d}'
+    all_sources = []
+    
+    for scraper_cls in get_all_scrapers():
+        try:
+            scraper = scraper_cls()
+            if not scraper.is_enabled():
+                continue
+            
+            if isinstance(scraper, FreeStreamScraper):
+                results = scraper.search(query, 'tvshow', title=title, year=year,
+                                         season=season, episode=episode)
+            else:
+                results = scraper.search(query, 'tvshow')
+            
+            for r in results:
+                r['scraper'] = scraper.get_name()
+                all_sources.append(r)
+                
+        except Exception:
+            continue
+    
+    if all_sources:
+        db.cache_sources(cache_key, all_sources)
+        log_utils.log(f'Pre-emptive cache: {len(all_sources)} sources for {cache_key}', xbmc.LOGINFO)
 
 
 def play(url='', magnet='', title='', scraper=''):
@@ -919,14 +1033,17 @@ def tools_menu():
     """Tools menu"""
     items = [
         {'title': 'Clear Cache', 'mode': 'clear_cache'},
+        {'title': 'Clear Source Cache', 'mode': 'clear_source_cache'},
         {'title': 'Test Scrapers', 'mode': 'test_scrapers'},
+        {'title': 'Quality Presets', 'mode': 'quality_presets_menu'},
+        {'title': 'Scraper Priority', 'mode': 'scraper_priority_menu'},
     ]
     
     for item in items:
         li = xbmcgui.ListItem(item['title'])
         li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
         url = build_url(item)
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True if item['mode'] in ['quality_presets_menu', 'scraper_priority_menu'] else False)
     
     xbmcplugin.endOfDirectory(HANDLE)
 
@@ -935,6 +1052,12 @@ def clear_cache():
     db = db_utils.DB_Connection()
     db.flush_cache()
     xbmcgui.Dialog().notification(ADDON_NAME, 'Cache cleared', ADDON_ICON)
+
+def clear_source_cache():
+    """Clear source cache only"""
+    db = db_utils.DB_Connection()
+    db.clear_source_cache()
+    xbmcgui.Dialog().notification(ADDON_NAME, 'Source cache cleared', ADDON_ICON)
 
 def test_scrapers():
     """Test all scrapers"""
@@ -970,6 +1093,255 @@ def test_scrapers():
 def addon_settings():
     """Open addon settings"""
     ADDON.openSettings()
+
+
+# ==================== Favorites ====================
+
+def favorites_menu():
+    """Favorites main menu"""
+    items = [
+        {'title': '[B]Favorite Movies[/B]', 'mode': 'favorites_list', 'media_type': 'movie'},
+        {'title': '[B]Favorite TV Shows[/B]', 'mode': 'favorites_list', 'media_type': 'tvshow'},
+    ]
+    
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url(item)
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def favorites_list(media_type='movie'):
+    """Show favorites list"""
+    db = db_utils.DB_Connection()
+    favs = db.get_favorites(media_type)
+    
+    if not favs:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No favorites yet', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    for fav in favs:
+        title = fav.get('title', 'Unknown')
+        year = fav.get('year', '')
+        tmdb_id = fav.get('tmdb_id', '')
+        poster = fav.get('poster', '')
+        fanart_img = fav.get('fanart', '')
+        overview = fav.get('overview', '')
+        rating = fav.get('rating', 0)
+        
+        label = f'{title} ({year})' if year else title
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({
+            'icon': poster or ADDON_ICON,
+            'poster': poster,
+            'fanart': fanart_img or ADDON_FANART,
+            'thumb': poster
+        })
+        
+        info = {'title': title, 'year': int(year) if year else 0, 'plot': overview, 'rating': rating}
+        li.setInfo('video', info)
+        
+        # Context menu to remove from favorites
+        ctx_menu = [
+            ('Remove from Favorites', f'RunPlugin({build_url({"mode": "remove_favorite", "media_type": media_type, "title": title, "year": year})})'),
+        ]
+        li.addContextMenuItems(ctx_menu)
+        
+        if media_type == 'movie':
+            item_url = build_url({
+                'mode': 'get_sources', 'title': title, 'year': year,
+                'media_type': 'movie', 'tmdb_id': tmdb_id
+            })
+        else:
+            item_url = build_url({
+                'mode': 'tv_seasons', 'title': title, 'year': year, 'tmdb_id': tmdb_id
+            })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=(media_type != 'movie'))
+    
+    xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movie' else 'tvshows')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def add_favorite(media_type, title, year='', tmdb_id='', poster='', fanart='', overview='', rating=0):
+    """Add item to favorites"""
+    db = db_utils.DB_Connection()
+    db.add_favorite(media_type, title, year, tmdb_id, poster, fanart, overview, rating)
+    xbmcgui.Dialog().notification(ADDON_NAME, f'Added to Favorites: {title}', ADDON_ICON)
+
+
+def remove_favorite(media_type, title, year=''):
+    """Remove item from favorites"""
+    db = db_utils.DB_Connection()
+    db.remove_favorite(media_type, title, year)
+    xbmcgui.Dialog().notification(ADDON_NAME, f'Removed from Favorites: {title}', ADDON_ICON)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+# ==================== Quality Presets ====================
+
+def quality_presets_menu():
+    """Quality presets menu"""
+    db = db_utils.DB_Connection()
+    presets = db.get_all_quality_presets()
+    
+    # Add "Create New Preset" option
+    li = xbmcgui.ListItem('[B]+ Create New Preset[/B]')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'create_quality_preset'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    # Built-in presets
+    builtin = {
+        'Best Quality (WiFi)': {'min_quality': '1080p', 'filter_cam': 'true', 'auto_play': 'false'},
+        'Fast Play (Mobile)': {'min_quality': 'Any', 'filter_cam': 'true', 'auto_play': 'true'},
+        'Data Saver': {'min_quality': '480p', 'filter_cam': 'true', 'auto_play': 'true'},
+        '4K Only': {'min_quality': '4K', 'filter_cam': 'true', 'auto_play': 'false'},
+    }
+    
+    for name in builtin:
+        if name not in presets:
+            presets[name] = builtin[name]
+    
+    for name, settings in presets.items():
+        quality = settings.get('min_quality', 'Any')
+        autoplay = 'Autoplay' if settings.get('auto_play') == 'true' else 'Manual'
+        
+        label = f'{name} - [COLOR cyan]{quality}[/COLOR] / [COLOR yellow]{autoplay}[/COLOR]'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        ctx_menu = [
+            ('Delete Preset', f'RunPlugin({build_url({"mode": "delete_quality_preset", "name": name})})'),
+        ]
+        li.addContextMenuItems(ctx_menu)
+        
+        url = build_url({'mode': 'apply_quality_preset', 'name': name})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def create_quality_preset():
+    """Create a new quality preset from current settings"""
+    name = xbmcgui.Dialog().input('Preset Name')
+    if not name:
+        return
+    
+    settings = {
+        'min_quality': ADDON.getSetting('min_quality'),
+        'filter_cam': ADDON.getSetting('filter_cam'),
+        'auto_play': ADDON.getSetting('auto_play'),
+        'sort_by': ADDON.getSetting('sort_by'),
+        'source_timeout': ADDON.getSetting('source_timeout'),
+    }
+    
+    db = db_utils.DB_Connection()
+    db.save_quality_preset(name, settings)
+    xbmcgui.Dialog().notification(ADDON_NAME, f'Preset saved: {name}', ADDON_ICON)
+
+
+def apply_quality_preset(name):
+    """Apply a quality preset"""
+    db = db_utils.DB_Connection()
+    settings = db.get_quality_preset(name)
+    
+    if not settings:
+        # Check built-in presets
+        builtin = {
+            'Best Quality (WiFi)': {'min_quality': '1080p', 'filter_cam': 'true', 'auto_play': 'false'},
+            'Fast Play (Mobile)': {'min_quality': 'Any', 'filter_cam': 'true', 'auto_play': 'true'},
+            'Data Saver': {'min_quality': '480p', 'filter_cam': 'true', 'auto_play': 'true'},
+            '4K Only': {'min_quality': '4K', 'filter_cam': 'true', 'auto_play': 'false'},
+        }
+        settings = builtin.get(name)
+    
+    if settings:
+        for key, value in settings.items():
+            ADDON.setSetting(key, str(value))
+        xbmcgui.Dialog().notification(ADDON_NAME, f'Applied preset: {name}', ADDON_ICON)
+    else:
+        xbmcgui.Dialog().notification(ADDON_NAME, f'Preset not found: {name}', ADDON_ICON)
+
+
+def delete_quality_preset(name):
+    """Delete a quality preset"""
+    db = db_utils.DB_Connection()
+    db.delete_quality_preset(name)
+    xbmcgui.Dialog().notification(ADDON_NAME, f'Deleted preset: {name}', ADDON_ICON)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+# ==================== Scraper Priority ====================
+
+def scraper_priority_menu():
+    """Scraper priority ordering menu"""
+    from scrapers import get_all_scrapers
+    
+    db = db_utils.DB_Connection()
+    priorities = db.get_all_scraper_priorities()
+    
+    scrapers = get_all_scrapers()
+    scraper_list = []
+    
+    for cls in scrapers:
+        try:
+            s = cls()
+            name = s.get_name()
+            enabled = s.is_enabled()
+            priority = priorities.get(name, 100)
+            scraper_list.append((name, priority, enabled))
+        except Exception:
+            continue
+    
+    # Sort by priority
+    scraper_list.sort(key=lambda x: x[1])
+    
+    for i, (name, priority, enabled) in enumerate(scraper_list):
+        status = '[COLOR lime]ON[/COLOR]' if enabled else '[COLOR red]OFF[/COLOR]'
+        label = f'{i+1}. {name} - {status} (Priority: {priority})'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        ctx_menu = [
+            ('Move Up', f'RunPlugin({build_url({"mode": "set_scraper_priority", "scraper": name, "priority": max(1, priority - 10)})})'),
+            ('Move Down', f'RunPlugin({build_url({"mode": "set_scraper_priority", "scraper": name, "priority": priority + 10})})'),
+            ('Set Priority', f'RunPlugin({build_url({"mode": "set_scraper_priority_manual", "scraper": name})})'),
+            ('Toggle Enable', f'RunPlugin({build_url({"mode": "toggle_scraper", "scraper": name})})'),
+        ]
+        li.addContextMenuItems(ctx_menu)
+        
+        url = build_url({'mode': 'set_scraper_priority_manual', 'scraper': name})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def set_scraper_priority(scraper_name, priority):
+    """Set scraper priority"""
+    db = db_utils.DB_Connection()
+    db.set_scraper_priority(scraper_name, int(priority))
+    xbmcgui.Dialog().notification(ADDON_NAME, f'{scraper_name} priority: {priority}', ADDON_ICON)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def set_scraper_priority_manual(scraper_name):
+    """Manually set scraper priority via dialog"""
+    db = db_utils.DB_Connection()
+    current = db.get_scraper_priority(scraper_name)
+    
+    new_priority = xbmcgui.Dialog().numeric(0, f'Priority for {scraper_name} (1=highest)', str(current))
+    if new_priority:
+        db.set_scraper_priority(scraper_name, int(new_priority))
+        xbmcgui.Dialog().notification(ADDON_NAME, f'{scraper_name} priority: {new_priority}', ADDON_ICON)
+        xbmc.executebuiltin('Container.Refresh')
+
 
 # ==================== Trakt Functions ====================
 
@@ -1223,10 +1595,46 @@ def router(params):
         tools_menu()
     elif mode == 'clear_cache':
         clear_cache()
+    elif mode == 'clear_source_cache':
+        clear_source_cache()
     elif mode == 'test_scrapers':
         test_scrapers()
     elif mode == 'addon_settings':
         addon_settings()
+    # Favorites modes
+    elif mode == 'favorites_menu':
+        favorites_menu()
+    elif mode == 'favorites_list':
+        favorites_list(params.get('media_type', 'movie'))
+    elif mode == 'add_favorite':
+        add_favorite(
+            params.get('media_type', 'movie'),
+            params.get('title', ''),
+            params.get('year', ''),
+            params.get('tmdb_id', ''),
+            params.get('poster', ''),
+            params.get('fanart', ''),
+            params.get('overview', ''),
+            float(params.get('rating', 0))
+        )
+    elif mode == 'remove_favorite':
+        remove_favorite(params.get('media_type', 'movie'), params.get('title', ''), params.get('year', ''))
+    # Quality Presets
+    elif mode == 'quality_presets_menu':
+        quality_presets_menu()
+    elif mode == 'create_quality_preset':
+        create_quality_preset()
+    elif mode == 'apply_quality_preset':
+        apply_quality_preset(params.get('name', ''))
+    elif mode == 'delete_quality_preset':
+        delete_quality_preset(params.get('name', ''))
+    # Scraper Priority
+    elif mode == 'scraper_priority_menu':
+        scraper_priority_menu()
+    elif mode == 'set_scraper_priority':
+        set_scraper_priority(params.get('scraper', ''), int(params.get('priority', 100)))
+    elif mode == 'set_scraper_priority_manual':
+        set_scraper_priority_manual(params.get('scraper', ''))
     # Trakt modes
     elif mode == 'trakt_menu':
         trakt_menu()

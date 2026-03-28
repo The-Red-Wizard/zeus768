@@ -4,6 +4,7 @@ Revived by zeus768 for Kodi 21+
 """
 import os
 import time
+import json
 import sqlite3
 import xbmcaddon
 import xbmcvfs
@@ -35,7 +36,7 @@ class DB_Connection:
             )
         ''')
         
-        # Related URL table (for tracking show/movie URLs per scraper)
+        # Related URL table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS related_url (
                 video_type TEXT,
@@ -67,8 +68,54 @@ class DB_Connection:
             )
         ''')
         
+        # Source cache - stores scraped results per title
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS source_cache (
+                cache_key TEXT PRIMARY KEY,
+                sources TEXT,
+                timestamp REAL
+            )
+        ''')
+        
+        # Favorites / Bookmarks
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS favorites (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                media_type TEXT,
+                title TEXT,
+                year TEXT DEFAULT '',
+                tmdb_id TEXT DEFAULT '',
+                poster TEXT DEFAULT '',
+                fanart TEXT DEFAULT '',
+                overview TEXT DEFAULT '',
+                rating REAL DEFAULT 0,
+                season TEXT DEFAULT '',
+                episode TEXT DEFAULT '',
+                timestamp REAL,
+                UNIQUE(media_type, title, year, season, episode)
+            )
+        ''')
+        
+        # Scraper priority ordering
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS scraper_priority (
+                scraper_name TEXT PRIMARY KEY,
+                priority INTEGER DEFAULT 100
+            )
+        ''')
+        
+        # Quality presets
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS quality_presets (
+                name TEXT PRIMARY KEY,
+                settings TEXT
+            )
+        ''')
+        
         conn.commit()
         conn.close()
+    
+    # ==================== URL Cache ====================
     
     def cache_url(self, url, response):
         """Cache a URL response"""
@@ -94,19 +141,194 @@ class DB_Connection:
         
         if result:
             response, timestamp = result
-            age = (time.time() - timestamp) / 3600  # Convert to hours
+            age = (time.time() - timestamp) / 3600
             if age < cache_limit:
                 return timestamp, response
         
         return None, None
     
     def flush_cache(self):
-        """Clear all cached URLs"""
+        """Clear all cached URLs and source cache"""
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM url_cache')
+        cursor.execute('DELETE FROM source_cache')
         conn.commit()
         conn.close()
+    
+    # ==================== Source Cache ====================
+    
+    def cache_sources(self, cache_key, sources):
+        """Cache scraped sources for a title"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT OR REPLACE INTO source_cache (cache_key, sources, timestamp) VALUES (?, ?, ?)',
+            (cache_key, json.dumps(sources), time.time())
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_cached_sources(self, cache_key, cache_limit_hours=2):
+        """Get cached sources if still valid"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT sources, timestamp FROM source_cache WHERE cache_key = ?',
+            (cache_key,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            sources_json, timestamp = result
+            age = (time.time() - timestamp) / 3600
+            if age < cache_limit_hours:
+                return json.loads(sources_json), timestamp
+        
+        return None, None
+    
+    def clear_source_cache(self):
+        """Clear source cache only"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM source_cache')
+        conn.commit()
+        conn.close()
+    
+    # ==================== Favorites ====================
+    
+    def add_favorite(self, media_type, title, year='', tmdb_id='',
+                     poster='', fanart='', overview='', rating=0,
+                     season='', episode=''):
+        """Add to favorites"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''INSERT OR REPLACE INTO favorites 
+               (media_type, title, year, tmdb_id, poster, fanart, overview, rating, season, episode, timestamp) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (media_type, title, year, tmdb_id, poster, fanart, overview, rating, season, episode, time.time())
+        )
+        conn.commit()
+        conn.close()
+    
+    def remove_favorite(self, media_type, title, year='', season='', episode=''):
+        """Remove from favorites"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''DELETE FROM favorites 
+               WHERE media_type = ? AND title = ? AND year = ? AND season = ? AND episode = ?''',
+            (media_type, title, year, season, episode)
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_favorites(self, media_type=None):
+        """Get all favorites, optionally filtered by media type"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        if media_type:
+            cursor.execute(
+                'SELECT * FROM favorites WHERE media_type = ? ORDER BY timestamp DESC',
+                (media_type,)
+            )
+        else:
+            cursor.execute('SELECT * FROM favorites ORDER BY timestamp DESC')
+        
+        columns = [d[0] for d in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        conn.close()
+        return results
+    
+    def is_favorite(self, media_type, title, year='', season='', episode=''):
+        """Check if item is in favorites"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''SELECT COUNT(*) FROM favorites 
+               WHERE media_type = ? AND title = ? AND year = ? AND season = ? AND episode = ?''',
+            (media_type, title, year, season, episode)
+        )
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count > 0
+    
+    # ==================== Scraper Priority ====================
+    
+    def set_scraper_priority(self, scraper_name, priority):
+        """Set priority for a scraper (lower = higher priority)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT OR REPLACE INTO scraper_priority (scraper_name, priority) VALUES (?, ?)',
+            (scraper_name, priority)
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_scraper_priority(self, scraper_name):
+        """Get priority for a scraper"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT priority FROM scraper_priority WHERE scraper_name = ?',
+            (scraper_name,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        return result[0] if result else 100
+    
+    def get_all_scraper_priorities(self):
+        """Get all scraper priorities"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT scraper_name, priority FROM scraper_priority ORDER BY priority')
+        results = {row[0]: row[1] for row in cursor.fetchall()}
+        conn.close()
+        return results
+    
+    # ==================== Quality Presets ====================
+    
+    def save_quality_preset(self, name, settings_dict):
+        """Save a quality preset"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT OR REPLACE INTO quality_presets (name, settings) VALUES (?, ?)',
+            (name, json.dumps(settings_dict))
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_quality_preset(self, name):
+        """Get a quality preset"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT settings FROM quality_presets WHERE name = ?', (name,))
+        result = cursor.fetchone()
+        conn.close()
+        return json.loads(result[0]) if result else None
+    
+    def get_all_quality_presets(self):
+        """Get all quality presets"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT name, settings FROM quality_presets')
+        results = {row[0]: json.loads(row[1]) for row in cursor.fetchall()}
+        conn.close()
+        return results
+    
+    def delete_quality_preset(self, name):
+        """Delete a quality preset"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM quality_presets WHERE name = ?', (name,))
+        conn.commit()
+        conn.close()
+    
+    # ==================== Related URL ====================
     
     def get_related_url(self, video_type, title, year, source, season='', episode=''):
         """Get related URL for a video"""
@@ -135,6 +357,8 @@ class DB_Connection:
         conn.commit()
         conn.close()
     
+    # ==================== Settings ====================
+    
     def get_setting(self, setting):
         """Get a setting value"""
         conn = self._get_connection()
@@ -154,6 +378,8 @@ class DB_Connection:
         )
         conn.commit()
         conn.close()
+    
+    # ==================== Search History ====================
     
     def add_search(self, section, query):
         """Add to search history"""

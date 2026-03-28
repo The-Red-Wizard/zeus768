@@ -2,15 +2,22 @@ v2.1.1 (2026-03-28)
 - Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop after video ends
 - Fixed: Trakt API now uses native urllib instead of requests module (prevents import crash)
 - Fixed: Removed repository.gujal from repository addons.xml
-- Added: Free Stream providers (VidSrc, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink) - no debrid needed
-- Added: Autoplay mode (toggle in Settings > General) - auto-selects best source
-- Added: Custom source dialog showing source/scraper count, free stream count, and quality breakdown
+- Added: Free Stream providers (VidSrc.to, VidSrc.me, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink) - no debrid needed, plays direct
+- Added: Autoplay mode (Settings > General toggle) - auto-selects best source, prioritizes free streams
+- Added: Source caching - revisit a title and instantly reuse previously found sources (configurable TTL)
+- Added: Favorites / Bookmarks - local favorites via main menu, with context menu "Add to Favorites" on all TMDB listings
+- Added: Pre-emptive scraping - starts scraping next episode at 75% through current one (cached for instant Up Next)
+- Added: Quality Presets - save/load presets (Best Quality WiFi, Fast Play Mobile, Data Saver, 4K Only, custom)
+- Added: Scraper Priority ordering - reorder scrapers via Tools > Scraper Priority (context menu: Move Up/Down/Set Priority)
+- Added: Custom source selection dialog with quality breakdown, free stream count, color-coded sources
 - Added: Free streams highlighted in orange, sorted first in source list
 - Added: Up Next - auto prompt to play next episode for TV series
 - Added: Skip Intro prompt during first 90 seconds of TV episodes (configurable)
 - Added: TMDB ID pass-through for free stream provider lookups
+- Added: Tools > Clear Source Cache (separate from URL cache)
 - Updated: Repository version to 1.0.7
-- Updated: Settings with Free Streams, Autoplay, Up Next, and Skip Intro categories
+- Updated: Database schema with source_cache, favorites, scraper_priority, quality_presets tables
+- Updated: Settings with Source Cache, Free Streams, Autoplay, Up Next, Skip Intro, Pre-emptive Scrape categories
 
 v2.1.0 (2026-03-27)
 - Added 34+ scrapers including Russian (RuTracker, RuTor, NNM-Club), Chinese (DyTT, BTBTT), Anime (Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex)

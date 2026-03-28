@@ -10,6 +10,12 @@
         <setting id="freestream_enabled" type="bool" label="Enable Free Streams (no debrid needed)" default="true"/>
     </category>
     
+    <category label="Source Cache">
+        <setting id="source_cache_enabled" type="bool" label="Enable source caching" default="true"/>
+        <setting id="source_cache_hours" type="slider" label="Source cache duration (hours)" default="2" range="1,1,12" enable="eq(-1,true)"/>
+        <setting id="preemptive_scrape" type="bool" label="Pre-emptive scrape next episode" default="true"/>
+    </category>
+    
     <category label="Trakt">
         <setting id="trakt_enabled" type="bool" label="Enable Trakt" default="false"/>
         <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false"/>
@@ -69,7 +75,7 @@
     </category>
     
     <category label="Chinese Sources">
-        <setting id="dytt_enabled" type="bool" label="DyTT (电影天堂)" default="true"/>
+        <setting id="dytt_enabled" type="bool" label="DyTT" default="true"/>
         <setting id="btbtt_enabled" type="bool" label="BTBTT" default="true"/>
     </category>
     
