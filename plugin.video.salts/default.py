@@ -56,6 +56,7 @@ def main_menu():
         {'title': '[B]Movies[/B]', 'mode': 'movies_menu'},
         {'title': '[B]TV Shows[/B]', 'mode': 'tvshows_menu'},
         {'title': '[B]Favorites[/B]', 'mode': 'favorites_menu'},
+        {'title': '[B]Watch History[/B]', 'mode': 'watch_history_menu'},
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu'},
@@ -80,6 +81,8 @@ def movies_menu():
         {'title': 'Trending Movies', 'mode': 'tmdb_list', 'list_type': 'trending', 'media_type': 'movie'},
         {'title': 'Top Rated Movies', 'mode': 'tmdb_list', 'list_type': 'top_rated', 'media_type': 'movie'},
         {'title': 'Now Playing', 'mode': 'tmdb_list', 'list_type': 'now_playing', 'media_type': 'movie'},
+        {'title': '[COLOR cyan]Browse by Genre[/COLOR]', 'mode': 'genre_list', 'media_type': 'movie'},
+        {'title': '[COLOR cyan]Browse by Year[/COLOR]', 'mode': 'year_list', 'media_type': 'movie'},
     ]
     
     for item in items:
@@ -98,6 +101,8 @@ def tvshows_menu():
         {'title': 'Trending TV Shows', 'mode': 'tmdb_list', 'list_type': 'trending', 'media_type': 'tvshow'},
         {'title': 'Top Rated TV Shows', 'mode': 'tmdb_list', 'list_type': 'top_rated', 'media_type': 'tvshow'},
         {'title': 'Airing Today', 'mode': 'tmdb_list', 'list_type': 'airing_today', 'media_type': 'tvshow'},
+        {'title': '[COLOR cyan]Browse by Genre[/COLOR]', 'mode': 'genre_list', 'media_type': 'tvshow'},
+        {'title': '[COLOR cyan]Browse by Year[/COLOR]', 'mode': 'year_list', 'media_type': 'tvshow'},
     ]
     
     for item in items:
@@ -107,6 +112,58 @@ def tvshows_menu():
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+# TMDB Genre IDs
+MOVIE_GENRES = {
+    28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+    99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+    27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance',
+    878: 'Science Fiction', 10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western'
+}
+TV_GENRES = {
+    10759: 'Action & Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+    99: 'Documentary', 18: 'Drama', 10751: 'Family', 10762: 'Kids', 9648: 'Mystery',
+    10763: 'News', 10764: 'Reality', 10765: 'Sci-Fi & Fantasy', 10766: 'Soap',
+    10767: 'Talk', 10768: 'War & Politics', 37: 'Western'
+}
+
+
+def genre_list(media_type='movie'):
+    """Show list of genres to browse"""
+    genres = MOVIE_GENRES if media_type == 'movie' else TV_GENRES
+    
+    for genre_id, genre_name in sorted(genres.items(), key=lambda x: x[1]):
+        li = xbmcgui.ListItem(genre_name)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({
+            'mode': 'tmdb_list',
+            'list_type': 'discover',
+            'media_type': media_type,
+            'genre_id': str(genre_id)
+        })
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def year_list(media_type='movie'):
+    """Show list of years to browse"""
+    current_year = datetime.datetime.now().year
+    
+    for year in range(current_year, 1969, -1):
+        li = xbmcgui.ListItem(str(year))
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({
+            'mode': 'tmdb_list',
+            'list_type': 'discover',
+            'media_type': media_type,
+            'year': str(year)
+        })
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
 
 def search_menu():
     """Search menu"""
@@ -123,7 +180,7 @@ def search_menu():
     
     xbmcplugin.endOfDirectory(HANDLE)
 
-def tmdb_list(list_type, media_type='movie', page=1):
+def tmdb_list(list_type, media_type='movie', page=1, genre_id='', year=''):
     """Get list from TMDB API (free, no key needed for basic lists)"""
     
     # TMDB API (v3)
@@ -133,7 +190,18 @@ def tmdb_list(list_type, media_type='movie', page=1):
     api_key = '8265bd1679663a7ea12ac168da84d2e8'
     
     try:
-        if media_type == 'movie':
+        if list_type == 'discover':
+            # Genre/Year filtered discovery
+            tmdb_type = 'movie' if media_type == 'movie' else 'tv'
+            api_url = f'{base_url}/discover/{tmdb_type}?api_key={api_key}&page={page}&sort_by=popularity.desc'
+            if genre_id:
+                api_url += f'&with_genres={genre_id}'
+            if year:
+                if media_type == 'movie':
+                    api_url += f'&primary_release_year={year}'
+                else:
+                    api_url += f'&first_air_date_year={year}'
+        elif media_type == 'movie':
             if list_type == 'popular':
                 api_url = f'{base_url}/movie/popular?api_key={api_key}&page={page}'
             elif list_type == 'trending':
@@ -203,10 +271,16 @@ def tmdb_list(list_type, media_type='movie', page=1):
             info_tag.setRating(rating)
             info_tag.setMediaType('movie' if media_type == 'movie' else 'tvshow')
             
+            # Watch history overlay
+            tmdb_id_str = str(item.get('id', ''))
+            watched_db = db_utils.DB_Connection()
+            if watched_db.is_watched_by_tmdb(tmdb_id_str, media_type if media_type == 'movie' else 'tvshow'):
+                info_tag.setPlaycount(1)  # Shows watched overlay in Kodi
+            
             # Context menu - Add to Favorites
             _fav_url = build_url({
                 'mode': 'add_favorite', 'media_type': media_type if media_type == 'movie' else 'tvshow',
-                'title': title, 'year': year, 'tmdb_id': str(item.get('id', '')),
+                'title': title, 'year': year, 'tmdb_id': tmdb_id_str,
                 'poster': poster_url, 'overview': overview[:200], 'rating': str(rating)
             })
             li.addContextMenuItems([('Add to Favorites', f'RunPlugin({_fav_url})')])
@@ -217,7 +291,7 @@ def tmdb_list(list_type, media_type='movie', page=1):
                     'title': title,
                     'year': year,
                     'media_type': 'movie',
-                    'tmdb_id': item.get('id', '')
+                    'tmdb_id': tmdb_id_str
                 })
             else:
                 item_url = build_url({
@@ -850,22 +924,54 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
         log_utils.log('Playback failed to start', xbmc.LOGWARNING)
         return
     
-    # Monitor playback for skip intro and next episode
-    _monitor_playback(player, media_type, show_title, year, season, episode)
+    # Auto-load subtitles
+    if ADDON.getSetting('auto_subtitles') == 'true':
+        try:
+            from salts_lib.opensubtitles import auto_download_subtitle
+            sub_path = auto_download_subtitle(
+                title=show_title or title, year=year, season=season,
+                episode=episode, tmdb_id=tmdb_id, media_type=media_type
+            )
+            if sub_path:
+                player.setSubtitles(sub_path)
+                log_utils.log(f'Subtitle loaded: {sub_path}', xbmc.LOGINFO)
+        except Exception as e:
+            log_utils.log(f'Auto-subtitle error: {e}', xbmc.LOGDEBUG)
+    
+    # Track in watch history
+    db = db_utils.DB_Connection()
+    db.add_to_watch_history(media_type, show_title or title, year, tmdb_id, season, episode)
+    
+    # Monitor playback for skip intro, next episode, and Trakt scrobble
+    _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id)
 
 
-def _monitor_playback(player, media_type, show_title, year, season, episode):
-    """Monitor playback for skip intro, next episode, and pre-emptive scraping"""
+def _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id=''):
+    """Monitor playback for skip intro, next episode, pre-emptive scraping, and Trakt scrobble"""
     skip_intro_shown = False
     next_ep_shown = False
     preemptive_done = False
+    scrobble_started = False
+    scrobble_stopped = False
     skip_intro_seconds = int(ADDON.getSetting('skip_intro_duration') or 90)
     next_ep_enabled = ADDON.getSetting('next_episode_enabled') == 'true'
     skip_intro_enabled = ADDON.getSetting('skip_intro_enabled') == 'true'
     preemptive_enabled = ADDON.getSetting('preemptive_scrape') == 'true'
+    trakt_scrobble = ADDON.getSetting('trakt_scrobble') == 'true'
     
     total_time = 0
-    preemptive_sources = None
+    trakt_api = None
+    
+    # Init Trakt scrobble if enabled
+    if trakt_scrobble:
+        try:
+            from salts_lib.trakt_api import TraktAPI
+            trakt_api = TraktAPI()
+            if not trakt_api.is_authorized():
+                trakt_api = None
+        except Exception as e:
+            log_utils.log(f'Trakt scrobble init error: {e}', xbmc.LOGDEBUG)
+            trakt_api = None
     
     while player.isPlaying():
         try:
@@ -875,6 +981,18 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
                     total_time = player.getTotalTime()
                 except Exception:
                     pass
+            
+            progress = (current_time / total_time * 100) if total_time > 0 else 0
+            
+            # Trakt: Start scrobble at beginning
+            if trakt_api and not scrobble_started and current_time > 5:
+                scrobble_started = True
+                try:
+                    trakt_media = 'movies' if media_type == 'movie' else 'shows'
+                    trakt_api.scrobble_start(trakt_media, tmdb_id or show_title, progress)
+                    log_utils.log(f'Trakt scrobble started: {show_title}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Trakt scrobble start error: {e}', xbmc.LOGDEBUG)
             
             # Skip Intro: show during first N seconds of TV episodes
             if (skip_intro_enabled and media_type == 'tvshow' and not skip_intro_shown
@@ -890,12 +1008,10 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
             # Pre-emptive scraping: start scraping next episode at 75% through
             if (preemptive_enabled and media_type == 'tvshow' and not preemptive_done
                     and total_time > 0 and season and episode):
-                progress_pct = (current_time / total_time) * 100
-                if progress_pct > 75:
+                if progress > 75:
                     preemptive_done = True
                     next_ep = int(episode) + 1
                     log_utils.log(f'Pre-emptive scrape: {show_title} S{int(season):02d}E{next_ep:02d}', xbmc.LOGINFO)
-                    # Pre-scrape next episode sources in background (cache only)
                     try:
                         _preemptive_scrape(show_title, year, season, str(next_ep))
                     except Exception as e:
@@ -915,6 +1031,13 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
                         nolabel='Stop',
                         autoclose=30000
                     ):
+                        # Trakt: stop scrobble before switching
+                        if trakt_api and scrobble_started:
+                            try:
+                                trakt_media = 'movies' if media_type == 'movie' else 'shows'
+                                trakt_api.scrobble_stop(trakt_media, tmdb_id or show_title, progress)
+                            except Exception:
+                                pass
                         player.stop()
                         xbmc.sleep(500)
                         get_sources(show_title, year, season, str(next_ep), 'tvshow')
@@ -925,6 +1048,17 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
             break
         
         xbmc.sleep(2000)
+    
+    # Playback ended - Trakt: stop scrobble
+    if trakt_api and scrobble_started and not scrobble_stopped:
+        scrobble_stopped = True
+        try:
+            final_progress = progress if total_time > 0 else 100
+            trakt_media = 'movies' if media_type == 'movie' else 'shows'
+            trakt_api.scrobble_stop(trakt_media, tmdb_id or show_title, final_progress)
+            log_utils.log(f'Trakt scrobble stopped at {final_progress:.0f}%', xbmc.LOGINFO)
+        except Exception as e:
+            log_utils.log(f'Trakt scrobble stop error: {e}', xbmc.LOGDEBUG)
 
 
 def _preemptive_scrape(title, year, season, episode):
@@ -1053,6 +1187,7 @@ def tools_menu():
     items = [
         {'title': 'Clear Cache', 'mode': 'clear_cache'},
         {'title': 'Clear Source Cache', 'mode': 'clear_source_cache'},
+        {'title': 'Search Subtitles', 'mode': 'subtitle_search_dialog'},
         {'title': 'Test Scrapers', 'mode': 'test_scrapers'},
         {'title': 'Quality Presets', 'mode': 'quality_presets_menu'},
         {'title': 'Scraper Priority', 'mode': 'scraper_priority_menu'},
@@ -1112,6 +1247,106 @@ def test_scrapers():
 def addon_settings():
     """Open addon settings"""
     ADDON.openSettings()
+
+
+
+# ==================== Watch History ====================
+
+def watch_history_menu():
+    """Watch history menu"""
+    items = [
+        {'title': '[B]Recently Watched Movies[/B]', 'mode': 'watch_history_list', 'media_type': 'movie'},
+        {'title': '[B]Recently Watched TV Shows[/B]', 'mode': 'watch_history_list', 'media_type': 'tvshow'},
+        {'title': '[COLOR red]Clear Watch History[/COLOR]', 'mode': 'clear_watch_history'},
+    ]
+    
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url(item)
+        is_folder = item['mode'] != 'clear_watch_history'
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def watch_history_list(media_type='movie'):
+    """Show watch history"""
+    db = db_utils.DB_Connection()
+    history = db.get_watch_history(media_type)
+    
+    if not history:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No watch history', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    for item in history:
+        title = item.get('title', 'Unknown')
+        year = item.get('year', '')
+        tmdb_id = item.get('tmdb_id', '')
+        season = item.get('season', '')
+        episode = item.get('episode', '')
+        
+        if season and episode:
+            label = f'{title} S{int(season):02d}E{int(episode):02d}'
+        else:
+            label = f'{title} ({year})' if year else title
+        
+        # Add watched indicator
+        label = f'[COLOR lime]*[/COLOR] {label}'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setPlaycount(1)
+        
+        if media_type == 'movie':
+            item_url = build_url({
+                'mode': 'get_sources', 'title': title, 'year': year,
+                'media_type': 'movie', 'tmdb_id': tmdb_id
+            })
+        else:
+            if season and episode:
+                item_url = build_url({
+                    'mode': 'get_sources', 'title': title, 'year': year,
+                    'season': season, 'episode': episode,
+                    'media_type': 'tvshow', 'tmdb_id': tmdb_id
+                })
+            else:
+                item_url = build_url({
+                    'mode': 'tv_seasons', 'title': title, 'year': year, 'tmdb_id': tmdb_id
+                })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=(media_type != 'movie' and not (season and episode)))
+    
+    xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movie' else 'episodes')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def clear_watch_history():
+    """Clear all watch history"""
+    if xbmcgui.Dialog().yesno('SALTS', 'Clear all watch history?'):
+        db = db_utils.DB_Connection()
+        db.clear_watch_history()
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Watch history cleared', ADDON_ICON)
+
+
+# ==================== Subtitles ====================
+
+def subtitle_search(title='', year='', season='', episode='',
+                     tmdb_id='', media_type='movie'):
+    """Search and download subtitles via dialog"""
+    from salts_lib.opensubtitles import show_subtitle_dialog
+    
+    sub_path = show_subtitle_dialog(title, year, season, episode,
+                                     tmdb_id, '', media_type)
+    if sub_path:
+        player = xbmc.Player()
+        if player.isPlaying():
+            player.setSubtitles(sub_path)
+            xbmcgui.Dialog().notification(ADDON_NAME, 'Subtitle loaded', ADDON_ICON)
 
 
 # ==================== Favorites ====================
@@ -1579,7 +1814,12 @@ def router(params):
     elif mode == 'search_menu':
         search_menu()
     elif mode == 'tmdb_list':
-        tmdb_list(params.get('list_type', 'popular'), params.get('media_type', 'movie'), int(params.get('page', 1)))
+        tmdb_list(params.get('list_type', 'popular'), params.get('media_type', 'movie'),
+                  int(params.get('page', 1)), params.get('genre_id', ''), params.get('year', ''))
+    elif mode == 'genre_list':
+        genre_list(params.get('media_type', 'movie'))
+    elif mode == 'year_list':
+        year_list(params.get('media_type', 'movie'))
     elif mode == 'search':
         search(params.get('media_type', 'movie'))
     elif mode == 'tv_seasons':
@@ -1654,6 +1894,18 @@ def router(params):
         set_scraper_priority(params.get('scraper', ''), int(params.get('priority', 100)))
     elif mode == 'set_scraper_priority_manual':
         set_scraper_priority_manual(params.get('scraper', ''))
+    # Watch History
+    elif mode == 'watch_history_menu':
+        watch_history_menu()
+    elif mode == 'watch_history_list':
+        watch_history_list(params.get('media_type', 'movie'))
+    elif mode == 'clear_watch_history':
+        clear_watch_history()
+    # Subtitles
+    elif mode == 'subtitle_search_dialog':
+        title = xbmcgui.Dialog().input('Movie/Show title')
+        if title:
+            subtitle_search(title=title)
     # Trakt modes
     elif mode == 'trakt_menu':
         trakt_menu()
