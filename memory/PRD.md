@@ -1,64 +1,34 @@
 # SALTS - Stream All The Sources (Kodi Addon)
 ## Product Requirements Document
 
-### Original Problem Statement
-Fix SALTS for Kodi 21+ Python 3. Add torrent sites, Jackett, fix scrapers, resolveurl, Trakt, free streams (Mobiflix-style), autoplay, favorites, source caching, quality presets, scraper priority. Author: tknorris, zeus768.
+### Current Version: SALTS 2.1.1 / Repo 1.0.7
 
 ### Architecture
 ```
 /app/
 ├── addons.xml / addons.xml.md5
-├── plugin.video.salts/        # v2.1.1
-│   ├── addon.xml
-│   ├── default.py             # ~1660 lines: menus, sources, playback, favorites, presets
-│   ├── service.py
-│   ├── changelog.txt
-│   ├── resources/settings.xml # 14 settings categories
+├── plugin.video.salts/ (v2.1.1)
+│   ├── default.py          # ~1675 lines
 │   ├── salts_lib/
-│   │   ├── trakt_api.py       # Trakt v2 (urllib)
-│   │   ├── free_streams.py    # 7 free providers (VidSrc, 2Embed, etc.)
-│   │   ├── debrid.py          # RD/PM/AD
-│   │   ├── db_utils.py        # SQLite: source_cache, favorites, scraper_priority, quality_presets
-│   │   ├── log_utils.py / constants.py / utils.py
-│   └── scrapers/              # 35+ scrapers
-│       ├── freestream_scraper.py
-│       ├── x1337_scraper.py
-│       └── ... (torrent, streaming, anime, intl)
-├── plugin.video.orion/
-├── plugin.video.strikezone/
-├── plugin.program.theaccountant/
-├── repository.zeus768/        # v1.0.7
-├── script.module.resolveurl/
-└── zips/
+│   │   ├── free_streams.py # VidSrc AJAX chain, 2Embed, Embed.su, VidLink, MultiEmbed
+│   │   ├── trakt_api.py    # Trakt v2 (urllib)
+│   │   ├── debrid.py       # RD/PM/AD
+│   │   └── db_utils.py     # source_cache, favorites, scraper_priority, quality_presets
+│   └── scrapers/           # 35+ scrapers + freestream_scraper.py
+├── repository.zeus768/ (v1.0.7)
+└── zips/ (all versions verified matching)
 ```
 
-### Implemented Features (Complete)
-- [x] Python 3 / Kodi 21+ migration
-- [x] 35+ scrapers (torrent, streaming, anime, intl, FREE streams)
-- [x] Free Stream providers: VidSrc.to, VidSrc.me, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink
-- [x] Autoplay mode (Settings toggle, prioritizes free streams)
-- [x] Source caching with configurable TTL and cache/re-scrape dialog
-- [x] Favorites/Bookmarks (main menu + context menu on all TMDB items)
-- [x] Pre-emptive next episode scraping (at 75%, caches for Up Next)
-- [x] Quality Presets (WiFi/Mobile/DataSaver/4K + custom)
-- [x] Scraper Priority ordering (move up/down, set manual priority)
-- [x] Custom source dialog (quality breakdown, free count, color-coded)
-- [x] Up Next episode prompt
-- [x] Skip Intro prompt (configurable)
-- [x] ResolveURL / Direct stream detection (m3u8/mp4 bypass)
-- [x] Trakt API v2 (urllib)
-- [x] Real-Debrid / Premiumize / AllDebrid
-- [x] Jackett / Prowlarr
-- [x] TMDB metadata
-- [x] Fixed rescrape loop (Player.play)
-- [x] Removed repository.gujal
+### Fixed This Session
+- [x] Free streams: Rewrote free_streams.py - proper URL validation rejects garbage (github.com, .js etc.), VidSrc uses AJAX chain (/ajax/embed/episode, /ajax/embed/source), specific m3u8/mp4 patterns only
+- [x] Repo versions: Fixed ALL version mismatches across addons.xml, zip addon.xml, and zip filenames (Orion 3.1.0, StrikeZone 1.2.0, ResolveURL 5.1.194)
+- [x] HLS playback: Added inputstream.adaptive properties for m3u8 and mpd streams
 
-### Versions
-- SALTS: 2.1.1
-- Repository: 1.0.7
+### All Implemented Features
+- Python 3 / Kodi 21+, 35+ scrapers, free streams (6 providers), autoplay, source caching, favorites, pre-emptive scraping, quality presets, scraper priority, custom source dialog, Up Next, Skip Intro, Trakt, debrid, Jackett/Prowlarr, TMDB, ResolveURL
 
 ### Remaining / Future
-- OpenSubtitles auto-subtitles integration
+- OpenSubtitles integration
 - Trakt scrobble during playback
-- Genre/Year filtering on TMDB lists
-- Watch history overlay (watched indicator on listings)
+- Genre/Year filtering
+- Watch history overlay

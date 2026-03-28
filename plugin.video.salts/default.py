@@ -818,6 +818,25 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
     li = xbmcgui.ListItem(title, path=stream_url)
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     
+    # Set inputstream.adaptive for HLS/m3u8 streams
+    if '.m3u8' in stream_url.lower():
+        try:
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
+            li.setMimeType('application/vnd.apple.mpegurl')
+            li.setContentLookup(False)
+            log_utils.log(f'Set inputstream.adaptive for HLS: {stream_url}', xbmc.LOGINFO)
+        except Exception as e:
+            log_utils.log(f'inputstream.adaptive setup error (will try direct): {e}', xbmc.LOGDEBUG)
+    elif '.mpd' in stream_url.lower():
+        try:
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'mpd')
+            li.setMimeType('application/dash+xml')
+            li.setContentLookup(False)
+        except Exception:
+            pass
+    
     player = xbmc.Player()
     player.play(stream_url, li)
     

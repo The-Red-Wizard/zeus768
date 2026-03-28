@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
-    <addon id="plugin.video.orion" name="Orion" version="3.3.2" provider-name="zeus768">
+    <addon id="plugin.video.orion" name="Orion" version="3.1.0" provider-name="zeus768">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.resolveurl" optional="true"/>
@@ -56,7 +56,7 @@
             </assets>
         </extension>
     </addon>
-    <addon id="script.module.resolveurl" name="ResolveURL" version="5.1.193" provider-name="gujal">
+    <addon id="script.module.resolveurl" name="ResolveURL" version="5.1.194" provider-name="gujal">
         <requires>
             <import addon="script.module.six" optional="true"/>
         </requires>
