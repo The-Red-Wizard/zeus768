@@ -1,36 +1,228 @@
-v2.1.1 (2026-03-28)
-- Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop after video ends
-- Fixed: Trakt API now uses native urllib instead of requests module (prevents import crash)
-- Fixed: Removed repository.gujal from repository addons.xml
-- Added: Free Stream providers (VidSrc.to, VidSrc.me, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink) - no debrid needed, plays direct
-- Added: Autoplay mode (Settings > General toggle) - auto-selects best source, prioritizes free streams
-- Added: Source caching - revisit a title and instantly reuse previously found sources (configurable TTL)
-- Added: Favorites / Bookmarks - local favorites via main menu, with context menu "Add to Favorites" on all TMDB listings
-- Added: Pre-emptive scraping - starts scraping next episode at 75% through current one (cached for instant Up Next)
-- Added: Quality Presets - save/load presets (Best Quality WiFi, Fast Play Mobile, Data Saver, 4K Only, custom)
-- Added: Scraper Priority ordering - reorder scrapers via Tools > Scraper Priority (context menu: Move Up/Down/Set Priority)
-- Added: Custom source selection dialog with quality breakdown, free stream count, color-coded sources
-- Added: Free streams highlighted in orange, sorted first in source list
-- Added: Up Next - auto prompt to play next episode for TV series
-- Added: Skip Intro prompt during first 90 seconds of TV episodes (configurable)
-- Added: TMDB ID pass-through for free stream provider lookups
-- Added: Tools > Clear Source Cache (separate from URL cache)
-- Updated: Repository version to 1.0.7
-- Updated: Database schema with source_cache, favorites, scraper_priority, quality_presets tables
-- Updated: Settings with Source Cache, Free Streams, Autoplay, Up Next, Skip Intro, Pre-emptive Scrape categories
+================================================================================
+  SALTS - Stream All The Sources
+  Full Changelog Since Revival (2026)
+  Original Author: tknorris | Revived & Modernized by: zeus768
+================================================================================
 
-v2.1.0 (2026-03-27)
-- Added 34+ scrapers including Russian (RuTracker, RuTor, NNM-Club), Chinese (DyTT, BTBTT), Anime (Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex)
-- Added extra scrapers: SolidTorrents, BTDigg, Zooqle, TorrentProject, KickAss, MagnetDL, GLODLS, iDope, TorrentDownload
-- Added streaming scrapers: PrimeWire, WatchSeries, Movie4K, SolarMovie
-- Fixed TMDB integration with native urllib (replaced requests)
-- Fixed settings.xml for Kodi 18+ format compatibility
 
-v2.0.0 (2026)
-- Complete rewrite for Kodi 21+ (Python 3)
-- Added modern torrent scrapers (1337x, YTS, EZTV, TorrentGalaxy, TPB)
-- Added Jackett/Prowlarr integration
-- Added Real-Debrid, Premiumize, AllDebrid debrid support
-- Added Trakt.tv API v2 integration
-- ResolveURL support (replaced deprecated urlresolver)
-- Author: tknorris, zeus768
+v2.1.1 (2026-03-28) - The Big Update
+================================================================================
+
+  BUG FIXES
+  ---------
+  * Fixed rescrape loop - Replaced setResolvedUrl with xbmc.Player().play()
+    so Kodi no longer refreshes the container and re-triggers a scrape after
+    a movie or episode finishes playing
+  * Fixed Trakt API crash - Rewrote trakt_api.py to use native urllib instead
+    of the requests module which is not available in a clean Kodi install
+  * Fixed TMDB Popular/Trending crash - Same requests-to-urllib migration
+    applied to the TMDB module (fixed in v2.1.0, carried forward)
+  * Removed repository.gujal from addons.xml (user request to clean up repo)
+  * Fixed settings.xml to use Kodi 18+ backward-compatible XML format
+  * Cleaned all "emergence" / workspace artifacts from addon files and zips
+
+  FREE STREAMS (NEW - Mobiflix-style)
+  ------------------------------------
+  * 7 free stream providers that play directly in Kodi - no debrid required:
+    - VidSrc.to
+    - VidSrc.me (multiple mirror domains)
+    - 2Embed
+    - AutoEmbed
+    - MultiEmbed
+    - Embed.su
+    - VidLink
+  * Uses TMDB IDs to fetch streams (IDs now pass through the entire source chain)
+  * Direct m3u8/mp4 URL detection - bypasses ResolveURL for instant playback
+  * Free sources highlighted in [COLOR orange] and always sorted first
+
+  AUTOPLAY
+  --------
+  * Toggle in Settings > General
+  * Auto-selects the best available source and plays immediately
+  * Prioritizes free direct streams over torrent sources
+  * Skips the source selection dialog entirely when enabled
+
+  SOURCE CACHING
+  --------------
+  * Scraped sources cached in local SQLite database
+  * Configurable cache duration (default: 2 hours, range: 1-12)
+  * On revisit: "Use Cached / Re-Scrape" prompt (auto-selects cached after 10s)
+  * Separate "Clear Source Cache" option in Tools menu
+  * Works with pre-emptive scraping for seamless next-episode playback
+
+  FAVORITES / BOOKMARKS
+  ---------------------
+  * New "Favorites" entry in main menu
+  * Separate lists for Movies and TV Shows
+  * "Add to Favorites" context menu on every TMDB listing (Popular, Trending,
+    Search results, etc.)
+  * "Remove from Favorites" context menu in the favorites view
+  * Stored locally in SQLite - works without Trakt authorization
+  * Saves title, year, TMDB ID, poster art, overview, rating
+
+  UP NEXT (AUTO NEXT EPISODE)
+  ---------------------------
+  * When a TV episode reaches the last 120 seconds, a dialog prompts:
+    "Play next episode? [Show] S01E02" with Play Next / Stop buttons
+  * Auto-closes after 30 seconds (defaults to Stop if no input)
+  * Works with source caching - if next episode was pre-emptively scraped,
+    playback starts instantly
+  * Toggle in Settings > Playback
+
+  SKIP INTRO
+  ----------
+  * During the first 90 seconds of a TV episode, a "Skip Intro?" dialog appears
+  * Configurable duration (30-180 seconds) in Settings > Playback
+  * Seeks forward to the configured timestamp on "Skip"
+  * Auto-closes after 8 seconds if no input
+  * Toggle in Settings > Playback
+
+  PRE-EMPTIVE SCRAPING
+  --------------------
+  * At 75% through a TV episode, SALTS background-scrapes the next episode
+  * Results are cached so when Up Next triggers, sources are already available
+  * No UI interruption - runs silently in the playback monitor thread
+  * Toggle in Settings > Source Cache
+
+  QUALITY PRESETS
+  ---------------
+  * Tools > Quality Presets
+  * 4 built-in presets:
+    - Best Quality (WiFi): min 1080p, no CAM, manual source selection
+    - Fast Play (Mobile): any quality, autoplay enabled
+    - Data Saver: min 480p, autoplay enabled
+    - 4K Only: min 4K, no CAM, manual source selection
+  * Create custom presets from current settings
+  * Delete custom presets via context menu
+  * Applies min_quality, filter_cam, auto_play, sort_by, source_timeout
+
+  SCRAPER PRIORITY ORDERING
+  -------------------------
+  * Tools > Scraper Priority
+  * Lists all scrapers with current priority number and ON/OFF status
+  * Context menu actions: Move Up, Move Down, Set Priority, Toggle Enable
+  * Lower number = higher priority (scrapers run in priority order)
+  * Persisted in SQLite - survives addon restarts
+
+  CUSTOM SOURCE DIALOG
+  --------------------
+  * Replaced plain Kodi directory listing with Dialog().select()
+  * Header shows: total sources, free stream count, quality breakdown
+    Example: "SALTS: 78 sources (12 free) [4K: 3 | 1080p: 45 | 720p: 20]"
+  * Color-coded entries:
+    - Orange: Free direct streams
+    - Gold: 4K / 2160p
+    - Lime: 1080p / HD
+    - Cyan: 720p
+    - White: SD and below
+  * Each entry shows: [Quality] [FREE] [Scraper] Seeds | Size | Title
+
+
+v2.1.0 (2026-03-27) - Scraper Expansion
+================================================================================
+
+  NEW SCRAPERS (34+ total)
+  * International - Russian:
+    - RuTracker
+    - RuTor
+    - NNM-Club
+  * International - Chinese:
+    - DyTT (电影天堂)
+    - BTBTT
+  * Anime:
+    - Nyaa
+    - SubsPlease
+    - TokyoTosho
+    - AnimeTosho
+    - AniDex
+  * Additional Torrent Sites:
+    - SolidTorrents
+    - BTDigg
+    - Zooqle
+    - TorrentProject
+    - KickAss Torrents
+    - MagnetDL
+    - GLODLS
+    - iDope
+    - TorrentDownload
+  * Streaming Sites:
+    - PrimeWire
+    - WatchSeries
+    - Movie4K
+    - SolarMovie
+
+  FIXES
+  * TMDB integration migrated from requests to native urllib
+  * settings.xml updated to Kodi 18+ format
+
+
+v2.0.0 (2026) - The Revival
+================================================================================
+
+  COMPLETE REWRITE FOR KODI 21+ (PYTHON 3)
+  * Migrated entire codebase from Python 2 to Python 3
+  * All xbmc/xbmcgui/xbmcplugin API calls updated for Kodi 21 Omega
+  * Replaced deprecated urlresolver with ResolveURL (script.module.resolveurl)
+  * Author updated to: tknorris, zeus768
+
+  CORE SCRAPERS
+  * 1337x - General torrent site
+  * YTS - Movie torrents (high quality, small size)
+  * EZTV - TV show torrents
+  * TorrentGalaxy - General torrent site
+  * ThePirateBay - Classic torrent site
+  * LimeTorrents - General torrent site
+  * Torrentz2 - Meta search engine
+  * RARBG - General torrent site (mirror)
+
+  INDEXER AGGREGATORS
+  * Jackett integration - Connect any Jackett-supported indexer
+    (Settings > Aggregators: URL + API Key)
+  * Prowlarr integration - Connect any Prowlarr-supported indexer
+    (Settings > Aggregators: URL + API Key)
+  * TorrentAPI
+
+  DEBRID SERVICES
+  * Real-Debrid - OAuth device authorization flow
+  * Premiumize - API key authorization
+  * AllDebrid - API key authorization
+  * Magnet-to-stream resolution for all three services
+
+  TRAKT.TV INTEGRATION (API v2)
+  * OAuth device code authorization flow
+  * Watchlist (Movies / TV Shows)
+  * Collection (Movies / TV Shows)
+  * Trending / Popular lists
+  * Custom user lists
+  * Token auto-refresh
+  * All API calls use native urllib
+
+  TMDB METADATA
+  * Popular / Trending / Top Rated / Now Playing / Airing Today
+  * Full metadata: poster, fanart, overview, rating, year
+  * Paginated results with Next Page navigation
+  * Search with inline results
+
+  REPOSITORY
+  * repository.zeus768 Kodi repository installer
+  * addons.xml with all addon entries and MD5 checksum
+  * Packaged zips for Kodi automatic installation
+  * Includes: SALTS, Orion, Strike Zone, The Accountant, ResolveURL
+
+  SETTINGS
+  * 14 settings categories covering all features
+  * Individual scraper enable/disable toggles
+  * Debrid service configuration
+  * Trakt authorization
+  * Jackett/Prowlarr connection settings
+  * Playback preferences (quality filter, sort order)
+  * Cache duration controls
+  * Debug logging toggle
+
+
+================================================================================
+  Summary: From a dead Python 2 addon to a fully modernized Kodi 21+ addon
+  with 35+ scrapers, 7 free stream providers, Trakt, 3 debrid services,
+  Jackett/Prowlarr, autoplay, source caching, favorites, quality presets,
+  scraper priority, Up Next, Skip Intro, and pre-emptive scraping.
+================================================================================
