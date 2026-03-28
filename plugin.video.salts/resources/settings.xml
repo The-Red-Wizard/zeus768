@@ -90,6 +90,9 @@
         <setting id="filter_cam" type="bool" label="Filter CAM/TS quality" default="true"/>
         <setting id="min_quality" type="labelenum" label="Minimum quality" values="Any|480p|720p|1080p|4K" default="Any"/>
         <setting id="sort_by" type="labelenum" label="Sort sources by" values="Seeds|Quality|Size" default="Seeds"/>
+        <setting id="next_episode_enabled" type="bool" label="Enable Up Next (auto next episode)" default="true"/>
+        <setting id="skip_intro_enabled" type="bool" label="Enable Skip Intro prompt" default="true"/>
+        <setting id="skip_intro_duration" type="slider" label="Skip Intro duration (seconds)" default="90" range="30,5,180" enable="eq(-1,true)"/>
     </category>
     
     <category label="Advanced">

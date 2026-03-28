@@ -504,7 +504,7 @@ def tv_episodes(title, year='', tmdb_id='', season=1):
         xbmcplugin.endOfDirectory(HANDLE)
 
 def get_sources(title, year='', season='', episode='', media_type='movie'):
-    """Get all available sources for a title with progress dialog"""
+    """Get all available sources for a title with custom source dialog"""
     from scrapers import get_all_scrapers
     
     # Build search query
@@ -522,6 +522,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
     scrapers = get_all_scrapers()
     total = len(scrapers)
     sources_found = 0
+    scraper_count = 0
     
     for i, scraper_cls in enumerate(scrapers):
         if progress.iscanceled():
@@ -534,8 +535,9 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
             if not scraper.is_enabled():
                 continue
             
+            scraper_count += 1
             percent = int((i / total) * 100)
-            progress.update(percent, f'Searching: {scraper_name}...\nSources found: {sources_found}')
+            progress.update(percent, f'Searching: {scraper_name}...\nScrapers: {scraper_count} | Sources: {sources_found}')
             
             try:
                 results = scraper.search(query, media_type)
@@ -551,7 +553,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         except Exception as e:
             log_utils.log(f'Error loading scraper: {e}', xbmc.LOGERROR)
     
-    progress.update(100, f'Found {sources_found} sources')
+    progress.update(100, f'Found {sources_found} sources from {scraper_count} scrapers')
     time.sleep(0.5)
     progress.close()
     
@@ -559,55 +561,77 @@ def get_sources(title, year='', season='', episode='', media_type='movie'):
         xbmcgui.Dialog().notification(ADDON_NAME, 'No sources found', ADDON_ICON)
         return
     
-    # Sort by seeds (if available) and quality
+    # Sort by quality then seeds
     all_sources.sort(key=lambda x: (QUALITY_ORDER.get(x.get('quality', 'SD'), 0), x.get('seeds', 0)), reverse=True)
     
-    # Display sources
+    # Count quality breakdown
+    quality_counts = {}
+    for s in all_sources:
+        q = s.get('quality', 'SD')
+        quality_counts[q] = quality_counts.get(q, 0) + 1
+    
+    # Build quality summary line
+    q_parts = []
+    for q in ['4K', '2160p', '1080p', 'HD', '720p', '480p', 'SD']:
+        if q in quality_counts:
+            q_parts.append(f'{q}: {quality_counts[q]}')
+    quality_summary = ' | '.join(q_parts) if q_parts else 'Mixed'
+    
+    # Build display list for custom dialog
+    display_list = []
     for source in all_sources:
         scraper_name = source.get('scraper', 'Unknown')
         source_title = source.get('title', 'Unknown')
         quality = source.get('quality', 'SD')
         seeds = source.get('seeds', 0)
         size = source.get('size', '')
-        host = source.get('host', scraper_name)
         
-        # Build label
         label_parts = [f'[{quality}]', f'[{scraper_name}]']
         if seeds:
             label_parts.append(f'Seeds: {seeds}')
         if size:
             label_parts.append(size)
-        label_parts.append(source_title[:60])
+        label_parts.append(source_title[:80])
         
         label = ' | '.join(label_parts)
         
-        # Color coding based on quality
+        # Color coding
         if quality in ['4K', '2160p']:
             label = f'[COLOR gold]{label}[/COLOR]'
         elif quality in ['1080p', 'HD']:
             label = f'[COLOR lime]{label}[/COLOR]'
         elif quality in ['720p']:
             label = f'[COLOR cyan]{label}[/COLOR]'
+        else:
+            label = f'[COLOR white]{label}[/COLOR]'
         
-        li = xbmcgui.ListItem(label)
-        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-        li.setProperty('IsPlayable', 'true')
-        
-        url = build_url({
-            'mode': 'play',
-            'url': source.get('url', ''),
-            'magnet': source.get('magnet', ''),
-            'title': search_title,
-            'scraper': scraper_name
-        })
-        
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+        display_list.append(label)
     
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    # Custom select dialog with source summary header
+    header = f'SALTS: {sources_found} sources from {scraper_count} scrapers  [{quality_summary}]'
+    selected = xbmcgui.Dialog().select(header, display_list, useDetails=False)
+    
+    if selected < 0:
+        return
+    
+    chosen = all_sources[selected]
+    
+    # Play the selected source
+    _play_source(
+        url=chosen.get('url', ''),
+        magnet=chosen.get('magnet', ''),
+        title=search_title,
+        scraper=chosen.get('scraper', ''),
+        media_type=media_type,
+        show_title=title,
+        year=year,
+        season=season,
+        episode=episode
+    )
 
-def play(url='', magnet='', title='', scraper=''):
-    """Play a source"""
+def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
+                  show_title='', year='', season='', episode=''):
+    """Resolve and play a source using xbmc.Player().play() to avoid rescrape loop"""
     log_utils.log(f'Playing: url={url}, magnet={magnet}, title={title}', xbmc.LOGINFO)
     
     stream_url = None
@@ -670,10 +694,96 @@ def play(url='', magnet='', title='', scraper=''):
         xbmcgui.Dialog().notification(ADDON_NAME, 'Could not resolve source', ADDON_ICON)
         return
     
-    # Play the stream
+    # Build ListItem and play with xbmc.Player() to avoid container refresh / rescrape
     li = xbmcgui.ListItem(title, path=stream_url)
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-    xbmcplugin.setResolvedUrl(HANDLE, True, li)
+    
+    player = xbmc.Player()
+    player.play(stream_url, li)
+    
+    # Wait for playback to start
+    timeout = 30
+    while not player.isPlaying() and timeout > 0:
+        xbmc.sleep(500)
+        timeout -= 1
+    
+    if not player.isPlaying():
+        log_utils.log('Playback failed to start', xbmc.LOGWARNING)
+        return
+    
+    # Monitor playback for skip intro and next episode
+    _monitor_playback(player, media_type, show_title, year, season, episode)
+
+
+def _monitor_playback(player, media_type, show_title, year, season, episode):
+    """Monitor playback for skip intro button and next episode prompt"""
+    skip_intro_shown = False
+    next_ep_shown = False
+    skip_intro_seconds = int(ADDON.getSetting('skip_intro_duration') or 90)
+    next_ep_enabled = ADDON.getSetting('next_episode_enabled') == 'true'
+    skip_intro_enabled = ADDON.getSetting('skip_intro_enabled') == 'true'
+    
+    total_time = 0
+    
+    while player.isPlaying():
+        try:
+            current_time = player.getTime()
+            if total_time == 0:
+                try:
+                    total_time = player.getTotalTime()
+                except Exception:
+                    pass
+            
+            # Skip Intro: show during first N seconds of TV episodes
+            if (skip_intro_enabled and media_type == 'tvshow' and not skip_intro_shown
+                    and 5 < current_time < skip_intro_seconds):
+                skip_intro_shown = True
+                # Non-blocking: use a background approach
+                # Show a notification-style prompt
+                xbmc.executebuiltin(
+                    f'Notification(SALTS,Press SELECT/ENTER to skip intro,5000,{ADDON_ICON})'
+                )
+                # We can't really block here, but we inform the user
+                # A true skip would need chapter marks or a fixed offset
+                # For now, offer a configurable skip forward
+                if xbmcgui.Dialog().yesno('SALTS', 'Skip Intro?', 
+                                           yeslabel='Skip', nolabel='Watch',
+                                           autoclose=8000):
+                    skip_to = float(skip_intro_seconds)
+                    player.seekTime(skip_to)
+                    log_utils.log(f'Skipped intro to {skip_to}s', xbmc.LOGINFO)
+            
+            # Next Episode: prompt when 90% through or last 120 seconds
+            if (next_ep_enabled and media_type == 'tvshow' and not next_ep_shown
+                    and total_time > 0 and season and episode):
+                remaining = total_time - current_time
+                if remaining < 120 and remaining > 0:
+                    next_ep_shown = True
+                    next_ep = int(episode) + 1
+                    if xbmcgui.Dialog().yesno(
+                        'SALTS - Up Next',
+                        f'Play next episode?\n{show_title} S{int(season):02d}E{next_ep:02d}',
+                        yeslabel='Play Next',
+                        nolabel='Stop',
+                        autoclose=30000
+                    ):
+                        # Stop current and play next
+                        player.stop()
+                        xbmc.sleep(500)
+                        get_sources(show_title, year, season, str(next_ep), 'tvshow')
+                        return
+            
+        except Exception as e:
+            # Player may have stopped
+            log_utils.log(f'Playback monitor: {e}', xbmc.LOGDEBUG)
+            break
+        
+        xbmc.sleep(2000)  # Check every 2 seconds
+
+
+def play(url='', magnet='', title='', scraper=''):
+    """Legacy play route - redirects to _play_source"""
+    _play_source(url=url, magnet=magnet, title=title, scraper=scraper)
 
 def scrapers_menu():
     """Scrapers management menu"""

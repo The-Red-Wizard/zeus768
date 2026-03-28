@@ -1,86 +1,25 @@
-SALTS - Stream All The Sources
-=============================
-Revived and Modernized by zeus768 for Kodi 21+
+v2.1.1 (2026-03-28)
+- Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop after video ends
+- Fixed: Trakt API now uses native urllib instead of requests module (prevents import crash)
+- Fixed: Removed repository.gujal from repository addons.xml
+- Added: Custom source selection dialog with quality breakdown and source/scraper counts
+- Added: Up Next - auto prompt to play next episode for TV series
+- Added: Skip Intro prompt during first 90 seconds of TV episodes (configurable)
+- Updated: Settings with new Playback options for Up Next and Skip Intro
+- Updated: addon.xml with detailed feature list and changelog
 
-CHANGELOG
-=========
+v2.1.0 (2026-03-27)
+- Added 34+ scrapers including Russian (RuTracker, RuTor, NNM-Club), Chinese (DyTT, BTBTT), Anime (Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex)
+- Added extra scrapers: SolidTorrents, BTDigg, Zooqle, TorrentProject, KickAss, MagnetDL, GLODLS, iDope, TorrentDownload
+- Added streaming scrapers: PrimeWire, WatchSeries, Movie4K, SolarMovie
+- Fixed TMDB integration with native urllib (replaced requests)
+- Fixed settings.xml for Kodi 18+ format compatibility
 
 v2.0.0 (2026)
--------------
-Complete rewrite for modern Kodi:
-
-NEW FEATURES:
-- Full Python 3 compatibility (Kodi 21 Omega and above)
-
-TORRENT SCRAPERS (9 sites):
-  * 1337x - General torrent site with automatic mirror detection
-  * YTS/YIFY - High quality movie torrents (API-based)
-  * EZTV - TV show torrents (API-based)
-  * TorrentGalaxy - General torrents with mirror support
-  * ThePirateBay - Classic torrent site (API + HTML fallback)
-  * LimeTorrents - General torrents
-  * Torrentz2 - Meta-search engine
-  * RARBG - Mirrors/clones of the original site
-  * Nyaa - Anime torrents
-
-STREAMING SITE SCRAPERS (Modernized Legacy - 4 sites):
-  * PrimeWire - General streaming (mirror auto-detection)
-  * WatchSeries - TV show streaming
-  * Movie4K/KinoX - General streaming
-  * SolarMovie - General streaming
-
-INDEXER AGGREGATORS:
-  * Jackett integration - Connect to 400+ torrent indexers
-  * Prowlarr integration - Alternative indexer aggregator
-
-DEBRID SERVICE INTEGRATION:
-  * Real-Debrid - Full OAuth device flow authentication
-  * Premiumize - API key authentication
-  * AllDebrid - PIN-based authentication
-  * Cached torrent detection for instant playback
-
-TRAKT.TV INTEGRATION (API v2):
-  * Device OAuth authentication
-  * Watchlist sync (Movies & TV Shows)
-  * Collection sync
-  * Trending/Popular/Recommended content
-  * Custom lists support
-  * Calendar (upcoming episodes)
-  * Scrobbling support
-  * Progress tracking
-
-URL RESOLVER:
-  * Now uses ResolveURL (script.module.resolveurl) instead of deprecated URLResolver
-  * Full compatibility with modern Kodi
-
-IMPROVED FEATURES:
-  * Automatic mirror detection for torrent/streaming sites
-  * Quality parsing and sorting (4K, 1080p, 720p, etc.)
-  * Size display for all sources
-  * Seed/peer count display
-  * Cached torrent detection for debrid services
-
-REMOVED:
-  * Old dead streaming site scrapers that no longer exist
-  * Python 2 specific code (print statements, urllib2, etc.)
-  * Deprecated Kodi APIs
-  * urlresolver dependency (replaced with resolveurl)
-
-TECHNICAL CHANGES:
-  * Updated to xbmc.python version 3.0.0
-  * Replaced script.module.urlresolver with script.module.resolveurl
-  * Modern requests library for HTTP
-  * BeautifulSoup4 for HTML parsing
-  * JSON-based settings (Kodi 19+ format)
-  * Updated to Trakt API v2
-
-CREDITS:
-  * Original addon by tknorris
-  * Revived and modernized by zeus768
-
-v0.0.32 (Original)
-------------------
-- Final release by original author tknorris
-- Python 2 / Kodi 18 and below
-- Used urlresolver (now deprecated)
-- Trakt API v1 (now deprecated)
+- Complete rewrite for Kodi 21+ (Python 3)
+- Added modern torrent scrapers (1337x, YTS, EZTV, TorrentGalaxy, TPB)
+- Added Jackett/Prowlarr integration
+- Added Real-Debrid, Premiumize, AllDebrid debrid support
+- Added Trakt.tv API v2 integration
+- ResolveURL support (replaced deprecated urlresolver)
+- Author: tknorris, zeus768

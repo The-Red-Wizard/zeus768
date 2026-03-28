@@ -1,13 +1,17 @@
 """
 SALTS Library - Trakt.tv API Integration (API v2)
 Modernized by zeus768 for Kodi 21+
+Uses native urllib (no external requests module)
 """
 import json
 import time
-import requests
 import xbmc
 import xbmcgui
 import xbmcaddon
+
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
+from urllib.parse import quote_plus
 
 from . import log_utils
 from .db_utils import DB_Connection
@@ -54,6 +58,29 @@ class TraktAPI:
         
         return True
     
+    def _http_request(self, url, method='GET', data=None, headers=None, timeout=30):
+        """Make HTTP request using urllib, returns (status_code, response_body)"""
+        hdrs = headers or {}
+        post_data = None
+        if data is not None:
+            post_data = json.dumps(data).encode('utf-8')
+        
+        req = Request(url, data=post_data, headers=hdrs, method=method)
+        
+        try:
+            response = urlopen(req, timeout=timeout)
+            body = response.read().decode('utf-8')
+            return response.getcode(), body
+        except HTTPError as e:
+            body = ''
+            try:
+                body = e.read().decode('utf-8')
+            except Exception:
+                pass
+            return e.code, body
+        except URLError as e:
+            raise TransientTraktError(f'Trakt connection error: {e.reason}')
+    
     def _refresh_token(self):
         """Refresh the access token"""
         if not self.refresh_token:
@@ -68,10 +95,15 @@ class TraktAPI:
                 'grant_type': 'refresh_token'
             }
             
-            response = requests.post(f'{API_URL}/oauth/token', json=data)
+            status, body = self._http_request(
+                f'{API_URL}/oauth/token',
+                method='POST',
+                data=data,
+                headers={'Content-Type': 'application/json'}
+            )
             
-            if response.status_code == 200:
-                result = response.json()
+            if status == 200:
+                result = json.loads(body)
                 self._save_tokens(result)
                 return True
             
@@ -95,12 +127,17 @@ class TraktAPI:
         try:
             # Get device code
             data = {'client_id': self.client_id}
-            response = requests.post(f'{API_URL}/oauth/device/code', json=data)
+            status, body = self._http_request(
+                f'{API_URL}/oauth/device/code',
+                method='POST',
+                data=data,
+                headers={'Content-Type': 'application/json'}
+            )
             
-            if response.status_code != 200:
+            if status != 200:
                 raise TraktError('Failed to get device code')
             
-            result = response.json()
+            result = json.loads(body)
             
             device_code = result['device_code']
             user_code = result['user_code']
@@ -131,16 +168,21 @@ class TraktAPI:
                         'client_secret': self.client_secret
                     }
                     
-                    token_response = requests.post(f'{API_URL}/oauth/device/token', json=token_data)
+                    token_status, token_body = self._http_request(
+                        f'{API_URL}/oauth/device/token',
+                        method='POST',
+                        data=token_data,
+                        headers={'Content-Type': 'application/json'}
+                    )
                     
-                    if token_response.status_code == 200:
-                        self._save_tokens(token_response.json())
+                    if token_status == 200:
+                        self._save_tokens(json.loads(token_body))
                         ADDON.setSetting('trakt_enabled', 'true')
                         
                         dialog.close()
                         xbmcgui.Dialog().notification('Trakt', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
                         return True
-                    elif token_response.status_code != 400:
+                    elif token_status != 400:
                         # 400 means pending, anything else is an error
                         break
                         
@@ -171,30 +213,24 @@ class TraktAPI:
             headers['Authorization'] = f'Bearer {self.access_token}'
         
         try:
-            if method == 'GET':
-                response = requests.get(url, headers=headers, timeout=30)
-            elif method == 'POST':
-                response = requests.post(url, headers=headers, json=data, timeout=30)
-            elif method == 'DELETE':
-                response = requests.delete(url, headers=headers, json=data, timeout=30)
-            else:
-                response = requests.get(url, headers=headers, timeout=30)
+            status, body = self._http_request(url, method=method, data=data, headers=headers)
             
-            if response.status_code == 401:
+            if status == 401:
                 # Token expired, try to refresh
                 if self._refresh_token():
                     return self._call_api(endpoint, method, data, cache_limit)
                 raise TraktError('Authorization failed')
             
-            if response.status_code == 404:
+            if status == 404:
                 return None
             
-            if response.status_code >= 500:
-                raise TransientTraktError(f'Trakt server error: {response.status_code}')
+            if status >= 500:
+                raise TransientTraktError(f'Trakt server error: {status}')
             
-            response.raise_for_status()
+            if status >= 400:
+                raise TraktError(f'Trakt API error: {status}')
             
-            result = response.json() if response.text else {}
+            result = json.loads(body) if body else {}
             
             # Cache GET responses
             if method == 'GET' and cache_limit > 0:
@@ -202,9 +238,11 @@ class TraktAPI:
             
             return result
             
-        except requests.exceptions.Timeout:
-            raise TransientTraktError('Trakt request timeout')
-        except requests.exceptions.RequestException as e:
+        except TransientTraktError:
+            raise
+        except TraktError:
+            raise
+        except Exception as e:
             raise TraktError(f'Trakt request error: {e}')
     
     # ==================== User Methods ====================
@@ -304,7 +342,6 @@ class TraktAPI:
     
     def search(self, query, media_type='movie', page=1, limit=20):
         """Search for movies/shows"""
-        from urllib.parse import quote_plus
         endpoint = f'/search/{media_type}?query={quote_plus(query)}&page={page}&limit={limit}'
         return self._call_api(endpoint)
     
