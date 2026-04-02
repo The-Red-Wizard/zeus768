@@ -19,7 +19,7 @@ Features:
 - Skip Intro prompt for TV episodes
 - Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, TPB, NNM-Club, RuTracker, RuTor, Nyaa, etc.
 - Jackett/Prowlarr Integration: Connect to any indexer
-- Debrid Services: Real-Debrid, Premiumize, AllDebrid
+- Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox
 - Trakt.tv: Watchlists, collections, scrobbling, history
 - ResolveURL for 270+ hosting sites
 
@@ -32,12 +32,16 @@ Thank you to Mister X and Zaxxon709</description>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
 v2.1.5 (2026)
-- Fixed: Replaced all 'requests' usage with native urllib across base_scraper.py and debrid.py
-- Fixed: Trakt API - real CLIENT_ID and CLIENT_SECRET for proper OAuth authorization
-- Fixed: Trakt lists/menus - hardened response parsing for Trending, Popular, Watchlist, Collection
+- Added: TorBox debrid service support (API key auth, magnet resolve, cache check)
+- Added: Batch cache checking - all scraped torrents checked against debrid services in one pass
+- Added: [CACHED] tag and green highlighting for pre-cached sources in source dialog
+- Added: Debrid gate - torrent scrapers blocked until a debrid service is enabled
+- Added: Source sorting now prioritizes cached torrents
+- Fixed: Replaced all 'requests' usage with native urllib in base_scraper.py and debrid.py
 - Fixed: All 34+ scrapers now work (not just PirateBay) - base class urllib migration complete
-- Added: Debrid gate - torrent scrapers blocked until a Debrid service is enabled
-- Added: Free streams always available regardless of Debrid status
+- Fixed: Trakt API - real CLIENT_ID and CLIENT_SECRET for proper OAuth
+- Fixed: Trakt lists/menus hardened for all response formats (Trending/Popular/Watchlist/Collection)
+- Fixed: Trakt list items now pass TMDB IDs for metadata
 - Removed: script.module.requests and script.module.six dependencies
 
 v2.1.4 (2026)

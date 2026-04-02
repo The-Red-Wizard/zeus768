@@ -533,11 +533,11 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
     debrid_enabled = (
         ADDON.getSetting('realdebrid_enabled') == 'true' or
         ADDON.getSetting('premiumize_enabled') == 'true' or
-        ADDON.getSetting('alldebrid_enabled') == 'true'
+        ADDON.getSetting('alldebrid_enabled') == 'true' or
+        ADDON.getSetting('torbox_enabled') == 'true'
     )
     
     if not debrid_enabled:
-        # Warn user but still allow free stream scrapers
         xbmcgui.Dialog().notification(
             ADDON_NAME,
             'No Debrid service enabled - Free streams only',
@@ -655,6 +655,37 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
         xbmcgui.Dialog().notification(ADDON_NAME, 'No sources found', ADDON_ICON)
         return
     
+    # Batch cache check: mark torrent sources as cached/uncached
+    if debrid_enabled:
+        torrent_sources = [s for s in all_sources if s.get('magnet') and not s.get('direct')]
+        hashes = {}
+        for s in torrent_sources:
+            magnet = s.get('magnet', '')
+            h = None
+            import re as _re
+            m = _re.search(r'btih:([a-fA-F0-9]{40})', magnet)
+            if m:
+                h = m.group(1).lower()
+            else:
+                m = _re.search(r'btih:([a-zA-Z2-7]{32})', magnet)
+                if m:
+                    h = m.group(1).lower()
+            if h:
+                hashes[id(s)] = h
+        
+        if hashes:
+            unique_hashes = list(set(hashes.values()))
+            try:
+                from salts_lib.debrid import check_cache_batch
+                cache_results = check_cache_batch(unique_hashes)
+                
+                for s in torrent_sources:
+                    h = hashes.get(id(s))
+                    if h and cache_results.get(h, False):
+                        s['cached'] = True
+            except Exception as e:
+                log_utils.log(f'Batch cache check error: {e}', xbmc.LOGDEBUG)
+    
     # Cache the results
     if use_cache:
         db.cache_sources(cache_key, all_sources)
@@ -666,12 +697,13 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
 def _display_or_autoplay_sources(all_sources, search_title, media_type,
                                   title, year, season, episode, tmdb_id):
     """Sort, display source dialog or autoplay"""
-    # Sort: free direct streams first, then by quality and seeds
+    # Sort: cached first, then free streams, then by quality and seeds
     def sort_key(x):
+        is_cached = 1 if x.get('cached') else 0
         is_free = 1 if x.get('direct') else 0
         quality = QUALITY_ORDER.get(x.get('quality', 'SD'), 0)
         seeds = x.get('seeds', 0)
-        return (is_free, quality, seeds)
+        return (is_cached, is_free, quality, seeds)
     
     all_sources.sort(key=sort_key, reverse=True)
     
@@ -721,6 +753,8 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         is_free = source.get('direct', False)
         
         label_parts = [f'[{quality}]']
+        if source.get('cached'):
+            label_parts.append('[CACHED]')
         if is_free:
             label_parts.append('[FREE]')
         label_parts.append(f'[{scraper_name}]')
@@ -732,7 +766,9 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         
         label = ' | '.join(label_parts)
         
-        if is_free:
+        if source.get('cached'):
+            label = f'[COLOR limegreen]{label}[/COLOR]'
+        elif is_free:
             label = f'[COLOR orange]{label}[/COLOR]'
         elif quality in ['4K', '2160p']:
             label = f'[COLOR gold]{label}[/COLOR]'
@@ -745,7 +781,8 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         
         display_list.append(label)
     
-    header = f'SALTS: {sources_found} sources ({free_count} free)  [{quality_summary}]'
+    cached_count = sum(1 for s in all_sources if s.get('cached'))
+    header = f'SALTS: {sources_found} sources ({cached_count} cached, {free_count} free)  [{quality_summary}]'
     selected = xbmcgui.Dialog().select(header, display_list, useDetails=False)
     
     if selected < 0:
@@ -808,9 +845,20 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
                 if stream_url:
                     log_utils.log(f'Resolved via AllDebrid: {stream_url}', xbmc.LOGINFO)
         
+        # Check TorBox
+        if not stream_url and ADDON.getSetting('torbox_enabled') == 'true':
+            tb = debrid.TorBox()
+            if tb.is_authorized():
+                progress = xbmcgui.DialogProgress()
+                progress.create('SALTS', 'Resolving with TorBox...')
+                stream_url = tb.resolve_magnet(magnet)
+                progress.close()
+                if stream_url:
+                    log_utils.log(f'Resolved via TorBox: {stream_url}', xbmc.LOGINFO)
+        
         # No debrid - show message
         if not stream_url:
-            xbmcgui.Dialog().ok(ADDON_NAME, 'Torrent sources require a debrid service.\n\nPlease configure Real-Debrid, Premiumize, or AllDebrid in settings.')
+            xbmcgui.Dialog().ok(ADDON_NAME, 'Torrent sources require a debrid service.\n\nPlease configure Real-Debrid, Premiumize, AllDebrid, or TorBox in settings.')
             return
     
     # Try ResolveURL for direct links
@@ -1035,6 +1083,7 @@ def debrid_menu():
         {'title': 'Real-Debrid', 'mode': 'debrid_auth', 'service': 'realdebrid'},
         {'title': 'Premiumize', 'mode': 'debrid_auth', 'service': 'premiumize'},
         {'title': 'AllDebrid', 'mode': 'debrid_auth', 'service': 'alldebrid'},
+        {'title': 'TorBox', 'mode': 'debrid_auth', 'service': 'torbox'},
     ]
     
     for item in items:
@@ -1069,6 +1118,9 @@ def debrid_auth(service):
     elif service == 'alldebrid':
         ad = debrid.AllDebrid()
         ad.authorize()
+    elif service == 'torbox':
+        tb = debrid.TorBox()
+        tb.authorize()
     xbmc.executebuiltin('Container.Refresh')
 
 def tools_menu():
@@ -1611,7 +1663,6 @@ def _show_trakt_items(items, media_type, key=None):
             elif 'show' in item:
                 data = item['show']
             elif 'title' in item:
-                # Flat object (Popular endpoint returns movie/show directly)
                 data = item
             else:
                 continue
@@ -1632,7 +1683,6 @@ def _show_trakt_items(items, media_type, key=None):
             info_tag.setYear(int(year) if year else 0)
             info_tag.setPlot(data.get('overview', ''))
             
-            # Extract IDs for TMDB lookup
             ids = data.get('ids', {})
             tmdb_id = str(ids.get('tmdb', '')) if ids else ''
             

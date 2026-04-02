@@ -1,11 +1,12 @@
 """
 SALTS Library - Debrid Service Integration
-Supports Real-Debrid, Premiumize, AllDebrid
+Supports Real-Debrid, Premiumize, AllDebrid, TorBox
 Revived by zeus768 for Kodi 21+
 Uses native urllib (no external requests module)
 """
 import json
 import time
+import re
 import xbmc
 import xbmcgui
 import xbmcaddon
@@ -77,6 +78,114 @@ def _post(url, data=None, params=None, headers=None, timeout=30):
     return _http(url, method='POST', data=data, headers=headers, timeout=timeout)
 
 
+# ==================== Helper: Batch Cache Check ====================
+
+def check_cache_batch(hashes):
+    """Check multiple hashes against all enabled debrid services.
+    Returns dict: {hash: True/False} for cached status.
+    Checks in priority order: RD > PM > AD > TB. 
+    A hash is True if ANY service has it cached.
+    """
+    if not hashes:
+        return {}
+    
+    result = {h: False for h in hashes}
+    
+    # Real-Debrid batch cache check (up to 100 at once)
+    if ADDON.getSetting('realdebrid_enabled') == 'true':
+        rd = RealDebrid()
+        if rd.is_authorized():
+            try:
+                hash_str = '/'.join(hashes)
+                _, rd_result = _get(
+                    f'{rd.BASE_URL}/torrents/instantAvailability/{hash_str}',
+                    headers=rd._auth_headers()
+                )
+                if isinstance(rd_result, dict):
+                    for h in hashes:
+                        if rd_result.get(h, {}).get('rd'):
+                            result[h] = True
+            except Exception as e:
+                log_utils.log_error(f'RD batch cache check error: {e}')
+    
+    # If all found, return early
+    if all(result.values()):
+        return result
+    
+    # Premiumize batch cache check
+    uncached = [h for h, v in result.items() if not v]
+    if uncached and ADDON.getSetting('premiumize_enabled') == 'true':
+        pm = Premiumize()
+        if pm.is_authorized():
+            try:
+                # Premiumize accepts items[] for each hash
+                post_data = '&'.join(f'items[]={h}' for h in uncached)
+                _, pm_result = _post(
+                    f'{pm.BASE_URL}/cache/check',
+                    params={'apikey': pm.token},
+                    data=post_data
+                )
+                if isinstance(pm_result, dict) and pm_result.get('status') == 'success':
+                    responses = pm_result.get('response', [])
+                    for i, h in enumerate(uncached):
+                        if i < len(responses) and responses[i]:
+                            result[h] = True
+            except Exception as e:
+                log_utils.log_error(f'PM batch cache check error: {e}')
+    
+    if all(result.values()):
+        return result
+    
+    # AllDebrid batch cache check
+    uncached = [h for h, v in result.items() if not v]
+    if uncached and ADDON.getSetting('alldebrid_enabled') == 'true':
+        ad = AllDebrid()
+        if ad.is_authorized():
+            try:
+                params_str = '&'.join(f'magnets[]={h}' for h in uncached)
+                _, ad_result = _get(
+                    f'{ad.BASE_URL}/magnet/instant?agent={ad.AGENT}&apikey={ad.token}&{params_str}'
+                )
+                if isinstance(ad_result, dict) and ad_result.get('status') == 'success':
+                    magnets = ad_result.get('data', {}).get('magnets', [])
+                    for i, h in enumerate(uncached):
+                        if i < len(magnets) and magnets[i].get('instant'):
+                            result[h] = True
+            except Exception as e:
+                log_utils.log_error(f'AD batch cache check error: {e}')
+    
+    if all(result.values()):
+        return result
+    
+    # TorBox batch cache check
+    uncached = [h for h, v in result.items() if not v]
+    if uncached and ADDON.getSetting('torbox_enabled') == 'true':
+        tb = TorBox()
+        if tb.is_authorized():
+            try:
+                hash_csv = ','.join(uncached)
+                _, tb_result = _get(
+                    f'{tb.BASE_URL}/torrents/checkcached',
+                    params={'hash': hash_csv, 'format': 'list'},
+                    headers=tb._auth_headers()
+                )
+                if isinstance(tb_result, dict) and tb_result.get('success'):
+                    cached_data = tb_result.get('data', [])
+                    if isinstance(cached_data, list):
+                        for item in cached_data:
+                            h = item.get('hash', '').lower()
+                            if h in result:
+                                result[h] = True
+                    elif isinstance(cached_data, dict):
+                        for h in uncached:
+                            if cached_data.get(h):
+                                result[h] = True
+            except Exception as e:
+                log_utils.log_error(f'TB batch cache check error: {e}')
+    
+    return result
+
+
 class RealDebrid:
     """Real-Debrid API integration"""
     
@@ -95,7 +204,6 @@ class RealDebrid:
         return {'Authorization': f'Bearer {self.token}'}
     
     def is_authorized(self):
-        """Check if authorized"""
         if not self.token:
             return False
         if time.time() > self.expires - 600:
@@ -103,7 +211,6 @@ class RealDebrid:
         return True
     
     def _refresh_token(self):
-        """Refresh the access token"""
         if not self.refresh_token or not self.client_secret:
             return False
         try:
@@ -124,16 +231,12 @@ class RealDebrid:
                 ADDON.setSetting('realdebrid_refresh', self.refresh_token)
                 ADDON.setSetting('realdebrid_expires', str(self.expires))
                 return True
-            else:
-                log_utils.log_error(f'RD refresh failed: status={status}')
         except Exception as e:
             log_utils.log_error(f'Real-Debrid refresh error: {e}')
         return False
     
     def authorize(self):
-        """OAuth device authorization flow"""
         try:
-            # Step 1: Get device code
             status, result = _get(
                 f'{self.OAUTH_URL}/device/code',
                 params={'client_id': self.CLIENT_ID, 'new_credentials': 'yes'}
@@ -155,7 +258,6 @@ class RealDebrid:
                 f'Go to: {verification_url}\n\nEnter code: {user_code}\n\nWaiting...'
             )
             
-            # Step 2: Poll for credentials
             start_time = time.time()
             while time.time() - start_time < expires_in:
                 if dialog.iscanceled():
@@ -170,7 +272,6 @@ class RealDebrid:
                 )
                 
                 if cred_status == 200 and isinstance(cred_result, dict) and 'client_id' in cred_result:
-                    # Step 3: Exchange for tokens
                     token_data = {
                         'client_id': cred_result['client_id'],
                         'client_secret': cred_result['client_secret'],
@@ -208,12 +309,10 @@ class RealDebrid:
             return False
     
     def resolve_magnet(self, magnet):
-        """Resolve magnet link to direct download"""
         if not self.is_authorized():
             return None
         
         try:
-            # Add magnet
             status, result = _post(
                 f'{self.BASE_URL}/torrents/addMagnet',
                 data={'magnet': magnet},
@@ -221,26 +320,21 @@ class RealDebrid:
             )
             
             if not isinstance(result, dict) or 'id' not in result:
-                log_utils.log_error(f'RD addMagnet failed: {result}')
                 return None
             
             torrent_id = result['id']
             
-            # Get torrent info
             _, info = _get(f'{self.BASE_URL}/torrents/info/{torrent_id}', headers=self._auth_headers())
             
             if isinstance(info, dict):
                 files = info.get('files', [])
                 file_ids = ','.join([str(f['id']) for f in files]) if files else 'all'
-                
-                # Select files
                 _post(
                     f'{self.BASE_URL}/torrents/selectFiles/{torrent_id}',
                     data={'files': file_ids},
                     headers=self._auth_headers()
                 )
             
-            # Wait for ready status
             for _ in range(30):
                 _, status_info = _get(
                     f'{self.BASE_URL}/torrents/info/{torrent_id}',
@@ -267,7 +361,6 @@ class RealDebrid:
             return None
     
     def check_cache(self, info_hash):
-        """Check if torrent is cached"""
         if not self.is_authorized():
             return False
         try:
@@ -294,7 +387,6 @@ class Premiumize:
         return bool(self.token)
     
     def authorize(self):
-        """API key authorization"""
         keyboard = xbmc.Keyboard('', 'Enter Premiumize API Key')
         keyboard.doModal()
         
@@ -321,12 +413,10 @@ class Premiumize:
         return False
     
     def resolve_magnet(self, magnet):
-        """Resolve magnet link to direct download"""
         if not self.is_authorized():
             return None
         
         try:
-            # Check cache first
             status, cache_result = _post(
                 f'{self.BASE_URL}/cache/check',
                 params={'apikey': self.token},
@@ -384,7 +474,6 @@ class AllDebrid:
         return bool(self.token)
     
     def authorize(self):
-        """PIN-based authorization"""
         try:
             status, result = _get(
                 f'{self.BASE_URL}/pin/get',
@@ -441,7 +530,6 @@ class AllDebrid:
             return False
     
     def resolve_magnet(self, magnet):
-        """Resolve magnet link to direct download"""
         if not self.is_authorized():
             return None
         
@@ -493,6 +581,173 @@ class AllDebrid:
             if isinstance(result, dict) and result.get('status') == 'success':
                 magnets = result.get('data', {}).get('magnets', [])
                 return bool(magnets and magnets[0].get('instant'))
+        except Exception:
+            pass
+        return False
+
+
+class TorBox:
+    """TorBox API integration (https://api.torbox.app)"""
+    
+    BASE_URL = 'https://api.torbox.app/v1/api'
+    
+    def __init__(self):
+        self.token = ADDON.getSetting('torbox_token')
+    
+    def _auth_headers(self):
+        return {'Authorization': f'Bearer {self.token}'}
+    
+    def is_authorized(self):
+        return bool(self.token)
+    
+    def authorize(self):
+        """API key authorization for TorBox"""
+        keyboard = xbmc.Keyboard('', 'Enter TorBox API Key')
+        keyboard.doModal()
+        
+        if keyboard.isConfirmed():
+            api_key = keyboard.getText().strip()
+            if api_key:
+                try:
+                    # Verify the key by calling /user/me
+                    status, result = _get(
+                        f'{self.BASE_URL}/user/me',
+                        headers={'Authorization': f'Bearer {api_key}'}
+                    )
+                    
+                    if isinstance(result, dict) and result.get('success'):
+                        self.token = api_key
+                        ADDON.setSetting('torbox_token', api_key)
+                        ADDON.setSetting('torbox_enabled', 'true')
+                        
+                        user_data = result.get('data', {})
+                        plan = user_data.get('plan', 'Unknown')
+                        xbmcgui.Dialog().notification(
+                            'TorBox',
+                            f'Authorized! Plan: {plan}',
+                            xbmcgui.NOTIFICATION_INFO
+                        )
+                        return True
+                    else:
+                        xbmcgui.Dialog().notification('TorBox', 'Invalid API key', xbmcgui.NOTIFICATION_ERROR)
+                except Exception as e:
+                    log_utils.log_error(f'TorBox auth error: {e}')
+                    xbmcgui.Dialog().notification('TorBox', f'Error: {e}', xbmcgui.NOTIFICATION_ERROR)
+        return False
+    
+    def resolve_magnet(self, magnet):
+        """Resolve magnet link to direct download via TorBox"""
+        if not self.is_authorized():
+            return None
+        
+        try:
+            # Extract hash from magnet
+            hash_match = re.search(r'btih:([a-fA-F0-9]{40})', magnet)
+            if not hash_match:
+                hash_match = re.search(r'btih:([a-zA-Z2-7]{32})', magnet)
+            
+            # Step 1: Check if cached first
+            if hash_match:
+                info_hash = hash_match.group(1).lower()
+                cache_status, cache_result = _get(
+                    f'{self.BASE_URL}/torrents/checkcached',
+                    params={'hash': info_hash, 'format': 'list'},
+                    headers=self._auth_headers()
+                )
+                
+                is_cached = False
+                if isinstance(cache_result, dict) and cache_result.get('success'):
+                    cached_data = cache_result.get('data', [])
+                    if cached_data:
+                        is_cached = True
+            
+            # Step 2: Create torrent (add magnet)
+            # Use multipart-like form data for createtorrent
+            import io
+            boundary = '----SALTSBoundary'
+            body_parts = []
+            body_parts.append(f'--{boundary}')
+            body_parts.append('Content-Disposition: form-data; name="magnet"')
+            body_parts.append('')
+            body_parts.append(magnet)
+            body_parts.append(f'--{boundary}--')
+            body_data = '\r\n'.join(body_parts).encode('utf-8')
+            
+            create_headers = self._auth_headers()
+            create_headers['Content-Type'] = f'multipart/form-data; boundary={boundary}'
+            
+            status, result = _http(
+                f'{self.BASE_URL}/torrents/createtorrent',
+                method='POST',
+                data=body_data,
+                headers=create_headers
+            )
+            
+            if not isinstance(result, dict) or not result.get('success'):
+                log_utils.log_error(f'TorBox createtorrent failed: {result}')
+                return None
+            
+            torrent_id = result.get('data', {}).get('torrent_id')
+            if not torrent_id:
+                return None
+            
+            # Step 3: Wait for ready and get file list
+            for _ in range(30):
+                _, info_result = _get(
+                    f'{self.BASE_URL}/torrents/mylist',
+                    params={'id': torrent_id},
+                    headers=self._auth_headers()
+                )
+                
+                if isinstance(info_result, dict) and info_result.get('success'):
+                    torrent_data = info_result.get('data', {})
+                    dl_state = torrent_data.get('download_state', '')
+                    
+                    if dl_state in ('completed', 'cached', 'downloading'):
+                        files = torrent_data.get('files', [])
+                        if files:
+                            # Pick largest file (video)
+                            largest = max(files, key=lambda f: f.get('size', 0))
+                            file_id = largest.get('id', 0)
+                            
+                            # Step 4: Request download link
+                            _, dl_result = _get(
+                                f'{self.BASE_URL}/torrents/requestdl',
+                                params={
+                                    'token': self.token,
+                                    'torrent_id': torrent_id,
+                                    'file_id': file_id
+                                },
+                                headers=self._auth_headers()
+                            )
+                            
+                            if isinstance(dl_result, dict) and dl_result.get('success'):
+                                download_url = dl_result.get('data')
+                                if download_url:
+                                    return download_url
+                        break
+                
+                time.sleep(2)
+            
+            return None
+            
+        except Exception as e:
+            log_utils.log_error(f'TorBox resolve error: {e}')
+            return None
+    
+    def check_cache(self, info_hash):
+        """Check if torrent is cached on TorBox"""
+        if not self.is_authorized():
+            return False
+        try:
+            _, result = _get(
+                f'{self.BASE_URL}/torrents/checkcached',
+                params={'hash': info_hash, 'format': 'list'},
+                headers=self._auth_headers()
+            )
+            if isinstance(result, dict) and result.get('success'):
+                cached_data = result.get('data', [])
+                return bool(cached_data)
         except Exception:
             pass
         return False

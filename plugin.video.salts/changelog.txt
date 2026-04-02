@@ -4,31 +4,35 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
-v2.1.5 (2026-02-06)
+v2.1.5 (2026-04-02)
 ================================================================================
+
+  NEW FEATURES
+  ------------
+  * TorBox debrid service support (API key auth, magnet resolve, cache checking)
+  * Batch cache checking - all scraped torrents checked against all enabled debrid
+    services in one efficient pass (RD > PM > AD > TB)
+  * [CACHED] tag with green highlighting for pre-cached sources in source dialog
+  * Source sorting now prioritizes: Cached > Free > Quality > Seeds
+  * Debrid gate: torrent scrapers blocked until at least one debrid service is enabled
+  * Free stream scrapers always available regardless of debrid status
+  * Source dialog header now shows cached count
 
   BUG FIXES
   ---------
   * Fixed ALL scrapers crashing (not just PirateBay) - replaced 'requests' module
-    with native urllib in base_scraper.py (affects all 34+ scrapers)
+    with native urllib in base_scraper.py (all 34+ scrapers affected)
   * Fixed Debrid services not authorizing/staying authorized - replaced 'requests'
     with native urllib in debrid.py (Real-Debrid, Premiumize, AllDebrid)
-  * Fixed Trakt API - replaced dummy CLIENT_SECRET with real registered app credentials
+  * Fixed Trakt API with real registered CLIENT_ID and CLIENT_SECRET
   * Fixed Trakt lists and menus - hardened response parsing for all endpoint formats
     (Trending, Popular, Watchlist, Collection, Custom Lists)
-  * Added error handling to all Trakt menu functions (graceful failure with notifications)
-  * Fixed Trakt list items now pass TMDB IDs for proper metadata lookup
-
-  NEW FEATURES
-  ------------
-  * Debrid gate: torrent scrapers are now blocked until at least one Debrid service
-    (Real-Debrid, Premiumize, or AllDebrid) is enabled and authorized
-  * Free stream scrapers (VidSrc, 2Embed, etc.) always available regardless of Debrid status
-  * User notification when no Debrid service is enabled ("Free streams only")
+  * Added error handling with user notifications to all Trakt menu functions
+  * Trakt list items now pass TMDB IDs for proper metadata lookup
 
   DEPENDENCY CHANGES
   ------------------
-  * Removed script.module.requests dependency (no longer needed)
+  * Removed script.module.requests dependency (replaced with native urllib)
   * Removed script.module.six dependency (Python 3 native)
 
 

@@ -32,6 +32,8 @@
         <setting id="premiumize_token" type="text" label="API Key" default="" visible="false"/>
         <setting id="alldebrid_enabled" type="bool" label="Enable AllDebrid" default="false"/>
         <setting id="alldebrid_token" type="text" label="API Key" default="" visible="false"/>
+        <setting id="torbox_enabled" type="bool" label="Enable TorBox" default="false"/>
+        <setting id="torbox_token" type="text" label="API Key" default="" visible="false"/>
     </category>
     
     <category label="Primary Scrapers">

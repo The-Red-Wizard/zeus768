@@ -10,7 +10,7 @@ Fix the old Kodi addon "plugin.video.salts" (SALTS) and bring it back to life fo
 - **Scrapers**: `scrapers/` (34+ scrapers: torrent, streaming, anime, international)
 - **Dependencies**: `urllib` (native), `bs4`, `resolveurl` — NO `requests` module
 - **Database**: SQLite (source_cache, favorites, watched_items, quality_presets, scraper_priorities)
-- **External APIs**: TMDB (metadata), Trakt (lists/scrobble), Real-Debrid/Premiumize/AllDebrid (link resolution)
+- **External APIs**: TMDB (metadata), Trakt (lists/scrobble), Real-Debrid/Premiumize/AllDebrid/TorBox (link resolution)
 
 ## Current Version: 2.1.5
 
@@ -19,9 +19,13 @@ Fix the old Kodi addon "plugin.video.salts" (SALTS) and bring it back to life fo
 - [x] 34+ scrapers (1337x, YTS, EZTV, TorrentGalaxy, TPB, Nyaa, international, anime, etc.)
 - [x] Free Stream scrapers (VidSrc, 2Embed, AutoEmbed, etc.) - no Debrid needed
 - [x] Real-Debrid, Premiumize, AllDebrid integration (OAuth device auth)
+- [x] TorBox integration (API key auth, magnet resolve, cache check)
+- [x] Batch cache checking (all hashes against all debrid services in one pass)
+- [x] [CACHED] tag + green highlighting in source dialog
+- [x] Debrid gate (torrent scrapers blocked until debrid enabled; free streams always available)
 - [x] Trakt.tv integration (OAuth, watchlist, collection, trending, popular, custom lists, scrobble)
 - [x] TMDB metadata (posters, backdrops, ratings, descriptions)
-- [x] Custom source selection dialog with quality breakdown
+- [x] Custom source selection dialog with quality breakdown + cached count
 - [x] Autoplay mode
 - [x] Source caching
 - [x] Scraper priorities
@@ -36,16 +40,17 @@ Fix the old Kodi addon "plugin.video.salts" (SALTS) and bring it back to life fo
 - [x] ResolveURL for direct links
 - [x] Kodi repository structure with zips + MD5
 
-## v2.1.5 Fixes (Feb 2026)
-- [x] **P0**: Replaced all `requests` usage with native `urllib` in base_scraper.py and debrid.py — fixes ALL scrapers crashing
-- [x] **P0**: Fixed Trakt API — real CLIENT_ID/SECRET for proper OAuth authorization
-- [x] **P0**: Hardened Trakt list/menu parsing for all response formats (Trending, Popular, Watchlist, Collection)
-- [x] **P1**: Debrid gate — torrent scrapers blocked until Debrid service enabled; free streams always available
-- [x] Removed `script.module.requests` and `script.module.six` dependencies from addon.xml
-- [x] Added error handling to all Trakt menu functions
-- [x] Trakt list items now pass TMDB IDs for metadata
+## v2.1.5 Changes (Apr 2026)
+- [x] TorBox debrid service support
+- [x] Batch cache checking across all enabled debrid services
+- [x] [CACHED] source tagging and prioritized sorting (cached > free > quality > seeds)
+- [x] Debrid gate (blocks torrent scrapers without active debrid)
+- [x] Replaced all `requests` usage with native `urllib` in base_scraper.py and debrid.py
+- [x] Fixed Trakt API credentials (real CLIENT_ID/SECRET)
+- [x] Hardened Trakt list/menu parsing for all response formats
+- [x] Removed `script.module.requests` and `script.module.six` dependencies
 
 ## Backlog / Future
-- [ ] P2: Full regression test of Free Streams + Autoplay + OpenSubtitles with new Debrid gate
-- [ ] P2: Add Trakt ratings display in source lists
-- [ ] P3: Artwork/poster fetching from Trakt IDs in Trakt list views
+- [ ] P2: Full regression test of Free Streams + Autoplay + OpenSubtitles with Debrid gate
+- [ ] P2: Trakt ratings display in source lists
+- [ ] P3: Artwork/poster fetching from Trakt IDs in list views

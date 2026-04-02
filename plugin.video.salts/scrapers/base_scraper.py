@@ -5,6 +5,7 @@ Uses native urllib (no external requests module)
 """
 import abc
 import re
+import json
 import xbmc
 import xbmcaddon
 
@@ -93,7 +94,6 @@ class BaseScraper(abc.ABC):
         html = self._http_get(url, params=params, headers=headers, cache_limit=cache_limit)
         if html:
             try:
-                import json
                 return json.loads(html)
             except Exception:
                 pass
