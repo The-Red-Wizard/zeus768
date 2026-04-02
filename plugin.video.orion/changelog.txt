@@ -1,6 +1,17 @@
 Orion Changelog
 ================
 
+## v3.2.1 (February 2026)
+
+### [CACHED] Source Tags
+- Batch cache checking across all 4 debrid providers (Real-Debrid, Premiumize, AllDebrid, TorBox)
+- Sources with cached torrents display a green [CACHED] tag
+- Cached sources automatically sorted to the top of the source list
+- Source summary line at top shows "X cached / Y total sources"
+- Cache check runs in priority order: RD > PM > AD > TB, short-circuits when all hashes found
+
+---
+
 ## v3.2.0 (February 2026)
 
 ### TorBox Debrid Support

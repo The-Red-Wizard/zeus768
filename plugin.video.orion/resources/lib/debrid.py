@@ -39,6 +39,106 @@ def http_request(url, data=None, headers=None, method='GET'):
         return {'error': str(e)}
 
 
+def check_cache_batch(hashes):
+    """Check multiple hashes against all enabled debrid services.
+    Returns dict: {hash_lower: True/False} for cached status.
+    A hash is True if ANY service has it cached.
+    """
+    import re as _re
+    
+    if not hashes:
+        return {}
+    
+    # Normalize hashes to lowercase
+    hashes = [h.lower() for h in hashes]
+    result = {h: False for h in hashes}
+    
+    # Real-Debrid batch cache check
+    if ADDON.getSetting('rd_enabled') == 'true':
+        rd = RealDebrid()
+        if rd.is_authorized():
+            try:
+                hash_str = '/'.join(hashes)
+                url = f"{rd.BASE_URL}/rest/1.0/torrents/instantAvailability/{hash_str}"
+                headers = {'Authorization': f'Bearer {rd.token}'}
+                rd_result = http_request(url, headers=headers)
+                if isinstance(rd_result, dict):
+                    for h in hashes:
+                        entry = rd_result.get(h) or rd_result.get(h.upper()) or {}
+                        if entry.get('rd'):
+                            result[h] = True
+            except Exception as e:
+                xbmc.log(f"RD batch cache check error: {e}", xbmc.LOGWARNING)
+    
+    if all(result.values()):
+        return result
+    
+    # Premiumize batch cache check
+    uncached = [h for h, v in result.items() if not v]
+    if uncached and ADDON.getSetting('pm_enabled') == 'true':
+        pm = Premiumize()
+        if pm.is_authorized():
+            try:
+                items_str = '&'.join(f'items[]={h}' for h in uncached)
+                url = f"{pm.BASE_URL}/cache/check?apikey={pm.token}&{items_str}"
+                pm_result = http_request(url)
+                if isinstance(pm_result, dict) and pm_result.get('status') == 'success':
+                    responses = pm_result.get('response', [])
+                    for i, h in enumerate(uncached):
+                        if i < len(responses) and responses[i]:
+                            result[h] = True
+            except Exception as e:
+                xbmc.log(f"PM batch cache check error: {e}", xbmc.LOGWARNING)
+    
+    if all(result.values()):
+        return result
+    
+    # AllDebrid batch cache check
+    uncached = [h for h, v in result.items() if not v]
+    if uncached and ADDON.getSetting('ad_enabled') == 'true':
+        ad = AllDebrid()
+        if ad.is_authorized():
+            try:
+                magnets_str = '&'.join(f'magnets[]={h}' for h in uncached)
+                url = f"{ad.BASE_URL}/magnet/instant?agent={ad.AGENT}&apikey={ad.token}&{magnets_str}"
+                ad_result = http_request(url)
+                if isinstance(ad_result, dict) and ad_result.get('status') == 'success':
+                    magnets = ad_result.get('data', {}).get('magnets', [])
+                    for i, h in enumerate(uncached):
+                        if i < len(magnets) and magnets[i].get('instant'):
+                            result[h] = True
+            except Exception as e:
+                xbmc.log(f"AD batch cache check error: {e}", xbmc.LOGWARNING)
+    
+    if all(result.values()):
+        return result
+    
+    # TorBox batch cache check
+    uncached = [h for h, v in result.items() if not v]
+    if uncached and ADDON.getSetting('tb_enabled') == 'true':
+        tb = TorBox()
+        if tb.is_authorized():
+            try:
+                hash_csv = ','.join(uncached)
+                url = f'{tb.BASE_URL}/torrents/checkcached?hash={hash_csv}&format=list'
+                tb_result = http_request(url, headers=tb._auth_headers())
+                if isinstance(tb_result, dict) and tb_result.get('success'):
+                    cached_data = tb_result.get('data', [])
+                    if isinstance(cached_data, list):
+                        for item in cached_data:
+                            h = (item.get('hash', '') if isinstance(item, dict) else str(item)).lower()
+                            if h in result:
+                                result[h] = True
+                    elif isinstance(cached_data, dict):
+                        for h in uncached:
+                            if cached_data.get(h):
+                                result[h] = True
+            except Exception as e:
+                xbmc.log(f"TB batch cache check error: {e}", xbmc.LOGWARNING)
+    
+    return result
+
+
 class RealDebrid:
     """Real-Debrid API Integration"""
     

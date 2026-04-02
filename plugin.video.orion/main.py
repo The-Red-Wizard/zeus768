@@ -633,11 +633,42 @@ def episode_sources(params):
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
 def show_sources(sources, title, tmdb_id=None, media_type='movie', original_params=None):
-    """Display available sources with color coding and filtering options"""
-    from resources.lib import scraper
+    """Display available sources with color coding, filtering, and [CACHED] tags"""
+    from resources.lib import scraper, debrid
+    import re
     
     current_quality = (original_params or {}).get('quality_filter', 'all')
     current_source = (original_params or {}).get('source_filter', 'all')
+    
+    # --- Batch cache check ---
+    hash_map = {}  # hash -> source index list
+    for idx, source in enumerate(sources):
+        magnet = source.get('magnet', '')
+        hash_match = re.search(r'btih:([a-fA-F0-9]{40})', magnet, re.IGNORECASE)
+        if hash_match:
+            h = hash_match.group(1).lower()
+            hash_map.setdefault(h, []).append(idx)
+    
+    cache_status = {}
+    if hash_map:
+        try:
+            cache_status = debrid.check_cache_batch(list(hash_map.keys()))
+        except Exception as e:
+            log(f"Cache check error: {e}", xbmc.LOGWARNING)
+    
+    # Tag sources with cached status
+    for h, indices in hash_map.items():
+        is_cached = cache_status.get(h, False)
+        for idx in indices:
+            sources[idx]['cached'] = is_cached
+    
+    # Sort: cached first, then by quality and seeds
+    quality_order = {'4K': 0, '2160p': 0, '1080p': 1, '720p': 2, 'SD': 3, '480p': 3, 'Unknown': 4}
+    sources.sort(key=lambda x: (
+        0 if x.get('cached') else 1,
+        quality_order.get(x.get('quality', 'Unknown'), 4),
+        -x.get('seeds', 0)
+    ))
     
     # Quality filter menu
     quality_label = f"[COLOR magenta]Filter Quality: {current_quality.upper()}[/COLOR]"
@@ -671,9 +702,15 @@ def show_sources(sources, title, tmdb_id=None, media_type='movie', original_para
     })
     xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
-    # Sort sources
-    quality_order = {'4K': 0, '2160p': 0, '1080p': 1, '720p': 2, 'SD': 3, '480p': 3, 'Unknown': 4}
-    sources.sort(key=lambda x: (quality_order.get(x.get('quality', 'Unknown'), 4), -x.get('seeds', 0)))
+    # Count cached
+    cached_count = sum(1 for s in sources if s.get('cached'))
+    if cached_count:
+        summary_label = f"[COLOR lime]{cached_count} cached[/COLOR] / {len(sources)} total sources"
+    else:
+        summary_label = f"{len(sources)} sources found"
+    li = xbmcgui.ListItem(label=summary_label)
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'noop'}), li, isFolder=False)
     
     for source in sources:
         quality = source.get('quality', 'Unknown')
@@ -682,6 +719,7 @@ def show_sources(sources, title, tmdb_id=None, media_type='movie', original_para
         name = source.get('name', 'Unknown')
         source_type = source.get('source_type', 'torrent')
         source_name = source.get('source', 'Unknown')
+        is_cached = source.get('cached', False)
         
         # Source color coding
         if source_type == 'orionoid':
@@ -707,7 +745,9 @@ def show_sources(sources, title, tmdb_id=None, media_type='movie', original_para
         else:
             quality_color = 'white'
         
-        display = f"{source_tag} [COLOR {quality_color}][{quality}][/COLOR] {name[:60]}"
+        # Build display string
+        cached_tag = '[COLOR lime][CACHED][/COLOR] ' if is_cached else ''
+        display = f"{cached_tag}{source_tag} [COLOR {quality_color}][{quality}][/COLOR] {name[:60]}"
         if size:
             display += f" [{size}]"
         if seeds:
@@ -1685,6 +1725,8 @@ elif action == 'qr_tb':
 elif action == 'qr_trakt':
     from resources.lib import qrcode_helper
     qrcode_helper.show_qr('Trakt', 'https://trakt.tv/activate')
+elif action == 'noop':
+    pass
 else:
     log(f"Unknown action: {action}", xbmc.LOGWARNING)
     main_menu()

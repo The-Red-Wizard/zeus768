@@ -19,7 +19,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.orion" name="Orion" version="3.2.0" provider-name="zeus768">
+<addon id="plugin.video.orion" name="Orion" version="3.2.1" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
         <import addon="script.module.resolveurl" version="5.0.00" optional="true"/>
@@ -29,8 +29,8 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Orion Media Explorer</summary>
-        <description lang="en">Orion v3.2.0 - Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration with scrobbling, watchlists and liked lists, ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.</description>
-        <news>[3.2.0] Added TorBox debrid support with API key auth and cache checking. Fixed debrid providers - removed broken requests dependency, all providers now use native urllib for Kodi 21+ compatibility. Added TorBox to debrid priority settings.</news>
+        <description lang="en">Orion v3.2.1 - Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration with scrobbling, watchlists and liked lists, ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.</description>
+        <news>[3.2.1] Added [CACHED] tags - batch cache checking across all debrid providers (RD, PM, AD, TB). Cached sources sorted to top with green tags. Source summary line shows cached/total count.</news>
         <platform>all</platform>
         <license>GPL-3.0</license>
         <assets>

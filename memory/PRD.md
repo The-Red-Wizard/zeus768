@@ -29,11 +29,12 @@ Fix old Kodi addons and bring them back to life for Kodi 21+ (Python 3). Primary
 - [x] Favorites, Watch history, OpenSubtitles, Skip Intro, Up Next
 - [x] Jackett/Prowlarr, ResolveURL, Kodi repo structure
 
-## plugin.video.orion (Orion) — v3.2.0 [UPDATED]
+## plugin.video.orion (Orion) — v3.2.1 [UPDATED]
 - [x] Multi-scraper: Orionoid, Torrentio, MediaFusion, Jackettio, 1337x, TorrentDownloads, RARBG
 - [x] Debrid: Real-Debrid, Premiumize, AllDebrid — all using native urllib
 - [x] **TorBox debrid support** (API key auth, cache checking, magnet resolving) — Added v3.2.0
 - [x] **Removed broken `script.module.requests` dependency** — Fixed v3.2.0
+- [x] **[CACHED] source tags** — Batch cache checking across all 4 debrid providers, cached sorted to top — Added v3.2.1
 - [x] Debrid priority selector with 4 services (RD > PM > AD > TB)
 - [x] Trakt integration (scrobbling, watchlists, liked lists, collections, recommendations)
 - [x] Kids Zone (animation, family, G/PG, infinite scroll)
