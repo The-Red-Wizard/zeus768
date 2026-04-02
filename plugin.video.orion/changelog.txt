@@ -1,6 +1,15 @@
 Orion Changelog
 ================
 
+## v3.2.3 (February 2026)
+
+### Buy Me a Beer
+- Added "Buy Me a Beer" menu item at bottom of main menu
+- Shows QR code dialog linking to https://ko-fi.com/zeus768
+- Option to view QR code or Ko-fi link text
+
+---
+
 ## v3.2.2 (February 2026)
 
 ### Debrid Resolution Fixes

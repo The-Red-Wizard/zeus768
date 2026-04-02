@@ -69,6 +69,61 @@ def _tmdb_get(path, params=None):
 def build_url(query):
     return sys.argv[0] + '?' + urlencode(query)
 
+def show_kofi_qr():
+    """Show Ko-fi QR code dialog for donations"""
+    import ssl
+    kofi_url = 'https://ko-fi.com/zeus768'
+    qr_api = f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={quote_plus(kofi_url)}'
+    temp_path = xbmcvfs.translatePath('special://temp/')
+    qr_file = os.path.join(temp_path, 'kofi_qr.png')
+    
+    try:
+        ctx = ssl._create_unverified_context()
+        req = Request(qr_api, headers={'User-Agent': 'Mozilla/5.0'})
+        with urlopen(req, context=ctx, timeout=15) as resp:
+            with open(qr_file, 'wb') as f:
+                f.write(resp.read())
+    except Exception:
+        xbmcgui.Dialog().ok(
+            'Buy Me a Beer',
+            '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+            'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
+            'Every beer keeps the addons alive!'
+        )
+        return
+    
+    if os.path.exists(qr_file):
+        # Use WindowDialog to show QR image
+        dialog = KofiQRDialog(qr_file, kofi_url)
+        dialog.doModal()
+        del dialog
+    else:
+        xbmcgui.Dialog().ok(
+            'Buy Me a Beer',
+            '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+            'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]'
+        )
+
+class KofiQRDialog(xbmcgui.WindowDialog):
+    def __init__(self, qr_path, url):
+        super().__init__()
+        w, h = 1280, 720
+        dw, dh = 600, 520
+        dx, dy = (w - dw) // 2, (h - dh) // 2
+        
+        self.addControl(xbmcgui.ControlImage(dx, dy, dw, dh, 'special://xbmc/addons/skin.estuary/media/dialogs/dialog-bg.png'))
+        self.addControl(xbmcgui.ControlLabel(dx, dy + 20, dw, 40, '[B][COLOR orange]Buy Me a Beer![/COLOR][/B]', alignment=2))
+        qr_sz = 280
+        self.addControl(xbmcgui.ControlImage(dx + (dw - qr_sz) // 2, dy + 70, qr_sz, qr_sz, qr_path))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 365, dw - 40, 30, f'[COLOR cyan]{url}[/COLOR]', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 400, dw - 40, 30, 'Scan QR code or visit the link above', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 435, dw - 40, 30, '[COLOR orange]Every beer keeps the addons alive![/COLOR]', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + dh - 40, dw - 40, 30, '[COLOR gray]Press BACK to close[/COLOR]', alignment=2))
+    
+    def onAction(self, action):
+        if action.getId() in [9, 10, 92, 7]:
+            self.close()
+
 def get_params():
     return dict(parse_qsl(sys.argv[2][1:]))
 
@@ -85,6 +140,7 @@ def main_menu():
         {'title': 'Debrid Services', 'mode': 'debrid_menu'},
         {'title': 'Tools', 'mode': 'tools_menu'},
         {'title': 'Settings', 'mode': 'addon_settings'},
+        {'title': '[COLOR orange]Buy Me a Beer[/COLOR]', 'mode': 'buy_beer'},
     ]
     
     for item in items:
@@ -2546,6 +2602,20 @@ def router(params):
         channel_search_show()
     elif mode == 'channel_play_show':
         channel_play_show(params.get('tmdb_id', ''), params.get('name', ''))
+    elif mode == 'buy_beer':
+        choice = xbmcgui.Dialog().select(
+            'Buy Me a Beer - Support zeus768',
+            ['Show QR Code (scan to donate)', 'Show Ko-fi Link']
+        )
+        if choice == 0:
+            show_kofi_qr()
+        elif choice == 1:
+            xbmcgui.Dialog().ok(
+                'Buy Me a Beer',
+                '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+                'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
+                'Every beer keeps the addons alive!'
+            )
     else:
         log_utils.log(f'Unknown mode: {mode}', xbmc.LOGWARNING)
         main_menu()

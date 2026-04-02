@@ -1,3 +1,8 @@
+[B]v1.2.1[/B] - February 2026
+- Updated Buy Me a Beer with QR code dialog (downloads from QR API)
+- Shows Ko-fi link: https://ko-fi.com/zeus768
+- Consistent styling across all zeus768 addons
+
 [B]v1.2.0[/B] - January 2026
 - Improved video link formatting with section headers
 - Color coded servers: Server #1 (blue), Server #2 (gold)

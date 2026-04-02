@@ -69,6 +69,7 @@ def main_menu():
         ("[COLOR gold]Favorites[/COLOR]", {'action': 'favorites_menu'}, True, get_icon('favorites'), "Your favorite movies and shows"),
         ("[COLOR yellow]Trakt[/COLOR]", {'action': 'trakt_menu'}, True, get_icon('trakt'), "Trakt lists and watchlist"),
         ("[COLOR cyan]Settings[/COLOR]", {'action': 'open_settings'}, False, get_icon('settings'), "Configure addon settings"),
+        ("[COLOR orange]Buy Me a Beer[/COLOR]", {'action': 'buy_beer'}, False, get_icon('settings'), "Support the developer on Ko-fi"),
     ]
     
     for name, query, is_folder, icon, plot in items:
@@ -1727,6 +1728,21 @@ elif action == 'qr_trakt':
     qrcode_helper.show_qr('Trakt', 'https://trakt.tv/activate')
 elif action == 'noop':
     pass
+elif action == 'buy_beer':
+    choice = xbmcgui.Dialog().select(
+        'Buy Me a Beer - Support zeus768',
+        ['Show QR Code (scan to donate)', 'Show Ko-fi Link']
+    )
+    if choice == 0:
+        from resources.lib import qrcode_helper
+        qrcode_helper.show_qr('Ko-fi', 'https://ko-fi.com/zeus768')
+    elif choice == 1:
+        xbmcgui.Dialog().ok(
+            'Buy Me a Beer',
+            '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+            'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
+            'Every beer keeps the addons alive!'
+        )
 else:
     log(f"Unknown action: {action}", xbmc.LOGWARNING)
     main_menu()

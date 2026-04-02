@@ -4,6 +4,15 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.2.0 (2026-04-02)
+================================================================================
+
+  NEW FEATURES
+  ------------
+  * Added "Buy Me a Beer" menu item at bottom of main menu
+  * Shows QR code dialog with Ko-fi link (https://ko-fi.com/zeus768)
+  * Option to scan QR code or view link text
+
 v2.1.9 (2026-04-02)
 ================================================================================
 

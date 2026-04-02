@@ -196,7 +196,7 @@ def run():
         xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'history'}), li, True)
         
         # Donate/Support
-        li = create_list_item('[COLOR lime][B]🍺 Support zeus768 (Buy Me a Beer)[/B][/COLOR]', icon=os.path.join(MEDIA_PATH, 'qrcode.png'), fanart=FANART)
+        li = create_list_item('[COLOR orange][B]Buy Me a Beer[/B][/COLOR]', icon=ICON, fanart=FANART)
         xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'donate'}), li, False)
         
         xbmcplugin.endOfDirectory(HANDLE)
@@ -504,19 +504,65 @@ def run():
             xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
 
     elif action == 'donate':
-        # Show QR code for donation
-        qr_path = os.path.join(MEDIA_PATH, 'qrcode.png')
-        dialog = xbmcgui.Dialog()
-        dialog.textviewer(
-            'Support zeus768 - Buy Me a Beer!',
-            'Thank you for using Strike Zone!\n\n'
-            'If you enjoy this addon and want to support development,\n'
-            'please scan the QR code or visit the link below.\n\n'
-            'Your support helps keep this addon updated!\n\n'
-            f'QR Code location: {qr_path}'
+        # Show Ko-fi QR code for donation
+        import ssl
+        import urllib.request
+        kofi_url = 'https://ko-fi.com/zeus768'
+        qr_api = f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(kofi_url)}'
+        temp_path = xbmcvfs.translatePath('special://temp/')
+        qr_file = os.path.join(temp_path, 'kofi_qr.png')
+        
+        try:
+            ctx = ssl._create_unverified_context()
+            req = urllib.request.Request(qr_api, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
+                with open(qr_file, 'wb') as f:
+                    f.write(resp.read())
+        except Exception:
+            qr_file = None
+        
+        choice = xbmcgui.Dialog().select(
+            'Buy Me a Beer - Support zeus768',
+            ['Show QR Code (scan to donate)', 'Show Ko-fi Link']
         )
-        # Show the image
-        xbmcgui.Dialog().notification('Strike Zone', 'Check QR code in resources/media/', xbmcgui.NOTIFICATION_INFO, 5000)
+        if choice == 0:
+            if qr_file and os.path.exists(qr_file):
+                dialog = KofiQRDialog(qr_file, kofi_url)
+                dialog.doModal()
+                del dialog
+            else:
+                xbmcgui.Dialog().ok(
+                    'Buy Me a Beer',
+                    '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+                    'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]'
+                )
+        elif choice == 1:
+            xbmcgui.Dialog().ok(
+                'Buy Me a Beer',
+                '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+                'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
+                'Every beer keeps the addons alive!'
+            )
+
+class KofiQRDialog(xbmcgui.WindowDialog):
+    def __init__(self, qr_path, url):
+        super().__init__()
+        w, h = 1280, 720
+        dw, dh = 600, 520
+        dx, dy = (w - dw) // 2, (h - dh) // 2
+        
+        self.addControl(xbmcgui.ControlImage(dx, dy, dw, dh, 'special://xbmc/addons/skin.estuary/media/dialogs/dialog-bg.png'))
+        self.addControl(xbmcgui.ControlLabel(dx, dy + 20, dw, 40, '[B][COLOR orange]Buy Me a Beer![/COLOR][/B]', alignment=2))
+        qr_sz = 280
+        self.addControl(xbmcgui.ControlImage(dx + (dw - qr_sz) // 2, dy + 70, qr_sz, qr_sz, qr_path))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 365, dw - 40, 30, f'[COLOR cyan]{url}[/COLOR]', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 400, dw - 40, 30, 'Scan QR code or visit the link above', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 435, dw - 40, 30, '[COLOR orange]Every beer keeps the addons alive![/COLOR]', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + dh - 40, dw - 40, 30, '[COLOR gray]Press BACK to close[/COLOR]', alignment=2))
+    
+    def onAction(self, action):
+        if action.getId() in [9, 10, 92, 7]:
+            self.close()
 
 if __name__ == '__main__':
     import xbmc
