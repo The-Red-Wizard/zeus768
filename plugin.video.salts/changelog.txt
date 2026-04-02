@@ -4,6 +4,26 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.1.7 (2026-04-02)
+================================================================================
+
+  NEW FEATURES
+  ------------
+  * Bento UI Source Dialog - custom WindowXMLDialog skin with:
+    - Quality-colored badges (gold 4K, green 1080p, blue 720p, gray SD)
+    - CACHED / FREE tags with distinct colors
+    - Seeds count and file size columns
+    - Left accent bar on focused item
+    - Dark navy-teal theme
+    - Automatic fallback to standard dialog if skin unavailable
+  * Pre-Scrape & Hover Caching:
+    - Background service monitors focused items while browsing SALTS
+    - After 2s hover, triggers lightweight background scrape (4-link rule: top 4 scrapers)
+    - Results stored in SQLite hover_cache with 24hr TTL
+    - "Instant!" notification when clicking a pre-scraped title
+  * Clear Pre-Scrape Cache option in Tools menu
+
+
 v2.1.6 (2026-04-02)
 ================================================================================
 

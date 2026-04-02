@@ -606,6 +606,16 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
                 return _display_or_autoplay_sources(all_sources, search_title, media_type,
                                                      title, year, season, episode, tmdb_id)
     
+    # Check hover/pre-scrape cache (24hr TTL, no prompt)
+    hover_key = f'hover|{cache_key}'
+    hover_sources = db.get_hover_cache(hover_key)
+    if hover_sources:
+        log_utils.log(f'Hover cache hit for {cache_key}: {len(hover_sources)} pre-scraped sources', xbmc.LOGINFO)
+        xbmcgui.Dialog().notification(ADDON_NAME, f'Instant! {len(hover_sources)} pre-scraped sources', ADDON_ICON, 2000)
+        all_sources = hover_sources
+        return _display_or_autoplay_sources(all_sources, search_title, media_type,
+                                             title, year, season, episode, tmdb_id)
+    
     progress = xbmcgui.DialogProgress()
     progress.create('SALTS', f'Searching for: {search_title}')
     
@@ -755,60 +765,48 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
     free_count = sum(1 for s in all_sources if s.get('direct'))
     sources_found = len(all_sources)
     
-    # Count quality breakdown
-    quality_counts = {}
-    for s in all_sources:
-        q = s.get('quality', 'SD')
-        quality_counts[q] = quality_counts.get(q, 0) + 1
-    
-    q_parts = []
-    for q in ['4K', '2160p', '1080p', 'HD', '720p', '480p', 'SD']:
-        if q in quality_counts:
-            q_parts.append(f'{q}: {quality_counts[q]}')
-    quality_summary = ' | '.join(q_parts) if q_parts else 'Mixed'
-    
-    # Build display list
-    display_list = []
-    for source in all_sources:
-        scraper_name = source.get('scraper', 'Unknown')
-        source_title = source.get('title', 'Unknown')
-        quality = source.get('quality', 'SD')
-        seeds = source.get('seeds', 0)
-        size = source.get('size', '')
-        is_free = source.get('direct', False)
+    # Use Bento UI dialog
+    try:
+        from salts_lib.bento_dialog import show_bento_source_dialog
+        selected = show_bento_source_dialog(all_sources, title=search_title)
+    except Exception as e:
+        log_utils.log(f'Bento dialog error, using fallback: {e}', xbmc.LOGDEBUG)
+        # Fallback to standard dialog
+        display_list = []
+        for source in all_sources:
+            scraper_name = source.get('scraper', 'Unknown')
+            quality = source.get('quality', 'SD')
+            seeds = source.get('seeds', 0)
+            size = source.get('size', '')
+            is_free = source.get('direct', False)
+            
+            parts = [f'[{quality}]']
+            if source.get('cached'):
+                parts.append('[CACHED]')
+            if is_free:
+                parts.append('[FREE]')
+            parts.append(f'[{scraper_name}]')
+            if seeds and not is_free:
+                parts.append(f'Seeds: {seeds}')
+            if size:
+                parts.append(size)
+            
+            label = ' | '.join(parts)
+            if source.get('cached'):
+                label = f'[COLOR limegreen]{label}[/COLOR]'
+            elif is_free:
+                label = f'[COLOR orange]{label}[/COLOR]'
+            elif quality in ['4K', '2160p']:
+                label = f'[COLOR gold]{label}[/COLOR]'
+            elif quality in ['1080p', 'HD']:
+                label = f'[COLOR lime]{label}[/COLOR]'
+            else:
+                label = f'[COLOR white]{label}[/COLOR]'
+            display_list.append(label)
         
-        label_parts = [f'[{quality}]']
-        if source.get('cached'):
-            label_parts.append('[CACHED]')
-        if is_free:
-            label_parts.append('[FREE]')
-        label_parts.append(f'[{scraper_name}]')
-        if seeds and not is_free:
-            label_parts.append(f'Seeds: {seeds}')
-        if size:
-            label_parts.append(size)
-        label_parts.append(source_title[:80])
-        
-        label = ' | '.join(label_parts)
-        
-        if source.get('cached'):
-            label = f'[COLOR limegreen]{label}[/COLOR]'
-        elif is_free:
-            label = f'[COLOR orange]{label}[/COLOR]'
-        elif quality in ['4K', '2160p']:
-            label = f'[COLOR gold]{label}[/COLOR]'
-        elif quality in ['1080p', 'HD']:
-            label = f'[COLOR lime]{label}[/COLOR]'
-        elif quality in ['720p']:
-            label = f'[COLOR cyan]{label}[/COLOR]'
-        else:
-            label = f'[COLOR white]{label}[/COLOR]'
-        
-        display_list.append(label)
-    
-    cached_count = sum(1 for s in all_sources if s.get('cached'))
-    header = f'SALTS: {sources_found} sources ({cached_count} cached, {free_count} free)  [{quality_summary}]'
-    selected = xbmcgui.Dialog().select(header, display_list, useDetails=False)
+        cached_count = sum(1 for s in all_sources if s.get('cached'))
+        header = f'SALTS: {sources_found} sources ({cached_count} cached, {free_count} free)'
+        selected = xbmcgui.Dialog().select(header, display_list)
     
     if selected < 0:
         return
@@ -1153,6 +1151,7 @@ def tools_menu():
     items = [
         {'title': 'Clear Cache', 'mode': 'clear_cache'},
         {'title': 'Clear Source Cache', 'mode': 'clear_source_cache'},
+        {'title': 'Clear Pre-Scrape Cache', 'mode': 'clear_hover_cache'},
         {'title': 'Test Scrapers', 'mode': 'test_scrapers'},
         {'title': 'Quality Presets', 'mode': 'quality_presets_menu'},
         {'title': 'Scraper Priority', 'mode': 'scraper_priority_menu'},
@@ -1177,6 +1176,12 @@ def clear_source_cache():
     db = db_utils.DB_Connection()
     db.clear_source_cache()
     xbmcgui.Dialog().notification(ADDON_NAME, 'Source cache cleared', ADDON_ICON)
+
+def clear_hover_cache():
+    """Clear pre-scrape / hover cache"""
+    db = db_utils.DB_Connection()
+    db.clear_hover_cache()
+    xbmcgui.Dialog().notification(ADDON_NAME, 'Pre-scrape cache cleared', ADDON_ICON)
 
 def test_scrapers():
     """Test all scrapers"""
@@ -2447,6 +2452,8 @@ def router(params):
         clear_cache()
     elif mode == 'clear_source_cache':
         clear_source_cache()
+    elif mode == 'clear_hover_cache':
+        clear_hover_cache()
     elif mode == 'test_scrapers':
         test_scrapers()
     elif mode == 'addon_settings':

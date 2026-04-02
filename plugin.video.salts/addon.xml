@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.salts" version="2.1.6" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.1.7" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -31,6 +31,14 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.1.7 (2026)
+- Added: Bento UI Source Dialog - custom skin with quality-colored badges, cached/free tags, seeds, size
+- Added: Pre-Scrape hover caching - background scrape after 2s hover on movie items (4-link rule)
+- Added: 24hr TTL hover cache in SQLite for instant source availability
+- Added: "Instant!" notification when pre-scraped sources are available
+- Added: Clear Pre-Scrape Cache in Tools menu
+- Added: Fallback to standard dialog if skin XML not available
+
 v2.1.6 (2026)
 - Added: Franchises menu (30 curated + search with unlimited pagination via TMDB collections)
 - Added: Actors menu (Popular actors with pagination + search + full filmography with pagination)

@@ -112,6 +112,15 @@ class DB_Connection:
             )
         ''')
         
+        # Hover/pre-scrape cache (24hr TTL)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS hover_cache (
+                cache_key TEXT PRIMARY KEY,
+                sources TEXT,
+                timestamp REAL
+            )
+        ''')
+        
         conn.commit()
         conn.close()
     
@@ -193,6 +202,55 @@ class DB_Connection:
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM source_cache')
+        conn.commit()
+        conn.close()
+    
+    # ==================== Hover / Pre-Scrape Cache ====================
+    
+    def cache_hover(self, cache_key, sources):
+        """Cache pre-scraped hover results (24hr TTL)"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT OR REPLACE INTO hover_cache (cache_key, sources, timestamp) VALUES (?, ?, ?)',
+            (cache_key, json.dumps(sources), time.time())
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_hover_cache(self, cache_key, cache_limit_hours=24):
+        """Get pre-scraped hover cache if still valid"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'SELECT sources, timestamp FROM hover_cache WHERE cache_key = ?',
+            (cache_key,)
+        )
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            sources_json, timestamp = result
+            age = (time.time() - timestamp) / 3600
+            if age < cache_limit_hours:
+                return json.loads(sources_json)
+        
+        return None
+    
+    def clear_hover_cache(self):
+        """Clear hover/pre-scrape cache"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM hover_cache')
+        conn.commit()
+        conn.close()
+    
+    def prune_hover_cache(self, max_age_hours=24):
+        """Remove expired hover cache entries"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cutoff = time.time() - (max_age_hours * 3600)
+        cursor.execute('DELETE FROM hover_cache WHERE timestamp < ?', (cutoff,))
         conn.commit()
         conn.close()
     
