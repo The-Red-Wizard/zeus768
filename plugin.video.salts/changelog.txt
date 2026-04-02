@@ -4,6 +4,34 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.1.5 (2026-02-06)
+================================================================================
+
+  BUG FIXES
+  ---------
+  * Fixed ALL scrapers crashing (not just PirateBay) - replaced 'requests' module
+    with native urllib in base_scraper.py (affects all 34+ scrapers)
+  * Fixed Debrid services not authorizing/staying authorized - replaced 'requests'
+    with native urllib in debrid.py (Real-Debrid, Premiumize, AllDebrid)
+  * Fixed Trakt API - replaced dummy CLIENT_SECRET with real registered app credentials
+  * Fixed Trakt lists and menus - hardened response parsing for all endpoint formats
+    (Trending, Popular, Watchlist, Collection, Custom Lists)
+  * Added error handling to all Trakt menu functions (graceful failure with notifications)
+  * Fixed Trakt list items now pass TMDB IDs for proper metadata lookup
+
+  NEW FEATURES
+  ------------
+  * Debrid gate: torrent scrapers are now blocked until at least one Debrid service
+    (Real-Debrid, Premiumize, or AllDebrid) is enabled and authorized
+  * Free stream scrapers (VidSrc, 2Embed, etc.) always available regardless of Debrid status
+  * User notification when no Debrid service is enabled ("Free streams only")
+
+  DEPENDENCY CHANGES
+  ------------------
+  * Removed script.module.requests dependency (no longer needed)
+  * Removed script.module.six dependency (Python 3 native)
+
+
 v2.1.4 (2026-03-31)
 ================================================================================
 

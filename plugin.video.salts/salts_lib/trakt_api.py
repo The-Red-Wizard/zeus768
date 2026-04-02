@@ -19,8 +19,8 @@ from .db_utils import DB_Connection
 ADDON = xbmcaddon.Addon()
 
 # Trakt API v2 settings
-CLIENT_ID = '527628bac6bf261a98c20d218dda4541c3fd5c6c2586bded94c2ea802e32faf3'
-CLIENT_SECRET = '5e51354a2e4e8d4f8e3f6d2e1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b'
+CLIENT_ID = '42eba69a18795ae48fc5d6dbdd99396e9e3894dc4f18930e6187d36c8b4346d3'
+CLIENT_SECRET = 'e5bc7e20660e73622344ebf93c250a8fc2814a8f7c2b082bdee51545d5f71969'
 API_URL = 'https://api.trakt.tv'
 REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
 

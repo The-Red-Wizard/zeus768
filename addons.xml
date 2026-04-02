@@ -111,13 +111,11 @@
             </assets>
         </extension>
     </addon>
-    <addon id="plugin.video.salts" version="2.1.1" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+    <addon id="plugin.video.salts" version="2.1.5" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
         <requires>
             <import addon="xbmc.python" version="3.0.0"/>
             <import addon="script.module.resolveurl" version="5.1.0"/>
-            <import addon="script.module.requests" version="2.25.0"/>
             <import addon="script.module.beautifulsoup4" version="4.9.0"/>
-            <import addon="script.module.six" version="1.15.0"/>
         </requires>
         <extension point="xbmc.python.pluginsource" library="default.py">
             <provides>video</provides>
@@ -125,7 +123,7 @@
         <extension point="xbmc.service" library="service.py" start="startup"/>
         <extension point="xbmc.addon.metadata">
             <summary lang="en">Stream All The Sources - Modernized for Kodi 21+</summary>
-            <description lang="en">SALTS v2.1.1 - Multi-source video addon with 34+ scrapers (1337x, YTS, EZTV, TorrentGalaxy, TPB, NNM-Club, RuTracker, Nyaa, etc.), custom source dialog, Up Next episode, Skip Intro, Jackett/Prowlarr support, Real-Debrid/Premiumize/AllDebrid, Trakt.tv integration. Original by tknorris, modernized by zeus768.</description>
+            <description lang="en">SALTS v2.1.5 - Multi-source video addon with 34+ scrapers, free streams, Trakt.tv integration, Real-Debrid/Premiumize/AllDebrid, custom source dialog, autoplay, Up Next, Skip Intro, Jackett/Prowlarr support. Original by tknorris, modernized by zeus768.</description>
             <platform>all</platform>
             <license>GPL-3.0-only</license>
             <website>https://github.com/Zeus768/zeus768</website>

@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.salts" version="2.1.4" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.1.5" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
-        <import addon="script.module.requests" version="2.25.0"/>
         <import addon="script.module.beautifulsoup4" version="4.9.0"/>
-        <import addon="script.module.six" version="1.15.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -33,6 +31,15 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.1.5 (2026)
+- Fixed: Replaced all 'requests' usage with native urllib across base_scraper.py and debrid.py
+- Fixed: Trakt API - real CLIENT_ID and CLIENT_SECRET for proper OAuth authorization
+- Fixed: Trakt lists/menus - hardened response parsing for Trending, Popular, Watchlist, Collection
+- Fixed: All 34+ scrapers now work (not just PirateBay) - base class urllib migration complete
+- Added: Debrid gate - torrent scrapers blocked until a Debrid service is enabled
+- Added: Free streams always available regardless of Debrid status
+- Removed: script.module.requests and script.module.six dependencies
+
 v2.1.4 (2026)
 - Fixed: Debrid container refresh on authorisation.
 
