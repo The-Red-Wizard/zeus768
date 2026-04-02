@@ -508,7 +508,7 @@ def run():
         import ssl
         import urllib.request
         kofi_url = 'https://ko-fi.com/zeus768'
-        qr_api = f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(kofi_url)}'
+        qr_api = f'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={urllib.parse.quote(kofi_url)}&bgcolor=0-0-0&color=255-255-255'
         temp_path = xbmcvfs.translatePath('special://temp/')
         qr_file = os.path.join(temp_path, 'kofi_qr.png')
         
@@ -527,9 +527,16 @@ def run():
         )
         if choice == 0:
             if qr_file and os.path.exists(qr_file):
-                dialog = KofiQRDialog(qr_file, kofi_url)
-                dialog.doModal()
-                del dialog
+                xbmc.executebuiltin(f'ShowPicture({qr_file})')
+                xbmc.sleep(500)
+                xbmcgui.Dialog().ok(
+                    'Buy Me a Beer - zeus768',
+                    '[COLOR orange]Thanks for the support![/COLOR]\n\n'
+                    'Scan the QR code behind this dialog, or visit:\n'
+                    '[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
+                    '[COLOR orange]Every beer keeps the addons alive![/COLOR]'
+                )
+                xbmc.executebuiltin('Action(Back)')
             else:
                 xbmcgui.Dialog().ok(
                     'Buy Me a Beer',
@@ -543,26 +550,6 @@ def run():
                 'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
                 'Every beer keeps the addons alive!'
             )
-
-class KofiQRDialog(xbmcgui.WindowDialog):
-    def __init__(self, qr_path, url):
-        super().__init__()
-        w, h = 1280, 720
-        dw, dh = 600, 520
-        dx, dy = (w - dw) // 2, (h - dh) // 2
-        
-        self.addControl(xbmcgui.ControlImage(dx, dy, dw, dh, 'special://xbmc/addons/skin.estuary/media/dialogs/dialog-bg.png'))
-        self.addControl(xbmcgui.ControlLabel(dx, dy + 20, dw, 40, '[B][COLOR orange]Buy Me a Beer![/COLOR][/B]', alignment=2))
-        qr_sz = 280
-        self.addControl(xbmcgui.ControlImage(dx + (dw - qr_sz) // 2, dy + 70, qr_sz, qr_sz, qr_path))
-        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 365, dw - 40, 30, f'[COLOR cyan]{url}[/COLOR]', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 400, dw - 40, 30, 'Scan QR code or visit the link above', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + 435, dw - 40, 30, '[COLOR orange]Every beer keeps the addons alive![/COLOR]', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(dx + 20, dy + dh - 40, dw - 40, 30, '[COLOR gray]Press BACK to close[/COLOR]', alignment=2))
-    
-    def onAction(self, action):
-        if action.getId() in [9, 10, 92, 7]:
-            self.close()
 
 if __name__ == '__main__':
     import xbmc
