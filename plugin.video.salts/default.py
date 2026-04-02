@@ -765,48 +765,9 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
     free_count = sum(1 for s in all_sources if s.get('direct'))
     sources_found = len(all_sources)
     
-    # Use Bento UI dialog
-    try:
-        from salts_lib.bento_dialog import show_bento_source_dialog
-        selected = show_bento_source_dialog(all_sources, title=search_title)
-    except Exception as e:
-        log_utils.log(f'Bento dialog error, using fallback: {e}', xbmc.LOGDEBUG)
-        # Fallback to standard dialog
-        display_list = []
-        for source in all_sources:
-            scraper_name = source.get('scraper', 'Unknown')
-            quality = source.get('quality', 'SD')
-            seeds = source.get('seeds', 0)
-            size = source.get('size', '')
-            is_free = source.get('direct', False)
-            
-            parts = [f'[{quality}]']
-            if source.get('cached'):
-                parts.append('[CACHED]')
-            if is_free:
-                parts.append('[FREE]')
-            parts.append(f'[{scraper_name}]')
-            if seeds and not is_free:
-                parts.append(f'Seeds: {seeds}')
-            if size:
-                parts.append(size)
-            
-            label = ' | '.join(parts)
-            if source.get('cached'):
-                label = f'[COLOR limegreen]{label}[/COLOR]'
-            elif is_free:
-                label = f'[COLOR orange]{label}[/COLOR]'
-            elif quality in ['4K', '2160p']:
-                label = f'[COLOR gold]{label}[/COLOR]'
-            elif quality in ['1080p', 'HD']:
-                label = f'[COLOR lime]{label}[/COLOR]'
-            else:
-                label = f'[COLOR white]{label}[/COLOR]'
-            display_list.append(label)
-        
-        cached_count = sum(1 for s in all_sources if s.get('cached'))
-        header = f'SALTS: {sources_found} sources ({cached_count} cached, {free_count} free)'
-        selected = xbmcgui.Dialog().select(header, display_list)
+    # Use Bento-style source dialog (native Kodi select with rich formatting)
+    from salts_lib.bento_dialog import show_bento_source_dialog
+    selected = show_bento_source_dialog(all_sources, title=search_title)
     
     if selected < 0:
         return
