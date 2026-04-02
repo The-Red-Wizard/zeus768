@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.salts" version="2.1.5" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.1.6" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -31,6 +31,13 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.1.6 (2026)
+- Added: Franchises menu (30 curated + search with unlimited pagination via TMDB collections)
+- Added: Actors menu (Popular actors with pagination + search + full filmography with pagination)
+- Added: 24/7 Movie Channels - pick an actor, shuffles all their movies, autoplay marathon (max 1080p)
+- Added: 24/7 TV Channels - pick a show, random season/episode start, plays sequentially
+- Added: Search for franchises, actors, and 24/7 channels
+
 v2.1.5 (2026)
 - Added: TorBox debrid service support (API key auth, magnet resolve, cache check)
 - Added: Batch cache checking - all scraped torrents checked against debrid services in one pass

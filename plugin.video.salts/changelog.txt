@@ -4,6 +4,19 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.1.6 (2026-04-02)
+================================================================================
+
+  NEW FEATURES
+  ------------
+  * Franchises menu - 30 curated collections + search with unlimited pagination
+  * Actors menu - popular actors with pagination + search + full filmography
+  * 24/7 Movie Channels - pick an actor, shuffles their movies, autoplay marathon (max 1080p)
+  * 24/7 TV Show Channels - pick a show, random season/episode start, sequential autoplay
+  * Search for franchises, actors, and 24/7 channels via TMDB
+  * TMDB API helper function for cleaner code
+
+
 v2.1.5 (2026-04-02)
 ================================================================================
 

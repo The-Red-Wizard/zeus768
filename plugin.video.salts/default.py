@@ -14,6 +14,7 @@ import re
 import datetime
 import time
 import json
+import random
 import xbmcplugin
 import xbmcgui
 import xbmc
@@ -44,6 +45,27 @@ from salts_lib import debrid
 
 HANDLE = int(sys.argv[1])
 
+# TMDB API config
+TMDB_BASE = 'https://api.themoviedb.org/3'
+TMDB_KEY = '8265bd1679663a7ea12ac168da84d2e8'
+TMDB_IMG = 'https://image.tmdb.org/t/p'
+
+def _tmdb_get(path, params=None):
+    """Helper: GET from TMDB API, returns parsed JSON or None"""
+    url = f'{TMDB_BASE}{path}'
+    p = {'api_key': TMDB_KEY}
+    if params:
+        p.update(params)
+    query = '&'.join(f'{k}={quote_plus(str(v))}' for k, v in p.items())
+    full_url = f'{url}?{query}'
+    try:
+        req = Request(full_url, headers={'User-Agent': 'Mozilla/5.0'})
+        resp = urlopen(req, timeout=15)
+        return json.loads(resp.read().decode('utf-8'))
+    except Exception as e:
+        log_utils.log(f'TMDB API error: {e}', xbmc.LOGERROR)
+        return None
+
 def build_url(query):
     return sys.argv[0] + '?' + urlencode(query)
 
@@ -55,6 +77,7 @@ def main_menu():
     items = [
         {'title': '[B]Movies[/B]', 'mode': 'movies_menu'},
         {'title': '[B]TV Shows[/B]', 'mode': 'tvshows_menu'},
+        {'title': '[B]24/7 Channels[/B]', 'mode': 'channel_menu'},
         {'title': '[B]Favorites[/B]', 'mode': 'favorites_menu'},
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
@@ -80,6 +103,8 @@ def movies_menu():
         {'title': 'Trending Movies', 'mode': 'tmdb_list', 'list_type': 'trending', 'media_type': 'movie'},
         {'title': 'Top Rated Movies', 'mode': 'tmdb_list', 'list_type': 'top_rated', 'media_type': 'movie'},
         {'title': 'Now Playing', 'mode': 'tmdb_list', 'list_type': 'now_playing', 'media_type': 'movie'},
+        {'title': '[B]Franchises[/B]', 'mode': 'franchises_menu'},
+        {'title': '[B]Actors[/B]', 'mode': 'actors_menu'},
     ]
     
     for item in items:
@@ -1714,6 +1739,662 @@ def _show_trakt_items(items, media_type, key=None):
     xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movies' else 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+# ==================== FRANCHISES ====================
+
+def franchises_menu():
+    """Browse popular movie franchises/collections"""
+    franchises = [
+        {'name': 'Marvel Cinematic Universe', 'id': 529892},
+        {'name': 'Star Wars', 'id': 10},
+        {'name': 'Harry Potter', 'id': 1241},
+        {'name': 'The Lord of the Rings', 'id': 119},
+        {'name': 'Fast & Furious', 'id': 9485},
+        {'name': 'James Bond', 'id': 645},
+        {'name': 'Batman', 'id': 263},
+        {'name': 'Spider-Man', 'id': 531241},
+        {'name': 'X-Men', 'id': 748},
+        {'name': 'Jurassic Park', 'id': 328},
+        {'name': 'Pirates of the Caribbean', 'id': 295},
+        {'name': 'Transformers', 'id': 8650},
+        {'name': 'Mission: Impossible', 'id': 87359},
+        {'name': 'John Wick', 'id': 404609},
+        {'name': 'The Hunger Games', 'id': 131635},
+        {'name': 'Toy Story', 'id': 10194},
+        {'name': 'Shrek', 'id': 2150},
+        {'name': 'Indiana Jones', 'id': 84},
+        {'name': 'The Matrix', 'id': 2344},
+        {'name': 'Despicable Me', 'id': 86066},
+        {'name': 'Planet of the Apes', 'id': 173710},
+        {'name': 'Alien', 'id': 8091},
+        {'name': 'Rocky / Creed', 'id': 1575},
+        {'name': 'The Conjuring Universe', 'id': 313086},
+        {'name': 'Twilight', 'id': 33514},
+        {'name': 'The Godfather', 'id': 230},
+        {'name': 'Back to the Future', 'id': 264},
+        {'name': 'Die Hard', 'id': 1570},
+        {'name': 'Mad Max', 'id': 8945},
+        {'name': 'Terminator', 'id': 528},
+    ]
+    
+    li = xbmcgui.ListItem('[B]Search Franchises[/B]')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'search_franchise'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    for f in franchises:
+        li = xbmcgui.ListItem(f['name'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'franchise_movies', 'collection_id': f['id'], 'name': f['name']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def search_franchise():
+    """Search for a movie franchise/collection"""
+    keyboard = xbmc.Keyboard('', 'Search Franchise')
+    keyboard.doModal()
+    
+    if keyboard.isConfirmed():
+        query = keyboard.getText()
+        if query:
+            _search_franchise_results(query, 1)
+
+
+def _search_franchise_results(query, page=1):
+    """Display franchise search results with pagination"""
+    data = _tmdb_get('/search/collection', {'query': query, 'page': page})
+    if not data or not data.get('results'):
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No franchises found', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    for item in data['results']:
+        name = item.get('name', 'Unknown')
+        coll_id = item.get('id')
+        poster = item.get('poster_path', '')
+        backdrop = item.get('backdrop_path', '')
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        li = xbmcgui.ListItem(name)
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
+        url = build_url({'mode': 'franchise_movies', 'collection_id': coll_id, 'name': name})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    if data.get('page', 1) < data.get('total_pages', 1):
+        li = xbmcgui.ListItem('[B]>> Next Page[/B]')
+        li.setArt({'icon': ADDON_ICON})
+        url = build_url({'mode': 'search_franchise_page', 'query': query, 'page': page + 1})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def franchise_movies(collection_id, name=''):
+    """Show all movies in a franchise/collection"""
+    data = _tmdb_get(f'/collection/{collection_id}')
+    if not data:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Failed to load franchise', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    parts = data.get('parts', [])
+    parts.sort(key=lambda x: x.get('release_date', '') or '9999')
+    
+    for movie in parts:
+        title = movie.get('title', 'Unknown')
+        year = (movie.get('release_date') or '')[:4]
+        tmdb_id = movie.get('id', '')
+        poster = movie.get('poster_path', '')
+        backdrop = movie.get('backdrop_path', '')
+        overview = movie.get('overview', '')
+        rating = movie.get('vote_average', 0)
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        label = f'{title} ({year})' if year else title
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setYear(int(year) if year else 0)
+        info_tag.setPlot(overview)
+        info_tag.setRating(rating)
+        info_tag.setMediaType('movie')
+        
+        url = build_url({
+            'mode': 'get_sources', 'title': title, 'year': year,
+            'media_type': 'movie', 'tmdb_id': tmdb_id
+        })
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.setContent(HANDLE, 'movies')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ==================== ACTORS ====================
+
+def actors_menu():
+    """Browse popular actors"""
+    items = [
+        {'title': '[B]Search Actors[/B]', 'mode': 'search_actor'},
+        {'title': 'Popular Actors', 'mode': 'popular_actors', 'page': '1'},
+    ]
+    
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url(item)
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def popular_actors(page=1):
+    """Show popular actors with unlimited pagination"""
+    data = _tmdb_get('/person/popular', {'page': page})
+    if not data or not data.get('results'):
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No actors found', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    for person in data['results']:
+        name = person.get('name', 'Unknown')
+        person_id = person.get('id')
+        profile = person.get('profile_path', '')
+        
+        profile_url = f'{TMDB_IMG}/w500{profile}' if profile else ADDON_ICON
+        
+        kf_titles = []
+        for kf in person.get('known_for', [])[:3]:
+            kf_titles.append(kf.get('title') or kf.get('name', ''))
+        kf_str = ', '.join(t for t in kf_titles if t)
+        
+        label = f'{name} - {kf_str}' if kf_str else name
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': profile_url, 'thumb': profile_url, 'poster': profile_url, 'fanart': ADDON_FANART})
+        
+        url = build_url({'mode': 'actor_movies', 'person_id': person_id, 'name': name})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    if data.get('page', 1) < data.get('total_pages', 1):
+        li = xbmcgui.ListItem('[B]>> Next Page[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'popular_actors', 'page': page + 1})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def search_actor():
+    """Search for an actor"""
+    keyboard = xbmc.Keyboard('', 'Search Actor')
+    keyboard.doModal()
+    
+    if keyboard.isConfirmed():
+        query = keyboard.getText()
+        if query:
+            data = _tmdb_get('/search/person', {'query': query})
+            if not data or not data.get('results'):
+                xbmcgui.Dialog().notification(ADDON_NAME, 'No actors found', ADDON_ICON)
+                xbmcplugin.endOfDirectory(HANDLE)
+                return
+            
+            for person in data['results']:
+                name = person.get('name', 'Unknown')
+                person_id = person.get('id')
+                profile = person.get('profile_path', '')
+                profile_url = f'{TMDB_IMG}/w500{profile}' if profile else ADDON_ICON
+                
+                li = xbmcgui.ListItem(name)
+                li.setArt({'icon': profile_url, 'thumb': profile_url, 'poster': profile_url})
+                url = build_url({'mode': 'actor_movies', 'person_id': person_id, 'name': name})
+                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+            
+            xbmcplugin.endOfDirectory(HANDLE)
+
+
+def actor_movies(person_id, name='', page=1):
+    """Show an actor's filmography with pagination"""
+    data = _tmdb_get(f'/person/{person_id}/movie_credits')
+    if not data:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Failed to load filmography', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    cast = data.get('cast', [])
+    cast.sort(key=lambda x: x.get('popularity', 0), reverse=True)
+    
+    per_page = 20
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_items = cast[start:end]
+    
+    if not page_items:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No more movies', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    for movie in page_items:
+        title = movie.get('title', 'Unknown')
+        year = (movie.get('release_date') or '')[:4]
+        tmdb_id = movie.get('id', '')
+        poster = movie.get('poster_path', '')
+        character = movie.get('character', '')
+        overview = movie.get('overview', '')
+        rating = movie.get('vote_average', 0)
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        
+        label = f'{title} ({year})' if year else title
+        if character:
+            label = f'{label} - as {character}'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': ADDON_FANART})
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setYear(int(year) if year else 0)
+        info_tag.setPlot(overview)
+        info_tag.setRating(rating)
+        info_tag.setMediaType('movie')
+        
+        url = build_url({
+            'mode': 'get_sources', 'title': title, 'year': year,
+            'media_type': 'movie', 'tmdb_id': tmdb_id
+        })
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    if end < len(cast):
+        li = xbmcgui.ListItem(f'[B]>> Next Page ({page + 1})[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'actor_movies', 'person_id': person_id, 'name': name, 'page': page + 1})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'movies')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ==================== 24/7 CHANNELS ====================
+
+def channel_menu():
+    """24/7 Channels menu"""
+    items = [
+        {'title': '[B]24/7 Movies[/B] - Pick an actor, random marathon', 'mode': 'channel_movies_menu'},
+        {'title': '[B]24/7 TV Shows[/B] - Pick a show, random start', 'mode': 'channel_shows_menu'},
+    ]
+    
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': item['mode']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def channel_movies_menu():
+    """24/7 Movies: pick an actor for random movie marathon"""
+    actors = [
+        {'name': 'Adam Sandler', 'id': 19292},
+        {'name': 'Tom Hanks', 'id': 31},
+        {'name': 'Leonardo DiCaprio', 'id': 6193},
+        {'name': 'Denzel Washington', 'id': 5292},
+        {'name': 'Morgan Freeman', 'id': 192},
+        {'name': 'Keanu Reeves', 'id': 6384},
+        {'name': 'Dwayne Johnson', 'id': 18918},
+        {'name': 'Will Smith', 'id': 2888},
+        {'name': 'Robert Downey Jr.', 'id': 3223},
+        {'name': 'Scarlett Johansson', 'id': 1245},
+        {'name': 'Brad Pitt', 'id': 287},
+        {'name': 'Margot Robbie', 'id': 234352},
+        {'name': 'Samuel L. Jackson', 'id': 2231},
+        {'name': 'Jason Statham', 'id': 976},
+        {'name': 'Liam Neeson', 'id': 3896},
+        {'name': 'Nicolas Cage', 'id': 2963},
+        {'name': 'Ryan Reynolds', 'id': 10859},
+        {'name': 'Matt Damon', 'id': 1892},
+        {'name': 'Chris Pratt', 'id': 73457},
+        {'name': 'Eddie Murphy', 'id': 776},
+    ]
+    
+    li = xbmcgui.ListItem('[B]Search Actor for 24/7[/B]')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'channel_search_actor'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    for actor in actors:
+        li = xbmcgui.ListItem(f'24/7 {actor["name"]}')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'channel_play_actor', 'person_id': actor['id'], 'name': actor['name']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def channel_search_actor():
+    """Search for an actor to start 24/7 channel"""
+    keyboard = xbmc.Keyboard('', 'Search Actor for 24/7 Channel')
+    keyboard.doModal()
+    
+    if keyboard.isConfirmed():
+        query = keyboard.getText()
+        if query:
+            data = _tmdb_get('/search/person', {'query': query})
+            if not data or not data.get('results'):
+                xbmcgui.Dialog().notification(ADDON_NAME, 'No actors found', ADDON_ICON)
+                xbmcplugin.endOfDirectory(HANDLE)
+                return
+            
+            for person in data['results']:
+                name = person.get('name', 'Unknown')
+                person_id = person.get('id')
+                profile = person.get('profile_path', '')
+                profile_url = f'{TMDB_IMG}/w500{profile}' if profile else ADDON_ICON
+                
+                li = xbmcgui.ListItem(f'24/7 {name}')
+                li.setArt({'icon': profile_url, 'thumb': profile_url, 'poster': profile_url})
+                url = build_url({'mode': 'channel_play_actor', 'person_id': person_id, 'name': name})
+                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+            
+            xbmcplugin.endOfDirectory(HANDLE)
+
+
+def channel_play_actor(person_id, name=''):
+    """Start 24/7 actor channel: random movies back to back, max 1080p"""
+    data = _tmdb_get(f'/person/{person_id}/movie_credits')
+    if not data or not data.get('cast'):
+        xbmcgui.Dialog().notification(ADDON_NAME, f'No movies found for {name}', ADDON_ICON)
+        return
+    
+    movies = [m for m in data.get('cast', []) if m.get('release_date')]
+    
+    if not movies:
+        xbmcgui.Dialog().notification(ADDON_NAME, f'No movies found for {name}', ADDON_ICON)
+        return
+    
+    random.shuffle(movies)
+    
+    xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: {len(movies)} movies shuffled', ADDON_ICON, 3000)
+    
+    player = xbmc.Player()
+    
+    for movie in movies:
+        title = movie.get('title', 'Unknown')
+        year = (movie.get('release_date') or '')[:4]
+        tmdb_id = movie.get('id', '')
+        
+        log_utils.log(f'24/7 Channel: Playing {title} ({year})', xbmc.LOGINFO)
+        
+        stream_url = _channel_get_stream(title, year, tmdb_id, max_quality='1080p')
+        
+        if not stream_url:
+            log_utils.log(f'24/7 Channel: No source for {title}, skipping', xbmc.LOGINFO)
+            continue
+        
+        li = xbmcgui.ListItem(f'{title} ({year})', path=stream_url)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        player.play(stream_url, li)
+        
+        timeout = 30
+        while not player.isPlaying() and timeout > 0:
+            xbmc.sleep(500)
+            timeout -= 1
+        
+        if not player.isPlaying():
+            continue
+        
+        while player.isPlaying():
+            xbmc.sleep(2000)
+        
+        xbmc.sleep(1000)
+        
+        if xbmc.Monitor().abortRequested():
+            break
+    
+    xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Marathon complete!', ADDON_ICON)
+
+
+def channel_shows_menu():
+    """24/7 TV Shows: browse popular shows to start random marathon"""
+    shows = [
+        {'name': 'The Simpsons', 'id': 456},
+        {'name': 'Breaking Bad', 'id': 1396},
+        {'name': 'The Office (US)', 'id': 2316},
+        {'name': 'Friends', 'id': 1668},
+        {'name': 'Game of Thrones', 'id': 1399},
+        {'name': 'Stranger Things', 'id': 66732},
+        {'name': 'South Park', 'id': 2190},
+        {'name': 'Family Guy', 'id': 1434},
+        {'name': 'The Walking Dead', 'id': 1402},
+        {'name': 'Seinfeld', 'id': 1400},
+        {'name': 'Rick and Morty', 'id': 60625},
+        {'name': 'House of the Dragon', 'id': 94997},
+        {'name': 'The Sopranos', 'id': 1398},
+        {'name': 'The Wire', 'id': 1438},
+        {'name': 'How I Met Your Mother', 'id': 1100},
+        {'name': 'Peaky Blinders', 'id': 60574},
+        {'name': 'Brooklyn Nine-Nine', 'id': 48891},
+        {'name': 'The Big Bang Theory', 'id': 1418},
+        {'name': 'Better Call Saul', 'id': 60059},
+        {'name': 'Arrested Development', 'id': 4589},
+    ]
+    
+    li = xbmcgui.ListItem('[B]Search Show for 24/7[/B]')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'channel_search_show'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    for show in shows:
+        li = xbmcgui.ListItem(f'24/7 {show["name"]}')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'channel_play_show', 'tmdb_id': show['id'], 'name': show['name']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def channel_search_show():
+    """Search for a show to start 24/7 channel"""
+    keyboard = xbmc.Keyboard('', 'Search Show for 24/7 Channel')
+    keyboard.doModal()
+    
+    if keyboard.isConfirmed():
+        query = keyboard.getText()
+        if query:
+            data = _tmdb_get('/search/tv', {'query': query})
+            if not data or not data.get('results'):
+                xbmcgui.Dialog().notification(ADDON_NAME, 'No shows found', ADDON_ICON)
+                xbmcplugin.endOfDirectory(HANDLE)
+                return
+            
+            for show in data['results']:
+                name = show.get('name', 'Unknown')
+                tmdb_id = show.get('id')
+                poster = show.get('poster_path', '')
+                poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+                
+                li = xbmcgui.ListItem(f'24/7 {name}')
+                li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url})
+                url = build_url({'mode': 'channel_play_show', 'tmdb_id': tmdb_id, 'name': name})
+                xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+            
+            xbmcplugin.endOfDirectory(HANDLE)
+
+
+def channel_play_show(tmdb_id, name=''):
+    """Start 24/7 TV channel: random start, then sequential, back out re-randomizes"""
+    show_data = _tmdb_get(f'/tv/{tmdb_id}')
+    if not show_data:
+        xbmcgui.Dialog().notification(ADDON_NAME, f'Failed to load {name}', ADDON_ICON)
+        return
+    
+    seasons = show_data.get('seasons', [])
+    seasons = [s for s in seasons if s.get('season_number', 0) > 0 and s.get('episode_count', 0) > 0]
+    
+    if not seasons:
+        xbmcgui.Dialog().notification(ADDON_NAME, f'No seasons found for {name}', ADDON_ICON)
+        return
+    
+    rand_season = random.choice(seasons)
+    season_num = rand_season['season_number']
+    
+    season_data = _tmdb_get(f'/tv/{tmdb_id}/season/{season_num}')
+    if not season_data or not season_data.get('episodes'):
+        xbmcgui.Dialog().notification(ADDON_NAME, f'Failed to load season {season_num}', ADDON_ICON)
+        return
+    
+    episodes = season_data.get('episodes', [])
+    start_idx = random.randint(0, len(episodes) - 1)
+    start_ep = episodes[start_idx]
+    
+    xbmcgui.Dialog().notification(
+        ADDON_NAME,
+        f'24/7 {name}: Starting S{season_num:02d}E{start_ep["episode_number"]:02d}',
+        ADDON_ICON, 3000
+    )
+    
+    player = xbmc.Player()
+    
+    # Build episode queue: current position -> end of season -> next seasons in order
+    episode_queue = []
+    
+    for ep in episodes[start_idx:]:
+        episode_queue.append((season_num, ep['episode_number']))
+    
+    for s in seasons:
+        sn = s['season_number']
+        if sn <= season_num:
+            continue
+        s_data = _tmdb_get(f'/tv/{tmdb_id}/season/{sn}')
+        if s_data and s_data.get('episodes'):
+            for ep in s_data['episodes']:
+                episode_queue.append((sn, ep['episode_number']))
+    
+    for (s_num, ep_num) in episode_queue:
+        log_utils.log(f'24/7 Channel: Playing {name} S{s_num:02d}E{ep_num:02d}', xbmc.LOGINFO)
+        
+        stream_url = _channel_get_stream(name, '', tmdb_id, season=str(s_num), episode=str(ep_num), media_type='tvshow')
+        
+        if not stream_url:
+            log_utils.log(f'24/7 Channel: No source for {name} S{s_num:02d}E{ep_num:02d}, skipping', xbmc.LOGINFO)
+            continue
+        
+        li = xbmcgui.ListItem(f'{name} - S{s_num:02d}E{ep_num:02d}', path=stream_url)
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        
+        player.play(stream_url, li)
+        
+        timeout = 30
+        while not player.isPlaying() and timeout > 0:
+            xbmc.sleep(500)
+            timeout -= 1
+        
+        if not player.isPlaying():
+            continue
+        
+        while player.isPlaying():
+            xbmc.sleep(2000)
+        
+        xbmc.sleep(1000)
+        
+        if xbmc.Monitor().abortRequested():
+            break
+    
+    xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Channel complete!', ADDON_ICON)
+
+
+def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media_type='movie', max_quality='1080p'):
+    """Get a stream URL for 24/7 channel playback. Returns URL or None."""
+    from scrapers import get_all_scrapers
+    from scrapers.freestream_scraper import FreeStreamScraper
+    
+    debrid_enabled = (
+        ADDON.getSetting('realdebrid_enabled') == 'true' or
+        ADDON.getSetting('premiumize_enabled') == 'true' or
+        ADDON.getSetting('alldebrid_enabled') == 'true' or
+        ADDON.getSetting('torbox_enabled') == 'true'
+    )
+    
+    quality_cap = {'4K': 4, '2160p': 4, '1080p': 3, 'HD': 3, '720p': 2, '480p': 1, 'SD': 0}
+    max_val = quality_cap.get(max_quality, 3)
+    
+    all_sources = []
+    scrapers = get_all_scrapers()
+    
+    for scraper in scrapers:
+        try:
+            if not scraper.is_enabled():
+                continue
+            is_free = isinstance(scraper, FreeStreamScraper)
+            if not debrid_enabled and not is_free:
+                continue
+            
+            if media_type == 'movie':
+                results = scraper.get_movie_sources(title, year)
+            else:
+                results = scraper.get_episode_sources(title, year or '', season, episode)
+            
+            if results:
+                for r in results:
+                    q_val = quality_cap.get(r.get('quality', 'SD'), 0)
+                    if q_val <= max_val:
+                        all_sources.append(r)
+        except Exception:
+            continue
+    
+    if not all_sources:
+        return None
+    
+    all_sources.sort(key=lambda x: (
+        1 if x.get('cached') else 0,
+        1 if x.get('direct') else 0,
+        quality_cap.get(x.get('quality', 'SD'), 0),
+        x.get('seeds', 0)
+    ), reverse=True)
+    
+    for source in all_sources[:5]:
+        magnet = source.get('magnet', '')
+        url = source.get('url', '')
+        
+        try:
+            if magnet:
+                for setting_key, svc_class in [
+                    ('realdebrid_enabled', debrid.RealDebrid),
+                    ('premiumize_enabled', debrid.Premiumize),
+                    ('alldebrid_enabled', debrid.AllDebrid),
+                    ('torbox_enabled', debrid.TorBox),
+                ]:
+                    if ADDON.getSetting(setting_key) == 'true':
+                        svc = svc_class()
+                        if svc.is_authorized():
+                            stream = svc.resolve_magnet(magnet)
+                            if stream:
+                                return stream
+            elif url:
+                if any(ext in url.lower() for ext in ['.m3u8', '.mp4', '.mkv']):
+                    return url
+                try:
+                    import resolveurl
+                    stream = resolveurl.resolve(url)
+                    if stream:
+                        return stream
+                except Exception:
+                    pass
+        except Exception:
+            continue
+    
+    return None
+
+
 def router(params):
     """Route to appropriate function based on mode"""
     mode = params.get('mode', '')
@@ -1821,6 +2502,39 @@ def router(params):
         trakt_lists()
     elif mode == 'trakt_list':
         trakt_list(params.get('list_id', ''))
+    # Franchise modes
+    elif mode == 'franchises_menu':
+        franchises_menu()
+    elif mode == 'search_franchise':
+        search_franchise()
+    elif mode == 'search_franchise_page':
+        _search_franchise_results(params.get('query', ''), int(params.get('page', 1)))
+    elif mode == 'franchise_movies':
+        franchise_movies(params.get('collection_id', ''), params.get('name', ''))
+    # Actor modes
+    elif mode == 'actors_menu':
+        actors_menu()
+    elif mode == 'popular_actors':
+        popular_actors(int(params.get('page', 1)))
+    elif mode == 'search_actor':
+        search_actor()
+    elif mode == 'actor_movies':
+        actor_movies(params.get('person_id', ''), params.get('name', ''), int(params.get('page', 1)))
+    # 24/7 Channel modes
+    elif mode == 'channel_menu':
+        channel_menu()
+    elif mode == 'channel_movies_menu':
+        channel_movies_menu()
+    elif mode == 'channel_search_actor':
+        channel_search_actor()
+    elif mode == 'channel_play_actor':
+        channel_play_actor(params.get('person_id', ''), params.get('name', ''))
+    elif mode == 'channel_shows_menu':
+        channel_shows_menu()
+    elif mode == 'channel_search_show':
+        channel_search_show()
+    elif mode == 'channel_play_show':
+        channel_play_show(params.get('tmdb_id', ''), params.get('name', ''))
     else:
         log_utils.log(f'Unknown mode: {mode}', xbmc.LOGWARNING)
         main_menu()
