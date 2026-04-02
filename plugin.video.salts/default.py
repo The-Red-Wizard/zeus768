@@ -798,6 +798,18 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
     
     all_sources.sort(key=sort_key, reverse=True)
     
+    # Fetch Trakt rating for the item
+    trakt_rating_str = ''
+    try:
+        from salts_lib.trakt_api import TraktAPI
+        trakt = TraktAPI()
+        mt = 'movie' if media_type == 'movie' else 'show'
+        rating, votes = trakt.get_item_rating(mt, tmdb_id)
+        if rating is not None:
+            trakt_rating_str = f'  Trakt: {rating}/10 ({votes})'
+    except Exception:
+        pass
+    
     # Autoplay: if enabled, pick the best source and play immediately
     autoplay = ADDON.getSetting('auto_play') == 'true'
     if autoplay and all_sources:
@@ -835,7 +847,7 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         _qcounts[_q] = _qcounts.get(_q, 0) + 1
     _qstr = '  '.join(f'{q}:{c}' for q in ['4K','2160p','1080p','HD','720p','480p','SD'] if (c := _qcounts.get(q)))
     
-    header = f'SALTS: {sources_found} sources | {cached_count} cached | {free_count} free  [{_qstr}]'
+    header = f'SALTS: {sources_found} sources | {cached_count} cached | {free_count} free  [{_qstr}]{trakt_rating_str}'
     
     # Build display list with color-coded formatting
     display_list = []

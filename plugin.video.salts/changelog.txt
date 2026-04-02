@@ -4,6 +4,16 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.2.1 (2026-04-02)
+================================================================================
+
+  NEW FEATURES
+  ------------
+  * Added Trakt community rating in source dialog header
+  * Shows "Trakt: X.X/10 (votes)" alongside source counts
+  * Uses TMDB ID -> Trakt slug lookup with 24hr cache
+  * Non-blocking: silently skips if Trakt is unavailable
+
 v2.2.0 (2026-04-02)
 ================================================================================
 

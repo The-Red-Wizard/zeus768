@@ -426,6 +426,29 @@ class TraktAPI:
         """Get user's ratings"""
         return self._call_api(f'/users/me/ratings/{media_type}', cache_limit=0)
     
+    def get_item_rating(self, media_type, tmdb_id):
+        """Get Trakt community rating for a movie/show by TMDB ID.
+        Returns (rating, votes) tuple or (None, None).
+        media_type: 'movie' or 'show'
+        """
+        try:
+            lookup_type = 'movies' if media_type == 'movie' else 'shows'
+            # Trakt search by TMDB ID
+            results = self._call_api(f'/search/tmdb/{tmdb_id}?type={media_type}', cache_limit=24)
+            if results and isinstance(results, list) and len(results) > 0:
+                item = results[0].get(media_type, {})
+                trakt_slug = item.get('ids', {}).get('slug')
+                if trakt_slug:
+                    rating_data = self._call_api(f'/{lookup_type}/{trakt_slug}/ratings', cache_limit=24)
+                    if isinstance(rating_data, dict):
+                        rating = rating_data.get('rating')
+                        votes = rating_data.get('votes', 0)
+                        if rating is not None:
+                            return (round(rating, 1), votes)
+        except Exception as e:
+            log_utils.log(f'Trakt rating lookup error: {e}', xbmc.LOGWARNING)
+        return (None, None)
+    
     # ==================== Scrobble ====================
     
     def scrobble_start(self, media_type, media_id, progress=0):
