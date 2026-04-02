@@ -2,95 +2,160 @@
 SALTS Library - Debrid Service Integration
 Supports Real-Debrid, Premiumize, AllDebrid
 Revived by zeus768 for Kodi 21+
+Uses native urllib (no external requests module)
 """
-import requests
+import json
+import time
 import xbmc
 import xbmcgui
 import xbmcaddon
-import json
-import time
+
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
+from urllib.parse import urlencode, quote_plus
 
 from . import log_utils
 
 ADDON = xbmcaddon.Addon()
+UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+
+
+def _http(url, method='GET', data=None, headers=None, timeout=30):
+    """HTTP helper - returns (status_code, parsed_json_or_None)"""
+    hdrs = {'User-Agent': UA}
+    if headers:
+        hdrs.update(headers)
+    
+    post_data = None
+    if data is not None:
+        if isinstance(data, dict):
+            post_data = urlencode(data).encode('utf-8')
+            hdrs.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+        elif isinstance(data, str):
+            post_data = data.encode('utf-8')
+        elif isinstance(data, bytes):
+            post_data = data
+    
+    try:
+        req = Request(url, data=post_data, headers=hdrs, method=method)
+        resp = urlopen(req, timeout=timeout)
+        body = resp.read().decode('utf-8', errors='replace')
+        try:
+            return resp.getcode(), json.loads(body)
+        except json.JSONDecodeError:
+            return resp.getcode(), body
+    except HTTPError as e:
+        body = ''
+        try:
+            body = e.read().decode('utf-8')
+        except Exception:
+            pass
+        try:
+            return e.code, json.loads(body)
+        except Exception:
+            return e.code, body
+    except Exception as e:
+        xbmc.log(f'SALTS HTTP error: {e}', xbmc.LOGERROR)
+        return 0, None
+
+
+def _get(url, params=None, headers=None, timeout=30):
+    """HTTP GET helper"""
+    if params:
+        query = urlencode(params)
+        sep = '&' if '?' in url else '?'
+        url = f'{url}{sep}{query}'
+    return _http(url, method='GET', headers=headers, timeout=timeout)
+
+
+def _post(url, data=None, params=None, headers=None, timeout=30):
+    """HTTP POST helper"""
+    if params:
+        query = urlencode(params)
+        sep = '&' if '?' in url else '?'
+        url = f'{url}{sep}{query}'
+    return _http(url, method='POST', data=data, headers=headers, timeout=timeout)
+
 
 class RealDebrid:
     """Real-Debrid API integration"""
     
     BASE_URL = 'https://api.real-debrid.com/rest/1.0'
     OAUTH_URL = 'https://api.real-debrid.com/oauth/v2'
-    CLIENT_ID = 'X245A4XAIBGVM'  # Open source client ID
+    CLIENT_ID = 'X245A4XAIBGVM'
     
     def __init__(self):
         self.token = ADDON.getSetting('realdebrid_token')
         self.refresh_token = ADDON.getSetting('realdebrid_refresh')
+        self.client_id = ADDON.getSetting('realdebrid_client_id') or self.CLIENT_ID
+        self.client_secret = ADDON.getSetting('realdebrid_client_secret') or ''
         self.expires = float(ADDON.getSetting('realdebrid_expires') or 0)
+    
+    def _auth_headers(self):
+        return {'Authorization': f'Bearer {self.token}'}
     
     def is_authorized(self):
         """Check if authorized"""
         if not self.token:
             return False
-        
-        # Check if token needs refresh
-        if time.time() > self.expires - 600:  # 10 min buffer
+        if time.time() > self.expires - 600:
             return self._refresh_token()
-        
         return True
     
     def _refresh_token(self):
         """Refresh the access token"""
-        if not self.refresh_token:
+        if not self.refresh_token or not self.client_secret:
             return False
-        
         try:
             data = {
-                'client_id': self.CLIENT_ID,
-                'grant_type': 'http://oauth.net/grant_type/device/1.0',
-                'code': self.refresh_token
+                'client_id': self.client_id,
+                'client_secret': self.client_secret,
+                'code': self.refresh_token,
+                'grant_type': 'http://oauth.net/grant_type/device/1.0'
             }
+            status, result = _post(f'{self.OAUTH_URL}/token', data=data)
             
-            response = requests.post(f'{self.OAUTH_URL}/token', data=data)
-            result = response.json()
-            
-            if 'access_token' in result:
+            if status == 200 and isinstance(result, dict) and 'access_token' in result:
                 self.token = result['access_token']
                 self.refresh_token = result['refresh_token']
-                self.expires = time.time() + result['expires_in']
+                self.expires = time.time() + result.get('expires_in', 86400)
                 
                 ADDON.setSetting('realdebrid_token', self.token)
                 ADDON.setSetting('realdebrid_refresh', self.refresh_token)
                 ADDON.setSetting('realdebrid_expires', str(self.expires))
-                
                 return True
+            else:
+                log_utils.log_error(f'RD refresh failed: status={status}')
         except Exception as e:
             log_utils.log_error(f'Real-Debrid refresh error: {e}')
-        
         return False
     
     def authorize(self):
         """OAuth device authorization flow"""
         try:
-            # Get device code
-            response = requests.get(
+            # Step 1: Get device code
+            status, result = _get(
                 f'{self.OAUTH_URL}/device/code',
                 params={'client_id': self.CLIENT_ID, 'new_credentials': 'yes'}
             )
-            result = response.json()
+            
+            if status != 200 or not isinstance(result, dict):
+                xbmcgui.Dialog().notification('Real-Debrid', 'Failed to get device code', xbmcgui.NOTIFICATION_ERROR)
+                return False
             
             device_code = result['device_code']
             user_code = result['user_code']
-            verification_url = result['verification_url']
-            interval = result['interval']
-            expires_in = result['expires_in']
+            verification_url = result.get('verification_url', 'https://real-debrid.com/device')
+            interval = result.get('interval', 5)
+            expires_in = result.get('expires_in', 600)
             
-            # Show dialog with instructions
             dialog = xbmcgui.DialogProgress()
             dialog.create(
                 'Real-Debrid Authorization',
-                f'Go to: {verification_url}\n\nEnter code: {user_code}\n\nWaiting for authorization...'
+                f'Go to: {verification_url}\n\nEnter code: {user_code}\n\nWaiting...'
             )
             
-            # Poll for authorization
+            # Step 2: Poll for credentials
             start_time = time.time()
             while time.time() - start_time < expires_in:
                 if dialog.iscanceled():
@@ -99,40 +164,39 @@ class RealDebrid:
                 
                 time.sleep(interval)
                 
-                try:
-                    token_response = requests.get(
-                        f'{self.OAUTH_URL}/device/credentials',
-                        params={'client_id': self.CLIENT_ID, 'code': device_code}
-                    )
-                    token_result = token_response.json()
+                cred_status, cred_result = _get(
+                    f'{self.OAUTH_URL}/device/credentials',
+                    params={'client_id': self.CLIENT_ID, 'code': device_code}
+                )
+                
+                if cred_status == 200 and isinstance(cred_result, dict) and 'client_id' in cred_result:
+                    # Step 3: Exchange for tokens
+                    token_data = {
+                        'client_id': cred_result['client_id'],
+                        'client_secret': cred_result['client_secret'],
+                        'code': device_code,
+                        'grant_type': 'http://oauth.net/grant_type/device/1.0'
+                    }
                     
-                    if 'client_id' in token_result:
-                        # Get tokens
-                        auth_data = {
-                            'client_id': token_result['client_id'],
-                            'client_secret': token_result['client_secret'],
-                            'code': device_code,
-                            'grant_type': 'http://oauth.net/grant_type/device/1.0'
-                        }
+                    tok_status, tok_result = _post(f'{self.OAUTH_URL}/token', data=token_data)
+                    
+                    if tok_status == 200 and isinstance(tok_result, dict) and 'access_token' in tok_result:
+                        self.token = tok_result['access_token']
+                        self.refresh_token = tok_result['refresh_token']
+                        self.client_id = cred_result['client_id']
+                        self.client_secret = cred_result['client_secret']
+                        self.expires = time.time() + tok_result.get('expires_in', 86400)
                         
-                        final_response = requests.post(f'{self.OAUTH_URL}/token', data=auth_data)
-                        final_result = final_response.json()
+                        ADDON.setSetting('realdebrid_token', self.token)
+                        ADDON.setSetting('realdebrid_refresh', self.refresh_token)
+                        ADDON.setSetting('realdebrid_client_id', self.client_id)
+                        ADDON.setSetting('realdebrid_client_secret', self.client_secret)
+                        ADDON.setSetting('realdebrid_expires', str(self.expires))
+                        ADDON.setSetting('realdebrid_enabled', 'true')
                         
-                        if 'access_token' in final_result:
-                            self.token = final_result['access_token']
-                            self.refresh_token = final_result['refresh_token']
-                            self.expires = time.time() + final_result['expires_in']
-                            
-                            ADDON.setSetting('realdebrid_token', self.token)
-                            ADDON.setSetting('realdebrid_refresh', self.refresh_token)
-                            ADDON.setSetting('realdebrid_expires', str(self.expires))
-                            ADDON.setSetting('realdebrid_enabled', 'true')
-                            
-                            dialog.close()
-                            xbmcgui.Dialog().notification('Real-Debrid', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
-                            return True
-                except:
-                    pass
+                        dialog.close()
+                        xbmcgui.Dialog().notification('Real-Debrid', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
+                        return True
             
             dialog.close()
             xbmcgui.Dialog().notification('Real-Debrid', 'Authorization timeout', xbmcgui.NOTIFICATION_ERROR)
@@ -148,56 +212,51 @@ class RealDebrid:
         if not self.is_authorized():
             return None
         
-        headers = {'Authorization': f'Bearer {self.token}'}
-        
         try:
             # Add magnet
-            response = requests.post(
+            status, result = _post(
                 f'{self.BASE_URL}/torrents/addMagnet',
-                headers=headers,
-                data={'magnet': magnet}
+                data={'magnet': magnet},
+                headers=self._auth_headers()
             )
-            result = response.json()
             
-            if 'id' not in result:
+            if not isinstance(result, dict) or 'id' not in result:
+                log_utils.log_error(f'RD addMagnet failed: {result}')
                 return None
             
             torrent_id = result['id']
             
             # Get torrent info
-            info_response = requests.get(
-                f'{self.BASE_URL}/torrents/info/{torrent_id}',
-                headers=headers
-            )
-            info = info_response.json()
+            _, info = _get(f'{self.BASE_URL}/torrents/info/{torrent_id}', headers=self._auth_headers())
             
-            # Select all files
-            files = ','.join([str(f['id']) for f in info.get('files', [])])
-            requests.post(
-                f'{self.BASE_URL}/torrents/selectFiles/{torrent_id}',
-                headers=headers,
-                data={'files': files or 'all'}
-            )
-            
-            # Wait for download/cached status
-            for _ in range(30):
-                status_response = requests.get(
-                    f'{self.BASE_URL}/torrents/info/{torrent_id}',
-                    headers=headers
-                )
-                status = status_response.json()
+            if isinstance(info, dict):
+                files = info.get('files', [])
+                file_ids = ','.join([str(f['id']) for f in files]) if files else 'all'
                 
-                if status.get('status') == 'downloaded':
-                    links = status.get('links', [])
+                # Select files
+                _post(
+                    f'{self.BASE_URL}/torrents/selectFiles/{torrent_id}',
+                    data={'files': file_ids},
+                    headers=self._auth_headers()
+                )
+            
+            # Wait for ready status
+            for _ in range(30):
+                _, status_info = _get(
+                    f'{self.BASE_URL}/torrents/info/{torrent_id}',
+                    headers=self._auth_headers()
+                )
+                
+                if isinstance(status_info, dict) and status_info.get('status') == 'downloaded':
+                    links = status_info.get('links', [])
                     if links:
-                        # Unrestrict the link
-                        unrestrict_response = requests.post(
+                        _, unrestrict = _post(
                             f'{self.BASE_URL}/unrestrict/link',
-                            headers=headers,
-                            data={'link': links[0]}
+                            data={'link': links[0]},
+                            headers=self._auth_headers()
                         )
-                        unrestrict = unrestrict_response.json()
-                        return unrestrict.get('download')
+                        if isinstance(unrestrict, dict):
+                            return unrestrict.get('download')
                 
                 time.sleep(1)
             
@@ -211,17 +270,13 @@ class RealDebrid:
         """Check if torrent is cached"""
         if not self.is_authorized():
             return False
-        
-        headers = {'Authorization': f'Bearer {self.token}'}
-        
         try:
-            response = requests.get(
+            _, result = _get(
                 f'{self.BASE_URL}/torrents/instantAvailability/{info_hash}',
-                headers=headers
+                headers=self._auth_headers()
             )
-            result = response.json()
-            return bool(result.get(info_hash, {}).get('rd'))
-        except:
+            return bool(isinstance(result, dict) and result.get(info_hash, {}).get('rd'))
+        except Exception:
             return False
 
 
@@ -230,13 +285,12 @@ class Premiumize:
     
     BASE_URL = 'https://www.premiumize.me/api'
     OAUTH_URL = 'https://www.premiumize.me/token'
-    CLIENT_ID = '664286978'  # Public client ID
+    CLIENT_ID = '664286978'
     
     def __init__(self):
         self.token = ADDON.getSetting('premiumize_token')
     
     def is_authorized(self):
-        """Check if authorized"""
         return bool(self.token)
     
     def authorize(self):
@@ -245,17 +299,15 @@ class Premiumize:
         keyboard.doModal()
         
         if keyboard.isConfirmed():
-            api_key = keyboard.getText()
+            api_key = keyboard.getText().strip()
             if api_key:
-                # Verify the key
                 try:
-                    response = requests.get(
+                    status, result = _get(
                         f'{self.BASE_URL}/account/info',
                         params={'apikey': api_key}
                     )
-                    result = response.json()
                     
-                    if result.get('status') == 'success':
+                    if isinstance(result, dict) and result.get('status') == 'success':
                         self.token = api_key
                         ADDON.setSetting('premiumize_token', api_key)
                         ADDON.setSetting('premiumize_enabled', 'true')
@@ -266,7 +318,6 @@ class Premiumize:
                 except Exception as e:
                     log_utils.log_error(f'Premiumize auth error: {e}')
                     xbmcgui.Dialog().notification('Premiumize', f'Error: {e}', xbmcgui.NOTIFICATION_ERROR)
-        
         return False
     
     def resolve_magnet(self, magnet):
@@ -276,28 +327,24 @@ class Premiumize:
         
         try:
             # Check cache first
-            cache_response = requests.post(
+            status, cache_result = _post(
                 f'{self.BASE_URL}/cache/check',
                 params={'apikey': self.token},
                 data={'items[]': magnet}
             )
-            cache_result = cache_response.json()
             
-            if cache_result.get('status') == 'success':
+            if isinstance(cache_result, dict) and cache_result.get('status') == 'success':
                 responses = cache_result.get('response', [])
                 if responses and responses[0]:
-                    # Create direct download link
-                    ddl_response = requests.post(
+                    _, ddl_result = _post(
                         f'{self.BASE_URL}/transfer/directdl',
                         params={'apikey': self.token},
                         data={'src': magnet}
                     )
-                    ddl_result = ddl_response.json()
                     
-                    if ddl_result.get('status') == 'success':
+                    if isinstance(ddl_result, dict) and ddl_result.get('status') == 'success':
                         content = ddl_result.get('content', [])
                         if content:
-                            # Return largest file (likely the video)
                             largest = max(content, key=lambda x: x.get('size', 0))
                             return largest.get('link')
             
@@ -308,67 +355,58 @@ class Premiumize:
             return None
     
     def check_cache(self, info_hash):
-        """Check if torrent is cached"""
         if not self.is_authorized():
             return False
-        
         try:
-            response = requests.post(
+            _, result = _post(
                 f'{self.BASE_URL}/cache/check',
                 params={'apikey': self.token},
                 data={'items[]': info_hash}
             )
-            result = response.json()
-            
-            if result.get('status') == 'success':
+            if isinstance(result, dict) and result.get('status') == 'success':
                 responses = result.get('response', [])
                 return bool(responses and responses[0])
-        except:
+        except Exception:
             pass
-        
         return False
 
 
 class AllDebrid:
     """AllDebrid API integration"""
     
-    BASE_URL = 'https://api.alldebrid.com/v4'
+    BASE_URL = 'https://api.alldebrid.com/v4.1'
     AGENT = 'SALTS'
     
     def __init__(self):
         self.token = ADDON.getSetting('alldebrid_token')
     
     def is_authorized(self):
-        """Check if authorized"""
         return bool(self.token)
     
     def authorize(self):
         """PIN-based authorization"""
         try:
-            # Get PIN
-            response = requests.get(
+            status, result = _get(
                 f'{self.BASE_URL}/pin/get',
                 params={'agent': self.AGENT}
             )
-            result = response.json()
             
-            if result.get('status') != 'success':
+            if not isinstance(result, dict) or result.get('status') != 'success':
+                xbmcgui.Dialog().notification('AllDebrid', 'Failed to get PIN', xbmcgui.NOTIFICATION_ERROR)
                 return False
             
             data = result.get('data', {})
             pin = data.get('pin')
-            check_url = data.get('check')
-            user_url = data.get('user_url')
+            check = data.get('check')
+            user_url = data.get('user_url', 'https://alldebrid.com/pin/')
             expires_in = data.get('expires_in', 600)
             
-            # Show dialog with instructions
             dialog = xbmcgui.DialogProgress()
             dialog.create(
                 'AllDebrid Authorization',
-                f'Go to: {user_url}\n\nEnter PIN: {pin}\n\nWaiting for authorization...'
+                f'Go to: {user_url}\n\nEnter PIN: {pin}\n\nWaiting...'
             )
             
-            # Poll for authorization
             start_time = time.time()
             while time.time() - start_time < expires_in:
                 if dialog.iscanceled():
@@ -377,25 +415,21 @@ class AllDebrid:
                 
                 time.sleep(5)
                 
-                try:
-                    check_response = requests.get(
-                        f'{self.BASE_URL}/pin/check',
-                        params={'agent': self.AGENT, 'check': check_url.split('check=')[1]}
-                    )
-                    check_result = check_response.json()
-                    
-                    if check_result.get('status') == 'success':
-                        check_data = check_result.get('data', {})
-                        if check_data.get('activated'):
-                            self.token = check_data.get('apikey')
-                            ADDON.setSetting('alldebrid_token', self.token)
-                            ADDON.setSetting('alldebrid_enabled', 'true')
-                            
-                            dialog.close()
-                            xbmcgui.Dialog().notification('AllDebrid', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
-                            return True
-                except:
-                    pass
+                chk_status, chk_result = _get(
+                    f'{self.BASE_URL}/pin/check',
+                    params={'pin': pin, 'check': check, 'agent': self.AGENT}
+                )
+                
+                if isinstance(chk_result, dict) and chk_result.get('status') == 'success':
+                    chk_data = chk_result.get('data', {})
+                    if chk_data.get('activated'):
+                        self.token = chk_data.get('apikey')
+                        ADDON.setSetting('alldebrid_token', self.token)
+                        ADDON.setSetting('alldebrid_enabled', 'true')
+                        
+                        dialog.close()
+                        xbmcgui.Dialog().notification('AllDebrid', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
+                        return True
             
             dialog.close()
             xbmcgui.Dialog().notification('AllDebrid', 'Authorization timeout', xbmcgui.NOTIFICATION_ERROR)
@@ -412,15 +446,13 @@ class AllDebrid:
             return None
         
         try:
-            # Add magnet
-            response = requests.post(
+            _, result = _post(
                 f'{self.BASE_URL}/magnet/upload',
                 params={'agent': self.AGENT, 'apikey': self.token},
                 data={'magnets[]': magnet}
             )
-            result = response.json()
             
-            if result.get('status') != 'success':
+            if not isinstance(result, dict) or result.get('status') != 'success':
                 return None
             
             magnets = result.get('data', {}).get('magnets', [])
@@ -429,28 +461,19 @@ class AllDebrid:
             
             magnet_id = magnets[0].get('id')
             if magnets[0].get('ready'):
-                # Already cached, get links
-                links_response = requests.get(
+                _, links_result = _get(
                     f'{self.BASE_URL}/magnet/status',
                     params={'agent': self.AGENT, 'apikey': self.token, 'id': magnet_id}
                 )
-                links_result = links_response.json()
                 
-                if links_result.get('status') == 'success':
+                if isinstance(links_result, dict) and links_result.get('status') == 'success':
                     links = links_result.get('data', {}).get('magnets', {}).get('links', [])
                     if links:
-                        # Unlock the link
-                        unlock_response = requests.get(
+                        _, unlock_result = _get(
                             f'{self.BASE_URL}/link/unlock',
-                            params={
-                                'agent': self.AGENT,
-                                'apikey': self.token,
-                                'link': links[0].get('link')
-                            }
+                            params={'agent': self.AGENT, 'apikey': self.token, 'link': links[0].get('link')}
                         )
-                        unlock_result = unlock_response.json()
-                        
-                        if unlock_result.get('status') == 'success':
+                        if isinstance(unlock_result, dict) and unlock_result.get('status') == 'success':
                             return unlock_result.get('data', {}).get('link')
             
             return None
@@ -460,21 +483,16 @@ class AllDebrid:
             return None
     
     def check_cache(self, info_hash):
-        """Check if torrent is cached"""
         if not self.is_authorized():
             return False
-        
         try:
-            response = requests.get(
+            _, result = _get(
                 f'{self.BASE_URL}/magnet/instant',
                 params={'agent': self.AGENT, 'apikey': self.token, 'magnets[]': info_hash}
             )
-            result = response.json()
-            
-            if result.get('status') == 'success':
+            if isinstance(result, dict) and result.get('status') == 'success':
                 magnets = result.get('data', {}).get('magnets', [])
                 return bool(magnets and magnets[0].get('instant'))
-        except:
+        except Exception:
             pass
-        
         return False

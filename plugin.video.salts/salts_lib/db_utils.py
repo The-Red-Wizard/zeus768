@@ -112,21 +112,6 @@ class DB_Connection:
             )
         ''')
         
-        # Watch history
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS watch_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                media_type TEXT,
-                title TEXT,
-                year TEXT DEFAULT '',
-                tmdb_id TEXT DEFAULT '',
-                season TEXT DEFAULT '',
-                episode TEXT DEFAULT '',
-                timestamp REAL,
-                UNIQUE(media_type, title, year, season, episode)
-            )
-        ''')
-        
         conn.commit()
         conn.close()
     
@@ -419,75 +404,3 @@ class DB_Connection:
         results = cursor.fetchall()
         conn.close()
         return [r[0] for r in results]
-
-
-    # ==================== Watch History ====================
-    
-    def add_to_watch_history(self, media_type, title, year='', tmdb_id='',
-                              season='', episode=''):
-        """Add item to watch history"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            '''INSERT OR REPLACE INTO watch_history 
-               (media_type, title, year, tmdb_id, season, episode, timestamp) 
-               VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (media_type, title, year, tmdb_id, season, episode, time.time())
-        )
-        conn.commit()
-        conn.close()
-    
-    def is_watched(self, media_type, title, year='', season='', episode=''):
-        """Check if item has been watched"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            '''SELECT COUNT(*) FROM watch_history 
-               WHERE media_type = ? AND title = ? AND year = ?
-               AND season = ? AND episode = ?''',
-            (media_type, title, year, season, episode)
-        )
-        count = cursor.fetchone()[0]
-        conn.close()
-        return count > 0
-    
-    def is_watched_by_tmdb(self, tmdb_id, media_type='movie'):
-        """Check if item has been watched by TMDB ID"""
-        if not tmdb_id:
-            return False
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            'SELECT COUNT(*) FROM watch_history WHERE tmdb_id = ? AND media_type = ?',
-            (str(tmdb_id), media_type)
-        )
-        count = cursor.fetchone()[0]
-        conn.close()
-        return count > 0
-    
-    def get_watch_history(self, media_type=None, limit=50):
-        """Get watch history"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        if media_type:
-            cursor.execute(
-                'SELECT * FROM watch_history WHERE media_type = ? ORDER BY timestamp DESC LIMIT ?',
-                (media_type, limit)
-            )
-        else:
-            cursor.execute(
-                'SELECT * FROM watch_history ORDER BY timestamp DESC LIMIT ?',
-                (limit,)
-            )
-        columns = [d[0] for d in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        conn.close()
-        return results
-    
-    def clear_watch_history(self):
-        """Clear all watch history"""
-        conn = self._get_connection()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM watch_history')
-        conn.commit()
-        conn.close()

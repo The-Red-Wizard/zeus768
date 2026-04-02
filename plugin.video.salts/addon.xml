@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.salts" version="2.1.1" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.1.4" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -26,12 +26,22 @@ Features:
 - ResolveURL for 270+ hosting sites
 
 Revived and modernized by zeus768 for Kodi 21 Omega and above.
-Original author: tknorris</description>
+Original author: tknorris
+Thank you to Mister X and Zaxxon709</description>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.1.4 (2026)
+- Fixed: Debrid container refresh on authorisation.
+
+v2.1.3 (2026)
+- Fixed: AllDebrid authorisation.
+
+v2.1.2 (2026)
+- Fixed: Busy spinner on playback.
+
 v2.1.1 (2026)
 - Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop
 - Fixed: Trakt API now uses native urllib (no more requests dependency crash)

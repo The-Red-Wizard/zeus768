@@ -1,12 +1,15 @@
 """
 SALTS Scrapers - Base Scraper Class
 Revived by zeus768 for Kodi 21+
+Uses native urllib (no external requests module)
 """
 import abc
 import re
-import requests
 import xbmc
 import xbmcaddon
+
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
 from urllib.parse import urljoin, urlparse, quote_plus
 
 from salts_lib import log_utils
@@ -24,12 +27,11 @@ class BaseScraper(abc.ABC):
     def __init__(self, timeout=DEFAULT_TIMEOUT):
         self.timeout = timeout
         self.db = DB_Connection()
-        self.session = requests.Session()
-        self.session.headers.update({
+        self._headers = {
             'User-Agent': USER_AGENT,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5'
-        })
+        }
     
     @classmethod
     def get_name(cls):
@@ -42,7 +44,7 @@ class BaseScraper(abc.ABC):
         return ADDON.getSetting(setting_id) != 'false'
     
     def _http_get(self, url, params=None, data=None, headers=None, cache_limit=8):
-        """Make HTTP GET request with caching"""
+        """Make HTTP GET/POST request with caching using native urllib"""
         cache_url = url + str(params or {})
         
         # Check cache
@@ -51,16 +53,32 @@ class BaseScraper(abc.ABC):
             return cached
         
         try:
+            # Build URL with params
+            request_url = url
+            if params:
+                query_str = '&'.join(f'{k}={quote_plus(str(v))}' for k, v in params.items())
+                separator = '&' if '?' in url else '?'
+                request_url = f'{url}{separator}{query_str}'
+            
+            # Build headers
+            hdrs = self._headers.copy()
             if headers:
-                self.session.headers.update(headers)
+                hdrs.update(headers)
             
+            # Build request
+            post_data = None
             if data:
-                response = self.session.post(url, params=params, data=data, timeout=self.timeout)
-            else:
-                response = self.session.get(url, params=params, timeout=self.timeout)
+                if isinstance(data, dict):
+                    post_data = '&'.join(f'{k}={quote_plus(str(v))}' for k, v in data.items()).encode('utf-8')
+                    hdrs['Content-Type'] = 'application/x-www-form-urlencoded'
+                elif isinstance(data, str):
+                    post_data = data.encode('utf-8')
+                elif isinstance(data, bytes):
+                    post_data = data
             
-            response.raise_for_status()
-            html = response.text
+            req = Request(request_url, data=post_data, headers=hdrs)
+            resp = urlopen(req, timeout=self.timeout)
+            html = resp.read().decode('utf-8', errors='replace')
             
             # Cache the response
             self.db.cache_url(cache_url, html)
@@ -69,6 +87,17 @@ class BaseScraper(abc.ABC):
         except Exception as e:
             log_utils.log_error(f'{self.NAME}: HTTP error for {url}: {e}')
             return ''
+    
+    def _http_get_json(self, url, params=None, headers=None, cache_limit=8):
+        """Make HTTP GET and return parsed JSON"""
+        html = self._http_get(url, params=params, headers=headers, cache_limit=cache_limit)
+        if html:
+            try:
+                import json
+                return json.loads(html)
+            except Exception:
+                pass
+        return None
     
     def _parse_quality(self, text):
         """Parse quality from text"""
@@ -86,10 +115,8 @@ class BaseScraper(abc.ABC):
         if not size_str:
             return 'Unknown'
         
-        # Clean up the string
         size_str = size_str.strip().upper()
         
-        # Check if already formatted
         if re.match(r'[\d.]+\s*(B|KB|MB|GB|TB)', size_str):
             return size_str
         
@@ -97,17 +124,14 @@ class BaseScraper(abc.ABC):
     
     def _extract_hash(self, text):
         """Extract info hash from magnet or text"""
-        # Try to find hash in magnet link
         match = re.search(r'btih:([a-fA-F0-9]{40})', text)
         if match:
             return match.group(1).lower()
         
-        # Try 32-character base32 hash
         match = re.search(r'btih:([a-zA-Z2-7]{32})', text)
         if match:
             return match.group(1).lower()
         
-        # Just a hash string
         match = re.search(r'\b([a-fA-F0-9]{40})\b', text)
         if match:
             return match.group(1).lower()
@@ -123,23 +147,7 @@ class BaseScraper(abc.ABC):
     
     @abc.abstractmethod
     def search(self, query, media_type='movie'):
-        """
-        Search for content
-        
-        Args:
-            query: Search query
-            media_type: 'movie', 'tvshow', or 'all'
-        
-        Returns:
-            List of result dicts with keys:
-            - title: Display title
-            - url: URL or magnet link
-            - magnet: Magnet link (if available)
-            - quality: Quality string
-            - size: Size string
-            - seeds: Number of seeds
-            - peers: Number of peers
-        """
+        """Search for content. Returns list of result dicts."""
         raise NotImplementedError
     
     def get_movie_sources(self, title, year=''):
