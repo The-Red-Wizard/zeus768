@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.salts" version="2.1.7" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.1.8" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -31,6 +31,12 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.1.8 (2026)
+- Fixed: Source dialog rendering - moved to inline native Kodi Dialog().select() with color-coded formatting
+- Fixed: Eliminated external module dependency for source dialog (no more import failures)
+- Added: Quality color badges inline (gold 4K, green 1080p, blue 720p, purple 480p, gray SD)
+- Added: CACHED/FREE tags, seed health coloring, file sizes all in native dialog
+
 v2.1.7 (2026)
 - Added: Bento UI Source Dialog - custom skin with quality-colored badges, cached/free tags, seeds, size
 - Added: Pre-Scrape hover caching - background scrape after 2s hover on movie items (4-link rule)

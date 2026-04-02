@@ -764,10 +764,53 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
     # Count totals
     free_count = sum(1 for s in all_sources if s.get('direct'))
     sources_found = len(all_sources)
+    cached_count = sum(1 for s in all_sources if s.get('cached'))
     
-    # Use Bento-style source dialog (native Kodi select with rich formatting)
-    from salts_lib.bento_dialog import show_bento_source_dialog
-    selected = show_bento_source_dialog(all_sources, title=search_title)
+    # Quality color map
+    _QCOLORS = {
+        '4K': 'FFD4AF37', '2160p': 'FFD4AF37', '1080p': 'FF00CC66',
+        'HD': 'FF00CC66', '720p': 'FF4499DD', '480p': 'FF9977CC', 'SD': 'FF999999'
+    }
+    
+    # Quality summary for header
+    _qcounts = {}
+    for _s in all_sources:
+        _q = _s.get('quality', 'SD')
+        _qcounts[_q] = _qcounts.get(_q, 0) + 1
+    _qstr = '  '.join(f'{q}:{c}' for q in ['4K','2160p','1080p','HD','720p','480p','SD'] if (c := _qcounts.get(q)))
+    
+    header = f'SALTS: {sources_found} sources | {cached_count} cached | {free_count} free  [{_qstr}]'
+    
+    # Build display list with color-coded formatting
+    display_list = []
+    for source in all_sources:
+        quality = source.get('quality', 'SD')
+        scraper = source.get('scraper', '?')
+        seeds = source.get('seeds', 0)
+        size = source.get('size', '')
+        is_cached = source.get('cached', False)
+        is_free = source.get('direct', False)
+        
+        qc = _QCOLORS.get(quality, 'FF999999')
+        parts = [f'[COLOR {qc}][B]{quality}[/B][/COLOR]']
+        
+        if is_cached:
+            parts.append('[COLOR FF00FF7F][B]CACHED[/B][/COLOR]')
+        elif is_free:
+            parts.append('[COLOR FFFFA500][B]FREE[/B][/COLOR]')
+        
+        parts.append(f'[COLOR FFCCDDEE]{scraper}[/COLOR]')
+        
+        if seeds and not is_free:
+            sc = 'FF00EE00' if seeds >= 100 else ('FFCCCC00' if seeds >= 10 else 'FFEE6600')
+            parts.append(f'[COLOR {sc}]S:{seeds}[/COLOR]')
+        
+        if size:
+            parts.append(f'[COLOR FF8899BB]{size}[/COLOR]')
+        
+        display_list.append('  |  '.join(parts))
+    
+    selected = xbmcgui.Dialog().select(header, display_list)
     
     if selected < 0:
         return
