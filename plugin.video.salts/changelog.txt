@@ -4,6 +4,30 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.3.1 (2026-04-02)
+================================================================================
+
+  ENHANCEMENTS
+  ------------
+  * Franchises: Expanded from 30 to 60 curated collections
+    - Added DC, Avengers, Iron Man, Cap, Thor, Guardians, Hobbit, Predator,
+      Mummy, MiB, Rush Hour, Lethal Weapon, Beverly Hills Cop, Expendables,
+      Ocean's, Hangover, Maze Runner, Divergent, Ghostbusters, Scream,
+      Halloween, Elm Street, Friday 13th, Saw, Purge, Insidious,
+      Kung Fu Panda, How to Train Your Dragon, Cars, Ice Age
+    - Each franchise now shows TMDB collection poster art
+  * 24/7 Movie Channels: Expanded from 20 to 40 actors
+    - Added Tom Cruise, Angelina Jolie, Jennifer Lawrence, Chris Hemsworth,
+      Vin Diesel, Harrison Ford, Al Pacino, De Niro, Wahlberg, Willis,
+      Schwarzenegger, Stallone, Jackie Chan, Momoa, Elba, Bullock,
+      McCarthy, Kevin Hart, Zendaya, Timothee Chalamet
+    - Each actor now shows TMDB profile photo
+  * 24/7 TV Show Channels: Expanded from 20 to 40 shows
+    - Added Lost, Dexter, Mandalorian, Narcos, Ozark, The Boys, Succession,
+      Ted Lasso, Yellowstone, Last of Us, Wednesday, Squid Game, Cobra Kai,
+      Witcher, Reacher, True Detective, Fargo, Black Mirror, Suits, Prison Break
+    - Each show now shows TMDB poster art and backdrop
+
 v2.3.0 (2026-04-02)
 ================================================================================
 

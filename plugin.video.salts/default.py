@@ -2043,6 +2043,36 @@ def franchises_menu():
         {'name': 'Die Hard', 'id': 1570},
         {'name': 'Mad Max', 'id': 8945},
         {'name': 'Terminator', 'id': 528},
+        {'name': 'DC Extended Universe', 'id': 209131},
+        {'name': 'The Avengers', 'id': 86311},
+        {'name': 'Iron Man', 'id': 131292},
+        {'name': 'Captain America', 'id': 131295},
+        {'name': 'Thor', 'id': 131296},
+        {'name': 'Guardians of the Galaxy', 'id': 284433},
+        {'name': 'The Hobbit', 'id': 121938},
+        {'name': 'Predator', 'id': 399},
+        {'name': 'The Mummy', 'id': 1733},
+        {'name': 'Men in Black', 'id': 86055},
+        {'name': 'Rush Hour', 'id': 90863},
+        {'name': 'Lethal Weapon', 'id': 945},
+        {'name': 'Beverly Hills Cop', 'id': 85943},
+        {'name': 'The Expendables', 'id': 126125},
+        {'name': 'Ocean\'s', 'id': 304},
+        {'name': 'The Hangover', 'id': 86119},
+        {'name': 'The Maze Runner', 'id': 295130},
+        {'name': 'Divergent', 'id': 283579},
+        {'name': 'Ghostbusters', 'id': 2980},
+        {'name': 'Scream', 'id': 2602},
+        {'name': 'Halloween', 'id': 91361},
+        {'name': 'A Nightmare on Elm Street', 'id': 8581},
+        {'name': 'Friday the 13th', 'id': 9735},
+        {'name': 'Saw', 'id': 656},
+        {'name': 'The Purge', 'id': 256322},
+        {'name': 'Insidious', 'id': 228446},
+        {'name': 'Kung Fu Panda', 'id': 77816},
+        {'name': 'How to Train Your Dragon', 'id': 89137},
+        {'name': 'Cars', 'id': 87118},
+        {'name': 'Ice Age', 'id': 8354},
     ]
     
     li = xbmcgui.ListItem('[B]Search Franchises[/B]')
@@ -2051,8 +2081,18 @@ def franchises_menu():
     xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
     for f in franchises:
+        # Fetch TMDB collection poster
+        coll_data = _tmdb_get(f'/collection/{f["id"]}')
+        poster = ''
+        backdrop = ''
+        if coll_data:
+            poster = coll_data.get('poster_path', '')
+            backdrop = coll_data.get('backdrop_path', '')
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
         li = xbmcgui.ListItem(f['name'])
-        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
         url = build_url({'mode': 'franchise_movies', 'collection_id': f['id'], 'name': f['name']})
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
@@ -2331,6 +2371,26 @@ def channel_movies_menu():
         {'name': 'Matt Damon', 'id': 1892},
         {'name': 'Chris Pratt', 'id': 73457},
         {'name': 'Eddie Murphy', 'id': 776},
+        {'name': 'Tom Cruise', 'id': 500},
+        {'name': 'Angelina Jolie', 'id': 11701},
+        {'name': 'Jennifer Lawrence', 'id': 72129},
+        {'name': 'Chris Hemsworth', 'id': 74568},
+        {'name': 'Vin Diesel', 'id': 12835},
+        {'name': 'Harrison Ford', 'id': 3},
+        {'name': 'Al Pacino', 'id': 1158},
+        {'name': 'Robert De Niro', 'id': 380},
+        {'name': 'Mark Wahlberg', 'id': 13240},
+        {'name': 'Bruce Willis', 'id': 62},
+        {'name': 'Arnold Schwarzenegger', 'id': 1100},
+        {'name': 'Sylvester Stallone', 'id': 16483},
+        {'name': 'Jackie Chan', 'id': 18897},
+        {'name': 'Jason Momoa', 'id': 117642},
+        {'name': 'Idris Elba', 'id': 17605},
+        {'name': 'Sandra Bullock', 'id': 18277},
+        {'name': 'Melissa McCarthy', 'id': 59410},
+        {'name': 'Kevin Hart', 'id': 55638},
+        {'name': 'Zendaya', 'id': 505710},
+        {'name': 'Timothee Chalamet', 'id': 1190668},
     ]
     
     li = xbmcgui.ListItem('[B]Search Actor for 24/7[/B]')
@@ -2339,8 +2399,15 @@ def channel_movies_menu():
     xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
     for actor in actors:
+        # Fetch TMDB profile photo
+        person_data = _tmdb_get(f'/person/{actor["id"]}')
+        profile = ''
+        if person_data:
+            profile = person_data.get('profile_path', '')
+        profile_url = f'{TMDB_IMG}/w500{profile}' if profile else ADDON_ICON
+        
         li = xbmcgui.ListItem(f'24/7 {actor["name"]}')
-        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        li.setArt({'icon': profile_url, 'thumb': profile_url, 'poster': profile_url, 'fanart': ADDON_FANART})
         url = build_url({'mode': 'channel_play_actor', 'person_id': actor['id'], 'name': actor['name']})
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
     
@@ -2454,6 +2521,26 @@ def channel_shows_menu():
         {'name': 'The Big Bang Theory', 'id': 1418},
         {'name': 'Better Call Saul', 'id': 60059},
         {'name': 'Arrested Development', 'id': 4589},
+        {'name': 'Lost', 'id': 4607},
+        {'name': 'Dexter', 'id': 1405},
+        {'name': 'The Mandalorian', 'id': 82856},
+        {'name': 'Narcos', 'id': 63351},
+        {'name': 'Ozark', 'id': 69740},
+        {'name': 'The Boys', 'id': 76479},
+        {'name': 'Succession', 'id': 76331},
+        {'name': 'Ted Lasso', 'id': 97546},
+        {'name': 'Yellowstone', 'id': 73586},
+        {'name': 'The Last of Us', 'id': 100088},
+        {'name': 'Wednesday', 'id': 119051},
+        {'name': 'Squid Game', 'id': 93405},
+        {'name': 'Cobra Kai', 'id': 77169},
+        {'name': 'The Witcher', 'id': 71912},
+        {'name': 'Reacher', 'id': 108978},
+        {'name': 'True Detective', 'id': 46648},
+        {'name': 'Fargo', 'id': 60622},
+        {'name': 'Black Mirror', 'id': 42009},
+        {'name': 'Suits', 'id': 37680},
+        {'name': 'Prison Break', 'id': 2288},
     ]
     
     li = xbmcgui.ListItem('[B]Search Show for 24/7[/B]')
@@ -2462,8 +2549,18 @@ def channel_shows_menu():
     xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
     for show in shows:
+        # Fetch TMDB show poster
+        show_data = _tmdb_get(f'/tv/{show["id"]}')
+        poster = ''
+        backdrop = ''
+        if show_data:
+            poster = show_data.get('poster_path', '')
+            backdrop = show_data.get('backdrop_path', '')
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
         li = xbmcgui.ListItem(f'24/7 {show["name"]}')
-        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
         url = build_url({'mode': 'channel_play_show', 'tmdb_id': show['id'], 'name': show['name']})
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
     
