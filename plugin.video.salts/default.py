@@ -135,6 +135,7 @@ def main_menu():
         {'title': '[B]24/7 Channels[/B]', 'mode': 'channel_menu'},
         {'title': '[B]Favorites[/B]', 'mode': 'favorites_menu'},
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
+        {'title': '[COLOR magenta][B]AI Search[/B][/COLOR]', 'mode': 'ai_search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu'},
         {'title': 'Debrid Services', 'mode': 'debrid_menu'},
@@ -204,6 +205,168 @@ def search_menu():
     
     xbmcplugin.endOfDirectory(HANDLE)
 
+def ai_search_menu():
+    """AI Search sub-menu"""
+    items = [
+        {'title': '[COLOR magenta][B]AI Search Movies[/B][/COLOR]', 'mode': 'ai_search', 'media_filter': 'movie'},
+        {'title': '[COLOR magenta][B]AI Search TV Shows[/B][/COLOR]', 'mode': 'ai_search', 'media_filter': 'tv'},
+        {'title': '[COLOR magenta][B]AI Search All[/B][/COLOR]', 'mode': 'ai_search', 'media_filter': 'all'},
+    ]
+    
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url(item)
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+def ai_search(media_filter='all'):
+    """AI-powered natural language search"""
+    from salts_lib import ai_search as ai_mod
+    
+    if ADDON.getSetting('ai_search_enabled') != 'true':
+        xbmcgui.Dialog().ok('AI Search', 'AI Search is disabled.\n\nEnable it in Settings > AI Search.')
+        return
+    
+    if not ADDON.getSetting('ai_api_key'):
+        xbmcgui.Dialog().ok('AI Search', 'No API key configured.\n\nGo to Settings > AI Search to add your OpenAI key.')
+        return
+    
+    keyboard = xbmc.Keyboard('', 'Describe what you want to watch...')
+    keyboard.doModal()
+    
+    if not keyboard.isConfirmed():
+        return
+    
+    query = keyboard.getText().strip()
+    if not query:
+        return
+    
+    # Show progress
+    progress = xbmcgui.DialogProgress()
+    progress.create('AI Search', f'Asking AI about: {query[:50]}...')
+    progress.update(20, f'Searching with AI...')
+    
+    results = ai_mod.ai_search(query, media_filter)
+    
+    if progress.iscanceled():
+        progress.close()
+        return
+    
+    if not results:
+        progress.close()
+        xbmcgui.Dialog().notification('AI Search', 'No results. Try a different description.', ADDON_ICON)
+        return
+    
+    progress.update(60, f'Found {len(results)} recommendations. Looking up on TMDB...')
+    
+    # Look up each result on TMDB to get posters and metadata
+    tmdb_results = []
+    for i, rec in enumerate(results):
+        if progress.iscanceled():
+            progress.close()
+            return
+        
+        progress.update(60 + int(30 * i / len(results)), f'Looking up: {rec.get("title", "")}')
+        
+        title = rec.get('title', '')
+        year = rec.get('year', '')
+        rec_type = rec.get('type', 'movie')
+        reason = rec.get('reason', '')
+        
+        # Search TMDB
+        search_type = 'movie' if rec_type == 'movie' else 'tv'
+        tmdb_data = _tmdb_get(f'/search/{search_type}', {
+            'query': title,
+            'year': str(year) if year and search_type == 'movie' else '',
+            'first_air_date_year': str(year) if year and search_type == 'tv' else ''
+        })
+        
+        if tmdb_data and tmdb_data.get('results'):
+            tmdb_item = tmdb_data['results'][0]
+            tmdb_results.append({
+                'tmdb': tmdb_item,
+                'type': rec_type,
+                'reason': reason,
+                'ai_title': title,
+                'ai_year': year
+            })
+        else:
+            # No TMDB match — still show it without poster
+            tmdb_results.append({
+                'tmdb': {'title': title, 'name': title, 'id': None, 'overview': reason,
+                         'vote_average': 0, 'poster_path': '', 'backdrop_path': ''},
+                'type': rec_type,
+                'reason': reason,
+                'ai_title': title,
+                'ai_year': year
+            })
+    
+    progress.close()
+    
+    # Display results
+    for item in tmdb_results:
+        tmdb = item['tmdb']
+        rec_type = item['type']
+        reason = item['reason']
+        
+        if rec_type == 'movie':
+            title = tmdb.get('title', item['ai_title'])
+            yr = str(tmdb.get('release_date', ''))[:4] or str(item['ai_year'])
+        else:
+            title = tmdb.get('name', item['ai_title'])
+            yr = str(tmdb.get('first_air_date', ''))[:4] or str(item['ai_year'])
+        
+        poster = tmdb.get('poster_path', '')
+        backdrop = tmdb.get('backdrop_path', '')
+        overview = tmdb.get('overview', reason)
+        rating = tmdb.get('vote_average', 0)
+        tmdb_id = tmdb.get('id')
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        # Label with AI reason
+        label = f'{title} ({yr})'
+        if reason:
+            label += f'  [COLOR FF9966CC]{reason}[/COLOR]'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setYear(int(yr) if yr else 0)
+        info_tag.setPlot(f'{reason}\n\n{overview}' if reason else overview)
+        info_tag.setRating(float(rating) if rating else 0)
+        info_tag.setMediaType('movie' if rec_type == 'movie' else 'tvshow')
+        
+        if tmdb_id:
+            if rec_type == 'movie':
+                item_url = build_url({
+                    'mode': 'get_sources', 'title': title, 'year': yr,
+                    'media_type': 'movie', 'tmdb_id': tmdb_id
+                })
+                is_folder = False
+            else:
+                item_url = build_url({
+                    'mode': 'tv_seasons', 'title': title, 'year': yr,
+                    'tmdb_id': tmdb_id
+                })
+                is_folder = True
+        else:
+            item_url = build_url({
+                'mode': 'get_sources', 'title': title, 'year': yr,
+                'media_type': 'movie', 'tmdb_id': ''
+            })
+            is_folder = False
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=is_folder)
+    
+    xbmcplugin.setContent(HANDLE, 'movies')
+    xbmcplugin.endOfDirectory(HANDLE)
+
 def tmdb_list(list_type, media_type='movie', page=1):
     """Get list from TMDB API (free, no key needed for basic lists)"""
     
@@ -250,6 +413,17 @@ def tmdb_list(list_type, media_type='movie', page=1):
             xbmcgui.Dialog().notification(ADDON_NAME, 'No results found', ADDON_ICON)
             return
         
+        # Fetch Trakt ratings for browse page (cached 24hr)
+        trakt_ratings = {}
+        try:
+            from salts_lib.trakt_api import TraktAPI
+            trakt = TraktAPI()
+            mt = 'movie' if media_type == 'movie' else 'show'
+            tmdb_ids = [str(i.get('id', '')) for i in results if i.get('id')]
+            trakt_ratings = trakt.get_batch_ratings(mt, tmdb_ids)
+        except Exception:
+            pass
+        
         for item in results:
             if media_type == 'movie':
                 title = item.get('title', 'Unknown')
@@ -267,6 +441,9 @@ def tmdb_list(list_type, media_type='movie', page=1):
             backdrop_url = f'https://image.tmdb.org/t/p/original{backdrop}' if backdrop else ADDON_FANART
             
             label = f'{title} ({year})' if year else title
+            trakt_r = trakt_ratings.get(str(item.get('id', '')))
+            if trakt_r:
+                label += f'  [COLOR FFE8B800]Trakt: {trakt_r[0]}[/COLOR]'
             
             li = xbmcgui.ListItem(label)
             li.setArt({
@@ -365,6 +542,17 @@ def search_tmdb(query, media_type='movie'):
             xbmcgui.Dialog().notification(ADDON_NAME, 'No results found', ADDON_ICON)
             return
         
+        # Fetch Trakt ratings for search results (cached 24hr)
+        trakt_ratings_s = {}
+        try:
+            from salts_lib.trakt_api import TraktAPI
+            trakt_s = TraktAPI()
+            mt_s = 'movie' if media_type == 'movie' else 'show'
+            tmdb_ids_s = [str(i.get('id', '')) for i in results if i.get('id')]
+            trakt_ratings_s = trakt_s.get_batch_ratings(mt_s, tmdb_ids_s)
+        except Exception:
+            pass
+        
         for item in results:
             if media_type == 'movie':
                 title = item.get('title', 'Unknown')
@@ -382,6 +570,9 @@ def search_tmdb(query, media_type='movie'):
             backdrop_url = f'https://image.tmdb.org/t/p/original{backdrop}' if backdrop else ADDON_FANART
             
             label = f'{title} ({year})' if year else title
+            trakt_r_s = trakt_ratings_s.get(str(item.get('id', '')))
+            if trakt_r_s:
+                label += f'  [COLOR FFE8B800]Trakt: {trakt_r_s[0]}[/COLOR]'
             
             li = xbmcgui.ListItem(label)
             li.setArt({
@@ -2486,6 +2677,10 @@ def router(params):
         tvshows_menu()
     elif mode == 'search_menu':
         search_menu()
+    elif mode == 'ai_search_menu':
+        ai_search_menu()
+    elif mode == 'ai_search':
+        ai_search(params.get('media_filter', 'all'))
     elif mode == 'tmdb_list':
         tmdb_list(params.get('list_type', 'popular'), params.get('media_type', 'movie'), int(params.get('page', 1)))
     elif mode == 'search':

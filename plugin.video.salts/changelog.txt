@@ -4,6 +4,21 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.3.0 (2026-04-02)
+================================================================================
+
+  NEW FEATURES
+  ------------
+  * AI Search - Natural language movie & TV discovery
+  * Describe what you want to watch (e.g. "movies about time travel with a twist")
+  * AI recommends 10-15 titles, each looked up on TMDB with posters and metadata
+  * Inline AI reason shown in purple next to each result
+  * Filter by Movies only, TV only, or All
+  * Settings: AI Search category with API key, model selection (gpt-4o-mini/gpt-4o/gpt-5.2)
+  * Pre-configured with Emergent LLM key (works out of the box)
+  * Trakt community ratings now shown on all browse and search result lists
+  * Gold-colored "Trakt: X.X" badge appended to item labels
+
 v2.2.1 (2026-04-02)
 ================================================================================
 

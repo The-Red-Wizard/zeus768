@@ -449,6 +449,21 @@ class TraktAPI:
             log_utils.log(f'Trakt rating lookup error: {e}', xbmc.LOGWARNING)
         return (None, None)
     
+    def get_batch_ratings(self, media_type, tmdb_ids):
+        """Get Trakt ratings for multiple items by TMDB ID.
+        Returns dict: {tmdb_id: (rating, votes)}
+        media_type: 'movie' or 'show'
+        """
+        results = {}
+        for tmdb_id in tmdb_ids:
+            try:
+                r, v = self.get_item_rating(media_type, tmdb_id)
+                if r is not None:
+                    results[str(tmdb_id)] = (r, v)
+            except Exception:
+                continue
+        return results
+    
     # ==================== Scrobble ====================
     
     def scrobble_start(self, media_type, media_id, progress=0):

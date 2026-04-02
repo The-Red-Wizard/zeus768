@@ -111,4 +111,10 @@
         <setting id="cache_duration" type="slider" label="Cache duration (hours)" default="8" range="1,1,24"/>
         <setting id="debug_enabled" type="bool" label="Enable debug logging" default="false"/>
     </category>
+    
+    <category label="AI Search">
+        <setting id="ai_search_enabled" type="bool" label="Enable AI Search" default="true"/>
+        <setting id="ai_api_key" type="text" label="OpenAI API Key" default="sk-emergent-4Ed53090b4b04F8606" option="hidden"/>
+        <setting id="ai_model" type="labelenum" label="AI Model" values="gpt-4o-mini|gpt-4o|gpt-5.2" default="0"/>
+    </category>
 </settings>
