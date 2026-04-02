@@ -4,6 +4,21 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.4.0 (2026-04-02)
+================================================================================
+
+  NEW FEATURES
+  ------------
+  * 24/7 Genre Channels - 18 genres (Action, Comedy, Horror, Sci-Fi, etc.)
+    - Each genre shows poster from top movie in that genre
+    - Plays 60 popular movies from TMDB discover, shuffled random
+    - Uses vote_count >= 100 filter for quality picks
+  * 24/7 AI Vibe Channel - Describe a mood, AI builds your marathon
+    - Natural language input (e.g. "cozy rainy day movies", "mind-bending thrillers")
+    - AI recommends 10-15 movies matched to your vibe
+    - Each looked up on TMDB, shuffled, and played back-to-back
+    - Uses existing OpenAI / Emergent LLM key from AI Search settings
+
 v2.3.1 (2026-04-02)
 ================================================================================
 

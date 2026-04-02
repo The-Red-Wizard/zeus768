@@ -2337,6 +2337,8 @@ def channel_menu():
     items = [
         {'title': '[B]24/7 Movies[/B] - Pick an actor, random marathon', 'mode': 'channel_movies_menu'},
         {'title': '[B]24/7 TV Shows[/B] - Pick a show, random start', 'mode': 'channel_shows_menu'},
+        {'title': '[B]24/7 Genre[/B] - Pick a genre, endless movies', 'mode': 'channel_genre_menu'},
+        {'title': '[COLOR magenta][B]24/7 AI Vibe[/B][/COLOR] - Describe a mood, AI builds your marathon', 'mode': 'channel_ai_vibe'},
     ]
     
     for item in items:
@@ -2677,6 +2679,243 @@ def channel_play_show(tmdb_id, name=''):
     xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Channel complete!', ADDON_ICON)
 
 
+def channel_genre_menu():
+    """24/7 Genre Channels: pick a genre for random movie marathon"""
+    genres = [
+        {'name': 'Action', 'id': 28},
+        {'name': 'Adventure', 'id': 12},
+        {'name': 'Animation', 'id': 16},
+        {'name': 'Comedy', 'id': 35},
+        {'name': 'Crime', 'id': 80},
+        {'name': 'Documentary', 'id': 99},
+        {'name': 'Drama', 'id': 18},
+        {'name': 'Family', 'id': 10751},
+        {'name': 'Fantasy', 'id': 14},
+        {'name': 'History', 'id': 36},
+        {'name': 'Horror', 'id': 27},
+        {'name': 'Music', 'id': 10402},
+        {'name': 'Mystery', 'id': 9648},
+        {'name': 'Romance', 'id': 10749},
+        {'name': 'Science Fiction', 'id': 878},
+        {'name': 'Thriller', 'id': 53},
+        {'name': 'War', 'id': 10752},
+        {'name': 'Western', 'id': 37},
+    ]
+    
+    for genre in genres:
+        # Fetch a sample movie poster for this genre
+        sample = _tmdb_get('/discover/movie', {
+            'with_genres': genre['id'], 'sort_by': 'popularity.desc', 'page': 1
+        })
+        poster = ''
+        backdrop = ''
+        if sample and sample.get('results'):
+            top = sample['results'][0]
+            poster = top.get('poster_path', '')
+            backdrop = top.get('backdrop_path', '')
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        li = xbmcgui.ListItem(f'24/7 {genre["name"]}')
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
+        url = build_url({'mode': 'channel_play_genre', 'genre_id': genre['id'], 'name': genre['name']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def channel_play_genre(genre_id, name=''):
+    """Start 24/7 genre channel: random popular movies from genre, back to back"""
+    # Fetch 3 pages of popular movies in this genre (60 movies)
+    all_movies = []
+    for pg in range(1, 4):
+        data = _tmdb_get('/discover/movie', {
+            'with_genres': genre_id,
+            'sort_by': 'popularity.desc',
+            'vote_count.gte': 100,
+            'page': pg
+        })
+        if data and data.get('results'):
+            all_movies.extend(data['results'])
+    
+    if not all_movies:
+        xbmcgui.Dialog().notification(ADDON_NAME, f'No movies found for {name}', ADDON_ICON)
+        return
+    
+    random.shuffle(all_movies)
+    
+    xbmcgui.Dialog().notification(
+        ADDON_NAME, f'24/7 {name}: {len(all_movies)} movies shuffled', ADDON_ICON, 3000
+    )
+    
+    player = xbmc.Player()
+    
+    for movie in all_movies:
+        title = movie.get('title', 'Unknown')
+        year = (movie.get('release_date') or '')[:4]
+        tmdb_id = movie.get('id', '')
+        poster = movie.get('poster_path', '')
+        
+        log_utils.log(f'24/7 {name}: Playing {title} ({year})', xbmc.LOGINFO)
+        
+        stream_url = _channel_get_stream(title, year, tmdb_id, max_quality='1080p')
+        
+        if not stream_url:
+            log_utils.log(f'24/7 {name}: No source for {title}, skipping', xbmc.LOGINFO)
+            continue
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        li = xbmcgui.ListItem(f'{title} ({year})', path=stream_url)
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'fanart': ADDON_FANART})
+        
+        player.play(stream_url, li)
+        
+        timeout = 30
+        while not player.isPlaying() and timeout > 0:
+            xbmc.sleep(500)
+            timeout -= 1
+        
+        if not player.isPlaying():
+            continue
+        
+        while player.isPlaying():
+            xbmc.sleep(2000)
+        
+        xbmc.sleep(1000)
+        
+        if xbmc.Monitor().abortRequested():
+            break
+    
+    xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Marathon complete!', ADDON_ICON)
+
+
+def channel_ai_vibe():
+    """AI Vibe Channel: describe a mood/vibe, AI builds a custom movie marathon"""
+    from salts_lib import ai_search as ai_mod
+    
+    if ADDON.getSetting('ai_search_enabled') != 'true':
+        xbmcgui.Dialog().ok('AI Vibe', 'AI Search is disabled.\n\nEnable it in Settings > AI Search.')
+        return
+    
+    if not ADDON.getSetting('ai_api_key'):
+        xbmcgui.Dialog().ok('AI Vibe', 'No API key configured.\n\nGo to Settings > AI Search to add your OpenAI key.')
+        return
+    
+    keyboard = xbmc.Keyboard('', 'Describe the vibe (e.g. "cozy rainy day movies")')
+    keyboard.doModal()
+    
+    if not keyboard.isConfirmed():
+        return
+    
+    query = keyboard.getText().strip()
+    if not query:
+        return
+    
+    progress = xbmcgui.DialogProgress()
+    progress.create('AI Vibe Channel', f'Asking AI: {query[:50]}...')
+    progress.update(15, 'AI is picking movies for your vibe...')
+    
+    # Get AI recommendations (movies only for 24/7 playback)
+    results = ai_mod.ai_search(query, media_filter='movie')
+    
+    if progress.iscanceled():
+        progress.close()
+        return
+    
+    if not results:
+        progress.close()
+        xbmcgui.Dialog().notification(ADDON_NAME, 'AI returned no results. Try a different vibe.', ADDON_ICON)
+        return
+    
+    progress.update(40, f'Found {len(results)} movies. Looking up on TMDB...')
+    
+    # Look up each on TMDB to get IDs and posters
+    movies = []
+    for i, rec in enumerate(results):
+        if progress.iscanceled():
+            progress.close()
+            return
+        
+        progress.update(40 + int(30 * i / len(results)), f'Looking up: {rec.get("title", "")}')
+        
+        title = rec.get('title', '')
+        year = rec.get('year', '')
+        
+        tmdb_data = _tmdb_get('/search/movie', {'query': title, 'year': str(year) if year else ''})
+        
+        if tmdb_data and tmdb_data.get('results'):
+            tmdb_item = tmdb_data['results'][0]
+            movies.append({
+                'title': tmdb_item.get('title', title),
+                'year': str(tmdb_item.get('release_date', ''))[:4] or str(year),
+                'tmdb_id': tmdb_item.get('id', ''),
+                'poster': tmdb_item.get('poster_path', ''),
+                'reason': rec.get('reason', '')
+            })
+        else:
+            movies.append({
+                'title': title,
+                'year': str(year),
+                'tmdb_id': '',
+                'poster': '',
+                'reason': rec.get('reason', '')
+            })
+    
+    progress.close()
+    
+    if not movies:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No movies found for this vibe', ADDON_ICON)
+        return
+    
+    random.shuffle(movies)
+    
+    # Show what's coming
+    movie_names = ', '.join(m['title'] for m in movies[:5])
+    xbmcgui.Dialog().notification(
+        ADDON_NAME, f'AI Vibe: {len(movies)} movies - {movie_names}...', ADDON_ICON, 5000
+    )
+    
+    player = xbmc.Player()
+    
+    for movie in movies:
+        title = movie['title']
+        year = movie['year']
+        tmdb_id = movie['tmdb_id']
+        poster = movie['poster']
+        
+        log_utils.log(f'AI Vibe: Playing {title} ({year})', xbmc.LOGINFO)
+        
+        stream_url = _channel_get_stream(title, year, tmdb_id, max_quality='1080p')
+        
+        if not stream_url:
+            log_utils.log(f'AI Vibe: No source for {title}, skipping', xbmc.LOGINFO)
+            continue
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        li = xbmcgui.ListItem(f'{title} ({year})', path=stream_url)
+        li.setArt({'icon': poster_url, 'thumb': poster_url, 'fanart': ADDON_FANART})
+        
+        player.play(stream_url, li)
+        
+        timeout = 30
+        while not player.isPlaying() and timeout > 0:
+            xbmc.sleep(500)
+            timeout -= 1
+        
+        if not player.isPlaying():
+            continue
+        
+        while player.isPlaying():
+            xbmc.sleep(2000)
+        
+        xbmc.sleep(1000)
+        
+        if xbmc.Monitor().abortRequested():
+            break
+    
+    xbmcgui.Dialog().notification(ADDON_NAME, 'AI Vibe: Marathon complete!', ADDON_ICON)
+
+
 def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media_type='movie', max_quality='1080p'):
     """Get a stream URL for 24/7 channel playback. Returns URL or None."""
     from scrapers import get_all_scrapers
@@ -2906,6 +3145,12 @@ def router(params):
         channel_search_show()
     elif mode == 'channel_play_show':
         channel_play_show(params.get('tmdb_id', ''), params.get('name', ''))
+    elif mode == 'channel_genre_menu':
+        channel_genre_menu()
+    elif mode == 'channel_play_genre':
+        channel_play_genre(params.get('genre_id', ''), params.get('name', ''))
+    elif mode == 'channel_ai_vibe':
+        channel_ai_vibe()
     elif mode == 'buy_beer':
         choice = xbmcgui.Dialog().select(
             'Buy Me a Beer - Support zeus768',
