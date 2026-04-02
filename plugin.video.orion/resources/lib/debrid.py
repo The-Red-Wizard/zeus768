@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Debrid Services Integration for Orion
-Supports: Real-Debrid, Premiumize, AllDebrid
+Supports: Real-Debrid, Premiumize, AllDebrid, TorBox
 """
 
 import urllib.request
@@ -532,4 +532,161 @@ class AllDebrid:
             return None
         except Exception as e:
             xbmc.log(f"AllDebrid resolve error: {e}", xbmc.LOGERROR)
+            return None
+
+
+class TorBox:
+    """TorBox API Integration (https://api.torbox.app)"""
+    
+    BASE_URL = 'https://api.torbox.app/v1/api'
+    
+    def __init__(self):
+        self.token = ADDON.getSetting('tb_token')
+    
+    def _auth_headers(self):
+        return {'Authorization': f'Bearer {self.token}'}
+    
+    def is_authorized(self):
+        return bool(self.token)
+    
+    def pair(self):
+        """API key authorization for TorBox"""
+        keyboard = xbmc.Keyboard('', 'Enter TorBox API Key')
+        keyboard.doModal()
+        
+        if keyboard.isConfirmed():
+            api_key = keyboard.getText().strip()
+            if api_key:
+                try:
+                    # Verify the key by calling /user/me
+                    url = f'{self.BASE_URL}/user/me'
+                    result = http_request(url, headers={'Authorization': f'Bearer {api_key}'})
+                    
+                    if isinstance(result, dict) and result.get('success'):
+                        self.token = api_key
+                        ADDON.setSetting('tb_token', api_key)
+                        ADDON.setSetting('tb_enabled', 'true')
+                        
+                        user_data = result.get('data', {})
+                        plan = user_data.get('plan', 'Unknown')
+                        xbmcgui.Dialog().ok(
+                            'TorBox',
+                            f'[COLOR lime]Authorized![/COLOR]\nPlan: {plan}\n\nGet your API key from: https://torbox.app/settings'
+                        )
+                        return True
+                    else:
+                        xbmcgui.Dialog().ok('TorBox', '[COLOR red]Invalid API key[/COLOR]')
+                except Exception as e:
+                    xbmcgui.Dialog().ok('TorBox Error', str(e))
+        return False
+    
+    def check_cache(self, info_hash):
+        """Check if torrent is cached on TorBox"""
+        if not self.token:
+            return False
+        try:
+            url = f'{self.BASE_URL}/torrents/checkcached?hash={info_hash}&format=list'
+            result = http_request(url, headers=self._auth_headers())
+            if isinstance(result, dict) and result.get('success'):
+                cached_data = result.get('data', [])
+                return bool(cached_data)
+        except Exception:
+            pass
+        return False
+    
+    def resolve_magnet(self, magnet, progress=None):
+        """Resolve magnet link to direct download via TorBox"""
+        if not self.token:
+            return None
+        
+        try:
+            import re as _re
+            
+            if progress:
+                progress.update(10, 'Checking TorBox cache...')
+            
+            # Extract hash from magnet
+            hash_match = _re.search(r'btih:([a-fA-F0-9]{40})', magnet)
+            if not hash_match:
+                hash_match = _re.search(r'btih:([a-zA-Z2-7]{32})', magnet)
+            
+            # Step 1: Create torrent (add magnet) using multipart form
+            if progress:
+                progress.update(20, 'Adding magnet to TorBox...')
+            
+            boundary = '----OrionBoundary'
+            body_parts = []
+            body_parts.append(f'--{boundary}')
+            body_parts.append('Content-Disposition: form-data; name="magnet"')
+            body_parts.append('')
+            body_parts.append(magnet)
+            body_parts.append(f'--{boundary}--')
+            body_data = '\r\n'.join(body_parts).encode('utf-8')
+            
+            create_headers = self._auth_headers()
+            create_headers['Content-Type'] = f'multipart/form-data; boundary={boundary}'
+            
+            url = f'{self.BASE_URL}/torrents/createtorrent'
+            req = urllib.request.Request(url, data=body_data, headers=create_headers, method='POST')
+            
+            try:
+                with urllib.request.urlopen(req, context=SSL_CONTEXT, timeout=30) as response:
+                    result = json.loads(response.read().decode('utf-8'))
+            except urllib.error.HTTPError as e:
+                try:
+                    result = json.loads(e.read().decode('utf-8'))
+                except:
+                    result = {'error': str(e)}
+            
+            if not isinstance(result, dict) or not result.get('success'):
+                xbmc.log(f"TorBox createtorrent failed: {result}", xbmc.LOGERROR)
+                return None
+            
+            torrent_id = result.get('data', {}).get('torrent_id')
+            if not torrent_id:
+                return None
+            
+            # Step 2: Wait for ready and get file list
+            if progress:
+                progress.update(40, 'Processing torrent on TorBox...')
+            
+            for i in range(30):
+                if progress:
+                    progress.update(40 + i, 'Waiting for TorBox...')
+                
+                info_url = f'{self.BASE_URL}/torrents/mylist?id={torrent_id}'
+                info_result = http_request(info_url, headers=self._auth_headers())
+                
+                if isinstance(info_result, dict) and info_result.get('success'):
+                    torrent_data = info_result.get('data', {})
+                    dl_state = torrent_data.get('download_state', '')
+                    
+                    if dl_state in ('completed', 'cached', 'downloading'):
+                        files = torrent_data.get('files', [])
+                        if files:
+                            # Pick largest file (video)
+                            largest = max(files, key=lambda f: f.get('size', 0))
+                            file_id = largest.get('id', 0)
+                            
+                            # Step 3: Request download link
+                            if progress:
+                                progress.update(85, 'Getting TorBox stream link...')
+                            
+                            dl_url = f'{self.BASE_URL}/torrents/requestdl?token={self.token}&torrent_id={torrent_id}&file_id={file_id}'
+                            dl_result = http_request(dl_url, headers=self._auth_headers())
+                            
+                            if isinstance(dl_result, dict) and dl_result.get('success'):
+                                download_url = dl_result.get('data')
+                                if download_url:
+                                    return download_url
+                        break
+                    elif dl_state in ('error', 'stalled'):
+                        return None
+                
+                time.sleep(2)
+            
+            return None
+            
+        except Exception as e:
+            xbmc.log(f"TorBox resolve error: {e}", xbmc.LOGERROR)
             return None

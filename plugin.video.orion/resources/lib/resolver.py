@@ -18,14 +18,17 @@ def get_active_debrid():
     services = [
         ('rd', debrid.RealDebrid),
         ('pm', debrid.Premiumize),
-        ('ad', debrid.AllDebrid)
+        ('ad', debrid.AllDebrid),
+        ('tb', debrid.TorBox)
     ]
     
     # Reorder based on priority
     if priority == 1:
-        services = [services[1], services[0], services[2]]
+        services = [services[1], services[0], services[2], services[3]]
     elif priority == 2:
-        services = [services[2], services[0], services[1]]
+        services = [services[2], services[0], services[1], services[3]]
+    elif priority == 3:
+        services = [services[3], services[0], services[1], services[2]]
     
     # Find first enabled and authorized service
     for key, cls in services:

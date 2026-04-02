@@ -1,92 +1,103 @@
-Orion v3.0.0 Changelog
-======================
+Orion Changelog
+================
 
-MAJOR UPDATE - Complete addon overhaul with new scrapers and features
+## v3.2.0 (February 2026)
 
-## New Torrent Scrapers
-- **Torrentio**: Public Stremio addon integration for movies and TV shows
-- **MediaFusion**: ElfHosted MediaFusion addon support (requires configuration)
-- **Jackettio**: Jackett-based Stremio addon support (requires configuration)
+### TorBox Debrid Support
+- Added TorBox as a new debrid provider (https://torbox.app)
+- API key authorization with account plan verification
+- Cache checking for instant playback of cached torrents
+- Full magnet-to-stream resolving pipeline
+- TorBox settings category in addon settings
+- Added to debrid priority selector (Real-Debrid > Premiumize > AllDebrid > TorBox)
 
-## Scraper Modes
-- **Orion Scrapers**: Use Orionoid, Torrentio, MediaFusion, Jackettio
-- **Coco Scrapers**: Use traditional scrapers (1337x, TorrentDownloads, RARBG)
+### Debrid Provider Fixes
+- Removed broken `script.module.requests` dependency from addon.xml
+- All debrid providers now use native Python urllib for Kodi 21+ compatibility
+- Real-Debrid: OAuth device flow verified and working
+- Premiumize: Device code auth and direct download cache verified
+- AllDebrid: PIN-based auth and magnet upload flow verified
+- Resolver now correctly cycles through all 4 debrid services based on priority
+
+### Technical
+- Native urllib throughout (no external HTTP libraries required)
+- Proper SSL context handling for all API calls
+- Multipart form data support for TorBox torrent creation
+
+---
+
+## v3.1.0 (January 2026)
+
+### Trakt Integration
+- Trakt scrobbling (auto-mark watched at 80%+ progress)
+- Trakt watchlists with pagination
+- Custom lists and liked lists support
+- Collection browsing (movies and TV shows)
+- Watched history from Trakt
+- Recommendations (movies and TV shows)
+- Trending and popular lists
+
+### Kids Zone
+- Animation movies category
+- Family movies category
+- Kids TV shows category
+- Disney & Pixar style movies
+- G & PG rated movies
+- Infinite scrolling pagination
+
+---
+
+## v3.0.0 (January 2026)
+
+### New Torrent Scrapers
+- Torrentio: Public Stremio addon integration for movies and TV shows
+- MediaFusion: ElfHosted MediaFusion addon support (requires configuration)
+- Jackettio: Jackett-based Stremio addon support (requires configuration)
+
+### Scraper Modes
+- Orion Scrapers: Use Orionoid, Torrentio, MediaFusion, Jackettio
+- Coco Scrapers: Use traditional scrapers (1337x, TorrentDownloads, RARBG)
 - Switch between modes in Settings > Scrapers
 
-## Orionoid Improvements
+### Orionoid Improvements
 - User authorization - enter your own API key from panel.orionoid.com
 - Improved search with IMDB ID support
 - Better error handling
 
-## MediaFusion & Jackettio Support
+### MediaFusion & Jackettio Support
 - Configure with manifest URLs from respective websites
 - MediaFusion: https://mediafusion.elfhosted.com/configure
 - Jackettio: https://jackettio.elfhosted.com/configure
 
-## ResolveURL Integration
+### ResolveURL Integration
 - Added as optional dependency
 - Falls back to ResolveURL when debrid fails
 - Enable/disable in Settings > Playback
 
-## Watch History & Continue Watching
+### Watch History & Continue Watching
 - Track watched movies and episodes
 - Resume from where you left off
 - Continue Watching section on main menu
 - Configurable history limit (default: 100 items)
 - Clear history option in settings
 
-## Favorites System
+### Favorites System
 - Add/remove movies and TV shows to favorites
 - Quick access from main menu
 - Context menu integration for easy management
 
-## Auto-Play Next Episode
+### Auto-Play Next Episode
 - Automatically queue next episode
 - Enable/disable in Settings > Playback
 
-## Quality Preferences
+### Quality Preferences
 - Set preferred quality (4K, 1080p, 720p, SD)
 - Auto-play best quality option
 - Quality filtering in source results
 
-## Category Icons
+### Category Icons
 - New themed icons for all categories
 - Dark theme with accent colors
-- Matching addon style
-
-## Removed Features
-- VidSrc direct streaming (removed as requested)
-
-## Technical Improvements
-- IMDB ID lookup for better scraper results
-- Improved source deduplication
-- Better error handling throughout
-- Code optimization and cleanup
-
-## Settings Reorganization
-- Scrapers category (mode selection, individual scraper toggles)
-- Orionoid category (API key authorization)
-- MediaFusion category (manifest configuration)
-- Jackettio category (manifest configuration)
-- Debrid services (Real-Debrid, Premiumize, AllDebrid)
-- Trakt integration
-- Playback settings
-- History & Favorites settings
-- General settings
 
 ---
-
-## Upgrade Notes
-- Direct streaming links have been removed
-- You will need to configure scrapers in settings
-- For Orionoid, enter your API key from panel.orionoid.com
-- For MediaFusion/Jackettio, configure on their respective websites
-
-## Known Issues
-- Some Torrentio results may not have seed counts displayed
-- MediaFusion/Jackettio require proper manifest configuration
-
----
-Version: 3.0.0
-Date: January 2026
 Provider: zeus768

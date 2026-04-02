@@ -46,6 +46,11 @@
         <setting id="ad_qr_auth" type="action" label="Show QR Code" action="RunPlugin(plugin://plugin.video.orion/?action=qr_ad)"/>
         <setting id="ad_token" type="text" label="Token" default="" visible="false"/>
     </category>
+    <category label="TorBox">
+        <setting id="tb_enabled" type="bool" label="Enable TorBox" default="false"/>
+        <setting id="tb_authorize" type="action" label="Authorize TorBox (API Key)" action="RunPlugin(plugin://plugin.video.orion/?action=pair_tb)"/>
+        <setting id="tb_token" type="text" label="API Key" default="" visible="false"/>
+    </category>
     <category label="Trakt">
         <setting id="trakt_enabled" type="bool" label="Enable Trakt" default="false"/>
         <setting id="trakt_authorize" type="action" label="Authorize Trakt" action="RunPlugin(plugin://plugin.video.orion/?action=pair_trakt)"/>
@@ -57,7 +62,7 @@
         <setting id="preferred_quality" type="labelenum" label="Preferred Quality" values="4K|1080p|720p|SD" default="0"/>
         <setting id="auto_play" type="bool" label="Auto-play best quality" default="true"/>
         <setting id="auto_next_episode" type="bool" label="Auto-play next episode" default="true"/>
-        <setting id="debrid_priority" type="labelenum" label="Debrid Priority" values="Real-Debrid|Premiumize|AllDebrid" default="0"/>
+        <setting id="debrid_priority" type="labelenum" label="Debrid Priority" values="Real-Debrid|Premiumize|AllDebrid|TorBox" default="0"/>
         <setting id="use_resolveurl" type="bool" label="Use ResolveURL for resolution" default="true"/>
     </category>
     <category label="History &amp; Favorites">

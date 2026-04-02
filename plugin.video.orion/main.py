@@ -1663,6 +1663,9 @@ elif action == 'pair_pm':
 elif action == 'pair_ad':
     from resources.lib import debrid
     debrid.AllDebrid().pair()
+elif action == 'pair_tb':
+    from resources.lib import debrid
+    debrid.TorBox().pair()
 elif action == 'pair_trakt':
     from resources.lib import trakt
     trakt.TraktAPI().pair()
@@ -1676,6 +1679,9 @@ elif action == 'qr_pm':
 elif action == 'qr_ad':
     from resources.lib import qrcode_helper
     qrcode_helper.show_qr('AllDebrid', 'https://alldebrid.com/pin')
+elif action == 'qr_tb':
+    from resources.lib import qrcode_helper
+    qrcode_helper.show_qr('TorBox', 'https://torbox.app/settings')
 elif action == 'qr_trakt':
     from resources.lib import qrcode_helper
     qrcode_helper.show_qr('Trakt', 'https://trakt.tv/activate')
