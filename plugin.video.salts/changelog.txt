@@ -4,6 +4,23 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.1.8 (2026-04-02)
+================================================================================
+
+  BUG FIXES
+  ---------
+  * Fixed source dialog rendering - text was overlapping movie descriptions and
+    posters instead of showing in a proper popup dialog
+  * Moved source dialog code fully inline (no external module imports that could
+    fail silently across different Kodi skins)
+  * Source dialog now uses native Kodi Dialog().select() with rich color formatting:
+    - Quality color badges (gold 4K, green 1080p, blue 720p, purple 480p, gray SD)
+    - CACHED tag (spring green) / FREE tag (orange)
+    - Seed count color-coded by health (green 100+, yellow 10+, orange low)
+    - File sizes displayed
+    - Header shows total/cached/free counts with quality breakdown
+
+
 v2.1.7 (2026-04-02)
 ================================================================================
 
