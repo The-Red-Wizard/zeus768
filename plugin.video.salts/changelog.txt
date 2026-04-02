@@ -4,6 +4,17 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.4.2 (2026-04-03)
+================================================================================
+
+  BUG FIXES
+  ---------
+  * Fixed AI Search 401 error - switched from api.openai.com to Emergent proxy
+    endpoint (https://integrations.emergentagent.com/llm/v1/chat/completions)
+    which accepts the Emergent universal key
+  * Fixed color coding - AI Search and AI Vibe menu items now use same bold
+    white styling as rest of menu (removed magenta color mismatch)
+
 v2.4.0 (2026-04-02)
 ================================================================================
 

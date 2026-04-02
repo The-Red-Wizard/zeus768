@@ -1,6 +1,7 @@
 """
 SALTS AI Search - Natural Language Movie & TV Show Discovery
-Uses OpenAI API via native urllib for Kodi 21+ compatibility.
+Uses OpenAI API via Emergent proxy (https://integrations.emergentagent.com/llm)
+Native urllib for Kodi 21+ compatibility.
 """
 import json
 import ssl
@@ -13,6 +14,9 @@ ADDON = xbmcaddon.Addon()
 SSL_CTX = ssl._create_unverified_context()
 
 AI_MODELS = ['gpt-4o-mini', 'gpt-4o', 'gpt-5.2']
+
+# Emergent proxy endpoint (works with Emergent universal key)
+API_ENDPOINT = 'https://integrations.emergentagent.com/llm/v1/chat/completions'
 
 SYSTEM_PROMPT = """You are a movie and TV show recommendation engine. The user will describe what they want to watch using natural language. You MUST respond with ONLY a valid JSON array of recommendations.
 
@@ -29,7 +33,7 @@ Example response:
 
 
 def ai_search(query, media_filter='all'):
-    """Send natural language query to OpenAI, return list of recommendations.
+    """Send natural language query to OpenAI via Emergent proxy, return list of recommendations.
     
     Args:
         query: Natural language search query
@@ -65,12 +69,12 @@ def ai_search(query, media_filter='all'):
     try:
         data = json.dumps(payload).encode('utf-8')
         req = Request(
-            'https://api.openai.com/v1/chat/completions',
+            API_ENDPOINT,
             data=data,
             headers={
                 'Content-Type': 'application/json',
                 'Authorization': f'Bearer {api_key}',
-                'User-Agent': 'SALTS/2.2'
+                'User-Agent': 'SALTS/2.4'
             },
             method='POST'
         )

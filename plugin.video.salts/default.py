@@ -117,7 +117,7 @@ def main_menu():
         {'title': '[B]24/7 Channels[/B]', 'mode': 'channel_menu'},
         {'title': '[B]Favorites[/B]', 'mode': 'favorites_menu'},
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
-        {'title': '[COLOR magenta][B]AI Search[/B][/COLOR]', 'mode': 'ai_search_menu'},
+        {'title': '[B]AI Search[/B]', 'mode': 'ai_search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu'},
         {'title': 'Debrid Services', 'mode': 'debrid_menu'},
@@ -190,9 +190,9 @@ def search_menu():
 def ai_search_menu():
     """AI Search sub-menu"""
     items = [
-        {'title': '[COLOR magenta][B]AI Search Movies[/B][/COLOR]', 'mode': 'ai_search', 'media_filter': 'movie'},
-        {'title': '[COLOR magenta][B]AI Search TV Shows[/B][/COLOR]', 'mode': 'ai_search', 'media_filter': 'tv'},
-        {'title': '[COLOR magenta][B]AI Search All[/B][/COLOR]', 'mode': 'ai_search', 'media_filter': 'all'},
+        {'title': '[B]AI Search Movies[/B]', 'mode': 'ai_search', 'media_filter': 'movie'},
+        {'title': '[B]AI Search TV Shows[/B]', 'mode': 'ai_search', 'media_filter': 'tv'},
+        {'title': '[B]AI Search All[/B]', 'mode': 'ai_search', 'media_filter': 'all'},
     ]
     
     for item in items:
@@ -2320,7 +2320,7 @@ def channel_menu():
         {'title': '[B]24/7 Movies[/B] - Pick an actor, random marathon', 'mode': 'channel_movies_menu'},
         {'title': '[B]24/7 TV Shows[/B] - Pick a show, random start', 'mode': 'channel_shows_menu'},
         {'title': '[B]24/7 Genre[/B] - Pick a genre, endless movies', 'mode': 'channel_genre_menu'},
-        {'title': '[COLOR magenta][B]24/7 AI Vibe[/B][/COLOR] - Describe a mood, AI builds your marathon', 'mode': 'channel_ai_vibe'},
+        {'title': '[B]24/7 AI Vibe[/B] - Describe a mood, AI builds your marathon', 'mode': 'channel_ai_vibe'},
     ]
     
     for item in items:
