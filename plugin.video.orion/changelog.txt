@@ -1,6 +1,17 @@
 Orion Changelog
 ================
 
+## v3.2.2 (February 2026)
+
+### Debrid Resolution Fixes
+- Fixed Real-Debrid resolving .rar/.zip archive files instead of actual video files
+- RD now selects only video files (.mp4, .mkv, .avi, .mov, .wmv, .flv, .m4v, .ts, .webm) from torrent
+- After unrestricting, skips non-video URLs and tries next available link
+- Added clear error dialog when no debrid service is configured ("Go to Settings and authorize...")
+- Added ResolveURL debrid fallback - if Orion debrid fails, tries ResolveURL's RD integration
+
+---
+
 ## v3.2.1 (February 2026)
 
 ### [CACHED] Source Tags

@@ -269,6 +269,8 @@ class RealDebrid:
     
     def resolve_magnet(self, magnet, progress=None):
         """Resolve magnet to stream URL"""
+        VIDEO_EXTS = ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.m4v', '.mpg', '.mpeg', '.ts', '.webm')
+        
         try:
             if progress:
                 progress.update(10, 'Adding magnet to Real-Debrid...')
@@ -278,9 +280,27 @@ class RealDebrid:
                 return None
             
             if progress:
-                progress.update(30, 'Selecting files...')
+                progress.update(20, 'Getting file list...')
             
-            self.select_files(torrent_id)
+            # Get torrent info to find video files before selecting
+            info = self.get_torrent_info(torrent_id)
+            files = info.get('files', [])
+            
+            # Pick only video files by extension, select largest
+            video_file_ids = []
+            for f in files:
+                path = f.get('path', '').lower()
+                if path.endswith(VIDEO_EXTS):
+                    video_file_ids.append(str(f.get('id', 0)))
+            
+            if progress:
+                progress.update(30, 'Selecting video files...')
+            
+            if video_file_ids:
+                self.select_files(torrent_id, ','.join(video_file_ids))
+            else:
+                # Fallback: select all and hope for the best
+                self.select_files(torrent_id)
             
             # Wait for torrent to be ready
             for i in range(60):
@@ -296,9 +316,20 @@ class RealDebrid:
                         if progress:
                             progress.update(90, 'Getting stream link...')
                         
-                        # Find largest video file
-                        stream_url = self.unrestrict_link(links[0])
-                        return stream_url
+                        # Try each link, prefer video files
+                        for link in links:
+                            stream_url = self.unrestrict_link(link)
+                            if stream_url:
+                                # Check the resolved URL is a video, not .rar/.zip
+                                url_lower = stream_url.lower().split('?')[0]
+                                if url_lower.endswith(('.rar', '.zip', '.7z', '.nfo', '.txt', '.srt')):
+                                    xbmc.log(f"RealDebrid: Skipping non-video link: {stream_url[:80]}", xbmc.LOGINFO)
+                                    continue
+                                return stream_url
+                        
+                        # If all links were archives, try first one anyway as last resort
+                        if links:
+                            return self.unrestrict_link(links[0])
                 elif status in ['error', 'dead', 'magnet_error']:
                     return None
                 

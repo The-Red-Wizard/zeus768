@@ -4,6 +4,16 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.1.9 (2026-04-02)
+================================================================================
+
+  BUG FIXES
+  ---------
+  * Fixed Real-Debrid resolving .rar/.zip archive files instead of video files
+  * RD file selection now filters for video extensions only (.mp4, .mkv, .avi, etc.)
+  * After unrestricting link, verifies URL points to video, skips archives
+  * Falls back to trying all links if no video file found
+
 v2.1.8 (2026-04-02)
 ================================================================================
 

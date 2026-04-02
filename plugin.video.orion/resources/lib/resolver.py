@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Link Resolver for Orion v3.0
+Link Resolver for Orion v3.2
 Resolves magnet links via debrid services or ResolveURL
 """
 
 import xbmcaddon
 import xbmc
+import xbmcgui
 
 ADDON = xbmcaddon.Addon()
 
@@ -62,24 +63,60 @@ def resolve_with_resolveurl(url):
     
     return None
 
+def resolve_with_resolveurl_rd(magnet):
+    """Try to resolve magnet using ResolveURL's Real-Debrid integration"""
+    try:
+        import resolveurl
+        
+        # Check if ResolveURL has RealDebrid configured
+        rd_resolver = None
+        for resolver in resolveurl.relevant_resolvers(order_matters=True):
+            if 'realdebrid' in resolver.__class__.__name__.lower() or \
+               'real_debrid' in resolver.__class__.__name__.lower():
+                rd_resolver = resolver
+                break
+        
+        if rd_resolver and hasattr(rd_resolver, 'get_media_url'):
+            resolved = rd_resolver.get_media_url('', magnet)
+            if resolved:
+                xbmc.log(f"ResolveURL RD resolved magnet", xbmc.LOGINFO)
+                return resolved
+    except ImportError:
+        pass
+    except Exception as e:
+        xbmc.log(f"ResolveURL RD magnet error: {e}", xbmc.LOGWARNING)
+    
+    return None
+
 def resolve_magnet(magnet, progress=None):
     """Resolve magnet link to stream URL"""
     from resources.lib import debrid
     
-    # Check if we should try ResolveURL first for certain links
     use_resolveurl = ADDON.getSetting('use_resolveurl') == 'true'
     
     service = get_active_debrid()
     
     if not service:
-        xbmc.log("No authorized debrid service found", xbmc.LOGERROR)
+        xbmc.log("No authorized debrid service found in Orion settings", xbmc.LOGERROR)
         
-        # Try ResolveURL as fallback if enabled
+        # Try ResolveURL's debrid as fallback
         if use_resolveurl:
+            if progress:
+                progress.update(20, 'Trying ResolveURL debrid...')
+            resolved = resolve_with_resolveurl_rd(magnet)
+            if resolved:
+                return resolved
             resolved = resolve_with_resolveurl(magnet)
             if resolved:
                 return resolved
         
+        # Show helpful error to user
+        xbmcgui.Dialog().ok(
+            'Orion - No Debrid Service',
+            'No debrid service is authorized in Orion.\n\n'
+            'Go to [COLOR cyan]Settings[/COLOR] and authorize one of:\n'
+            '[COLOR lime]Real-Debrid | Premiumize | AllDebrid | TorBox[/COLOR]'
+        )
         return None
     
     service_name = service.__class__.__name__

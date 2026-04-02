@@ -11,7 +11,7 @@ Fix old Kodi addons and bring them back to life for Kodi 21+ (Python 3). Primary
 
 ---
 
-## plugin.video.salts (SALTS) — v2.1.8 [STABLE]
+## plugin.video.salts (SALTS) — v2.1.9 [STABLE]
 - [x] Full Python 3 / Kodi 21+ migration
 - [x] 34+ scrapers, Free Stream scrapers
 - [x] Real-Debrid, Premiumize, AllDebrid, TorBox integration
@@ -28,13 +28,15 @@ Fix old Kodi addons and bring them back to life for Kodi 21+ (Python 3). Primary
 - [x] Autoplay, Source caching, Scraper priorities
 - [x] Favorites, Watch history, OpenSubtitles, Skip Intro, Up Next
 - [x] Jackett/Prowlarr, ResolveURL, Kodi repo structure
+- [x] **Fixed RD .rar resolution** — Video-only file selection + archive skipping (v2.1.9)
 
-## plugin.video.orion (Orion) — v3.2.1 [UPDATED]
+## plugin.video.orion (Orion) — v3.2.2 [STABLE]
 - [x] Multi-scraper: Orionoid, Torrentio, MediaFusion, Jackettio, 1337x, TorrentDownloads, RARBG
 - [x] Debrid: Real-Debrid, Premiumize, AllDebrid — all using native urllib
 - [x] **TorBox debrid support** (API key auth, cache checking, magnet resolving) — Added v3.2.0
 - [x] **Removed broken `script.module.requests` dependency** — Fixed v3.2.0
 - [x] **[CACHED] source tags** — Batch cache checking across all 4 debrid providers, cached sorted to top — Added v3.2.1
+- [x] **Fixed RD .rar resolution** — Video-only file selection, archive skipping, clear no-debrid error dialog, ResolveURL debrid fallback — Fixed v3.2.2
 - [x] Debrid priority selector with 4 services (RD > PM > AD > TB)
 - [x] Trakt integration (scrobbling, watchlists, liked lists, collections, recommendations)
 - [x] Kids Zone (animation, family, G/PG, infinite scroll)

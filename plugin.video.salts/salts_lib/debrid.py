@@ -312,6 +312,8 @@ class RealDebrid:
         if not self.is_authorized():
             return None
         
+        VIDEO_EXTS = ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.m4v', '.mpg', '.mpeg', '.ts', '.webm')
+        
         try:
             status, result = _post(
                 f'{self.BASE_URL}/torrents/addMagnet',
@@ -328,7 +330,9 @@ class RealDebrid:
             
             if isinstance(info, dict):
                 files = info.get('files', [])
-                file_ids = ','.join([str(f['id']) for f in files]) if files else 'all'
+                # Select only video files
+                video_ids = [str(f['id']) for f in files if f.get('path', '').lower().endswith(VIDEO_EXTS)]
+                file_ids = ','.join(video_ids) if video_ids else ('all' if not files else ','.join([str(f['id']) for f in files]))
                 _post(
                     f'{self.BASE_URL}/torrents/selectFiles/{torrent_id}',
                     data={'files': file_ids},
@@ -344,13 +348,30 @@ class RealDebrid:
                 if isinstance(status_info, dict) and status_info.get('status') == 'downloaded':
                     links = status_info.get('links', [])
                     if links:
-                        _, unrestrict = _post(
-                            f'{self.BASE_URL}/unrestrict/link',
-                            data={'link': links[0]},
-                            headers=self._auth_headers()
-                        )
-                        if isinstance(unrestrict, dict):
-                            return unrestrict.get('download')
+                        # Try each link, skip archives
+                        for link in links:
+                            _, unrestrict = _post(
+                                f'{self.BASE_URL}/unrestrict/link',
+                                data={'link': link},
+                                headers=self._auth_headers()
+                            )
+                            if isinstance(unrestrict, dict):
+                                dl_url = unrestrict.get('download', '')
+                                if dl_url:
+                                    url_lower = dl_url.lower().split('?')[0]
+                                    if url_lower.endswith(('.rar', '.zip', '.7z', '.nfo', '.txt', '.srt')):
+                                        xbmc.log(f'SALTS RD: Skipping non-video: {dl_url[:80]}', xbmc.LOGINFO)
+                                        continue
+                                    return dl_url
+                        # Last resort: return first link anyway
+                        if links:
+                            _, unrestrict = _post(
+                                f'{self.BASE_URL}/unrestrict/link',
+                                data={'link': links[0]},
+                                headers=self._auth_headers()
+                            )
+                            if isinstance(unrestrict, dict):
+                                return unrestrict.get('download')
                 
                 time.sleep(1)
             
