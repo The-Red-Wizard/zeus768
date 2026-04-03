@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-    <category label="Accounts">
+    <category label="Trakt Account">
         <setting id="trakt_auth_done" type="bool" label="Trakt Authenticated" default="false" enable="false"/>
         <setting id="trakt_access_token" type="text" label="" default="" visible="false"/>
         <setting id="trakt_refresh_token" type="text" label="" default="" visible="false"/>
         <setting id="auth_trakt" type="action" label="[COLOR yellow]Authorize Trakt Account[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=auth_trakt)"/>
         <setting id="revoke_trakt" type="action" label="[COLOR red]Revoke Trakt Authorization[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=revoke_trakt)"/>
-        <setting id="tmdb_api_key" type="text" label="TMDB API Key (Optional)" default=""/>
     </category>
 
     <category label="Debrid Services">
@@ -35,6 +34,11 @@
     </category>
 
     <category label="Playback">
-        <setting id="preferred_quality" type="select" label="Max Quality" default="1" values="1080p|720p|480p"/>
+        <setting id="preferred_quality" type="select" label="Max Quality" default="0" values="1080p|720p|480p"/>
+    </category>
+
+    <category label="Metadata">
+        <setting id="tmdb_api_key" type="text" label="TMDB API Key (Optional)" default=""/>
+        <setting id="tmdb_key_prompted" type="bool" label="" default="false" visible="false"/>
     </category>
 </settings>
