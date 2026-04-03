@@ -72,7 +72,10 @@ def get_details(tmdb_id, media_type='movie'):
 def get_genres(media_type):
     endpoint = 'movie' if media_type == 'movie' else 'tv'
     data = _get_json('https://api.themoviedb.org/3/genre/%s/list?api_key=%s' % (endpoint, _key()))
-    handle = int(sys.argv[1])
+    try:
+        handle = int(sys.argv[1])
+    except (IndexError, ValueError):
+        return
     for g in data.get('genres', []):
         url = '%s?action=trakt_list&path=%ss/popular&genre=%s&media_type=%s' % (
             sys.argv[0], endpoint, g['id'], 'movie' if media_type == 'movie' else 'show')

@@ -14,7 +14,7 @@ import xbmc
 from resources.lib import tmdb, trakt_auth, trakt_api, player, debrid, discovery, feed
 
 ADDON = xbmcaddon.Addon()
-HANDLE = int(sys.argv[1])
+HANDLE = int(sys.argv[1]) if len(sys.argv) > 1 else -1
 KOFI_URL = 'https://ko-fi.com/zeus768'
 
 

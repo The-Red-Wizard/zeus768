@@ -15,9 +15,15 @@ from . import trakt_auth
 from . import tmdb
 
 ADDON = xbmcaddon.Addon()
-HANDLE = int(sys.argv[1])
 SSL_CTX = ssl._create_unverified_context()
 CLIENT_ID = trakt_auth.CLIENT_ID
+
+
+def _handle():
+    try:
+        return int(sys.argv[1])
+    except (IndexError, ValueError):
+        return -1
 BASE = 'https://api.trakt.tv'
 
 
@@ -121,7 +127,7 @@ def _render_items(data, media_type, key=None):
     """Render a list of Trakt items. key = wrapper key like 'movie', 'show', or None."""
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'No results', xbmcgui.NOTIFICATION_INFO)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for item in data:
@@ -165,17 +171,17 @@ def _render_items(data, media_type, key=None):
             li.setProperty('IsPlayable', 'true')
             play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                 sys.argv[0], quote_plus(title), year, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
         else:
             info['mediatype'] = 'tvshow'
             li.setInfo('video', info)
             show_url = '%s?action=show_seasons&tmdb_id=%s&title=%s&imdb_id=%s' % (
                 sys.argv[0], tmdb_id, quote_plus(title), imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, show_url, li, True)
+            xbmcplugin.addDirectoryItem(_handle(), show_url, li, True)
 
     content_type = 'movies' if media_type == 'movie' else 'tvshows'
-    xbmcplugin.setContent(HANDLE, content_type)
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), content_type)
+    xbmcplugin.endOfDirectory(_handle())
 
 
 # ── Browse: Lists ─────────────────────────────────────────────────────────
@@ -221,7 +227,7 @@ def get_calendar():
 
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'No upcoming episodes', xbmcgui.NOTIFICATION_INFO)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for item in data:
@@ -250,10 +256,10 @@ def get_calendar():
 
         url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
             sys.argv[0], quote_plus(show_title), season, ep_num, imdb_id)
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, False)
 
-    xbmcplugin.setContent(HANDLE, 'episodes')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'episodes')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 # ── History ───────────────────────────────────────────────────────────────
@@ -273,7 +279,7 @@ def get_history(media_type='movie'):
         # Episodes have a different structure
         if not data:
             xbmcgui.Dialog().notification('Trakt', 'No history', xbmcgui.NOTIFICATION_INFO)
-            xbmcplugin.endOfDirectory(HANDLE)
+            xbmcplugin.endOfDirectory(_handle())
             return
         for item in data:
             show = item.get('show', {})
@@ -298,10 +304,10 @@ def get_history(media_type='movie'):
             li.setProperty('IsPlayable', 'true')
             url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
                 sys.argv[0], quote_plus(show_title), season, ep_num, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), url, li, False)
 
-        xbmcplugin.setContent(HANDLE, 'episodes')
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.setContent(_handle(), 'episodes')
+        xbmcplugin.endOfDirectory(_handle())
 
 
 # ── Anticipated ───────────────────────────────────────────────────────────
@@ -325,7 +331,7 @@ def get_popular_lists():
 
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'No lists found', xbmcgui.NOTIFICATION_INFO)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for item in data:
@@ -345,9 +351,9 @@ def get_popular_lists():
 
         url = '%s?action=list_items&user=%s&list_slug=%s' % (
             sys.argv[0], quote_plus(user), quote_plus(list_slug))
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, True)
 
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def get_list_items(user, list_slug):
@@ -359,7 +365,7 @@ def get_list_items(user, list_slug):
 
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'Empty list', xbmcgui.NOTIFICATION_INFO)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for item in data:
@@ -397,16 +403,16 @@ def get_list_items(user, list_slug):
             li.setProperty('IsPlayable', 'true')
             play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                 sys.argv[0], quote_plus(title), year, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
         else:
             info['mediatype'] = 'tvshow'
             li.setInfo('video', info)
             show_url = '%s?action=show_seasons&tmdb_id=%s&title=%s&imdb_id=%s' % (
                 sys.argv[0], tmdb_id, quote_plus(title), imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, show_url, li, True)
+            xbmcplugin.addDirectoryItem(_handle(), show_url, li, True)
 
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'videos')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 # ── Related Content ───────────────────────────────────────────────────────
@@ -434,7 +440,7 @@ def get_playback_progress():
 
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'Nothing to continue', xbmcgui.NOTIFICATION_INFO)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for item in data:
@@ -461,7 +467,7 @@ def get_playback_progress():
             _add_context_menu(li, 'movie', trakt_id, imdb_id)
             play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                 sys.argv[0], quote_plus(title), year, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
 
         elif item_type == 'episode':
             show = item.get('show', {})
@@ -485,10 +491,10 @@ def get_playback_progress():
             li.setProperty('IsPlayable', 'true')
             url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
                 sys.argv[0], quote_plus(show_title), season, ep_num, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), url, li, False)
 
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'videos')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 # ── Rating ────────────────────────────────────────────────────────────────
@@ -567,9 +573,9 @@ def show_seasons(tmdb_id, show_title):
         li.setInfo('video', {'title': name, 'season': season_num})
         url = '%s?action=show_episodes&tmdb_id=%s&season=%d&title=%s' % (
             sys.argv[0], tmdb_id, season_num, quote_plus(show_title))
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
-    xbmcplugin.setContent(HANDLE, 'seasons')
-    xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, True)
+    xbmcplugin.setContent(_handle(), 'seasons')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def show_episodes(tmdb_id, season_number, show_title):
@@ -589,9 +595,9 @@ def show_episodes(tmdb_id, season_number, show_title):
         li.setProperty('IsPlayable', 'true')
         url = '%s?action=play_episode&title=%s&season=%s&episode=%d&imdb_id=' % (
             sys.argv[0], quote_plus(show_title), season_number, ep_num)
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
-    xbmcplugin.setContent(HANDLE, 'episodes')
-    xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, False)
+    xbmcplugin.setContent(_handle(), 'episodes')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 # ── Friends Activity ──────────────────────────────────────────────────────
@@ -607,7 +613,7 @@ def get_friends():
 
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'No friends found', xbmcgui.NOTIFICATION_INFO)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for item in data:
@@ -625,9 +631,9 @@ def get_friends():
         li.setInfo('video', {'title': label, 'plot': 'Joined: %s' % joined})
 
         url = '%s?action=friend_activity&user=%s' % (sys.argv[0], quote_plus(slug))
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, True)
 
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def get_friend_activity(user_slug):
@@ -653,7 +659,7 @@ def get_friend_activity(user_slug):
             li.setProperty('IsPlayable', 'true')
             play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                 sys.argv[0], quote_plus(title), year, ids.get('imdb', ''))
-            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
             items_added = True
         elif media_type == 'episode':
             show = watching.get('show', {})
@@ -670,7 +676,7 @@ def get_friend_activity(user_slug):
             play_url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
                 sys.argv[0], quote_plus(show.get('title', '')),
                 episode.get('season', 0), episode.get('number', 0), ids.get('imdb', ''))
-            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
             items_added = True
 
     # Recent watched history
@@ -693,7 +699,7 @@ def get_friend_activity(user_slug):
                 li.setProperty('IsPlayable', 'true')
                 play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                     sys.argv[0], quote_plus(title), year, ids.get('imdb', ''))
-                xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+                xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
                 items_added = True
             elif item_type == 'episode':
                 show = item.get('show', {})
@@ -709,14 +715,14 @@ def get_friend_activity(user_slug):
                 play_url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
                     sys.argv[0], quote_plus(show.get('title', '')),
                     ep.get('season', 0), ep.get('number', 0), ids.get('imdb', ''))
-                xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+                xbmcplugin.addDirectoryItem(_handle(), play_url, li, False)
                 items_added = True
 
     if not items_added:
         xbmcgui.Dialog().notification('Trakt', 'No activity for this friend', xbmcgui.NOTIFICATION_INFO)
 
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'videos')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 # ── User Stats ────────────────────────────────────────────────────────────
@@ -798,12 +804,12 @@ def get_my_lists():
     # Add "Create New List" item
     create_url = '%s?action=create_list' % sys.argv[0]
     li = xbmcgui.ListItem(label='[COLOR yellow]+ Create New List[/COLOR]')
-    xbmcplugin.addDirectoryItem(HANDLE, create_url, li, False)
+    xbmcplugin.addDirectoryItem(_handle(), create_url, li, False)
 
     url = '%s/users/me/lists' % BASE
     status, data = _authed_get(url, 'My Lists')
     if status != 200:
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     for lst in (data or []):
@@ -825,9 +831,9 @@ def get_my_lists():
         ])
 
         url = '%s?action=list_items&user=me&list_slug=%s' % (sys.argv[0], quote_plus(list_slug))
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, True)
 
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def create_list():

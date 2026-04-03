@@ -14,7 +14,6 @@ import xbmcaddon
 from . import tmdb
 
 ADDON = xbmcaddon.Addon()
-HANDLE = int(sys.argv[1])
 SSL_CTX = ssl._create_unverified_context()
 
 INVIDIOUS_INSTANCES = [
@@ -23,6 +22,13 @@ INVIDIOUS_INSTANCES = [
     'https://vid.puffyan.us',
     'https://invidious.privacyredirect.com',
 ]
+
+
+def _handle():
+    try:
+        return int(sys.argv[1])
+    except (IndexError, ValueError):
+        return -1
 
 
 def _resolve_youtube(video_id):
@@ -91,8 +97,8 @@ def feed_menu():
     ]
     for label, action in items:
         url = '%s?action=%s' % (sys.argv[0], action)
-        xbmcplugin.addDirectoryItem(HANDLE, url, xbmcgui.ListItem(label=label), isFolder=True)
-    xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.addDirectoryItem(_handle(), url, xbmcgui.ListItem(label=label), isFolder=True)
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def _build_feed_items(tmdb_items, media_type='movie'):
@@ -136,7 +142,7 @@ def _build_feed_items(tmdb_items, media_type='movie'):
         # Play trailer URL
         url = '%s?action=play_trailer&yt_key=%s&title=%s' % (
             sys.argv[0], yt_key, quote_plus(title))
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, False)
         count += 1
 
     return count
@@ -152,8 +158,8 @@ def feed_trending():
     progress.close()
     if count:
         xbmcgui.Dialog().notification('Discovery Feed', '%d trailers loaded' % count, xbmcgui.NOTIFICATION_INFO, 2000)
-    xbmcplugin.setContent(HANDLE, 'movies')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'movies')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def feed_trending_tv():
@@ -166,8 +172,8 @@ def feed_trending_tv():
     progress.close()
     if count:
         xbmcgui.Dialog().notification('Discovery Feed', '%d trailers loaded' % count, xbmcgui.NOTIFICATION_INFO, 2000)
-    xbmcplugin.setContent(HANDLE, 'tvshows')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'tvshows')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def feed_now_playing():
@@ -178,8 +184,8 @@ def feed_now_playing():
     progress.update(50, 'Loading trailers...')
     count = _build_feed_items(items, 'movie')
     progress.close()
-    xbmcplugin.setContent(HANDLE, 'movies')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'movies')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def feed_upcoming():
@@ -190,8 +196,8 @@ def feed_upcoming():
     progress.update(50, 'Loading trailers...')
     count = _build_feed_items(items, 'movie')
     progress.close()
-    xbmcplugin.setContent(HANDLE, 'movies')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'movies')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def feed_shuffle():
@@ -240,14 +246,14 @@ def feed_shuffle():
 
         url = '%s?action=play_trailer&yt_key=%s&title=%s' % (
             sys.argv[0], yt_key, quote_plus(title))
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+        xbmcplugin.addDirectoryItem(_handle(), url, li, False)
         count += 1
 
     progress.close()
     if count:
         xbmcgui.Dialog().notification('Surprise Feed', '%d trailers shuffled' % count, xbmcgui.NOTIFICATION_INFO, 2000)
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'videos')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def feed_marathon():
@@ -316,7 +322,7 @@ def play_trailer(yt_key, title=''):
         else:
             li = xbmcgui.ListItem(path=stream_url)
             li.setInfo('video', {'title': title})
-            xbmcplugin.setResolvedUrl(HANDLE, True, li)
+            xbmcplugin.setResolvedUrl(_handle(), True, li)
     else:
         xbmcgui.Dialog().notification('Trailer', 'Could not load trailer', xbmcgui.NOTIFICATION_WARNING)
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())

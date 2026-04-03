@@ -9,9 +9,15 @@ from . import scrapers
 from . import debrid
 
 ADDON = xbmcaddon.Addon()
-HANDLE = int(sys.argv[1])
 
 QUALITY_MAP = {'0': '1080p', '1': '720p', '2': '480p'}
+
+
+def _handle():
+    try:
+        return int(sys.argv[1])
+    except (IndexError, ValueError):
+        return -1
 
 
 def _max_quality():
@@ -35,7 +41,7 @@ def play(title, year='', imdb_id=''):
     services = debrid.get_active_services()
     if not services:
         xbmcgui.Dialog().notification('No Debrid', 'Configure a Debrid service in Settings', xbmcgui.NOTIFICATION_ERROR, 5000)
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
         return
 
     max_q = _max_quality()
@@ -53,7 +59,7 @@ def play(title, year='', imdb_id=''):
     if not results:
         progress.close()
         xbmcgui.Dialog().notification('No Sources', 'No torrents found for %s' % title, xbmcgui.NOTIFICATION_WARNING, 4000)
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
         return
 
     # Cache check: prioritize cached torrents for instant playback
@@ -89,7 +95,7 @@ def play(title, year='', imdb_id=''):
     for i, source in enumerate(results[:10]):
         if progress.iscanceled():
             progress.close()
-            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+            xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
             return
 
         magnet = source.get('magnet', '')
@@ -117,12 +123,12 @@ def play(title, year='', imdb_id=''):
                 parts = url.split('|', 1)
                 li = xbmcgui.ListItem(path=parts[0])
                 li.setProperty('inputstream.adaptive.stream_headers', parts[1])
-            xbmcplugin.setResolvedUrl(HANDLE, True, li)
+            xbmcplugin.setResolvedUrl(_handle(), True, li)
             return
 
     progress.close()
     xbmcgui.Dialog().notification('Failed', 'Could not resolve any source for %s' % title, xbmcgui.NOTIFICATION_ERROR, 5000)
-    xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+    xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
 
 
 def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
@@ -130,7 +136,7 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
     services = debrid.get_active_services()
     if not services:
         xbmcgui.Dialog().notification('No Debrid', 'Configure a Debrid service in Settings', xbmcgui.NOTIFICATION_ERROR, 5000)
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
         return
 
     max_q = _max_quality()
@@ -148,7 +154,7 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
     if not results:
         progress.close()
         xbmcgui.Dialog().notification('No Sources', 'No torrents found', xbmcgui.NOTIFICATION_WARNING, 4000)
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+        xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
         return
 
     # Cache check for episodes
@@ -176,7 +182,7 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
     for i, source in enumerate(results[:10]):
         if progress.iscanceled():
             progress.close()
-            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+            xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
             return
 
         magnet = source.get('magnet', '')
@@ -205,9 +211,9 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
                 parts = url.split('|', 1)
                 li = xbmcgui.ListItem(path=parts[0])
                 li.setProperty('inputstream.adaptive.stream_headers', parts[1])
-            xbmcplugin.setResolvedUrl(HANDLE, True, li)
+            xbmcplugin.setResolvedUrl(_handle(), True, li)
             return
 
     progress.close()
     xbmcgui.Dialog().notification('Failed', 'Could not resolve any source', xbmcgui.NOTIFICATION_ERROR, 5000)
-    xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+    xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())

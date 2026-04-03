@@ -13,12 +13,18 @@ import sys
 from . import trakt_auth, tmdb
 
 ADDON = xbmcaddon.Addon()
-HANDLE = int(sys.argv[1])
 SSL_CTX = ssl._create_unverified_context()
 
 LLM_URL = 'https://integrations.emergentagent.com/llm/v1/chat/completions'
 LLM_KEY = 'sk-emergent-4Ed53090b4b04F8606'
 CLIENT_ID = trakt_auth.CLIENT_ID
+
+
+def _handle():
+    try:
+        return int(sys.argv[1])
+    except (IndexError, ValueError):
+        return -1
 
 
 def _trakt_get(url):
@@ -134,7 +140,7 @@ def vibe_discovery():
     if not results:
         progress.close()
         xbmcgui.Dialog().notification('Discovery', 'AI returned no results. Try another vibe.', xbmcgui.NOTIFICATION_WARNING)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     progress.update(60, 'Found %d picks. Loading metadata...' % len(results))
@@ -184,19 +190,19 @@ def vibe_discovery():
             li.setProperty('IsPlayable', 'true')
             url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                 sys.argv[0], quote_plus(actual_title), actual_year, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), url, li, False)
         else:
             li.setInfo('video', {'mediatype': 'tvshow'})
             url = '%s?action=show_seasons&tmdb_id=%s&title=%s' % (
                 sys.argv[0], tmdb_id, quote_plus(actual_title))
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+            xbmcplugin.addDirectoryItem(_handle(), url, li, True)
         count += 1
 
     progress.close()
     if count > 0:
         xbmcgui.Dialog().notification('Discovery', 'Vibe: "%s" - %d picks loaded' % (vibe, count), xbmcgui.NOTIFICATION_INFO, 3000)
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'videos')
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def mood_presets():
@@ -221,8 +227,8 @@ def mood_presets():
             url = '%s?action=vibe_play&vibe=%s' % (sys.argv[0], quote_plus(vibe))
         else:
             url = '%s?action=vibe_custom' % sys.argv[0]
-        xbmcplugin.addDirectoryItem(HANDLE, url, xbmcgui.ListItem(label=label), isFolder=True)
-    xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.addDirectoryItem(_handle(), url, xbmcgui.ListItem(label=label), isFolder=True)
+    xbmcplugin.endOfDirectory(_handle())
 
 
 def vibe_play(vibe):
@@ -243,7 +249,7 @@ def vibe_play(vibe):
     if not results:
         progress.close()
         xbmcgui.Dialog().notification('Discovery', 'No results. Try another vibe.', xbmcgui.NOTIFICATION_WARNING)
-        xbmcplugin.endOfDirectory(HANDLE)
+        xbmcplugin.endOfDirectory(_handle())
         return
 
     progress.update(60, 'Loading %d picks...' % len(results))
@@ -287,16 +293,16 @@ def vibe_play(vibe):
             li.setProperty('IsPlayable', 'true')
             url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
                 sys.argv[0], quote_plus(actual_title), actual_year, imdb_id)
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+            xbmcplugin.addDirectoryItem(_handle(), url, li, False)
         else:
             li.setInfo('video', {'mediatype': 'tvshow'})
             url = '%s?action=show_seasons&tmdb_id=%s&title=%s' % (
                 sys.argv[0], tmdb_id, quote_plus(actual_title))
-            xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+            xbmcplugin.addDirectoryItem(_handle(), url, li, True)
         count += 1
 
     progress.close()
     if count:
         xbmcgui.Dialog().notification('Discovery', '%d picks loaded' % count, xbmcgui.NOTIFICATION_INFO, 2000)
-    xbmcplugin.setContent(HANDLE, 'videos')
-    xbmcplugin.endOfDirectory(HANDLE)
+    xbmcplugin.setContent(_handle(), 'videos')
+    xbmcplugin.endOfDirectory(_handle())
