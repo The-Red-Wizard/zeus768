@@ -34,7 +34,8 @@ def _trakt_get(url):
     h = {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
-        'trakt-api-key': CLIENT_ID
+        'trakt-api-key': CLIENT_ID,
+        'User-Agent': 'Kodi TraktPlayer/2.1.0'
     }
     token = trakt_auth.get_token()
     if token:

@@ -19,33 +19,9 @@ KOFI_URL = 'https://ko-fi.com/zeus768'
 FANART = os.path.join(ADDON.getAddonInfo('path'), 'fanart.jpg')
 ICON = os.path.join(ADDON.getAddonInfo('path'), 'icon.png')
 
-# TMDB category icons (popular movie posters as visual icons for menus)
-TMDB_IMG = 'https://image.tmdb.org/t/p/w500'
-CAT_ICONS = {
-    'movies': TMDB_IMG + '/qJ2tW6WMUDux911BTUgMEmb9Jmg.jpg',       # Movie reel style
-    'tv': TMDB_IMG + '/uDgy6hyPd82kOHh6I95FLtLnj6p.jpg',            # TV style
-    'continue': TMDB_IMG + '/7WsyChQLEftFiDhRguUl2HnBurj.jpg',      # Continue
-    'feed': TMDB_IMG + '/sv1xJUazXeYqALzczSZ3O6nkH75.jpg',          # Discovery
-    'vibes': TMDB_IMG + '/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',         # AI vibes
-    'trakt': TMDB_IMG + '/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg',         # My Trakt
-    'stats': TMDB_IMG + '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',        # Stats
-    'account': TMDB_IMG + '/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg',      # Account
-    'donate': TMDB_IMG + '/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg',       # Donate
-    'settings': TMDB_IMG + '/6FfCtHuMuyMmCTfORGMjqWo5EDi.jpg',      # Settings
-    'trending': TMDB_IMG + '/qJ2tW6WMUDux911BTUgMEmb9Jmg.jpg',
-    'popular': TMDB_IMG + '/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
-    'watched': TMDB_IMG + '/sv1xJUazXeYqALzczSZ3O6nkH75.jpg',
-    'boxoffice': TMDB_IMG + '/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg',
-    'anticipated': TMDB_IMG + '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
-    'recommended': TMDB_IMG + '/uDgy6hyPd82kOHh6I95FLtLnj6p.jpg',
-    'genres': TMDB_IMG + '/6FfCtHuMuyMmCTfORGMjqWo5EDi.jpg',
-    'calendar': TMDB_IMG + '/nBNZadXqJSdt05SHLqgT0HuC5Gm.jpg',
-    'watchlist': TMDB_IMG + '/7WsyChQLEftFiDhRguUl2HnBurj.jpg',
-    'collection': TMDB_IMG + '/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg',
-    'history': TMDB_IMG + '/sv1xJUazXeYqALzczSZ3O6nkH75.jpg',
-    'lists': TMDB_IMG + '/qJ2tW6WMUDux911BTUgMEmb9Jmg.jpg',
-    'friends': TMDB_IMG + '/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg',
-}
+# Category icons - use addon icon for all menu categories
+# TMDB poster art is used for actual content items (movies/shows/episodes)
+CAT_ICONS = {}
 
 
 def build_url(query):
