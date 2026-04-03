@@ -112,6 +112,34 @@ class RealDebrid:
             time.sleep(2)
         return None
 
+    def account_info(self):
+        if not self.is_authorized():
+            return None
+        auth = {'Authorization': f'Bearer {self.token}'}
+        _, data = _http(f'{self.BASE_URL}/user', headers=auth)
+        if not data or not data.get('username'):
+            return None
+        import datetime
+        exp = data.get('expiration', '')
+        days_left = 0
+        if exp:
+            try:
+                exp_dt = datetime.datetime.fromisoformat(exp.replace('Z', '+00:00'))
+                now = datetime.datetime.now(datetime.timezone.utc)
+                days_left = max(0, (exp_dt - now).days)
+            except Exception:
+                pass
+        return {
+            'name': 'Real-Debrid',
+            'username': data.get('username', ''),
+            'type': data.get('type', 'free'),
+            'premium': data.get('type') == 'premium',
+            'expires': exp[:10] if exp else 'Unknown',
+            'days_left': days_left,
+            'auto_renew': 'Unknown',
+            'points': data.get('points', 0)
+        }
+
     def revoke(self):
         for k in ('rd_access_token', 'rd_refresh_token', 'rd_client_id', 'rd_client_secret'):
             ADDON.setSetting(k, '')
@@ -181,6 +209,36 @@ class AllDebrid:
             time.sleep(2)
         return None
 
+    def account_info(self):
+        if not self.is_authorized():
+            return None
+        _, data = _http(f'{self.BASE_URL}/user?agent={self.AGENT}&apikey={self.token}')
+        if data.get('status') != 'success':
+            return None
+        import datetime
+        user = data.get('data', {}).get('user', {})
+        prem_until = user.get('premiumUntil', 0)
+        days_left = 0
+        exp_str = 'Unknown'
+        if prem_until:
+            try:
+                exp_dt = datetime.datetime.fromtimestamp(prem_until, tz=datetime.timezone.utc)
+                now = datetime.datetime.now(datetime.timezone.utc)
+                days_left = max(0, (exp_dt - now).days)
+                exp_str = exp_dt.strftime('%Y-%m-%d')
+            except Exception:
+                pass
+        is_subscribed = user.get('isSubscribed', False)
+        return {
+            'name': 'AllDebrid',
+            'username': user.get('username', ''),
+            'type': 'premium' if user.get('isPremium') else 'free',
+            'premium': bool(user.get('isPremium')),
+            'expires': exp_str,
+            'days_left': days_left,
+            'auto_renew': 'Yes' if is_subscribed else 'No',
+        }
+
     def revoke(self):
         ADDON.setSetting('ad_api_key', '')
         ADDON.setSetting('ad_auth_done', 'false')
@@ -235,6 +293,34 @@ class Premiumize:
                 biggest = max(content, key=lambda x: x.get('size', 0))
                 return biggest.get('link')
         return None
+
+    def account_info(self):
+        if not self.is_authorized():
+            return None
+        _, data = _http(f'{self.BASE_URL}/account/info', headers={'Authorization': f'Bearer {self.token}'})
+        if data.get('status') != 'success' and not data.get('customer_id'):
+            return None
+        import datetime
+        prem_until = data.get('premium_until', 0)
+        days_left = 0
+        exp_str = 'Unknown'
+        if prem_until:
+            try:
+                exp_dt = datetime.datetime.fromtimestamp(prem_until, tz=datetime.timezone.utc)
+                now = datetime.datetime.now(datetime.timezone.utc)
+                days_left = max(0, (exp_dt - now).days)
+                exp_str = exp_dt.strftime('%Y-%m-%d')
+            except Exception:
+                pass
+        return {
+            'name': 'Premiumize',
+            'username': str(data.get('customer_id', '')),
+            'type': 'premium' if prem_until else 'free',
+            'premium': bool(prem_until),
+            'expires': exp_str,
+            'days_left': days_left,
+            'auto_renew': 'Unknown',
+        }
 
     def revoke(self):
         ADDON.setSetting('pm_access_token', '')
@@ -308,6 +394,36 @@ class TorBox:
             time.sleep(2)
         return None
 
+    def account_info(self):
+        if not self.is_authorized():
+            return None
+        auth = {'Authorization': f'Bearer {self.token}'}
+        _, data = _http(f'{self.BASE_URL}/user/me', headers=auth)
+        if not data.get('success'):
+            return None
+        import datetime
+        user = data.get('data', {})
+        exp = user.get('premium_expires_at', '')
+        days_left = 0
+        exp_str = 'Unknown'
+        if exp:
+            try:
+                exp_dt = datetime.datetime.fromisoformat(exp.replace('Z', '+00:00'))
+                now = datetime.datetime.now(datetime.timezone.utc)
+                days_left = max(0, (exp_dt - now).days)
+                exp_str = exp_dt.strftime('%Y-%m-%d')
+            except Exception:
+                pass
+        return {
+            'name': 'TorBox',
+            'username': user.get('email', ''),
+            'type': user.get('plan', 'free'),
+            'premium': user.get('plan', '') not in ('', 'free'),
+            'expires': exp_str,
+            'days_left': days_left,
+            'auto_renew': 'Unknown',
+        }
+
     def revoke(self):
         ADDON.setSetting('tb_api_key', '')
         ADDON.setSetting('tb_auth_done', 'false')
@@ -334,3 +450,22 @@ def resolve_magnet(magnet):
         except Exception as e:
             xbmc.log(f'{name} failed: {e}', xbmc.LOGERROR)
     return None, None
+
+
+def get_all_account_info():
+    """Gather account info from all debrid services (authorized or not)."""
+    info = []
+    for cls in (RealDebrid, AllDebrid, Premiumize, TorBox):
+        svc = cls()
+        if svc.is_authorized():
+            try:
+                acct = svc.account_info()
+                if acct:
+                    info.append(acct)
+                else:
+                    info.append({'name': cls.__name__, 'error': 'Could not fetch info'})
+            except Exception as e:
+                info.append({'name': cls.__name__, 'error': str(e)})
+        else:
+            info.append({'name': cls.__name__, 'configured': False})
+    return info

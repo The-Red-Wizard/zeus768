@@ -138,10 +138,11 @@ v2.0.0 (2026)
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Trakt Player - Click and Play</summary>
-        <description lang="en">Trakt Player v2.0.0 - Browse Trakt lists, click any movie or episode and it plays instantly at 1080p or below. Torrent-based with Real-Debrid, Premiumize, AllDebrid, and TorBox support. No dialogs, no hassle.</description>
-        <news>[2.0.0] Complete rewrite. Torrent-only click-and-play. Added TorBox. Fixed all debrid providers. Removed free streams. Native urllib for Kodi 21+. No search dialogs - just click and watch.</news>
+        <description lang="en">Trakt Player v2.0.0 - Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next (auto-play next episode), Continue Watching, Personalized Recommendations, My Calendar, Watch History, Popular Community Lists, Anticipated Content, Related/More Like This, Rate on Trakt, Debrid Account Status with renewal info. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. 5 torrent scrapers. Native urllib for Kodi 21+.</description>
+        <news>[2.0.0] Complete rewrite. Torrent-only click-and-play. Scrobbling, Up Next, Continue Watching, Recommendations, Calendar, History, Popular Lists, Anticipated, Related Content, Ratings, Account Status, Donation tab. All debrid providers. Native urllib. No search dialogs.</news>
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <assets>

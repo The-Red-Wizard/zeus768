@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Trakt API - Browse lists, seasons, episodes. Native urllib. No search."""
+"""Trakt API - Full-featured: browse, recommendations, calendar, history, scrobble, ratings, related. Native urllib."""
 import json
 import ssl
 import sys
+import time
 import urllib.request
 import urllib.error
 from urllib.parse import urlencode, quote_plus
@@ -16,8 +17,8 @@ from . import tmdb
 ADDON = xbmcaddon.Addon()
 HANDLE = int(sys.argv[1])
 SSL_CTX = ssl._create_unverified_context()
-
 CLIENT_ID = trakt_auth.CLIENT_ID
+BASE = 'https://api.trakt.tv'
 
 
 def _headers():
@@ -39,39 +40,93 @@ def _get(url):
             return r.status, json.loads(r.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
         return e.code, []
+    except Exception as e:
+        xbmc.log('Trakt GET error: %s' % str(e), xbmc.LOGERROR)
+        return 0, []
 
 
-def get_list(path, media_type='movie'):
-    needs_auth = 'sync/' in path or 'users/' in path
-    if needs_auth and not trakt_auth.is_authorized():
-        xbmcgui.Dialog().notification('Trakt', 'Please authorize Trakt first', xbmcgui.NOTIFICATION_WARNING)
-        trakt_auth.authorize()
-        return
+def _post(url, data):
+    hdrs = _headers()
+    body = json.dumps(data).encode('utf-8')
+    req = urllib.request.Request(url, data=body, headers=hdrs, method='POST')
+    try:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=15) as r:
+            return r.status, json.loads(r.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read().decode('utf-8'))
+        except Exception:
+            return e.code, {}
+    except Exception as e:
+        xbmc.log('Trakt POST error: %s' % str(e), xbmc.LOGERROR)
+        return 0, {}
 
-    url = 'https://api.trakt.tv/' + path + '?extended=full&limit=50'
-    xbmc.log('Trakt API: ' + url, xbmc.LOGINFO)
 
+def _delete(url):
+    req = urllib.request.Request(url, headers=_headers(), method='DELETE')
+    try:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=15) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+    except Exception:
+        return 0
+
+
+def _authed_get(url, label=''):
+    """GET with auto-refresh on 401."""
     status, data = _get(url)
-
     if status == 401:
         if trakt_auth.refresh_token():
             status, data = _get(url)
         else:
             xbmcgui.Dialog().notification('Trakt', 'Session expired. Re-authorize.', xbmcgui.NOTIFICATION_WARNING)
-            trakt_auth.authorize()
-            return
-
+            return 0, []
     if status != 200:
-        xbmcgui.Dialog().notification('Trakt', 'API error: %d' % status, xbmcgui.NOTIFICATION_ERROR)
-        return
+        if label:
+            xbmcgui.Dialog().notification('Trakt', '%s error: %d' % (label, status), xbmcgui.NOTIFICATION_ERROR)
+        return status, []
+    return status, data
 
+
+def _require_auth():
+    if not trakt_auth.is_authorized():
+        xbmcgui.Dialog().notification('Trakt', 'Please authorize Trakt first', xbmcgui.NOTIFICATION_WARNING)
+        return False
+    return True
+
+
+# ── Context menu helpers ──────────────────────────────────────────────────
+
+def _add_context_menu(li, media_type, trakt_id, imdb_id=''):
+    """Add Rate + More Like This to context menu."""
+    ctx = []
+    if trakt_id:
+        ctx.append(('Rate on Trakt',
+                     'RunPlugin(plugin://plugin.video.trakt_player/?action=rate&media_type=%s&trakt_id=%s)' % (media_type, trakt_id)))
+        action = 'Container.Update' if media_type == 'show' else 'Container.Update'
+        ctx.append(('More Like This',
+                     '%s(plugin://plugin.video.trakt_player/?action=related&media_type=%s&trakt_id=%s)' % (action, media_type, trakt_id)))
+    if imdb_id:
+        ctx.append(('Add to Watchlist',
+                     'RunPlugin(plugin://plugin.video.trakt_player/?action=add_watchlist&media_type=%s&imdb_id=%s)' % (media_type, imdb_id)))
+    if ctx:
+        li.addContextMenuItems(ctx)
+
+
+# ── List rendering ────────────────────────────────────────────────────────
+
+def _render_items(data, media_type, key=None):
+    """Render a list of Trakt items. key = wrapper key like 'movie', 'show', or None."""
     if not data:
         xbmcgui.Dialog().notification('Trakt', 'No results', xbmcgui.NOTIFICATION_INFO)
         xbmcplugin.endOfDirectory(HANDLE)
         return
 
     for item in data:
-        if media_type == 'show':
+        if key:
+            content = item.get(key, item)
+        elif media_type == 'show':
             content = item.get('show', item)
         else:
             content = item.get('movie', item)
@@ -81,9 +136,9 @@ def get_list(path, media_type='movie'):
         ids = content.get('ids', {})
         tmdb_id = ids.get('tmdb')
         imdb_id = ids.get('imdb', '')
+        trakt_id = ids.get('trakt', '')
 
         meta = tmdb.get_details(tmdb_id, 'movie' if media_type == 'movie' else 'tv')
-
         label = '%s (%s)' % (title, year) if year else title
         li = xbmcgui.ListItem(label=label)
         li.setArt({
@@ -100,6 +155,8 @@ def get_list(path, media_type='movie'):
             'genre': ', '.join(meta.get('genres', []))
         }
 
+        _add_context_menu(li, media_type, trakt_id, imdb_id)
+
         if media_type == 'movie':
             info['mediatype'] = 'movie'
             info['duration'] = meta.get('runtime', 0) * 60
@@ -111,13 +168,390 @@ def get_list(path, media_type='movie'):
         else:
             info['mediatype'] = 'tvshow'
             li.setInfo('video', info)
-            show_url = '%s?action=show_seasons&tmdb_id=%s&title=%s' % (
-                sys.argv[0], tmdb_id, quote_plus(title))
+            show_url = '%s?action=show_seasons&tmdb_id=%s&title=%s&imdb_id=%s' % (
+                sys.argv[0], tmdb_id, quote_plus(title), imdb_id)
             xbmcplugin.addDirectoryItem(HANDLE, show_url, li, True)
 
-    xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movie' else 'tvshows')
+    content_type = 'movies' if media_type == 'movie' else 'tvshows'
+    xbmcplugin.setContent(HANDLE, content_type)
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+# ── Browse: Lists ─────────────────────────────────────────────────────────
+
+def get_list(path, media_type='movie'):
+    needs_auth = 'sync/' in path or 'users/' in path or 'calendars/' in path or 'recommendations' in path
+    if needs_auth and not _require_auth():
+        trakt_auth.authorize()
+        return
+
+    url = '%s/%s?extended=full&limit=50' % (BASE, path)
+    xbmc.log('Trakt API: %s' % url, xbmc.LOGINFO)
+    status, data = _authed_get(url, 'List')
+    if status != 200:
+        return
+    _render_items(data, media_type)
+
+
+# ── Recommendations ───────────────────────────────────────────────────────
+
+def get_recommendations(media_type='movie'):
+    if not _require_auth():
+        return
+    endpoint = 'movies' if media_type == 'movie' else 'shows'
+    url = '%s/recommendations/%s?extended=full&limit=40' % (BASE, endpoint)
+    status, data = _authed_get(url, 'Recommendations')
+    if status != 200:
+        return
+    # Recommendations return items directly (no wrapper key)
+    _render_items(data, media_type, key=None)
+
+
+# ── Calendar ──────────────────────────────────────────────────────────────
+
+def get_calendar():
+    if not _require_auth():
+        return
+    today = time.strftime('%Y-%m-%d')
+    url = '%s/calendars/my/shows/%s/30?extended=full' % (BASE, today)
+    status, data = _authed_get(url, 'Calendar')
+    if status != 200:
+        return
+
+    if not data:
+        xbmcgui.Dialog().notification('Trakt', 'No upcoming episodes', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for item in data:
+        show = item.get('show', {})
+        episode = item.get('episode', {})
+        air_date = item.get('first_aired', '')[:10]
+        show_title = show.get('title', 'Unknown')
+        ep_title = episode.get('title', '')
+        season = episode.get('season', 0)
+        ep_num = episode.get('number', 0)
+        ids = show.get('ids', {})
+        tmdb_id = ids.get('tmdb')
+        imdb_id = ids.get('imdb', '')
+
+        label = '[%s] %s - S%02dE%02d - %s' % (air_date, show_title, season, ep_num, ep_title)
+        li = xbmcgui.ListItem(label=label)
+
+        meta = tmdb.get_details(tmdb_id, 'tv')
+        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', ''), 'thumb': meta.get('poster', '')})
+        li.setInfo('video', {
+            'title': ep_title, 'tvshowtitle': show_title,
+            'season': season, 'episode': ep_num,
+            'plot': episode.get('overview', ''), 'mediatype': 'episode'
+        })
+        li.setProperty('IsPlayable', 'true')
+
+        url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
+            sys.argv[0], quote_plus(show_title), season, ep_num, imdb_id)
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+
+    xbmcplugin.setContent(HANDLE, 'episodes')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── History ───────────────────────────────────────────────────────────────
+
+def get_history(media_type='movie'):
+    if not _require_auth():
+        return
+    endpoint = 'movies' if media_type == 'movie' else 'episodes'
+    url = '%s/sync/history/%s?extended=full&limit=50' % (BASE, endpoint)
+    status, data = _authed_get(url, 'History')
+    if status != 200:
+        return
+
+    if media_type == 'movie':
+        _render_items(data, 'movie')
+    else:
+        # Episodes have a different structure
+        if not data:
+            xbmcgui.Dialog().notification('Trakt', 'No history', xbmcgui.NOTIFICATION_INFO)
+            xbmcplugin.endOfDirectory(HANDLE)
+            return
+        for item in data:
+            show = item.get('show', {})
+            episode = item.get('episode', {})
+            show_title = show.get('title', 'Unknown')
+            ep_title = episode.get('title', '')
+            season = episode.get('season', 0)
+            ep_num = episode.get('number', 0)
+            ids = show.get('ids', {})
+            tmdb_id = ids.get('tmdb')
+            imdb_id = ids.get('imdb', '')
+            watched_at = item.get('watched_at', '')[:10]
+
+            label = '[%s] %s - S%02dE%02d - %s' % (watched_at, show_title, season, ep_num, ep_title)
+            li = xbmcgui.ListItem(label=label)
+            meta = tmdb.get_details(tmdb_id, 'tv')
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setInfo('video', {
+                'title': ep_title, 'tvshowtitle': show_title,
+                'season': season, 'episode': ep_num, 'mediatype': 'episode'
+            })
+            li.setProperty('IsPlayable', 'true')
+            url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
+                sys.argv[0], quote_plus(show_title), season, ep_num, imdb_id)
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+
+        xbmcplugin.setContent(HANDLE, 'episodes')
+        xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── Anticipated ───────────────────────────────────────────────────────────
+
+def get_anticipated(media_type='movie'):
+    endpoint = 'movies' if media_type == 'movie' else 'shows'
+    url = '%s/%s/anticipated?extended=full&limit=40' % (BASE, endpoint)
+    status, data = _authed_get(url, 'Anticipated')
+    if status != 200:
+        return
+    _render_items(data, media_type)
+
+
+# ── Popular Community Lists ───────────────────────────────────────────────
+
+def get_popular_lists():
+    url = '%s/lists/popular?limit=30' % BASE
+    status, data = _authed_get(url, 'Lists')
+    if status != 200:
+        return
+
+    if not data:
+        xbmcgui.Dialog().notification('Trakt', 'No lists found', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for item in data:
+        lst = item if 'name' in item else item.get('list', item)
+        name = lst.get('name', 'Unknown List')
+        desc = lst.get('description', '')
+        item_count = lst.get('item_count', 0)
+        likes = lst.get('likes', item.get('like_count', 0))
+        user = lst.get('user', {}).get('ids', {}).get('slug', '')
+        list_ids = lst.get('ids', {})
+        list_trakt = list_ids.get('trakt', '')
+        list_slug = list_ids.get('slug', '')
+
+        label = '%s (%d items, %d likes)' % (name, item_count, likes)
+        li = xbmcgui.ListItem(label=label)
+        li.setInfo('video', {'title': name, 'plot': desc})
+
+        url = '%s?action=list_items&user=%s&list_slug=%s' % (
+            sys.argv[0], quote_plus(user), quote_plus(list_slug))
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def get_list_items(user, list_slug):
+    """Fetch items from a specific Trakt user list."""
+    url = '%s/users/%s/lists/%s/items?extended=full&limit=100' % (BASE, user, list_slug)
+    status, data = _authed_get(url, 'List Items')
+    if status != 200:
+        return
+
+    if not data:
+        xbmcgui.Dialog().notification('Trakt', 'Empty list', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for item in data:
+        item_type = item.get('type', '')
+        if item_type == 'movie':
+            content = item.get('movie', {})
+            media_type = 'movie'
+        elif item_type == 'show':
+            content = item.get('show', {})
+            media_type = 'show'
+        else:
+            continue
+
+        title = content.get('title', 'Unknown')
+        year = content.get('year', '')
+        ids = content.get('ids', {})
+        tmdb_id = ids.get('tmdb')
+        imdb_id = ids.get('imdb', '')
+        trakt_id = ids.get('trakt', '')
+
+        meta = tmdb.get_details(tmdb_id, 'movie' if media_type == 'movie' else 'tv')
+        label = '%s (%s)' % (title, year) if year else title
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', ''), 'thumb': meta.get('poster', '')})
+        info = {
+            'title': title, 'year': year,
+            'plot': meta.get('overview', content.get('overview', '')),
+            'rating': meta.get('rating', 0)
+        }
+        _add_context_menu(li, media_type, trakt_id, imdb_id)
+
+        if media_type == 'movie':
+            info['mediatype'] = 'movie'
+            li.setInfo('video', info)
+            li.setProperty('IsPlayable', 'true')
+            play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
+                sys.argv[0], quote_plus(title), year, imdb_id)
+            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+        else:
+            info['mediatype'] = 'tvshow'
+            li.setInfo('video', info)
+            show_url = '%s?action=show_seasons&tmdb_id=%s&title=%s&imdb_id=%s' % (
+                sys.argv[0], tmdb_id, quote_plus(title), imdb_id)
+            xbmcplugin.addDirectoryItem(HANDLE, show_url, li, True)
+
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── Related Content ───────────────────────────────────────────────────────
+
+def get_related(media_type, trakt_id):
+    endpoint = 'movies' if media_type == 'movie' else 'shows'
+    url = '%s/%s/%s/related?extended=full&limit=20' % (BASE, endpoint, trakt_id)
+    status, data = _authed_get(url, 'Related')
+    if status != 200:
+        return
+    # Related returns items directly (no wrapper)
+    _render_items(data, media_type, key=None)
+
+
+# ── Continue Watching ─────────────────────────────────────────────────────
+
+def get_playback_progress():
+    """Show items the user started but didn't finish."""
+    if not _require_auth():
+        return
+    url = '%s/sync/playback?extended=full&limit=50' % BASE
+    status, data = _authed_get(url, 'Continue Watching')
+    if status != 200:
+        return
+
+    if not data:
+        xbmcgui.Dialog().notification('Trakt', 'Nothing to continue', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for item in data:
+        item_type = item.get('type', '')
+        progress = item.get('progress', 0)
+        paused_at = item.get('paused_at', '')[:10]
+
+        if item_type == 'movie':
+            content = item.get('movie', {})
+            title = content.get('title', 'Unknown')
+            year = content.get('year', '')
+            ids = content.get('ids', {})
+            tmdb_id = ids.get('tmdb')
+            imdb_id = ids.get('imdb', '')
+            trakt_id = ids.get('trakt', '')
+
+            meta = tmdb.get_details(tmdb_id, 'movie')
+            label = '[%.0f%%] %s (%s)' % (progress, title, year)
+            li = xbmcgui.ListItem(label=label)
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setInfo('video', {'title': title, 'year': year, 'mediatype': 'movie',
+                                 'plot': meta.get('overview', '')})
+            li.setProperty('IsPlayable', 'true')
+            _add_context_menu(li, 'movie', trakt_id, imdb_id)
+            play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
+                sys.argv[0], quote_plus(title), year, imdb_id)
+            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+
+        elif item_type == 'episode':
+            show = item.get('show', {})
+            episode = item.get('episode', {})
+            show_title = show.get('title', 'Unknown')
+            ep_title = episode.get('title', '')
+            season = episode.get('season', 0)
+            ep_num = episode.get('number', 0)
+            ids = show.get('ids', {})
+            tmdb_id = ids.get('tmdb')
+            imdb_id = ids.get('imdb', '')
+
+            meta = tmdb.get_details(tmdb_id, 'tv')
+            label = '[%.0f%%] %s - S%02dE%02d - %s' % (progress, show_title, season, ep_num, ep_title)
+            li = xbmcgui.ListItem(label=label)
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setInfo('video', {
+                'title': ep_title, 'tvshowtitle': show_title,
+                'season': season, 'episode': ep_num, 'mediatype': 'episode'
+            })
+            li.setProperty('IsPlayable', 'true')
+            url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
+                sys.argv[0], quote_plus(show_title), season, ep_num, imdb_id)
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
+
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── Rating ────────────────────────────────────────────────────────────────
+
+def rate_item(media_type, trakt_id):
+    """Show rating dialog and submit to Trakt."""
+    if not _require_auth():
+        return
+    ratings = ['1 - Awful', '2 - Terrible', '3 - Bad', '4 - Poor', '5 - Meh',
+               '6 - Fair', '7 - Good', '8 - Great', '9 - Superb', '10 - Masterpiece']
+    dlg = xbmcgui.Dialog()
+    selected = dlg.select('Rate on Trakt', ratings)
+    if selected < 0:
+        return
+    rating = selected + 1
+
+    key = 'movies' if media_type == 'movie' else 'shows'
+    body = {key: [{'ids': {'trakt': int(trakt_id)}, 'rating': rating}]}
+    status, resp = _post('%s/sync/ratings' % BASE, body)
+    if status in (200, 201):
+        added = resp.get('added', {}).get(key, 0)
+        if added:
+            xbmcgui.Dialog().notification('Trakt', 'Rated %d/10' % rating, xbmcgui.NOTIFICATION_INFO)
+        else:
+            xbmcgui.Dialog().notification('Trakt', 'Rating updated', xbmcgui.NOTIFICATION_INFO)
+    else:
+        xbmcgui.Dialog().notification('Trakt', 'Rating failed', xbmcgui.NOTIFICATION_ERROR)
+
+
+# ── Watchlist ─────────────────────────────────────────────────────────────
+
+def add_to_watchlist(media_type, imdb_id):
+    if not _require_auth():
+        return
+    key = 'movies' if media_type == 'movie' else 'shows'
+    body = {key: [{'ids': {'imdb': imdb_id}}]}
+    status, resp = _post('%s/sync/watchlist' % BASE, body)
+    if status in (200, 201):
+        xbmcgui.Dialog().notification('Trakt', 'Added to watchlist', xbmcgui.NOTIFICATION_INFO)
+    else:
+        xbmcgui.Dialog().notification('Trakt', 'Failed to add', xbmcgui.NOTIFICATION_ERROR)
+
+
+# ── Scrobble ──────────────────────────────────────────────────────────────
+
+def scrobble(action, media_type, imdb_id='', season=0, episode=0, progress=0.0):
+    """Send scrobble start/pause/stop to Trakt. action = 'start', 'pause', or 'stop'."""
+    if not trakt_auth.is_authorized():
+        return False
+    if media_type == 'movie':
+        body = {'movie': {'ids': {'imdb': imdb_id}}, 'progress': progress}
+    else:
+        body = {
+            'show': {'ids': {'imdb': imdb_id}},
+            'episode': {'season': int(season), 'number': int(episode)},
+            'progress': progress
+        }
+    url = '%s/scrobble/%s' % (BASE, action)
+    status, _ = _post(url, body)
+    xbmc.log('Scrobble %s: status=%d, type=%s, progress=%.1f' % (action, status, media_type, progress), xbmc.LOGINFO)
+    return status in (200, 201)
+
+
+# ── Seasons / Episodes ───────────────────────────────────────────────────
 
 def show_seasons(tmdb_id, show_title):
     seasons = tmdb.get_tv_seasons(tmdb_id)
@@ -147,11 +581,9 @@ def show_episodes(tmdb_id, season_number, show_title):
         li = xbmcgui.ListItem(label=label)
         li.setArt({'thumb': still, 'fanart': still})
         li.setInfo('video', {
-            'title': name,
-            'episode': ep_num,
+            'title': name, 'episode': ep_num,
             'season': int(season_number),
-            'plot': ep.get('overview', ''),
-            'mediatype': 'episode'
+            'plot': ep.get('overview', ''), 'mediatype': 'episode'
         })
         li.setProperty('IsPlayable', 'true')
         url = '%s?action=play_episode&title=%s&season=%s&episode=%d&imdb_id=' % (

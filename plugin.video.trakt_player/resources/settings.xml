@@ -35,6 +35,8 @@
 
     <category label="Playback">
         <setting id="preferred_quality" type="select" label="Max Quality" default="0" values="1080p|720p|480p"/>
+        <setting id="enable_scrobble" type="bool" label="Trakt Scrobbling" default="true"/>
+        <setting id="enable_upnext" type="bool" label="Up Next (Auto-Play Next Episode)" default="true"/>
     </category>
 
     <category label="Metadata">
