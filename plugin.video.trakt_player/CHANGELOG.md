@@ -1,5 +1,15 @@
 # Trakt Player - Changelog
 
+## v2.1.1 (2026-02-03)
+
+### Bug Fixes
+- Fixed Trakt authorization failing with 403 Forbidden (Cloudflare bot detection)
+- Added proper User-Agent header to all Trakt API requests
+- Fixed TMDB 404 errors on category menu icons
+- Added detailed logging for Trakt auth troubleshooting
+
+---
+
 ## v2.1.0 (2026-02-03)
 
 ### Bug Fixes
