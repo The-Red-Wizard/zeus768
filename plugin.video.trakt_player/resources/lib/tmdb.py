@@ -88,3 +88,43 @@ def get_tv_seasons(tmdb_id):
 def get_season_episodes(tmdb_id, season_number):
     data = _get_json('https://api.themoviedb.org/3/tv/%s/season/%s?api_key=%s' % (tmdb_id, season_number, _key()))
     return data.get('episodes', [])
+
+
+def get_trailer(tmdb_id, media_type='movie'):
+    """Get YouTube trailer key for a movie/show."""
+    endpoint = 'movie' if media_type == 'movie' else 'tv'
+    data = _get_json('https://api.themoviedb.org/3/%s/%s/videos?api_key=%s' % (endpoint, tmdb_id, _key()))
+    if not data:
+        return None
+    for v in data.get('results', []):
+        if v.get('site') == 'YouTube' and v.get('type') == 'Trailer':
+            return v.get('key')
+    # Fallback: any YouTube video (teaser, clip, etc.)
+    for v in data.get('results', []):
+        if v.get('site') == 'YouTube':
+            return v.get('key')
+    return None
+
+
+def get_trending_movies(page=1):
+    """Get trending movies from TMDB for feed."""
+    data = _get_json('https://api.themoviedb.org/3/trending/movie/week?api_key=%s&page=%d' % (_key(), page))
+    return data.get('results', [])
+
+
+def get_trending_shows(page=1):
+    """Get trending TV from TMDB for feed."""
+    data = _get_json('https://api.themoviedb.org/3/trending/tv/week?api_key=%s&page=%d' % (_key(), page))
+    return data.get('results', [])
+
+
+def get_now_playing():
+    """Get now playing movies from TMDB."""
+    data = _get_json('https://api.themoviedb.org/3/movie/now_playing?api_key=%s&page=1' % _key())
+    return data.get('results', [])
+
+
+def get_upcoming_movies():
+    """Get upcoming movies from TMDB."""
+    data = _get_json('https://api.themoviedb.org/3/movie/upcoming?api_key=%s&page=1' % _key())
+    return data.get('results', [])

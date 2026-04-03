@@ -11,7 +11,7 @@ import xbmcgui
 import xbmcplugin
 import xbmcaddon
 import xbmc
-from resources.lib import tmdb, trakt_auth, trakt_api, player, debrid, discovery
+from resources.lib import tmdb, trakt_auth, trakt_api, player, debrid, discovery, feed
 
 ADDON = xbmcaddon.Addon()
 HANDLE = int(sys.argv[1])
@@ -30,7 +30,8 @@ def main_menu():
         ('Movies', 'movie_menu', 'DefaultMovies.png'),
         ('TV Shows', 'tv_menu', 'DefaultTVShows.png'),
         ('Continue Watching', 'continue_watching', 'DefaultInProgressShows.png'),
-        ('Discovery (AI Vibes)', 'discovery_menu', 'DefaultMusicSearch.png'),
+        ('Discovery Feed', 'feed_menu', 'DefaultMusicVideos.png'),
+        ('AI Vibes', 'discovery_menu', 'DefaultMusicSearch.png'),
         ('My Trakt', 'my_trakt', 'DefaultAddonProgram.png'),
         ('My Stats', 'user_stats', 'DefaultIconInfo.png'),
         ('Account Status', 'account_status', 'DefaultIconInfo.png'),
@@ -293,6 +294,24 @@ if __name__ == '__main__':
         discovery.vibe_discovery()
     elif action == 'vibe_play':
         discovery.vibe_play(params.get('vibe', ''))
+
+    # Discovery Feed (Trailers)
+    elif action == 'feed_menu':
+        feed.feed_menu()
+    elif action == 'feed_trending':
+        feed.feed_trending()
+    elif action == 'feed_trending_tv':
+        feed.feed_trending_tv()
+    elif action == 'feed_now_playing':
+        feed.feed_now_playing()
+    elif action == 'feed_upcoming':
+        feed.feed_upcoming()
+    elif action == 'feed_shuffle':
+        feed.feed_shuffle()
+    elif action == 'feed_marathon':
+        feed.feed_marathon()
+    elif action == 'play_trailer':
+        feed.play_trailer(params.get('yt_key', ''), params.get('title', ''))
 
     # Click-and-Play
     elif action == 'play':

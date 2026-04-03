@@ -131,6 +131,19 @@
 - Uses your Trakt watch history for personalized picks
 - Mix of well-known titles and hidden gems across decades
 
+### Discovery Feed (Trailer Scroll)
+- TikTok-style trailer discovery experience
+- 6 feed modes:
+  - Trending Trailers (weekly trending movies)
+  - New Releases (now playing in theaters)
+  - Coming Soon (upcoming movies)
+  - Trending TV (weekly trending shows)
+  - Surprise Me (shuffled mix of movies + TV + new releases)
+  - Marathon Mode (auto-plays all trending trailers as a playlist)
+- Each trailer has context menu: "Watch Full Movie" / "Browse Show"
+- YouTube trailer resolution via Kodi YouTube addon or Invidious API fallback
+- Marathon Mode builds a Kodi playlist for hands-free binge-watching
+
 ### TMDB Metadata
 - Movie and TV show posters, backdrops, ratings, genres
 - Season and episode artwork
