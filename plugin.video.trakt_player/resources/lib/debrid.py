@@ -469,3 +469,78 @@ def get_all_account_info():
         else:
             info.append({'name': cls.__name__, 'configured': False})
     return info
+
+
+def check_cache_rd(hashes):
+    """Check Real-Debrid instant availability for a list of info_hashes."""
+    rd = RealDebrid()
+    if not rd.is_authorized():
+        return set()
+    cached = set()
+    # RD takes up to 200 hashes at a time
+    batch = '/'.join(hashes[:100])
+    if not batch:
+        return cached
+    auth = {'Authorization': f'Bearer {rd.token}'}
+    _, data = _http(f'{rd.BASE_URL}/torrents/instantAvailability/{batch}', headers=auth)
+    if isinstance(data, dict):
+        for h, info in data.items():
+            if isinstance(info, dict) and info.get('rd'):
+                cached.add(h.lower())
+            elif isinstance(info, list) and info:
+                cached.add(h.lower())
+    return cached
+
+
+def check_cache_pm(hashes):
+    """Check Premiumize cache for a list of info_hashes."""
+    pm = Premiumize()
+    if not pm.is_authorized():
+        return set()
+    cached = set()
+    items = '&'.join(['items[]=' + h for h in hashes[:100]])
+    url = f'{pm.BASE_URL}/cache/check?{items}'
+    _, data = _http(url, headers={'Authorization': f'Bearer {pm.token}'})
+    if data.get('status') == 'success':
+        results = data.get('response', [])
+        for i, is_cached in enumerate(results):
+            if is_cached and i < len(hashes):
+                cached.add(hashes[i].lower())
+    return cached
+
+
+def check_cache_ad(hashes):
+    """Check AllDebrid instant availability."""
+    ad = AllDebrid()
+    if not ad.is_authorized():
+        return set()
+    cached = set()
+    magnets_param = '&'.join(['magnets[]=' + h for h in hashes[:50]])
+    url = f'{ad.BASE_URL}/magnet/instant?agent={ad.AGENT}&apikey={ad.token}&{magnets_param}'
+    _, data = _http(url)
+    if data.get('status') == 'success':
+        for mag in data.get('data', {}).get('magnets', []):
+            if mag.get('instant'):
+                h = mag.get('hash', '').lower()
+                if h:
+                    cached.add(h)
+    return cached
+
+
+def check_cache_all(hashes):
+    """Check cache across all active debrid services. Returns set of cached hashes."""
+    if not hashes:
+        return set()
+    all_cached = set()
+    services = get_active_services()
+    for name, svc in services:
+        try:
+            if isinstance(svc, RealDebrid):
+                all_cached |= check_cache_rd(hashes)
+            elif isinstance(svc, Premiumize):
+                all_cached |= check_cache_pm(hashes)
+            elif isinstance(svc, AllDebrid):
+                all_cached |= check_cache_ad(hashes)
+        except Exception as e:
+            xbmc.log(f'Cache check {name} failed: {e}', xbmc.LOGWARNING)
+    return all_cached

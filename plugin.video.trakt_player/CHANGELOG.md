@@ -99,6 +99,38 @@
 - "Buy Me a Beer" with Ko-fi link and QR code
 - Supports the addon developer
 
+### Friends Activity Feed
+- View list of Trakt friends
+- See what friends are watching NOW (live status)
+- Browse friend's recent watch history
+- Click to play anything a friend watched
+
+### User Stats Dashboard
+- Total movies watched, episodes watched, shows completed
+- Watch time in hours and days (movies + TV separately + total)
+- Ratings distribution with visual bar chart
+- Network stats: friends, followers, following
+
+### Custom Trakt Lists
+- Create new lists (Private, Friends, or Public)
+- Browse and manage your custom lists
+- Delete lists with confirmation dialog
+- Add movies/shows to any custom list via context menu
+- View item count and privacy status per list
+
+### Cached Torrent Indicator
+- Checks Real-Debrid, Premiumize, and AllDebrid cache before resolving
+- Cached torrents prioritized for instant playback (no download wait)
+- [CACHED] tag shown in progress dialog during resolution
+- Cached count displayed in scraper progress
+
+### AI Discovery (Vibe Marathons)
+- 12 preset mood/vibe options (Rainy Night Thriller, Mind-Bending Sci-Fi, etc.)
+- Custom vibe input - describe any mood and AI picks 12-15 titles
+- Powered by OpenAI via Emergent proxy
+- Uses your Trakt watch history for personalized picks
+- Mix of well-known titles and hidden gems across decades
+
 ### TMDB Metadata
 - Movie and TV show posters, backdrops, ratings, genres
 - Season and episode artwork

@@ -11,7 +11,7 @@ import xbmcgui
 import xbmcplugin
 import xbmcaddon
 import xbmc
-from resources.lib import tmdb, trakt_auth, trakt_api, player, debrid
+from resources.lib import tmdb, trakt_auth, trakt_api, player, debrid, discovery
 
 ADDON = xbmcaddon.Addon()
 HANDLE = int(sys.argv[1])
@@ -30,7 +30,9 @@ def main_menu():
         ('Movies', 'movie_menu', 'DefaultMovies.png'),
         ('TV Shows', 'tv_menu', 'DefaultTVShows.png'),
         ('Continue Watching', 'continue_watching', 'DefaultInProgressShows.png'),
+        ('Discovery (AI Vibes)', 'discovery_menu', 'DefaultMusicSearch.png'),
         ('My Trakt', 'my_trakt', 'DefaultAddonProgram.png'),
+        ('My Stats', 'user_stats', 'DefaultIconInfo.png'),
         ('Account Status', 'account_status', 'DefaultIconInfo.png'),
         ('Buy Me a Beer', 'donate', 'DefaultAddonService.png'),
         ('Settings', 'open_settings', 'DefaultAddonService.png'),
@@ -39,7 +41,7 @@ def main_menu():
         url = build_url({'action': action})
         li = xbmcgui.ListItem(label=label)
         li.setArt({'icon': icon})
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=(action not in ('donate', 'account_status', 'open_settings')))
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=(action not in ('donate', 'account_status', 'open_settings', 'user_stats')))
     xbmcplugin.endOfDirectory(HANDLE)
 
 
@@ -101,7 +103,9 @@ def my_trakt():
         ('Recently Watched Movies', 'history', '', 'movie'),
         ('Recently Watched Episodes', 'history', '', 'show'),
         ('My Calendar', 'calendar', '', 'show'),
+        ('My Custom Lists', 'my_lists', '', ''),
         ('Popular Lists', 'popular_lists', '', ''),
+        ('Friends', 'friends', '', ''),
     ]
     for label, action, path, media in items:
         q = {'action': action, 'media_type': media}
@@ -265,6 +269,30 @@ if __name__ == '__main__':
         trakt_api.rate_item(params.get('media_type', 'movie'), params.get('trakt_id', ''))
     elif action == 'add_watchlist':
         trakt_api.add_to_watchlist(params.get('media_type', 'movie'), params.get('imdb_id', ''))
+
+    # Friends, Stats, Custom Lists
+    elif action == 'friends':
+        trakt_api.get_friends()
+    elif action == 'friend_activity':
+        trakt_api.get_friend_activity(params.get('user', ''))
+    elif action == 'user_stats':
+        trakt_api.show_user_stats()
+    elif action == 'my_lists':
+        trakt_api.get_my_lists()
+    elif action == 'create_list':
+        trakt_api.create_list()
+    elif action == 'delete_list':
+        trakt_api.delete_list(params.get('list_slug', ''))
+    elif action == 'add_to_list':
+        trakt_api.add_to_list(params.get('media_type', 'movie'), params.get('imdb_id', ''))
+
+    # Discovery (AI Vibes)
+    elif action == 'discovery_menu':
+        discovery.mood_presets()
+    elif action == 'vibe_custom':
+        discovery.vibe_discovery()
+    elif action == 'vibe_play':
+        discovery.vibe_play(params.get('vibe', ''))
 
     # Click-and-Play
     elif action == 'play':

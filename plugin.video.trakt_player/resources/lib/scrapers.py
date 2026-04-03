@@ -75,6 +75,17 @@ def _make_magnet(info_hash, name):
     return m
 
 
+def extract_hash(magnet):
+    """Extract info_hash from a magnet URI."""
+    match = re.search(r'btih:([a-fA-F0-9]{40})', magnet)
+    if match:
+        return match.group(1).lower()
+    match = re.search(r'btih:([a-zA-Z2-7]{32})', magnet)
+    if match:
+        return match.group(1).lower()
+    return ''
+
+
 def _filter_quality(results, max_quality='1080p'):
     """Remove anything above max_quality (discard 4K/2160p)."""
     allowed = set(QUALITY_ORDER[QUALITY_ORDER.index(max_quality):]) if max_quality in QUALITY_ORDER else set(QUALITY_ORDER)

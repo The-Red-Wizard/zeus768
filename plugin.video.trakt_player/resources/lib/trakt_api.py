@@ -99,17 +99,18 @@ def _require_auth():
 # ── Context menu helpers ──────────────────────────────────────────────────
 
 def _add_context_menu(li, media_type, trakt_id, imdb_id=''):
-    """Add Rate + More Like This to context menu."""
+    """Add Rate + More Like This + Add to List to context menu."""
     ctx = []
     if trakt_id:
         ctx.append(('Rate on Trakt',
                      'RunPlugin(plugin://plugin.video.trakt_player/?action=rate&media_type=%s&trakt_id=%s)' % (media_type, trakt_id)))
-        action = 'Container.Update' if media_type == 'show' else 'Container.Update'
         ctx.append(('More Like This',
-                     '%s(plugin://plugin.video.trakt_player/?action=related&media_type=%s&trakt_id=%s)' % (action, media_type, trakt_id)))
+                     'Container.Update(plugin://plugin.video.trakt_player/?action=related&media_type=%s&trakt_id=%s)' % (media_type, trakt_id)))
     if imdb_id:
         ctx.append(('Add to Watchlist',
                      'RunPlugin(plugin://plugin.video.trakt_player/?action=add_watchlist&media_type=%s&imdb_id=%s)' % (media_type, imdb_id)))
+        ctx.append(('Add to List...',
+                     'RunPlugin(plugin://plugin.video.trakt_player/?action=add_to_list&media_type=%s&imdb_id=%s)' % (media_type, imdb_id)))
     if ctx:
         li.addContextMenuItems(ctx)
 
@@ -591,3 +592,315 @@ def show_episodes(tmdb_id, season_number, show_title):
         xbmcplugin.addDirectoryItem(HANDLE, url, li, False)
     xbmcplugin.setContent(HANDLE, 'episodes')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── Friends Activity ──────────────────────────────────────────────────────
+
+def get_friends():
+    """Show list of Trakt friends with option to see what they're watching."""
+    if not _require_auth():
+        return
+    url = '%s/users/me/friends?extended=full' % BASE
+    status, data = _authed_get(url, 'Friends')
+    if status != 200:
+        return
+
+    if not data:
+        xbmcgui.Dialog().notification('Trakt', 'No friends found', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for item in data:
+        user = item.get('user', {})
+        username = user.get('username', 'Unknown')
+        name = user.get('name', username)
+        slug = user.get('ids', {}).get('slug', username)
+        avatar = user.get('images', {}).get('avatar', {}).get('full', '')
+        joined = user.get('joined_at', '')[:10]
+
+        label = '%s (@%s)' % (name, username) if name != username else '@%s' % username
+        li = xbmcgui.ListItem(label=label)
+        if avatar:
+            li.setArt({'icon': avatar, 'thumb': avatar})
+        li.setInfo('video', {'title': label, 'plot': 'Joined: %s' % joined})
+
+        url = '%s?action=friend_activity&user=%s' % (sys.argv[0], quote_plus(slug))
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def get_friend_activity(user_slug):
+    """Show what a friend is watching and their recent activity."""
+    # Check if currently watching
+    url_watching = '%s/users/%s/watching?extended=full' % (BASE, user_slug)
+    status, watching = _get(url_watching)
+
+    items_added = False
+
+    if status == 200 and watching:
+        media_type = watching.get('type', '')
+        if media_type == 'movie':
+            content = watching.get('movie', {})
+            title = content.get('title', 'Unknown')
+            year = content.get('year', '')
+            label = '[COLOR lime]NOW WATCHING:[/COLOR] %s (%s)' % (title, year)
+            li = xbmcgui.ListItem(label=label)
+            ids = content.get('ids', {})
+            meta = tmdb.get_details(ids.get('tmdb'), 'movie')
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setInfo('video', {'title': title, 'year': year, 'mediatype': 'movie'})
+            li.setProperty('IsPlayable', 'true')
+            play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
+                sys.argv[0], quote_plus(title), year, ids.get('imdb', ''))
+            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            items_added = True
+        elif media_type == 'episode':
+            show = watching.get('show', {})
+            episode = watching.get('episode', {})
+            label = '[COLOR lime]NOW WATCHING:[/COLOR] %s S%02dE%02d - %s' % (
+                show.get('title', ''), episode.get('season', 0),
+                episode.get('number', 0), episode.get('title', ''))
+            li = xbmcgui.ListItem(label=label)
+            ids = show.get('ids', {})
+            meta = tmdb.get_details(ids.get('tmdb'), 'tv')
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setInfo('video', {'title': label, 'mediatype': 'episode'})
+            li.setProperty('IsPlayable', 'true')
+            play_url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
+                sys.argv[0], quote_plus(show.get('title', '')),
+                episode.get('season', 0), episode.get('number', 0), ids.get('imdb', ''))
+            xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+            items_added = True
+
+    # Recent watched history
+    url_history = '%s/users/%s/history?limit=20&extended=full' % (BASE, user_slug)
+    status, history = _get(url_history)
+    if status == 200 and history:
+        for item in history:
+            item_type = item.get('type', '')
+            watched_at = item.get('watched_at', '')[:10]
+            if item_type == 'movie':
+                content = item.get('movie', {})
+                title = content.get('title', '')
+                year = content.get('year', '')
+                ids = content.get('ids', {})
+                meta = tmdb.get_details(ids.get('tmdb'), 'movie')
+                label = '[%s] %s (%s)' % (watched_at, title, year)
+                li = xbmcgui.ListItem(label=label)
+                li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+                li.setInfo('video', {'title': title, 'year': year, 'mediatype': 'movie'})
+                li.setProperty('IsPlayable', 'true')
+                play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
+                    sys.argv[0], quote_plus(title), year, ids.get('imdb', ''))
+                xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+                items_added = True
+            elif item_type == 'episode':
+                show = item.get('show', {})
+                ep = item.get('episode', {})
+                ids = show.get('ids', {})
+                meta = tmdb.get_details(ids.get('tmdb'), 'tv')
+                label = '[%s] %s S%02dE%02d' % (watched_at, show.get('title', ''),
+                                                  ep.get('season', 0), ep.get('number', 0))
+                li = xbmcgui.ListItem(label=label)
+                li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+                li.setInfo('video', {'title': label, 'mediatype': 'episode'})
+                li.setProperty('IsPlayable', 'true')
+                play_url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
+                    sys.argv[0], quote_plus(show.get('title', '')),
+                    ep.get('season', 0), ep.get('number', 0), ids.get('imdb', ''))
+                xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
+                items_added = True
+
+    if not items_added:
+        xbmcgui.Dialog().notification('Trakt', 'No activity for this friend', xbmcgui.NOTIFICATION_INFO)
+
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── User Stats ────────────────────────────────────────────────────────────
+
+def show_user_stats():
+    """Display user watch stats in a dialog."""
+    if not _require_auth():
+        return
+    url = '%s/users/me/stats' % BASE
+    status, data = _authed_get(url, 'Stats')
+    if status != 200 or not data:
+        return
+
+    movies = data.get('movies', {})
+    episodes = data.get('episodes', {})
+    shows = data.get('shows', {})
+    network = data.get('network', {})
+    ratings = data.get('ratings', {})
+
+    movie_mins = movies.get('minutes', 0)
+    movie_hrs = movie_mins // 60
+    movie_days = movie_hrs // 24
+    ep_mins = episodes.get('minutes', 0)
+    ep_hrs = ep_mins // 60
+    ep_days = ep_hrs // 24
+    total_mins = movie_mins + ep_mins
+    total_hrs = total_mins // 60
+    total_days = total_hrs // 24
+
+    lines = []
+    lines.append('[B][COLOR skyblue]--- Your Trakt Stats ---[/COLOR][/B]\n')
+
+    lines.append('[B]Movies[/B]')
+    lines.append('  Watched: %d movies' % movies.get('watched', 0))
+    lines.append('  Collected: %d' % movies.get('collected', 0))
+    lines.append('  Ratings: %d' % movies.get('ratings', 0))
+    lines.append('  Time: %d hours (%d days)' % (movie_hrs, movie_days))
+    lines.append('')
+
+    lines.append('[B]TV Shows[/B]')
+    lines.append('  Shows Watched: %d' % shows.get('watched', 0))
+    lines.append('  Episodes Watched: %d' % episodes.get('watched', 0))
+    lines.append('  Collected: %d episodes' % episodes.get('collected', 0))
+    lines.append('  Time: %d hours (%d days)' % (ep_hrs, ep_days))
+    lines.append('')
+
+    lines.append('[B]Total Watch Time[/B]')
+    lines.append('  [COLOR lime]%d hours (%d days)[/COLOR]' % (total_hrs, total_days))
+    lines.append('')
+
+    lines.append('[B]Ratings Given[/B]')
+    dist = ratings.get('distribution', {})
+    if dist:
+        bar_items = []
+        for r in range(10, 0, -1):
+            count = dist.get(str(r), 0)
+            bar = '#' * min(count, 30)
+            bar_items.append('  %2d/10: %s (%d)' % (r, bar, count))
+        lines.extend(bar_items)
+    total_ratings = ratings.get('total', 0)
+    lines.append('  Total ratings: %d' % total_ratings)
+    lines.append('')
+
+    lines.append('[B]Network[/B]')
+    lines.append('  Friends: %d' % network.get('friends', 0))
+    lines.append('  Followers: %d' % network.get('followers', 0))
+    lines.append('  Following: %d' % network.get('following', 0))
+
+    xbmcgui.Dialog().textviewer('Your Trakt Stats', '\n'.join(lines))
+
+
+# ── Custom Lists ──────────────────────────────────────────────────────────
+
+def get_my_lists():
+    """Show user's custom Trakt lists with option to create new."""
+    if not _require_auth():
+        return
+
+    # Add "Create New List" item
+    create_url = '%s?action=create_list' % sys.argv[0]
+    li = xbmcgui.ListItem(label='[COLOR yellow]+ Create New List[/COLOR]')
+    xbmcplugin.addDirectoryItem(HANDLE, create_url, li, False)
+
+    url = '%s/users/me/lists' % BASE
+    status, data = _authed_get(url, 'My Lists')
+    if status != 200:
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for lst in (data or []):
+        name = lst.get('name', 'Untitled')
+        item_count = lst.get('item_count', 0)
+        likes = lst.get('likes', 0)
+        list_ids = lst.get('ids', {})
+        list_slug = list_ids.get('slug', '')
+        desc = lst.get('description', '')
+        privacy = lst.get('privacy', 'private')
+
+        label = '%s (%d items) [%s]' % (name, item_count, privacy)
+        li = xbmcgui.ListItem(label=label)
+        li.setInfo('video', {'title': name, 'plot': desc})
+
+        # Context menu for delete
+        li.addContextMenuItems([
+            ('Delete List', 'RunPlugin(plugin://plugin.video.trakt_player/?action=delete_list&list_slug=%s)' % quote_plus(list_slug))
+        ])
+
+        url = '%s?action=list_items&user=me&list_slug=%s' % (sys.argv[0], quote_plus(list_slug))
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, True)
+
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def create_list():
+    """Create a new Trakt list."""
+    if not _require_auth():
+        return
+    kb = xbmc.Keyboard('', 'Enter list name')
+    kb.doModal()
+    if not kb.isConfirmed():
+        return
+    name = kb.getText().strip()
+    if not name:
+        return
+
+    # Ask for privacy
+    dlg = xbmcgui.Dialog()
+    privacy_opts = ['Private', 'Friends', 'Public']
+    selected = dlg.select('List Privacy', privacy_opts)
+    if selected < 0:
+        return
+    privacy = privacy_opts[selected].lower()
+
+    # Optional description
+    kb2 = xbmc.Keyboard('', 'Description (optional)')
+    kb2.doModal()
+    desc = kb2.getText().strip() if kb2.isConfirmed() else ''
+
+    body = {'name': name, 'description': desc, 'privacy': privacy, 'display_numbers': True, 'allow_comments': True}
+    status, resp = _post('%s/users/me/lists' % BASE, body)
+    if status in (200, 201):
+        xbmcgui.Dialog().notification('Trakt', 'List "%s" created!' % name, xbmcgui.NOTIFICATION_INFO)
+        xbmc.executebuiltin('Container.Refresh')
+    else:
+        xbmcgui.Dialog().notification('Trakt', 'Failed to create list', xbmcgui.NOTIFICATION_ERROR)
+
+
+def delete_list(list_slug):
+    """Delete a Trakt list."""
+    if not _require_auth():
+        return
+    dlg = xbmcgui.Dialog()
+    if not dlg.yesno('Delete List', 'Are you sure you want to delete this list?\n\nThis cannot be undone.'):
+        return
+    status = _delete('%s/users/me/lists/%s' % (BASE, list_slug))
+    if status in (200, 204):
+        xbmcgui.Dialog().notification('Trakt', 'List deleted', xbmcgui.NOTIFICATION_INFO)
+        xbmc.executebuiltin('Container.Refresh')
+    else:
+        xbmcgui.Dialog().notification('Trakt', 'Failed to delete', xbmcgui.NOTIFICATION_ERROR)
+
+
+def add_to_list(media_type, imdb_id):
+    """Add an item to one of user's custom lists."""
+    if not _require_auth():
+        return
+    url = '%s/users/me/lists' % BASE
+    status, lists = _authed_get(url, 'Lists')
+    if status != 200 or not lists:
+        xbmcgui.Dialog().notification('Trakt', 'No lists found. Create one first.', xbmcgui.NOTIFICATION_WARNING)
+        return
+
+    names = [l.get('name', 'Untitled') for l in lists]
+    dlg = xbmcgui.Dialog()
+    selected = dlg.select('Add to List', names)
+    if selected < 0:
+        return
+
+    list_slug = lists[selected].get('ids', {}).get('slug', '')
+    key = 'movies' if media_type == 'movie' else 'shows'
+    body = {key: [{'ids': {'imdb': imdb_id}}]}
+    status, resp = _post('%s/users/me/lists/%s/items' % (BASE, list_slug), body)
+    if status in (200, 201):
+        added = resp.get('added', {}).get(key, 0)
+        xbmcgui.Dialog().notification('Trakt', 'Added to "%s"' % names[selected], xbmcgui.NOTIFICATION_INFO)
+    else:
+        xbmcgui.Dialog().notification('Trakt', 'Failed to add', xbmcgui.NOTIFICATION_ERROR)

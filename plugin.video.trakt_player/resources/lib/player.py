@@ -31,7 +31,7 @@ def _set_scrobble_props(media_type, title, imdb_id='', season=0, episode=0, show
 
 
 def play(title, year='', imdb_id=''):
-    """Click-and-play: scrape -> filter -> debrid resolve -> play. No dialog."""
+    """Click-and-play: scrape -> cache check -> debrid resolve -> play. No dialog."""
     services = debrid.get_active_services()
     if not services:
         xbmcgui.Dialog().notification('No Debrid', 'Configure a Debrid service in Settings', xbmcgui.NOTIFICATION_ERROR, 5000)
@@ -56,7 +56,35 @@ def play(title, year='', imdb_id=''):
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
 
-    progress.update(50, 'Found %d sources. Resolving via Debrid...' % len(results))
+    # Cache check: prioritize cached torrents for instant playback
+    progress.update(40, 'Found %d sources. Checking debrid cache...' % len(results))
+    hashes = []
+    for r in results:
+        h = scrapers.extract_hash(r.get('magnet', ''))
+        if h:
+            hashes.append(h)
+            r['hash'] = h
+    cached_set = set()
+    if hashes:
+        try:
+            cached_set = debrid.check_cache_all(hashes)
+            xbmc.log('Cache check: %d/%d cached' % (len(cached_set), len(hashes)), xbmc.LOGINFO)
+        except Exception as e:
+            xbmc.log('Cache check failed: %s' % str(e), xbmc.LOGWARNING)
+
+    # Sort: cached first, then by quality, then seeds
+    QUALITY_ORDER = ['1080p', '720p', '480p']
+    order_map = {q: i for i, q in enumerate(QUALITY_ORDER)}
+
+    def sort_key(r):
+        is_cached = 0 if r.get('hash', '').lower() in cached_set else 1
+        q_idx = order_map.get(r.get('quality', '720p'), 9)
+        return (is_cached, q_idx, -r.get('seeds', 0))
+
+    results.sort(key=sort_key)
+    cached_count = sum(1 for r in results if r.get('hash', '').lower() in cached_set)
+
+    progress.update(55, 'Found %d sources (%d cached). Resolving...' % (len(results), cached_count))
 
     for i, source in enumerate(results[:10]):
         if progress.iscanceled():
@@ -69,8 +97,10 @@ def play(title, year='', imdb_id=''):
             continue
 
         pct = 50 + int((i / min(len(results), 10)) * 45)
-        progress.update(pct, 'Trying [%s] %s (%d seeds)...' % (
-            source.get('quality', '?'), source.get('source', '?'), source.get('seeds', 0)))
+        is_cached = source.get('hash', '').lower() in cached_set
+        cache_tag = '[CACHED] ' if is_cached else ''
+        progress.update(pct, 'Trying %s[%s] %s (%d seeds)...' % (
+            cache_tag, source.get('quality', '?'), source.get('source', '?'), source.get('seeds', 0)))
 
         url, svc_name = debrid.resolve_magnet(magnet)
         if url:
@@ -121,7 +151,27 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
         xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
         return
 
-    progress.update(50, 'Found %d sources. Resolving...' % len(results))
+    # Cache check for episodes
+    progress.update(40, 'Found %d sources. Checking cache...' % len(results))
+    hashes = []
+    for r in results:
+        h = scrapers.extract_hash(r.get('magnet', ''))
+        if h:
+            hashes.append(h)
+            r['hash'] = h
+    ep_cached_set = set()
+    if hashes:
+        try:
+            ep_cached_set = debrid.check_cache_all(hashes)
+        except Exception:
+            pass
+
+    QUALITY_ORDER = ['1080p', '720p', '480p']
+    order_map = {q: i for i, q in enumerate(QUALITY_ORDER)}
+    results.sort(key=lambda r: (0 if r.get('hash', '').lower() in ep_cached_set else 1,
+                                 order_map.get(r.get('quality', '720p'), 9), -r.get('seeds', 0)))
+    ep_cached_count = sum(1 for r in results if r.get('hash', '').lower() in ep_cached_set)
+    progress.update(55, 'Found %d sources (%d cached). Resolving...' % (len(results), ep_cached_count))
 
     for i, source in enumerate(results[:10]):
         if progress.iscanceled():
@@ -133,9 +183,11 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
         if not magnet:
             continue
 
-        pct = 50 + int((i / min(len(results), 10)) * 45)
-        progress.update(pct, 'Trying [%s] %s (%d seeds)...' % (
-            source.get('quality', '?'), source.get('source', '?'), source.get('seeds', 0)))
+        pct = 55 + int((i / min(len(results), 10)) * 40)
+        ep_is_cached = source.get('hash', '').lower() in ep_cached_set
+        ep_cache_tag = '[CACHED] ' if ep_is_cached else ''
+        progress.update(pct, 'Trying %s[%s] %s (%d seeds)...' % (
+            ep_cache_tag, source.get('quality', '?'), source.get('source', '?'), source.get('seeds', 0)))
 
         url, svc_name = debrid.resolve_magnet(magnet)
         if url:
