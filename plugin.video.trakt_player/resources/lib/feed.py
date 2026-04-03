@@ -7,6 +7,7 @@ import random
 import urllib.request
 import urllib.error
 from urllib.parse import quote_plus, urlencode
+import os
 import xbmc
 import xbmcgui
 import xbmcplugin
@@ -15,6 +16,8 @@ from . import tmdb
 
 ADDON = xbmcaddon.Addon()
 SSL_CTX = ssl._create_unverified_context()
+FANART = os.path.join(ADDON.getAddonInfo('path'), 'fanart.jpg')
+ICON = os.path.join(ADDON.getAddonInfo('path'), 'icon.png')
 
 INVIDIOUS_INSTANCES = [
     'https://inv.nadeko.net',
@@ -97,7 +100,9 @@ def feed_menu():
     ]
     for label, action in items:
         url = '%s?action=%s' % (sys.argv[0], action)
-        xbmcplugin.addDirectoryItem(_handle(), url, xbmcgui.ListItem(label=label), isFolder=True)
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'fanart': FANART, 'icon': ICON, 'thumb': ICON})
+        xbmcplugin.addDirectoryItem(_handle(), url, li, isFolder=True)
     xbmcplugin.endOfDirectory(_handle())
 
 
@@ -120,7 +125,7 @@ def _build_feed_items(tmdb_items, media_type='movie'):
 
         label = '%s (%s)' % (title, year) if year else title
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'poster': poster, 'fanart': backdrop, 'thumb': poster})
+        li.setArt({'poster': poster, 'fanart': backdrop or FANART, 'thumb': poster, 'icon': poster})
         li.setInfo('video', {
             'title': title, 'year': year, 'plot': overview,
             'rating': rating, 'mediatype': media_type
@@ -228,7 +233,7 @@ def feed_shuffle():
         label = '%s (%s)' % (title, year) if year else title
         tag = '[MOVIE]' if media_type == 'movie' else '[TV]'
         li = xbmcgui.ListItem(label='%s %s' % (tag, label))
-        li.setArt({'poster': poster, 'fanart': backdrop, 'thumb': poster})
+        li.setArt({'poster': poster, 'fanart': backdrop or FANART, 'thumb': poster, 'icon': poster})
         li.setInfo('video', {'title': title, 'year': year, 'plot': item.get('overview', ''),
                               'rating': item.get('vote_average', 0)})
         li.setProperty('IsPlayable', 'true')

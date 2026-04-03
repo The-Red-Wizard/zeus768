@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """TMDB metadata helper. Native urllib only."""
 import json
+import os
 import ssl
 import sys
 import urllib.request
@@ -76,10 +77,14 @@ def get_genres(media_type):
         handle = int(sys.argv[1])
     except (IndexError, ValueError):
         return
+    fanart = os.path.join(ADDON.getAddonInfo('path'), 'fanart.jpg')
+    icon = os.path.join(ADDON.getAddonInfo('path'), 'icon.png')
     for g in data.get('genres', []):
         url = '%s?action=trakt_list&path=%ss/popular&genre=%s&media_type=%s' % (
             sys.argv[0], endpoint, g['id'], 'movie' if media_type == 'movie' else 'show')
-        xbmcplugin.addDirectoryItem(handle, url, xbmcgui.ListItem(label=g['name']), isFolder=True)
+        li = xbmcgui.ListItem(label=g['name'])
+        li.setArt({'fanart': fanart, 'icon': icon, 'thumb': icon})
+        xbmcplugin.addDirectoryItem(handle, url, li, isFolder=True)
     xbmcplugin.endOfDirectory(handle)
 
 

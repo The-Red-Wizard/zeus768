@@ -7,6 +7,7 @@ import time
 import urllib.request
 import urllib.error
 from urllib.parse import urlencode, quote_plus
+import os
 import xbmc
 import xbmcgui
 import xbmcplugin
@@ -17,6 +18,8 @@ from . import tmdb
 ADDON = xbmcaddon.Addon()
 SSL_CTX = ssl._create_unverified_context()
 CLIENT_ID = trakt_auth.CLIENT_ID
+FANART = os.path.join(ADDON.getAddonInfo('path'), 'fanart.jpg')
+ICON = os.path.join(ADDON.getAddonInfo('path'), 'icon.png')
 
 
 def _handle():
@@ -150,8 +153,9 @@ def _render_items(data, media_type, key=None):
         li = xbmcgui.ListItem(label=label)
         li.setArt({
             'poster': meta.get('poster', ''),
-            'fanart': meta.get('backdrop', ''),
-            'thumb': meta.get('poster', '')
+            'fanart': meta.get('backdrop', '') or FANART or FANART,
+            'thumb': meta.get('poster', ''),
+            'icon': meta.get('poster', '')
         })
 
         info = {
@@ -246,7 +250,7 @@ def get_calendar():
         li = xbmcgui.ListItem(label=label)
 
         meta = tmdb.get_details(tmdb_id, 'tv')
-        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', ''), 'thumb': meta.get('poster', '')})
+        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART, 'thumb': meta.get('poster', '')})
         li.setInfo('video', {
             'title': ep_title, 'tvshowtitle': show_title,
             'season': season, 'episode': ep_num,
@@ -296,7 +300,7 @@ def get_history(media_type='movie'):
             label = '[%s] %s - S%02dE%02d - %s' % (watched_at, show_title, season, ep_num, ep_title)
             li = xbmcgui.ListItem(label=label)
             meta = tmdb.get_details(tmdb_id, 'tv')
-            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
             li.setInfo('video', {
                 'title': ep_title, 'tvshowtitle': show_title,
                 'season': season, 'episode': ep_num, 'mediatype': 'episode'
@@ -347,6 +351,7 @@ def get_popular_lists():
 
         label = '%s (%d items, %d likes)' % (name, item_count, likes)
         li = xbmcgui.ListItem(label=label)
+        li.setArt({'fanart': FANART, 'icon': ICON, 'thumb': ICON})
         li.setInfo('video', {'title': name, 'plot': desc})
 
         url = '%s?action=list_items&user=%s&list_slug=%s' % (
@@ -389,7 +394,7 @@ def get_list_items(user, list_slug):
         meta = tmdb.get_details(tmdb_id, 'movie' if media_type == 'movie' else 'tv')
         label = '%s (%s)' % (title, year) if year else title
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', ''), 'thumb': meta.get('poster', '')})
+        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART, 'thumb': meta.get('poster', '')})
         info = {
             'title': title, 'year': year,
             'plot': meta.get('overview', content.get('overview', '')),
@@ -460,7 +465,7 @@ def get_playback_progress():
             meta = tmdb.get_details(tmdb_id, 'movie')
             label = '[%.0f%%] %s (%s)' % (progress, title, year)
             li = xbmcgui.ListItem(label=label)
-            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
             li.setInfo('video', {'title': title, 'year': year, 'mediatype': 'movie',
                                  'plot': meta.get('overview', '')})
             li.setProperty('IsPlayable', 'true')
@@ -483,7 +488,7 @@ def get_playback_progress():
             meta = tmdb.get_details(tmdb_id, 'tv')
             label = '[%.0f%%] %s - S%02dE%02d - %s' % (progress, show_title, season, ep_num, ep_title)
             li = xbmcgui.ListItem(label=label)
-            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
             li.setInfo('video', {
                 'title': ep_title, 'tvshowtitle': show_title,
                 'season': season, 'episode': ep_num, 'mediatype': 'episode'
@@ -569,7 +574,7 @@ def show_seasons(tmdb_id, show_title):
         name = season.get('name', 'Season %d' % season_num)
         poster = ('https://image.tmdb.org/t/p/w500' + season['poster_path']) if season.get('poster_path') else ''
         li = xbmcgui.ListItem(label=name)
-        li.setArt({'poster': poster, 'thumb': poster})
+        li.setArt({'poster': poster, 'thumb': poster, 'fanart': FANART})
         li.setInfo('video', {'title': name, 'season': season_num})
         url = '%s?action=show_episodes&tmdb_id=%s&season=%d&title=%s' % (
             sys.argv[0], tmdb_id, season_num, quote_plus(show_title))
@@ -586,7 +591,7 @@ def show_episodes(tmdb_id, season_number, show_title):
         still = ('https://image.tmdb.org/t/p/w500' + ep['still_path']) if ep.get('still_path') else ''
         label = '%d. %s' % (ep_num, name)
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'thumb': still, 'fanart': still})
+        li.setArt({'thumb': still, 'fanart': still or FANART})
         li.setInfo('video', {
             'title': name, 'episode': ep_num,
             'season': int(season_number),
@@ -627,7 +632,9 @@ def get_friends():
         label = '%s (@%s)' % (name, username) if name != username else '@%s' % username
         li = xbmcgui.ListItem(label=label)
         if avatar:
-            li.setArt({'icon': avatar, 'thumb': avatar})
+            li.setArt({'icon': avatar, 'thumb': avatar, 'fanart': FANART})
+        else:
+            li.setArt({'icon': ICON, 'thumb': ICON, 'fanart': FANART})
         li.setInfo('video', {'title': label, 'plot': 'Joined: %s' % joined})
 
         url = '%s?action=friend_activity&user=%s' % (sys.argv[0], quote_plus(slug))
@@ -654,7 +661,7 @@ def get_friend_activity(user_slug):
             li = xbmcgui.ListItem(label=label)
             ids = content.get('ids', {})
             meta = tmdb.get_details(ids.get('tmdb'), 'movie')
-            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
             li.setInfo('video', {'title': title, 'year': year, 'mediatype': 'movie'})
             li.setProperty('IsPlayable', 'true')
             play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
@@ -670,7 +677,7 @@ def get_friend_activity(user_slug):
             li = xbmcgui.ListItem(label=label)
             ids = show.get('ids', {})
             meta = tmdb.get_details(ids.get('tmdb'), 'tv')
-            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+            li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
             li.setInfo('video', {'title': label, 'mediatype': 'episode'})
             li.setProperty('IsPlayable', 'true')
             play_url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
@@ -694,7 +701,7 @@ def get_friend_activity(user_slug):
                 meta = tmdb.get_details(ids.get('tmdb'), 'movie')
                 label = '[%s] %s (%s)' % (watched_at, title, year)
                 li = xbmcgui.ListItem(label=label)
-                li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+                li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
                 li.setInfo('video', {'title': title, 'year': year, 'mediatype': 'movie'})
                 li.setProperty('IsPlayable', 'true')
                 play_url = '%s?action=play&title=%s&year=%s&imdb_id=%s' % (
@@ -709,7 +716,7 @@ def get_friend_activity(user_slug):
                 label = '[%s] %s S%02dE%02d' % (watched_at, show.get('title', ''),
                                                   ep.get('season', 0), ep.get('number', 0))
                 li = xbmcgui.ListItem(label=label)
-                li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '')})
+                li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART})
                 li.setInfo('video', {'title': label, 'mediatype': 'episode'})
                 li.setProperty('IsPlayable', 'true')
                 play_url = '%s?action=play_episode&title=%s&season=%d&episode=%d&imdb_id=%s' % (
@@ -804,6 +811,7 @@ def get_my_lists():
     # Add "Create New List" item
     create_url = '%s?action=create_list' % sys.argv[0]
     li = xbmcgui.ListItem(label='[COLOR yellow]+ Create New List[/COLOR]')
+    li.setArt({'fanart': FANART, 'icon': ICON, 'thumb': ICON})
     xbmcplugin.addDirectoryItem(_handle(), create_url, li, False)
 
     url = '%s/users/me/lists' % BASE
@@ -823,6 +831,7 @@ def get_my_lists():
 
         label = '%s (%d items) [%s]' % (name, item_count, privacy)
         li = xbmcgui.ListItem(label=label)
+        li.setArt({'fanart': FANART, 'icon': ICON, 'thumb': ICON})
         li.setInfo('video', {'title': name, 'plot': desc})
 
         # Context menu for delete

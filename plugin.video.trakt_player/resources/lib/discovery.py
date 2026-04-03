@@ -7,6 +7,7 @@ import urllib.error
 from urllib.parse import quote_plus
 import xbmc
 import xbmcgui
+import os
 import xbmcplugin
 import xbmcaddon
 import sys
@@ -14,6 +15,8 @@ from . import trakt_auth, tmdb
 
 ADDON = xbmcaddon.Addon()
 SSL_CTX = ssl._create_unverified_context()
+FANART = os.path.join(ADDON.getAddonInfo('path'), 'fanart.jpg')
+ICON = os.path.join(ADDON.getAddonInfo('path'), 'icon.png')
 
 LLM_URL = 'https://integrations.emergentagent.com/llm/v1/chat/completions'
 LLM_KEY = 'sk-emergent-4Ed53090b4b04F8606'
@@ -175,8 +178,9 @@ def vibe_discovery():
         li = xbmcgui.ListItem(label=label)
         li.setArt({
             'poster': meta.get('poster', ''),
-            'fanart': meta.get('backdrop', ''),
-            'thumb': meta.get('poster', '')
+            'fanart': meta.get('backdrop', '') or FANART,
+            'thumb': meta.get('poster', ''),
+            'icon': meta.get('poster', '')
         })
         li.setInfo('video', {
             'title': actual_title, 'year': actual_year,
@@ -227,7 +231,9 @@ def mood_presets():
             url = '%s?action=vibe_play&vibe=%s' % (sys.argv[0], quote_plus(vibe))
         else:
             url = '%s?action=vibe_custom' % sys.argv[0]
-        xbmcplugin.addDirectoryItem(_handle(), url, xbmcgui.ListItem(label=label), isFolder=True)
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'fanart': FANART, 'icon': ICON, 'thumb': ICON})
+        xbmcplugin.addDirectoryItem(_handle(), url, li, isFolder=True)
     xbmcplugin.endOfDirectory(_handle())
 
 
@@ -281,7 +287,7 @@ def vibe_play(vibe):
         label = '%s (%s)' % (actual_title, actual_year) if actual_year else actual_title
 
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', ''), 'thumb': meta.get('poster', '')})
+        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART, 'thumb': meta.get('poster', ''), 'icon': meta.get('poster', '')})
         li.setInfo('video', {
             'title': actual_title, 'year': actual_year,
             'plot': meta.get('overview', ''), 'rating': meta.get('rating', 0),
