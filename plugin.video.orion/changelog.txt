@@ -1,134 +1,19 @@
-Orion Changelog
-================
+================================================================================
+  Orion Changelog
+  by zeus768
+================================================================================
 
-## v3.2.3 (February 2026)
+v3.2.4 (April 2026)
+================================================================================
+  * Compact Buy Me a Beer - single QR + Ko-fi dialog
+  * Updated for Zeus768 Repository v1.0.9
 
-### Buy Me a Beer
-- Added "Buy Me a Beer" menu item at bottom of main menu
-- Shows QR code dialog linking to https://ko-fi.com/zeus768
-- Option to view QR code or Ko-fi link text
-
----
-
-## v3.2.2 (February 2026)
-
-### Debrid Resolution Fixes
-- Fixed Real-Debrid resolving .rar/.zip archive files instead of actual video files
-- RD now selects only video files (.mp4, .mkv, .avi, .mov, .wmv, .flv, .m4v, .ts, .webm) from torrent
-- After unrestricting, skips non-video URLs and tries next available link
-- Added clear error dialog when no debrid service is configured ("Go to Settings and authorize...")
-- Added ResolveURL debrid fallback - if Orion debrid fails, tries ResolveURL's RD integration
-
----
-
-## v3.2.1 (February 2026)
-
-### [CACHED] Source Tags
-- Batch cache checking across all 4 debrid providers (Real-Debrid, Premiumize, AllDebrid, TorBox)
-- Sources with cached torrents display a green [CACHED] tag
-- Cached sources automatically sorted to the top of the source list
-- Source summary line at top shows "X cached / Y total sources"
-- Cache check runs in priority order: RD > PM > AD > TB, short-circuits when all hashes found
-
----
-
-## v3.2.0 (February 2026)
-
-### TorBox Debrid Support
-- Added TorBox as a new debrid provider (https://torbox.app)
-- API key authorization with account plan verification
-- Cache checking for instant playback of cached torrents
-- Full magnet-to-stream resolving pipeline
-- TorBox settings category in addon settings
-- Added to debrid priority selector (Real-Debrid > Premiumize > AllDebrid > TorBox)
-
-### Debrid Provider Fixes
-- Removed broken `script.module.requests` dependency from addon.xml
-- All debrid providers now use native Python urllib for Kodi 21+ compatibility
-- Real-Debrid: OAuth device flow verified and working
-- Premiumize: Device code auth and direct download cache verified
-- AllDebrid: PIN-based auth and magnet upload flow verified
-- Resolver now correctly cycles through all 4 debrid services based on priority
-
-### Technical
-- Native urllib throughout (no external HTTP libraries required)
-- Proper SSL context handling for all API calls
-- Multipart form data support for TorBox torrent creation
-
----
-
-## v3.1.0 (January 2026)
-
-### Trakt Integration
-- Trakt scrobbling (auto-mark watched at 80%+ progress)
-- Trakt watchlists with pagination
-- Custom lists and liked lists support
-- Collection browsing (movies and TV shows)
-- Watched history from Trakt
-- Recommendations (movies and TV shows)
-- Trending and popular lists
-
-### Kids Zone
-- Animation movies category
-- Family movies category
-- Kids TV shows category
-- Disney & Pixar style movies
-- G & PG rated movies
-- Infinite scrolling pagination
-
----
-
-## v3.0.0 (January 2026)
-
-### New Torrent Scrapers
-- Torrentio: Public Stremio addon integration for movies and TV shows
-- MediaFusion: ElfHosted MediaFusion addon support (requires configuration)
-- Jackettio: Jackett-based Stremio addon support (requires configuration)
-
-### Scraper Modes
-- Orion Scrapers: Use Orionoid, Torrentio, MediaFusion, Jackettio
-- Coco Scrapers: Use traditional scrapers (1337x, TorrentDownloads, RARBG)
-- Switch between modes in Settings > Scrapers
-
-### Orionoid Improvements
-- User authorization - enter your own API key from panel.orionoid.com
-- Improved search with IMDB ID support
-- Better error handling
-
-### MediaFusion & Jackettio Support
-- Configure with manifest URLs from respective websites
-- MediaFusion: https://mediafusion.elfhosted.com/configure
-- Jackettio: https://jackettio.elfhosted.com/configure
-
-### ResolveURL Integration
-- Added as optional dependency
-- Falls back to ResolveURL when debrid fails
-- Enable/disable in Settings > Playback
-
-### Watch History & Continue Watching
-- Track watched movies and episodes
-- Resume from where you left off
-- Continue Watching section on main menu
-- Configurable history limit (default: 100 items)
-- Clear history option in settings
-
-### Favorites System
-- Add/remove movies and TV shows to favorites
-- Quick access from main menu
-- Context menu integration for easy management
-
-### Auto-Play Next Episode
-- Automatically queue next episode
-- Enable/disable in Settings > Playback
-
-### Quality Preferences
-- Set preferred quality (4K, 1080p, 720p, SD)
-- Auto-play best quality option
-- Quality filtering in source results
-
-### Category Icons
-- New themed icons for all categories
-- Dark theme with accent colors
-
----
-Provider: zeus768
+v3.2.3 (February 2026)
+================================================================================
+  * Multi-scraper engine (Torrentio, MediaFusion, Jackettio, Orionoid)
+  * Real-Debrid, Premiumize, AllDebrid, TorBox support
+  * Trakt integration with scrobbling, watchlists, liked lists
+  * ResolveURL support
+  * Watch history, favorites, Kids Zone
+  * Auto-play next episode
+  * Buy Me a Beer donation support

@@ -1,0 +1,52 @@
+================================================================================
+  Trakt Player Changelog
+  by zeus768
+================================================================================
+
+v2.1.1 (April 2026)
+================================================================================
+  * Compact Buy Me a Beer - single QR + Ko-fi dialog
+  * Fixed Trakt API Cloudflare 403 - custom User-Agent header
+  * Fixed zip versioning mismatch
+  * All menus/submenus use local addon fanart and icon only
+
+v2.1.0 (February 2026)
+================================================================================
+  * Fixed Kodi Service IndexError (sys.argv[1] crash in background)
+  * Bumped version, cleaned all Umbrella references
+
+v2.0.0 (February 2026)
+================================================================================
+
+  COMPLETE REWRITE - 100% native urllib, zero requests dependency
+
+  CORE
+  ----
+  * Click-and-Play (auto <=1080p, no source dialog)
+  * Trakt Scrobbling (background service)
+  * Up Next (auto-play next episode)
+  * 5 torrent scrapers (1337x, YTS, EZTV, TorrentGalaxy, TPB)
+
+  BROWSE & DISCOVERY
+  ------------------
+  * Continue Watching, Recommendations, Calendar, History
+  * Popular Lists, Anticipated, Related Content
+  * AI Discovery (12 mood presets + custom vibe)
+  * Discovery Feed (Trailer Scroll) - 6 modes
+
+  SOCIAL & LISTS
+  --------------
+  * Rate 1-10, Add to Watchlist, Add to Custom List
+  * Custom Lists (create/browse/delete)
+  * Friends Activity Feed (live + history)
+
+  ACCOUNT & STATUS
+  ----------------
+  * User Stats Dashboard
+  * Debrid Account Status
+  * Buy Me a Beer - Ko-fi donation
+
+  DEBRID SUPPORT
+  --------------
+  * Real-Debrid, Premiumize, AllDebrid, TorBox
+  * Cached Torrent Indicator
