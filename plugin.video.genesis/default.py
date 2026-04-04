@@ -391,3 +391,30 @@ elif action == 'clearSources':
 elif action == 'loguploader':
     from resources.lib.libraries import loguploader
     loguploader.Luguploader()
+
+elif action == 'buy_beer':
+    import xbmcgui, xbmcvfs
+    try:
+        import ssl
+        from urllib.request import urlopen as _urlopen, Request as _Request
+        from urllib.parse import quote_plus as _qp
+    except:
+        from urllib2 import urlopen as _urlopen, Request as _Request
+        from urllib import quote_plus as _qp
+    kofi_url = 'https://ko-fi.com/zeus768'
+    qr_file = os.path.join(xbmc.translatePath('special://temp/'), 'kofi_qr.png')
+    try:
+        ctx = ssl._create_unverified_context()
+        req = _Request('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s&bgcolor=0-0-0&color=255-255-255' % _qp(kofi_url), headers={'User-Agent': 'Mozilla/5.0'})
+        resp = _urlopen(req, context=ctx, timeout=10)
+        with open(qr_file, 'wb') as f:
+            f.write(resp.read())
+        xbmc.executebuiltin('ShowPicture(%s)' % qr_file)
+        xbmc.sleep(300)
+    except:
+        pass
+    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+    try:
+        xbmc.executebuiltin('Action(Back)')
+    except:
+        pass

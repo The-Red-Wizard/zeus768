@@ -196,7 +196,7 @@ def run():
         xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'history'}), li, True)
         
         # Donate/Support
-        li = create_list_item('[COLOR orange][B]Buy Me a Beer[/B][/COLOR]', icon=ICON, fanart=FANART)
+        li = create_list_item('[COLOR orange]Buy Me a Beer[/COLOR]', icon=ICON, fanart=FANART)
         xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'donate'}), li, False)
         
         xbmcplugin.endOfDirectory(HANDLE)
@@ -508,48 +508,25 @@ def run():
         import ssl
         import urllib.request
         kofi_url = 'https://ko-fi.com/zeus768'
-        qr_api = f'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={urllib.parse.quote(kofi_url)}&bgcolor=0-0-0&color=255-255-255'
         temp_path = xbmcvfs.translatePath('special://temp/')
         qr_file = os.path.join(temp_path, 'kofi_qr.png')
-        
         try:
             ctx = ssl._create_unverified_context()
-            req = urllib.request.Request(qr_api, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
+            req = urllib.request.Request(
+                f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(kofi_url)}&bgcolor=0-0-0&color=255-255-255',
+                headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
                 with open(qr_file, 'wb') as f:
                     f.write(resp.read())
-        except Exception:
-            qr_file = None
-        
-        choice = xbmcgui.Dialog().select(
-            'Buy Me a Beer - Support zeus768',
-            ['Show QR Code (scan to donate)', 'Show Ko-fi Link']
-        )
-        if choice == 0:
-            if qr_file and os.path.exists(qr_file):
-                xbmc.executebuiltin(f'ShowPicture({qr_file})')
-                xbmc.sleep(500)
-                xbmcgui.Dialog().ok(
-                    'Buy Me a Beer - zeus768',
-                    '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-                    'Scan the QR code behind this dialog, or visit:\n'
-                    '[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
-                    '[COLOR orange]Every beer keeps the addons alive![/COLOR]'
-                )
-                xbmc.executebuiltin('Action(Back)')
-            else:
-                xbmcgui.Dialog().ok(
-                    'Buy Me a Beer',
-                    '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-                    'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]'
-                )
-        elif choice == 1:
-            xbmcgui.Dialog().ok(
-                'Buy Me a Beer',
-                '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-                'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
-                'Every beer keeps the addons alive!'
-            )
+            xbmc.executebuiltin(f'ShowPicture({qr_file})')
+            xbmc.sleep(300)
+        except:
+            pass
+        xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+        try:
+            xbmc.executebuiltin('Action(Back)')
+        except:
+            pass
 
 if __name__ == '__main__':
     import xbmc

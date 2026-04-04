@@ -69,7 +69,7 @@ def main_menu():
         ("[COLOR gold]Favorites[/COLOR]", {'action': 'favorites_menu'}, True, get_icon('favorites'), "Your favorite movies and shows"),
         ("[COLOR yellow]Trakt[/COLOR]", {'action': 'trakt_menu'}, True, get_icon('trakt'), "Trakt lists and watchlist"),
         ("[COLOR cyan]Settings[/COLOR]", {'action': 'open_settings'}, False, get_icon('settings'), "Configure addon settings"),
-        ("[COLOR orange]Buy Me a Beer[/COLOR]", {'action': 'buy_beer'}, False, get_icon('settings'), "Support the developer on Ko-fi"),
+        ("[COLOR orange]Buy Me a Beer[/COLOR]", {'action': 'buy_beer'}, False, get_icon('settings'), "Support zeus768 on Ko-fi"),
     ]
     
     for name, query, is_folder, icon, plot in items:
@@ -1729,20 +1729,27 @@ elif action == 'qr_trakt':
 elif action == 'noop':
     pass
 elif action == 'buy_beer':
-    choice = xbmcgui.Dialog().select(
-        'Buy Me a Beer - Support zeus768',
-        ['Show QR Code (scan to donate)', 'Show Ko-fi Link']
-    )
-    if choice == 0:
-        from resources.lib import qrcode_helper
-        qrcode_helper.show_qr('Ko-fi', 'https://ko-fi.com/zeus768')
-    elif choice == 1:
-        xbmcgui.Dialog().ok(
-            'Buy Me a Beer',
-            '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-            'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
-            'Every beer keeps the addons alive!'
-        )
+    import ssl
+    import urllib.request
+    kofi_url = 'https://ko-fi.com/zeus768'
+    qr_file = os.path.join(xbmcvfs.translatePath('special://temp/'), 'kofi_qr.png')
+    try:
+        ctx = ssl._create_unverified_context()
+        req = urllib.request.Request(
+            f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(kofi_url)}&bgcolor=0-0-0&color=255-255-255',
+            headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+            with open(qr_file, 'wb') as f:
+                f.write(resp.read())
+        xbmc.executebuiltin(f'ShowPicture({qr_file})')
+        xbmc.sleep(300)
+    except:
+        pass
+    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+    try:
+        xbmc.executebuiltin('Action(Back)')
+    except:
+        pass
 else:
     log(f"Unknown action: {action}", xbmc.LOGWARNING)
     main_menu()

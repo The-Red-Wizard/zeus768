@@ -70,41 +70,27 @@ def build_url(query):
     return sys.argv[0] + '?' + urlencode(query)
 
 def show_kofi_qr():
-    """Show Ko-fi QR code using Kodi's built-in picture viewer"""
+    """Show compact Ko-fi QR code and link"""
     import ssl
     kofi_url = 'https://ko-fi.com/zeus768'
-    qr_api = f'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={quote_plus(kofi_url)}&bgcolor=0-0-0&color=255-255-255'
-    temp_path = xbmcvfs.translatePath('special://temp/')
-    qr_file = os.path.join(temp_path, 'kofi_qr.png')
-    
+    qr_file = os.path.join(xbmcvfs.translatePath('special://temp/'), 'kofi_qr.png')
     try:
         ctx = ssl._create_unverified_context()
-        req = Request(qr_api, headers={'User-Agent': 'Mozilla/5.0'})
-        with urlopen(req, context=ctx, timeout=15) as resp:
+        req = Request(
+            f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={quote_plus(kofi_url)}&bgcolor=0-0-0&color=255-255-255',
+            headers={'User-Agent': 'Mozilla/5.0'})
+        with urlopen(req, context=ctx, timeout=10) as resp:
             with open(qr_file, 'wb') as f:
                 f.write(resp.read())
-    except Exception:
-        qr_file = None
-    
-    if qr_file and os.path.exists(qr_file):
-        # Show QR image fullscreen using Kodi's built-in picture viewer
         xbmc.executebuiltin(f'ShowPicture({qr_file})')
-        xbmc.sleep(500)
-        xbmcgui.Dialog().ok(
-            'Buy Me a Beer - zeus768',
-            '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-            'Scan the QR code behind this dialog, or visit:\n'
-            '[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
-            '[COLOR orange]Every beer keeps the addons alive![/COLOR]'
-        )
+        xbmc.sleep(300)
+    except:
+        pass
+    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+    try:
         xbmc.executebuiltin('Action(Back)')
-    else:
-        xbmcgui.Dialog().ok(
-            'Buy Me a Beer',
-            '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-            'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
-            'Every beer keeps the addons alive!'
-        )
+    except:
+        pass
 
 def get_params():
     return dict(parse_qsl(sys.argv[2][1:]))
@@ -867,49 +853,63 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
     scraper_count = 0
     free_count = 0
     
-    for i, scraper_cls in enumerate(scrapers):
-        if progress.iscanceled():
-            break
-        
+    # ── CONCURRENT SCRAPING ("superfast") ─────────────────────────────
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    def _run_scraper(scraper_cls):
+        """Execute a single scraper. Returns (name, results, was_active)."""
         try:
             scraper = scraper_cls()
             scraper_name = scraper.get_name()
-            
             if not scraper.is_enabled():
-                continue
-            
-            # Skip torrent scrapers if no Debrid service is enabled
+                return scraper_name, [], False
             is_free_scraper = isinstance(scraper, FreeStreamScraper)
             if not debrid_enabled and not is_free_scraper:
-                continue
-            
-            scraper_count += 1
-            percent = int((i / total) * 100)
-            progress.update(percent, f'Searching: {scraper_name}...\nScrapers: {scraper_count} | Sources: {sources_found} | Free: {free_count}')
-            
-            try:
-                if isinstance(scraper, FreeStreamScraper):
-                    results = scraper.search(
-                        query, media_type,
-                        tmdb_id=tmdb_id,
-                        title=title, year=year,
-                        season=season, episode=episode
-                    )
-                else:
-                    results = scraper.search(query, media_type)
-                
-                for result in results:
-                    result['scraper'] = scraper_name
-                    all_sources.append(result)
-                    sources_found += 1
-                    if result.get('direct'):
-                        free_count += 1
-                
-            except Exception as e:
-                log_utils.log(f'{scraper_name}: Error - {e}', xbmc.LOGERROR)
-                
+                return scraper_name, [], False
+            if isinstance(scraper, FreeStreamScraper):
+                results = scraper.search(
+                    query, media_type,
+                    tmdb_id=tmdb_id,
+                    title=title, year=year,
+                    season=season, episode=episode
+                )
+            else:
+                results = scraper.search(query, media_type)
+            for r in results:
+                r['scraper'] = scraper_name
+            return scraper_name, results, True
         except Exception as e:
-            log_utils.log(f'Error loading scraper: {e}', xbmc.LOGERROR)
+            log_utils.log(f'Scraper {scraper_cls}: {e}', xbmc.LOGDEBUG)
+            return str(scraper_cls), [], False
+    
+    SCRAPER_TIMEOUT = 30  # seconds - abandon any scraper slower than this
+    futures = {}
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        for scraper_cls in scrapers:
+            futures[executor.submit(_run_scraper, scraper_cls)] = scraper_cls
+        
+        completed = 0
+        try:
+            for future in as_completed(futures, timeout=SCRAPER_TIMEOUT):
+                if progress.iscanceled():
+                    break
+                try:
+                    name, results, was_active = future.result(timeout=2)
+                except Exception:
+                    completed += 1
+                    continue
+                if was_active:
+                    scraper_count += 1
+                for r in results:
+                    all_sources.append(r)
+                    sources_found += 1
+                    if r.get('direct'):
+                        free_count += 1
+                completed += 1
+                percent = int((completed / total) * 100)
+                progress.update(percent, f'Scraped: {name}\nScrapers: {scraper_count}/{total} | Sources: {sources_found} | Free: {free_count}')
+        except Exception:
+            log_utils.log(f'Scraper timeout hit after {SCRAPER_TIMEOUT}s - {completed}/{total} completed', xbmc.LOGINFO)
     
     progress.update(100, f'Found {sources_found} sources ({free_count} free) from {scraper_count} scrapers')
     time.sleep(0.5)
@@ -2902,6 +2902,7 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
     """Get a stream URL for 24/7 channel playback. Returns URL or None."""
     from scrapers import get_all_scrapers
     from scrapers.freestream_scraper import FreeStreamScraper
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     
     debrid_enabled = (
         ADDON.getSetting('realdebrid_enabled') == 'true' or
@@ -2913,29 +2914,51 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
     quality_cap = {'4K': 4, '2160p': 4, '1080p': 3, 'HD': 3, '720p': 2, '480p': 1, 'SD': 0}
     max_val = quality_cap.get(max_quality, 3)
     
-    all_sources = []
-    scrapers = get_all_scrapers()
+    # Build search query
+    if media_type == 'movie':
+        query = f'{title} {year}' if year else title
+    else:
+        query = f'{title} S{int(season):02d}E{int(episode):02d}' if season and episode else title
     
-    for scraper in scrapers:
+    all_sources = []
+    scraper_classes = get_all_scrapers()
+    
+    def _run_scraper(scraper_cls):
         try:
+            scraper = scraper_cls()
             if not scraper.is_enabled():
-                continue
-            is_free = isinstance(scraper, FreeStreamScraper)
+                return []
+            is_free = issubclass(scraper_cls, FreeStreamScraper)
             if not debrid_enabled and not is_free:
-                continue
-            
-            if media_type == 'movie':
-                results = scraper.get_movie_sources(title, year)
+                return []
+            if is_free:
+                results = scraper.search(
+                    query, media_type,
+                    tmdb_id=tmdb_id, title=title, year=year,
+                    season=season, episode=episode
+                )
             else:
-                results = scraper.get_episode_sources(title, year or '', season, episode)
-            
-            if results:
-                for r in results:
-                    q_val = quality_cap.get(r.get('quality', 'SD'), 0)
-                    if q_val <= max_val:
-                        all_sources.append(r)
+                results = scraper.search(query, media_type)
+            for r in results:
+                r['scraper'] = scraper.get_name()
+            return results
         except Exception:
-            continue
+            return []
+    
+    with ThreadPoolExecutor(max_workers=15) as executor:
+        futures = [executor.submit(_run_scraper, cls) for cls in scraper_classes]
+        try:
+            for future in as_completed(futures, timeout=20):
+                try:
+                    results = future.result(timeout=2)
+                    for r in results:
+                        q_val = quality_cap.get(r.get('quality', 'SD'), 0)
+                        if q_val <= max_val:
+                            all_sources.append(r)
+                except Exception:
+                    continue
+        except Exception:
+            pass
     
     if not all_sources:
         return None
@@ -3134,19 +3157,7 @@ def router(params):
     elif mode == 'channel_ai_vibe':
         channel_ai_vibe()
     elif mode == 'buy_beer':
-        choice = xbmcgui.Dialog().select(
-            'Buy Me a Beer - Support zeus768',
-            ['Show QR Code (scan to donate)', 'Show Ko-fi Link']
-        )
-        if choice == 0:
-            show_kofi_qr()
-        elif choice == 1:
-            xbmcgui.Dialog().ok(
-                'Buy Me a Beer',
-                '[COLOR orange]Thanks for the support![/COLOR]\n\n'
-                'Visit: [COLOR cyan]https://ko-fi.com/zeus768[/COLOR]\n\n'
-                'Every beer keeps the addons alive!'
-            )
+        show_kofi_qr()
     else:
         log_utils.log(f'Unknown mode: {mode}', xbmc.LOGWARNING)
         main_menu()

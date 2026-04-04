@@ -1190,7 +1190,8 @@ def main_menu():
         ("CLEAR CACHE (MANUAL)", "clean", "clean.png"),
         ("CLEAR PACKAGES", "packages", "packages.png"),
         ("--- Help & Info ---", "spacer", ""),
-        ("HELP / GUIDE", "help", "help.png")
+        ("HELP / GUIDE", "help", "help.png"),
+        ("Buy Me a Beer", "buy_beer", "")
     ]
     
     for label, act, icon in items:
@@ -1254,5 +1255,27 @@ if __name__ == '__main__':
         clear_packages()
     elif action == 'help':
         help_menu()
+    elif action == 'buy_beer':
+        import ssl
+        import urllib.request
+        kofi_url = 'https://ko-fi.com/zeus768'
+        qr_file = os.path.join(KODI_TEMP, 'kofi_qr.png')
+        try:
+            ctx = ssl._create_unverified_context()
+            req = urllib.request.Request(
+                f'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={urllib.parse.quote(kofi_url)}&bgcolor=0-0-0&color=255-255-255',
+                headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+                with open(qr_file, 'wb') as f:
+                    f.write(resp.read())
+            xbmc.executebuiltin(f'ShowPicture({qr_file})')
+            xbmc.sleep(300)
+        except:
+            pass
+        xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+        try:
+            xbmc.executebuiltin('Action(Back)')
+        except:
+            pass
     elif action == 'main':
         main_menu()

@@ -94,10 +94,11 @@ class PreScrapeManager:
         thread.start()
     
     def _do_scrape(self, cache_key, title, year, media_type, season, episode, tmdb_id):
-        """Background scrape worker"""
+        """Background scrape worker - runs top scrapers concurrently"""
         try:
             from scrapers import get_all_scrapers
             from scrapers.freestream_scraper import FreeStreamScraper
+            from concurrent.futures import ThreadPoolExecutor, as_completed
             
             debrid_enabled = (
                 ADDON.getSetting('realdebrid_enabled') == 'true' or
@@ -106,35 +107,53 @@ class PreScrapeManager:
                 ADDON.getSetting('torbox_enabled') == 'true'
             )
             
-            all_sources = []
-            scrapers = get_all_scrapers()
+            if media_type == 'movie':
+                query = f'{title} {year}' if year else title
+            else:
+                query = f'{title} S{int(season):02d}E{int(episode):02d}' if season and episode else title
             
+            scraper_classes = get_all_scrapers()
             # Only use top 4 fastest scrapers for pre-scrape (the "4-Link Rule")
-            scraper_count = 0
             max_scrapers = 4
-            
-            for scraper in scrapers:
-                if scraper_count >= max_scrapers:
+            eligible = []
+            for cls in scraper_classes:
+                if len(eligible) >= max_scrapers:
                     break
-                
                 try:
-                    if not scraper.is_enabled():
-                        continue
-                    
-                    is_free = isinstance(scraper, FreeStreamScraper)
-                    if not debrid_enabled and not is_free:
-                        continue
-                    
-                    if media_type == 'movie':
-                        results = scraper.get_movie_sources(title, year)
-                    else:
-                        results = scraper.get_episode_sources(title, year, season, episode)
-                    
-                    if results:
-                        all_sources.extend(results)
-                        scraper_count += 1
+                    s = cls()
+                    if s.is_enabled():
+                        is_free = issubclass(cls, FreeStreamScraper)
+                        if debrid_enabled or is_free:
+                            eligible.append((cls, is_free))
                 except Exception:
                     continue
+            
+            all_sources = []
+            
+            def _run(item):
+                cls, is_free = item
+                try:
+                    scraper = cls()
+                    if is_free:
+                        return scraper.search(
+                            query, media_type,
+                            tmdb_id=tmdb_id, title=title, year=year,
+                            season=season, episode=episode
+                        )
+                    else:
+                        return scraper.search(query, media_type)
+                except Exception:
+                    return []
+            
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [executor.submit(_run, item) for item in eligible]
+                for future in as_completed(futures, timeout=15):
+                    try:
+                        results = future.result(timeout=2)
+                        if results:
+                            all_sources.extend(results)
+                    except Exception:
+                        continue
             
             if all_sources:
                 self.db.cache_hover(cache_key, all_sources)

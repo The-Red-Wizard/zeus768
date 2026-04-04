@@ -100,6 +100,8 @@ class navigator:
 
         self.addDirectoryItem(30009, 'searchNavigator', 'search.jpg', 'DefaultFolder.png')
 
+        self.addDirectoryItem('Buy Me a Beer', 'buy_beer', 'tools.jpg', 'DefaultAddonProgram.png', isFolder=False)
+
         self.endDirectory()
 
         if ntptime.checkDate():

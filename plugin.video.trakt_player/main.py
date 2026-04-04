@@ -123,35 +123,25 @@ def my_trakt():
 # ── Donation ──────────────────────────────────────────────────────────────
 
 def show_donation():
-    """Show donation dialog with QR code."""
-    # Try to download QR code
-    qr_shown = False
+    """Show compact donation dialog with QR code."""
+    qr_path = os.path.join(tempfile.gettempdir(), 'trakt_player_qr.png')
     try:
-        qr_api = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=%s' % quote_plus(KOFI_URL)
-        qr_path = os.path.join(tempfile.gettempdir(), 'trakt_player_qr.png')
         ctx = ssl._create_unverified_context()
-        req = urllib.request.Request(qr_api, headers={'User-Agent': 'TraktPlayer/2.0'})
+        req = urllib.request.Request(
+            'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s&bgcolor=0-0-0&color=255-255-255' % quote_plus(KOFI_URL),
+            headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
             with open(qr_path, 'wb') as f:
                 f.write(resp.read())
-        if os.path.exists(qr_path) and os.path.getsize(qr_path) > 100:
-            xbmcgui.Dialog().ok(
-                'Buy Me a Beer',
-                'Thanks for using Trakt Player!\n\n'
-                'Scan the QR code or visit:\n'
-                '[COLOR skyblue]%s[/COLOR]\n\n'
-                'Your support keeps this addon alive!' % KOFI_URL)
-            xbmc.executebuiltin('ShowPicture(%s)' % qr_path)
-            qr_shown = True
-    except Exception as e:
-        xbmc.log('QR code download failed: %s' % str(e), xbmc.LOGWARNING)
-
-    if not qr_shown:
-        xbmcgui.Dialog().ok(
-            'Buy Me a Beer',
-            'Thanks for using Trakt Player!\n\n'
-            'Visit: [COLOR skyblue]%s[/COLOR]\n\n'
-            'Your support keeps this addon alive!' % KOFI_URL)
+        xbmc.executebuiltin('ShowPicture(%s)' % qr_path)
+        xbmc.sleep(300)
+    except:
+        pass
+    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]%s[/COLOR]' % KOFI_URL)
+    try:
+        xbmc.executebuiltin('Action(Back)')
+    except:
+        pass
 
 
 # ── Account Status ────────────────────────────────────────────────────────

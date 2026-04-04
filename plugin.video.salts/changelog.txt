@@ -4,6 +4,27 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.5.0 (2026-04-04)
+================================================================================
+
+  PERFORMANCE
+  -----------
+  * Superfast concurrent scraping - all 35+ scrapers now fire simultaneously
+    using ThreadPoolExecutor (20 workers) instead of running one by one
+  * 30-second global timeout - slow scrapers get abandoned, fast results arrive
+    instantly. Typical scrape time reduced from 60-90s to 5-15s
+  * Pre-scrape engine also concurrent (4 workers, 15s timeout)
+  * 24/7 Channels also use concurrent scraping (15 workers, 20s timeout)
+
+  BUG FIXES
+  ---------
+  * Fixed 24/7 Channels completely broken - scrapers were never instantiated
+    (called instance methods on classes instead of objects)
+  * Fixed 24/7 Channels calling non-existent get_movie_sources()/get_episode_sources()
+    methods. Now correctly uses search() like the main scraper engine
+  * Fixed pre-scrape engine same instantiation and method bugs
+  * Compact donation dialog - single QR + link dialog, no multi-step select menu
+
 v2.4.2 (2026-04-03)
 ================================================================================
 
