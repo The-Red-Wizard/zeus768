@@ -3,6 +3,12 @@
   by zeus768
 ================================================================================
 
+v2.1.2 (April 2026)
+================================================================================
+  * Fixed Real-Debrid pair code not showing (OAuth URL was wrong - used /rest/1.0/oauth instead of /oauth)
+  * Fixed Premiumize pair code not showing (OAuth URL was wrong - used /api/token instead of /token)
+  * Added OAUTH_URL constant for RD and PM to separate API vs auth endpoints
+
 v2.1.1 (April 2026)
 ================================================================================
   * Compact Buy Me a Beer - single QR + Ko-fi dialog

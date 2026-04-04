@@ -4,6 +4,16 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 
+v2.5.2 (2026-04-04)
+================================================================================
+  * New debrid.py from Mister X - improved Real-Debrid, Premiumize, AllDebrid,
+    TorBox integration with better error handling and batch cache checking
+  * Thanks to Mister X for the debrid contribution
+
+v2.5.1 (2026-04-04)
+================================================================================
+  * 24/7 Channels: stops when user quits stream (user-stop detection)
+
 v2.5.0 (2026-04-04)
 ================================================================================
 

@@ -576,11 +576,19 @@ class AllDebrid:
                 )
                 
                 if isinstance(links_result, dict) and links_result.get('status') == 'success':
-                    links = links_result.get('data', {}).get('magnets', {}).get('links', [])
+                    links = links_result.get('data', {}).get('magnets', {}).get('files', [])
                     if links:
+                        sources = []
+                        for link in links:
+                            for e in link.get('e') or [link]:
+                                name = (e.get('n') or '').lower()
+                                if any(name.endswith(x) for x in xbmc.getSupportedMedia('video').lower().split('|') if x):
+                                    sources.append((e.get('s'), e.get('l')))
+                        url = max(sources)[1]
+                        
                         _, unlock_result = _get(
                             f'{self.BASE_URL}/link/unlock',
-                            params={'agent': self.AGENT, 'apikey': self.token, 'link': links[0].get('link')}
+                            params={'agent': self.AGENT, 'apikey': self.token, 'link': url}
                         )
                         if isinstance(unlock_result, dict) and unlock_result.get('status') == 'success':
                             return unlock_result.get('data', {}).get('link')
@@ -588,6 +596,7 @@ class AllDebrid:
             return None
             
         except Exception as e:
+            xbmc.log('Exception test.', xbmc.LOGINFO)
             log_utils.log_error(f'AllDebrid resolve error: {e}')
             return None
     

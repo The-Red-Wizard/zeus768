@@ -36,6 +36,7 @@ def _http(url, data=None, headers=None, method='GET'):
 
 class RealDebrid:
     BASE_URL = 'https://api.real-debrid.com/rest/1.0'
+    OAUTH_URL = 'https://api.real-debrid.com/oauth/v2'
     CLIENT_ID = 'X245A4XAIBGVM'
 
     def __init__(self):
@@ -45,7 +46,7 @@ class RealDebrid:
         return bool(self.token) and ADDON.getSetting('rd_auth_done') == 'true'
 
     def authorize(self):
-        _, data = _http(f'{self.BASE_URL}/oauth/v2/device/code?client_id={self.CLIENT_ID}&new_credentials=yes')
+        _, data = _http(f'{self.OAUTH_URL}/device/code?client_id={self.CLIENT_ID}&new_credentials=yes')
         if not data.get('device_code'):
             return False
         device_code = data['device_code']
@@ -63,9 +64,9 @@ class RealDebrid:
                 return False
             dlg.update(int(((time.time() - start) / expires) * 100))
             time.sleep(interval)
-            s, creds = _http(f'{self.BASE_URL}/oauth/v2/device/credentials?client_id={self.CLIENT_ID}&code={device_code}')
+            s, creds = _http(f'{self.OAUTH_URL}/device/credentials?client_id={self.CLIENT_ID}&code={device_code}')
             if s == 200 and creds.get('client_id'):
-                _, tokens = _http(f'{self.BASE_URL}/oauth/v2/token', data={
+                _, tokens = _http(f'{self.OAUTH_URL}/token', data={
                     'client_id': creds['client_id'], 'client_secret': creds['client_secret'],
                     'code': device_code, 'grant_type': 'http://oauth.net/grant_type/device/1.0'
                 }, method='POST')
@@ -247,6 +248,7 @@ class AllDebrid:
 
 class Premiumize:
     BASE_URL = 'https://www.premiumize.me/api'
+    OAUTH_URL = 'https://www.premiumize.me/token'
     CLIENT_ID = '855400527'
 
     def __init__(self):
@@ -256,12 +258,16 @@ class Premiumize:
         return bool(self.token) and ADDON.getSetting('pm_auth_done') == 'true'
 
     def authorize(self):
-        _, data = _http(f'{self.BASE_URL}/token', data={'grant_type': 'device_code', 'client_id': self.CLIENT_ID}, method='POST')
+        _, data = _http(self.OAUTH_URL, data={'grant_type': 'device_code', 'client_id': self.CLIENT_ID}, method='POST')
         device_code = data.get('device_code')
         user_code = data.get('user_code')
         url = data.get('verification_uri', 'https://www.premiumize.me/device')
         expires = data.get('expires_in', 600)
         interval = data.get('interval', 5)
+
+        if not device_code or not user_code:
+            xbmcgui.Dialog().notification('Premiumize', 'Failed to get device code', xbmcgui.NOTIFICATION_ERROR)
+            return False
 
         dlg = xbmcgui.DialogProgress()
         dlg.create('Premiumize', f'Go to: [B]{url}[/B]\nEnter: [B][COLOR yellow]{user_code}[/COLOR][/B]')
@@ -272,7 +278,7 @@ class Premiumize:
                 return False
             dlg.update(int(((time.time() - start) / expires) * 100))
             time.sleep(interval)
-            _, ck = _http(f'{self.BASE_URL}/token', data={'grant_type': 'device_code', 'client_id': self.CLIENT_ID, 'code': device_code}, method='POST')
+            _, ck = _http(self.OAUTH_URL, data={'grant_type': 'device_code', 'client_id': self.CLIENT_ID, 'code': device_code}, method='POST')
             if ck.get('access_token'):
                 ADDON.setSetting('pm_access_token', ck['access_token'])
                 ADDON.setSetting('pm_auth_done', 'true')

@@ -40,7 +40,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.5.1" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.5.2" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -129,7 +129,7 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.1.1" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.1.2" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.1"/>
     </requires>
