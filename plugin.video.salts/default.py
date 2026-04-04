@@ -2458,25 +2458,8 @@ def channel_play_actor(person_id, name=''):
             log_utils.log(f'24/7 Channel: No source for {title}, skipping', xbmc.LOGINFO)
             continue
         
-        li = xbmcgui.ListItem(f'{title} ({year})', path=stream_url)
-        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-        
-        player.play(stream_url, li)
-        
-        timeout = 30
-        while not player.isPlaying() and timeout > 0:
-            xbmc.sleep(500)
-            timeout -= 1
-        
-        if not player.isPlaying():
-            continue
-        
-        while player.isPlaying():
-            xbmc.sleep(2000)
-        
-        xbmc.sleep(1000)
-        
-        if xbmc.Monitor().abortRequested():
+        result = _channel_play_item(player, stream_url, f'{title} ({year})')
+        if result == 'stop' or result == 'abort':
             break
     
     xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Marathon complete!', ADDON_ICON)
@@ -2637,25 +2620,8 @@ def channel_play_show(tmdb_id, name=''):
             log_utils.log(f'24/7 Channel: No source for {name} S{s_num:02d}E{ep_num:02d}, skipping', xbmc.LOGINFO)
             continue
         
-        li = xbmcgui.ListItem(f'{name} - S{s_num:02d}E{ep_num:02d}', path=stream_url)
-        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-        
-        player.play(stream_url, li)
-        
-        timeout = 30
-        while not player.isPlaying() and timeout > 0:
-            xbmc.sleep(500)
-            timeout -= 1
-        
-        if not player.isPlaying():
-            continue
-        
-        while player.isPlaying():
-            xbmc.sleep(2000)
-        
-        xbmc.sleep(1000)
-        
-        if xbmc.Monitor().abortRequested():
+        result = _channel_play_item(player, stream_url, f'{name} - S{s_num:02d}E{ep_num:02d}')
+        if result == 'stop' or result == 'abort':
             break
     
     xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Channel complete!', ADDON_ICON)
@@ -2747,25 +2713,9 @@ def channel_play_genre(genre_id, name=''):
             continue
         
         poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
-        li = xbmcgui.ListItem(f'{title} ({year})', path=stream_url)
-        li.setArt({'icon': poster_url, 'thumb': poster_url, 'fanart': ADDON_FANART})
-        
-        player.play(stream_url, li)
-        
-        timeout = 30
-        while not player.isPlaying() and timeout > 0:
-            xbmc.sleep(500)
-            timeout -= 1
-        
-        if not player.isPlaying():
-            continue
-        
-        while player.isPlaying():
-            xbmc.sleep(2000)
-        
-        xbmc.sleep(1000)
-        
-        if xbmc.Monitor().abortRequested():
+        result = _channel_play_item(player, stream_url, f'{title} ({year})',
+                                     art={'icon': poster_url, 'thumb': poster_url, 'fanart': ADDON_FANART})
+        if result == 'stop' or result == 'abort':
             break
     
     xbmcgui.Dialog().notification(ADDON_NAME, f'24/7 {name}: Marathon complete!', ADDON_ICON)
@@ -2874,28 +2824,70 @@ def channel_ai_vibe():
             continue
         
         poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
-        li = xbmcgui.ListItem(f'{title} ({year})', path=stream_url)
-        li.setArt({'icon': poster_url, 'thumb': poster_url, 'fanart': ADDON_FANART})
-        
-        player.play(stream_url, li)
-        
-        timeout = 30
-        while not player.isPlaying() and timeout > 0:
-            xbmc.sleep(500)
-            timeout -= 1
-        
-        if not player.isPlaying():
-            continue
-        
-        while player.isPlaying():
-            xbmc.sleep(2000)
-        
-        xbmc.sleep(1000)
-        
-        if xbmc.Monitor().abortRequested():
+        result = _channel_play_item(player, stream_url, f'{title} ({year})',
+                                     art={'icon': poster_url, 'thumb': poster_url, 'fanart': ADDON_FANART})
+        if result == 'stop' or result == 'abort':
             break
     
     xbmcgui.Dialog().notification(ADDON_NAME, 'AI Vibe: Marathon complete!', ADDON_ICON)
+
+
+def _channel_wait_for_playback(player):
+    """Wait for playback to end. Returns True if user stopped manually, False if ended naturally."""
+    total_time = 0
+    try:
+        total_time = player.getTotalTime()
+    except Exception:
+        pass
+    
+    while player.isPlaying():
+        xbmc.sleep(2000)
+        if xbmc.Monitor().abortRequested():
+            return True
+    
+    # Check if it ended naturally (reached near the end) or user stopped
+    if total_time > 0:
+        try:
+            last_pos = player.getTime()
+        except Exception:
+            last_pos = 0
+        # If we got past 85% of the total time, it ended naturally
+        if last_pos >= total_time * 0.85:
+            return False
+    
+    # If total_time was 0, we can't tell — but if the stream was playing
+    # and stopped, likely user quit. Use a heuristic: was it playing > 60s?
+    # For safety, assume user stopped unless we know it ended naturally.
+    return True
+
+
+def _channel_play_item(player, stream_url, label, art=None):
+    """Play a single item in 24/7 channel. Returns 'next', 'stop', or 'abort'."""
+    if art is None:
+        art = {'icon': ADDON_ICON, 'fanart': ADDON_FANART}
+    
+    li = xbmcgui.ListItem(label, path=stream_url)
+    li.setArt(art)
+    player.play(stream_url, li)
+    
+    timeout = 30
+    while not player.isPlaying() and timeout > 0:
+        xbmc.sleep(500)
+        timeout -= 1
+    
+    if not player.isPlaying():
+        return 'next'  # Failed to start, skip to next
+    
+    user_stopped = _channel_wait_for_playback(player)
+    xbmc.sleep(500)
+    
+    if xbmc.Monitor().abortRequested():
+        return 'abort'
+    
+    if user_stopped:
+        return 'stop'
+    
+    return 'next'
 
 
 def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media_type='movie', max_quality='1080p'):

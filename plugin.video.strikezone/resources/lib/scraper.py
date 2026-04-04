@@ -1,7 +1,9 @@
-import requests
 import re
 import json
-from bs4 import BeautifulSoup
+import ssl
+import urllib.request
+import urllib.parse
+import urllib.error
 
 BASE_URL = "https://fullfightreplays.com"
 
@@ -12,18 +14,25 @@ HEADERS = {
     'Referer': BASE_URL
 }
 
-def get_soup(url):
-    """Get BeautifulSoup object from URL"""
+_ctx = ssl._create_unverified_context()
+
+
+def _fetch(url):
+    """Fetch URL content as string using native urllib."""
     try:
-        r = requests.get(url, headers=HEADERS, timeout=15)
-        r.raise_for_status()
-        return BeautifulSoup(r.text, 'html.parser')
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, context=_ctx, timeout=15) as resp:
+            data = resp.read()
+            try:
+                return data.decode('utf-8')
+            except UnicodeDecodeError:
+                return data.decode('latin-1')
     except Exception as e:
         print(f"Error fetching {url}: {e}")
         return None
 
+
 def make_absolute_url(url):
-    """Convert relative URL to absolute"""
     if not url:
         return url
     if url.startswith('http'):
@@ -34,497 +43,331 @@ def make_absolute_url(url):
         return BASE_URL + url
     return BASE_URL + '/' + url
 
+
 def normalize_video_url(url):
-    """Normalize video URLs for playback"""
     if not url:
         return url
-    # Handle protocol-relative URLs
     if url.startswith('//'):
         return 'https:' + url
     return url
 
+
+def _strip_tags(html):
+    """Remove HTML tags, return plain text."""
+    return re.sub(r'<[^>]+>', '', html).strip()
+
+
 def get_categories():
-    """Scrape all categories from the website"""
-    soup = get_soup(BASE_URL)
-    if not soup:
+    html = _fetch(BASE_URL)
+    if not html:
         return []
-    
+
     categories = []
-    seen_titles = set()
-    
-    # Find categories from fight listings (short_cat links)
-    for cat_div in soup.find_all('div', class_='short_cat'):
-        link = cat_div.find('a', href=True)
+    seen = set()
+
+    # Parse short_cat divs
+    for m in re.finditer(r'<div[^>]*class="short_cat"[^>]*>(.*?)</div>', html, re.S):
+        link = re.search(r'<a[^>]+href="([^"]+)"[^>]*>([^<]+)</a>', m.group(1))
         if link:
-            url = make_absolute_url(link['href'])
-            title = link.text.strip()
-            if title not in seen_titles and title:
-                seen_titles.add(title)
-                # Generate category slug for image matching
+            url = make_absolute_url(link.group(1))
+            title = link.group(2).strip()
+            if title and title not in seen:
+                seen.add(title)
                 slug = title.lower().replace(' ', '_').replace('-', '_')
-                categories.append({
-                    'title': title,
-                    'url': url,
-                    'slug': slug
-                })
-    
-    # Also check for known categories
-    known_categories = [
-        {'title': 'UFC', 'url': f'{BASE_URL}/ufc', 'slug': 'ufc'},
-        {'title': 'MMA', 'url': f'{BASE_URL}/mma', 'slug': 'mma'},
-        {'title': 'Boxing', 'url': f'{BASE_URL}/boxing', 'slug': 'boxing'},
-        {'title': 'Kickboxing', 'url': f'{BASE_URL}/kickboxing', 'slug': 'kickboxing'},
-        {'title': 'K-1', 'url': f'{BASE_URL}/k-1', 'slug': 'k1'},
-        {'title': 'Bellator', 'url': f'{BASE_URL}/bellator', 'slug': 'bellator'},
-        {'title': 'ONE Championship', 'url': f'{BASE_URL}/one-championship', 'slug': 'one_championship'},
-        {'title': 'PFL', 'url': f'{BASE_URL}/pfl', 'slug': 'pfl'},
-        {'title': 'BKFC', 'url': f'{BASE_URL}/bkfc', 'slug': 'bkfc'},
-        {'title': 'Cage Warriors', 'url': f'{BASE_URL}/cage-warriors', 'slug': 'cage_warriors'},
+                categories.append({'title': title, 'url': url, 'slug': slug})
+
+    known = [
+        ('UFC', 'ufc'), ('MMA', 'mma'), ('Boxing', 'boxing'),
+        ('Kickboxing', 'kickboxing'), ('K-1', 'k1'), ('Bellator', 'bellator'),
+        ('ONE Championship', 'one_championship'), ('PFL', 'pfl'),
+        ('BKFC', 'bkfc'), ('Cage Warriors', 'cage_warriors'),
     ]
-    
-    for cat in known_categories:
-        if cat['title'] not in seen_titles:
-            seen_titles.add(cat['title'])
-            categories.append(cat)
-    
-    # Sort alphabetically
+    for title, slug in known:
+        if title not in seen:
+            seen.add(title)
+            categories.append({'title': title, 'url': f'{BASE_URL}/{slug.replace("_", "-")}', 'slug': slug})
+
     categories.sort(key=lambda x: x['title'])
-    
     return categories
 
+
 def get_fights(url, page=1):
-    """Get fights from a category or search URL with pagination"""
-    # Handle pagination
     if page > 1:
-        if '?' in url:
-            paginated_url = f"{url}&page{page}"
-        else:
-            paginated_url = f"{url}?page{page}"
+        paginated_url = f"{url}{'&' if '?' in url else '?'}page{page}"
     else:
         paginated_url = url
-    
-    soup = get_soup(paginated_url)
+
+    html = _fetch(paginated_url)
     fights = []
     next_page = None
-    
-    if not soup:
+
+    if not html:
         return fights, next_page
-    
-    # Find all fight entries in allEntries div
-    all_entries = soup.find('div', id='allEntries')
-    if all_entries:
-        items = all_entries.find_all('div', class_='short_item')
-    else:
-        items = soup.find_all('div', class_='short_item')
-    
-    for item in items:
+
+    # Find allEntries section or fall back to full page
+    entries_match = re.search(r'<div[^>]*id="allEntries"[^>]*>(.*)', html, re.S)
+    search_html = entries_match.group(1) if entries_match else html
+
+    # Parse short_item divs
+    for item_m in re.finditer(r'<div[^>]*class="short_item"[^>]*>(.*?)</div>\s*</div>\s*</div>', search_html, re.S):
+        block = item_m.group(1)
         try:
-            # Get title
-            title_elem = item.find('h3')
-            if not title_elem:
+            # Title + URL from h3 > a
+            title_link = re.search(r'<h3[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>([^<]+)</a>', block, re.S)
+            if not title_link:
                 continue
-            link_elem = title_elem.find('a', href=True)
-            if not link_elem:
-                continue
-            
-            title = link_elem.text.strip()
-            fight_url = make_absolute_url(link_elem['href'])
-            
-            # Get thumbnail image
-            poster = item.find('div', class_='poster')
-            img_url = ''
-            if poster:
-                img = poster.find('img')
-                if img and img.get('src'):
-                    img_url = make_absolute_url(img['src'])
-            
-            # Get category
-            cat_div = item.find('div', class_='short_cat')
-            category = ''
-            if cat_div:
-                cat_link = cat_div.find('a')
-                if cat_link:
-                    category = cat_link.text.strip()
-            
-            # Get views
-            views = '0'
-            views_span = item.find('div', class_='short_icn')
-            if views_span:
-                span = views_span.find('span')
-                if span:
-                    views = span.text.strip()
-            
-            # Get description
-            desc_div = item.find('div', class_='short_descr')
-            description = ''
-            if desc_div:
-                p = desc_div.find('p')
-                if p:
-                    description = p.text.strip()
-            
-            # Get rating
-            rating = '0'
-            stars = item.find('div', class_='stars')
-            if stars:
-                ul = stars.find('ul')
-                if ul and ul.get('title'):
-                    rating_match = re.search(r'Rating:\s*([\d.]+)', ul['title'])
-                    if rating_match:
-                        rating = rating_match.group(1)
-            
+            fight_url = make_absolute_url(title_link.group(1))
+            title = title_link.group(2).strip()
+
+            # Thumbnail
+            img_m = re.search(r'<div[^>]*class="poster"[^>]*>.*?<img[^>]+src="([^"]+)"', block, re.S)
+            img_url = make_absolute_url(img_m.group(1)) if img_m else ''
+
+            # Category
+            cat_m = re.search(r'<div[^>]*class="short_cat"[^>]*>.*?<a[^>]*>([^<]+)</a>', block, re.S)
+            category = cat_m.group(1).strip() if cat_m else ''
+
+            # Views
+            views_m = re.search(r'<div[^>]*class="short_icn"[^>]*>.*?<span>(\d+)</span>', block, re.S)
+            views = views_m.group(1) if views_m else '0'
+
+            # Description
+            desc_m = re.search(r'<div[^>]*class="short_descr"[^>]*>.*?<p>(.*?)</p>', block, re.S)
+            description = _strip_tags(desc_m.group(1)) if desc_m else ''
+
+            # Rating
+            rating_m = re.search(r'Rating:\s*([\d.]+)', block)
+            rating = rating_m.group(1) if rating_m else '0'
+
             fights.append({
-                'title': title,
-                'url': fight_url,
-                'icon': img_url,
-                'category': category,
-                'views': views,
-                'description': description,
-                'rating': rating
+                'title': title, 'url': fight_url, 'icon': img_url,
+                'category': category, 'views': views,
+                'description': description, 'rating': rating
             })
-        except Exception as e:
-            print(f"Error parsing fight item: {e}")
+        except Exception:
             continue
-    
-    # Check for next page
-    paging = soup.find('div', class_='paging-wrapper-bottom')
-    if paging:
-        next_link = paging.find('a', class_='swchItem-next')
-        if next_link and next_link.get('href'):
-            next_page = page + 1
-    
+
+    # Check next page
+    if re.search(r'class="swchItem-next"', html):
+        next_page = page + 1
+
     return fights, next_page
 
+
 def get_fight_details(url):
-    """Get detailed information about a specific fight"""
     url = make_absolute_url(url)
-    soup = get_soup(url)
-    if not soup:
+    html = _fetch(url)
+    if not html:
         return None
-    
+
     details = {
-        'title': '',
-        'image': '',
-        'description': '',
-        'category': '',
-        'views': '0',
-        'rating': '0',
-        'links': []
+        'title': '', 'image': '', 'description': '',
+        'category': '', 'views': '0', 'rating': '0', 'links': []
     }
-    
-    # Get title
-    title_elem = soup.find('h1', class_='h_title')
-    if title_elem:
-        details['title'] = title_elem.text.strip()
-    
-    # Get main image
-    full_img = soup.find('div', class_='full_img')
-    if full_img:
-        img = full_img.find('img')
-        if img and img.get('src'):
-            details['image'] = make_absolute_url(img['src'])
-    
-    # Get category from breadcrumb
-    speedbar = soup.find('div', class_='speedbar')
-    if speedbar:
-        links = speedbar.find_all('a', href=True)
-        for link in links:
-            if link['href'] != 'http://fullfightreplays.com/' and link['href'] != BASE_URL:
-                details['category'] = link.text.strip()
+
+    # Title
+    t = re.search(r'<h1[^>]*class="h_title"[^>]*>(.*?)</h1>', html, re.S)
+    if t:
+        details['title'] = _strip_tags(t.group(1))
+
+    # Image
+    img = re.search(r'<div[^>]*class="full_img"[^>]*>.*?<img[^>]+src="([^"]+)"', html, re.S)
+    if img:
+        details['image'] = make_absolute_url(img.group(1))
+
+    # Category from speedbar
+    sb = re.search(r'<div[^>]*class="speedbar"[^>]*>(.*?)</div>', html, re.S)
+    if sb:
+        for link in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>([^<]+)</a>', sb.group(1)):
+            href = link.group(1)
+            if href not in ('http://fullfightreplays.com/', BASE_URL, BASE_URL + '/'):
+                details['category'] = link.group(2).strip()
                 break
-    
-    # Get views and rating
-    full_info = soup.find('div', class_='full_info')
-    if full_info:
-        views_span = full_info.find('span', class_='e-reads')
-        if views_span:
-            value = views_span.find('span', class_='ed-value')
-            if value:
-                details['views'] = value.text.strip()
-        
-        rating_span = soup.find('span', id=re.compile(r'entRating\d+'))
-        if rating_span:
-            details['rating'] = rating_span.text.strip()
-    
-    # Get description from fullstory
-    fullstory = soup.find('div', class_='fullstory')
-    if fullstory:
-        # Get description paragraphs at the end
-        for p in fullstory.find_all('p'):
-            text = p.get_text(strip=True)
-            if text and 'Watch' in text and 'Full Fight' in text:
+
+    # Views
+    v = re.search(r'class="ed-value"[^>]*>(\d+)', html)
+    if v:
+        details['views'] = v.group(1)
+
+    # Rating
+    r = re.search(r'id="entRating\d+"[^>]*>([\d.]+)', html)
+    if r:
+        details['rating'] = r.group(1)
+
+    # Description
+    fs = re.search(r'<div[^>]*class="fullstory"[^>]*>(.*?)</div>\s*<!--', html, re.S)
+    if fs:
+        for p in re.finditer(r'<p>(.*?)</p>', fs.group(1), re.S):
+            text = _strip_tags(p.group(1))
+            if 'Watch' in text and 'Full Fight' in text:
                 details['description'] = text
                 break
-    
+
     return details
 
+
 def get_video_links(url):
-    """Extract all video links from a fight page"""
     url = make_absolute_url(url)
-    soup = get_soup(url)
+    html = _fetch(url)
     links = []
-    
-    if not soup:
+
+    if not html:
         return links
-    
-    fullstory = soup.find('div', class_='fullstory')
-    if not fullstory:
+
+    # Find fullstory div
+    fs = re.search(r'<div[^>]*class="fullstory"[^>]*>(.*?)(?:</div>\s*<!--|<div[^>]*class="paging)', html, re.S)
+    if not fs:
         return links
-    
-    # Group links by section
-    sections = {}  # {'Main Event': [links], 'Full Event': [links], etc.}
-    
-    # Extract actual iframes
-    for iframe in fullstory.find_all('iframe'):
-        src = iframe.get('src', '')
-        if src and is_video_link(src):
-            src = normalize_video_url(src)
-            section = find_section_context(iframe)
+
+    content = fs.group(1)
+    sections = {}
+
+    # Extract iframes
+    for m in re.finditer(r'<iframe[^>]+src="([^"]+)"', content, re.I):
+        src = normalize_video_url(m.group(1))
+        if is_video_link(src):
+            section = _find_section(content, m.start())
             host = get_host_name(src)
-            
-            # Normalize section names
             section = normalize_section_name(section)
-            
-            if section not in sections:
-                sections[section] = []
-            sections[section].append({
-                'url': src,
-                'host': host,
-                'type': 'embed'
-            })
-    
-    # Extract embedded iframes (stored as divs with data-original-tag="iframe") - fallback
-    for iframe_div in fullstory.find_all('div', attrs={'data-original-tag': 'iframe'}):
-        src = iframe_div.get('src', '')
-        if src and is_video_link(src):
-            src = normalize_video_url(src)
-            section = find_section_context(iframe_div)
+            sections.setdefault(section, []).append({'url': src, 'host': host, 'type': 'embed', 'part': ''})
+
+    # Extract data-original-tag="iframe" divs
+    for m in re.finditer(r'<div[^>]*data-original-tag="iframe"[^>]+src="([^"]+)"', content, re.I):
+        src = normalize_video_url(m.group(1))
+        if is_video_link(src):
+            section = _find_section(content, m.start())
             host = get_host_name(src)
-            
             section = normalize_section_name(section)
-            
-            if section not in sections:
-                sections[section] = []
-            sections[section].append({
-                'url': src,
-                'host': host,
-                'type': 'embed'
-            })
-    
-    # Extract direct anchor links (like dailymotion parts)
-    for a in fullstory.find_all('a', href=True):
-        href = a['href']
+            sections.setdefault(section, []).append({'url': src, 'host': host, 'type': 'embed', 'part': ''})
+
+    # Extract direct links
+    for m in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', content, re.S):
+        href = m.group(1)
         if is_video_link(href):
-            span = a.find('span')
-            link_text = span.get_text(strip=True) if span else a.get_text(strip=True)
-            section = find_section_context(a)
+            link_text = _strip_tags(m.group(2))
+            section = _find_section(content, m.start())
             host = get_host_name(href)
-            
             section = normalize_section_name(section)
-            
-            # For parts (like Dailymotion), include part info
-            part_info = ''
-            if link_text and re.match(r'^Part\s*\d+$', link_text, re.IGNORECASE):
-                part_info = link_text
-            
-            if section not in sections:
-                sections[section] = []
-            sections[section].append({
-                'url': href,
-                'host': host,
-                'type': 'direct',
-                'part': part_info
-            })
-    
-    # Build final links list with proper numbering and formatting
+            part = link_text if re.match(r'^Part\s*\d+$', link_text, re.I) else ''
+            sections.setdefault(section, []).append({'url': href, 'host': host, 'type': 'direct', 'part': part})
+
+    # Build final list
     for section_name, section_links in sections.items():
-        # Remove duplicates within section
-        seen_urls = set()
-        unique_links = []
-        for link in section_links:
-            if link['url'] not in seen_urls:
-                seen_urls.add(link['url'])
-                unique_links.append(link)
-        
-        # Number the servers
-        for i, link in enumerate(unique_links):
-            server_num = i + 1
-            host = link['host']
-            part = link.get('part', '')
-            
-            # Format label with section and server number
+        seen = set()
+        unique = []
+        for lnk in section_links:
+            if lnk['url'] not in seen:
+                seen.add(lnk['url'])
+                unique.append(lnk)
+        for i, lnk in enumerate(unique):
+            part = lnk.get('part', '')
             if part:
-                label = f"{section_name} - {part} [{host}]"
+                label = f"{section_name} - {part} [{lnk['host']}]"
             else:
-                label = f"{section_name} Server #{server_num} [{host}]"
-            
+                label = f"{section_name} Server #{i+1} [{lnk['host']}]"
             links.append({
-                'label': label,
-                'url': link['url'],
-                'type': link['type'],
-                'server_num': server_num,
-                'host': host,
-                'section': section_name
+                'label': label, 'url': lnk['url'], 'type': lnk['type'],
+                'server_num': i + 1, 'host': lnk['host'], 'section': section_name
             })
-    
+
     return links
 
+
+def _find_section(content, pos):
+    """Find section context by looking backwards from position for section headers."""
+    preceding = content[:pos]
+    # Look for section headers in reverse
+    patterns = [
+        (r'(?i)full\s*event', 'Full Event'),
+        (r'(?i)main\s*(?:event|card)', 'Main Event'),
+        (r'(?i)early\s*prelim', 'Early Prelims'),
+        (r'(?i)prelim', 'Prelims'),
+    ]
+    # Search backwards through strong/p/div tags
+    for tag_m in reversed(list(re.finditer(r'<(?:strong|p|div|span|h\d)[^>]*>(.*?)</(?:strong|p|div|span|h\d)>', preceding, re.S))):
+        text = _strip_tags(tag_m.group(1)).lower()
+        if not text:
+            continue
+        for pat, name in patterns:
+            if re.search(pat, text):
+                return name
+    return 'Main Event'
+
+
 def normalize_section_name(section):
-    """Normalize section names for cleaner display"""
     if not section or section == 'Video':
         return 'Main Event'
-    
-    section_lower = section.lower()
-    
-    # Clean up common patterns
-    if 'main card' in section_lower or 'main event' in section_lower:
+    s = section.lower()
+    if 'main card' in s or 'main event' in s:
         return 'Main Event'
-    elif 'prelim' in section_lower:
-        return 'Prelims'
-    elif 'full event' in section_lower or 'full fight' in section_lower:
-        return 'Full Event'
-    elif 'early prelim' in section_lower:
+    elif 'early prelim' in s:
         return 'Early Prelims'
-    
-    # Remove server mentions from section name (will be added separately)
-    section = re.sub(r'server\s*#?\d*\s*', '', section, flags=re.IGNORECASE)
-    section = re.sub(r'\(dm\)', '', section, flags=re.IGNORECASE)
-    section = section.strip()
-    
-    if not section:
-        return 'Main Event'
-    
-    return section
+    elif 'prelim' in s:
+        return 'Prelims'
+    elif 'full event' in s or 'full fight' in s:
+        return 'Full Event'
+    section = re.sub(r'server\s*#?\d*\s*', '', section, flags=re.I).strip()
+    return section or 'Main Event'
 
-def find_section_context(element):
-    """Find the section context (Server #1, Main Card, Prelims, etc.) for an element"""
-    section = "Main Event"
-    
-    # Go up to find video-responsive or similar parent, then look for preceding headers
-    current = element
-    search_count = 0
-    
-    while current and search_count < 15:
-        # Check previous siblings at current level
-        prev = current.find_previous_sibling()
-        while prev:
-            if prev.name in ['p', 'div', 'span', 'strong']:
-                text = prev.get_text(strip=True)
-                if text:
-                    text_lower = text.lower()
-                    # Check for section indicators
-                    if 'full event' in text_lower:
-                        return 'Full Event'
-                    elif 'main event' in text_lower or 'main card' in text_lower:
-                        return 'Main Event'
-                    elif 'prelim' in text_lower and 'early' in text_lower:
-                        return 'Early Prelims'
-                    elif 'prelim' in text_lower:
-                        return 'Prelims'
-                    elif 'server' in text_lower and 'full' not in text_lower and 'main' not in text_lower:
-                        # Just "Server #2" without section - continue looking
-                        pass
-            prev = prev.find_previous_sibling()
-        
-        # Move up to parent
-        current = current.parent
-        search_count += 1
-    
-    return section
 
 def is_video_link(url):
-    """Check if URL is a video link that can be resolved"""
-    video_hosts = [
+    hosts = [
         'ok.ru', 'dailymotion', 'geo.dailymotion',
         'vidoza', 'upstream', 'mixdrop', 'dood', 'voe', 'streamtape',
         'bysesukior', 'vibuxer', 'f75s',
-        'youtube', 'youtu.be',
-        'vimeo', 'streamable',
-        'mp4upload', 'vidlox', 'fembed',
-        'huntrexus', 'okcdn'
+        'youtube', 'youtu.be', 'vimeo', 'streamable',
+        'mp4upload', 'vidlox', 'fembed', 'huntrexus', 'okcdn'
     ]
-    return any(host in url.lower() for host in video_hosts)
+    return any(h in url.lower() for h in hosts)
+
 
 def get_host_name(url):
-    """Get the host name from URL"""
-    url_lower = url.lower()
-    
-    if 'ok.ru' in url_lower or 'okcdn' in url_lower:
-        return 'OK.ru'
-    elif 'dailymotion' in url_lower:
-        return 'Dailymotion'
-    elif 'bysesukior' in url_lower or 'f75s' in url_lower:
-        return 'Byse'
-    elif 'vibuxer' in url_lower:
-        return 'Vibuxer'
-    elif 'vidoza' in url_lower:
-        return 'Vidoza'
-    elif 'mixdrop' in url_lower:
-        return 'MixDrop'
-    elif 'streamtape' in url_lower:
-        return 'StreamTape'
-    elif 'dood' in url_lower:
-        return 'DoodStream'
-    elif 'voe' in url_lower:
-        return 'Voe'
-    elif 'upstream' in url_lower:
-        return 'Upstream'
-    else:
-        return 'Video'
+    u = url.lower()
+    if 'ok.ru' in u or 'okcdn' in u: return 'OK.ru'
+    if 'dailymotion' in u: return 'Dailymotion'
+    if 'bysesukior' in u or 'f75s' in u: return 'Byse'
+    if 'vibuxer' in u: return 'Vibuxer'
+    if 'vidoza' in u: return 'Vidoza'
+    if 'mixdrop' in u: return 'MixDrop'
+    if 'streamtape' in u: return 'StreamTape'
+    if 'dood' in u: return 'DoodStream'
+    if 'voe' in u: return 'Voe'
+    if 'upstream' in u: return 'Upstream'
+    return 'Video'
+
 
 def get_link_label(url, section=''):
-    """Generate a readable label for a video link"""
     host = get_host_name(url)
-    
     if section and section != 'Video':
         return f"{section} [{host}]"
     return f"Watch [{host}]"
 
+
 def search_fights(query):
-    """Search for fights"""
-    # Use the correct search URL format for the site
     search_url = f"{BASE_URL}/search/?q={query.replace(' ', '+')}"
-    soup = get_soup(search_url)
+    html = _fetch(search_url)
     fights = []
-    
-    if not soup:
+
+    if not html:
         return fights, None
-    
-    # Search results use statvidp class structure
-    items = soup.find_all('div', class_='statvidp')
-    
-    for item in items:
+
+    for item_m in re.finditer(r'<div[^>]*class="statvidp"[^>]*>(.*?)</div>\s*</div>', html, re.S):
+        block = item_m.group(1)
         try:
-            # Get title from eTitle div
-            title_div = item.find('div', class_='eTitle')
-            if not title_div:
+            title_link = re.search(r'class="eTitle"[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>([^<]+)</a>', block, re.S)
+            if not title_link:
                 continue
-            
-            link_elem = title_div.find('a', href=True)
-            if not link_elem:
-                continue
-            
-            title = link_elem.get_text(strip=True)
-            fight_url = make_absolute_url(link_elem['href'])
-            
-            # Get thumbnail image from fhkds54sa div
-            img_div = item.find('div', class_='fhkds54sa')
-            img_url = ''
-            if img_div:
-                img = img_div.find('img')
-                if img and img.get('src'):
-                    img_url = make_absolute_url(img['src'])
-            
+            fight_url = make_absolute_url(title_link.group(1))
+            title = title_link.group(2).strip()
+
+            img_m = re.search(r'class="fhkds54sa"[^>]*>.*?<img[^>]+src="([^"]+)"', block, re.S)
+            img_url = make_absolute_url(img_m.group(1)) if img_m else ''
+
             fights.append({
-                'title': title,
-                'url': fight_url,
-                'icon': img_url,
-                'category': '',
-                'description': '',
-                'views': '0',
-                'rating': '0'
+                'title': title, 'url': fight_url, 'icon': img_url,
+                'category': '', 'description': '', 'views': '0', 'rating': '0'
             })
-        except Exception as e:
-            print(f"Error parsing search result: {e}")
+        except Exception:
             continue
-    
+
     return fights, None

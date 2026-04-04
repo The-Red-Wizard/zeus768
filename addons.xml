@@ -40,7 +40,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.5.0" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.5.1" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -106,12 +106,10 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.strikezone" name="Strike Zone" version="1.2.2" provider-name="zeus768">
+<addon id="plugin.video.strikezone" name="Strike Zone" version="1.2.3" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.resolveurl"/>
-        <import addon="script.module.requests"/>
-        <import addon="script.module.beautifulsoup4"/>
+        <import addon="script.module.resolveurl" optional="true"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
@@ -152,14 +150,12 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="2026.04.04.01" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="2026.04.04.02" provider-name="zeus768">
     <requires>
-        <import addon="xbmc.python" version="2.1.0"/>
-        <import addon="script.module.requests"/>
-        <import addon="script.module.metahandler"/>
-        <import addon="plugin.video.youtube" optional="true"/>
-        <import addon="script.mrknow.urlresolver"/>
+        <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.media"/>
+        <import addon="script.module.requests" optional="true"/>
+        <import addon="plugin.video.youtube" optional="true"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -167,7 +163,7 @@ v2.0.0 (2026)
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
-        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support.</description>
+        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support. Fully compatible with Kodi 21 Omega.</description>
         <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
         <platform>all</platform>
         <assets>
@@ -179,7 +175,7 @@ v2.0.0 (2026)
 
 <addon id="script.genesis.media" version="2026.04.04" name="Genesis Themepak" provider-name="zeus768">
     <requires>
-        <import addon="xbmc.python" version="2.19.0"/>
+        <import addon="xbmc.python" version="3.0.0"/>
     </requires>
     <extension point="xbmc.python.script" library="default.py">
         <provides>executable</provides>

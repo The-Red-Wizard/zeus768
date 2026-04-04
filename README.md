@@ -18,7 +18,7 @@ The official Kodi addon repository by **zeus768** and **The Red Wizard**. All ad
 ### Genesis
 <img src="plugin.video.genesis/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Stream Movies and TV Shows** | `plugin.video.genesis` | v2026.04.04.01
+**Stream Movies and TV Shows** | `plugin.video.genesis` | v2026.04.04.02
 
 Your ultimate streaming addon for Movies and TV Shows with torrent support. Features torrent scrapers for 1337x, YTS, EZTV, TPB, TorrentGalaxy and more. Includes Trakt integration, TMDB metadata, search, favourites, and custom skins. Fully audited for Python 3 / Kodi 21+.
 
@@ -40,7 +40,7 @@ Required dependency for Genesis. Provides custom themes, artwork, and skin asset
 ### SALTS - Stream All The Sources
 <img src="plugin.video.salts/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Multi-Source Video Addon** | `plugin.video.salts` | v2.5.0
+**Multi-Source Video Addon** | `plugin.video.salts` | v2.5.1
 
 The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers running concurrently for superfast source resolution. Features include custom source dialog with quality breakdown, Up Next auto-play, Skip Intro, 24/7 Channels (actor, show, genre, AI vibe), AI Search, Franchises, Actors, batch debrid cache checking, and Trakt integration. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. Original author: tknorris.
 
@@ -73,7 +73,7 @@ Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jac
 ### Strike Zone
 <img src="plugin.video.strikezone/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Watch Fight Replays** | `plugin.video.strikezone` | v1.2.2
+**Watch Fight Replays** | `plugin.video.strikezone` | v1.2.3
 
 Watch UFC, MMA, Boxing, Kickboxing, and more fight replays. Auto-scrapes all categories, infinite scroll pagination, search, local favourites, fight metadata and thumbnails, multiple video sources via ResolveURL, and custom category images.
 

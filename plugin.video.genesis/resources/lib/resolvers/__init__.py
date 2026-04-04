@@ -25,11 +25,14 @@ from resources.lib.libraries import client
 from resources.lib.libraries import control
 from resources.lib.resolvers import realdebrid
 from resources.lib.resolvers import premiumize
-#try:
 
-import urlresolver9 as urlresolver
-#except:
-#    pass
+try:
+    import urlresolver9 as urlresolver
+except Exception:
+    try:
+        import resolveurl as urlresolver
+    except Exception:
+        urlresolver = None
 
 
 def request(url):
@@ -40,7 +43,6 @@ def request(url):
             import regex ; url = regex.resolve(url)
 
         rd = realdebrid.resolve(url)
-        #control.log("#RESOLVER#  my rd 2 ************ %s url: %s" % (rd,url))
 
         if not rd == None: return rd
 
@@ -51,21 +53,16 @@ def request(url):
             if len(re.compile('\s*timeout=(\d*)').findall(url)) == 0: url += ' timeout=10'
             return url
 
-        try:
-            z=False
-            hmf = urlresolver.HostedMediaFile(url,include_disabled=False, include_universal=False)
-            if hmf:
-                print('yay! we can resolve this one')
-                z = hmf.resolve()
-            else:
-                print('sorry :( no resolvers available to handle this one.')
+        if urlresolver is not None:
+            try:
+                hmf = urlresolver.HostedMediaFile(url, include_disabled=False, include_universal=False)
+                if hmf:
+                    z = hmf.resolve()
+                    control.log("!!!!!!!!! OK #urlresolver2#  URL %s " % z)
+                    if z != False: return z
+            except Exception as e:
+                control.log("!!!!!!!!! ERROR #urlresolver2#  URL %s " % e)
 
-            control.log("!!!!!!!!! OK #urlresolver2#  URL %s " % z)
-
-            if z !=False : return z
-        except Exception as e:
-            control.log("!!!!!!!!! ERROR #urlresolver2#  URL %s " % e)
-            pass
         return None
     except:
         return url
