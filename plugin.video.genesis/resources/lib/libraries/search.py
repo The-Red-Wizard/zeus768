@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import xbmcgui, xbmc, xbmcaddon, xbmcplugin
+import xbmcvfs
 import urllib
 import sys
 import os
@@ -82,7 +83,7 @@ class Search(object):
         self.pluginUrl = pluginUrl
         self._addon = xbmcaddon.Addon()
         self._addonHandle = int(self.argv[1])
-        self._spath = xbmc.translatePath('special://profile/addon_data/%s/search' % self._addon.getAddonInfo('id'))
+        self._spath = xbmcvfs.translatePath('special://profile/addon_data/%s/search' % self._addon.getAddonInfo('id'))
         self.history = []
         self.loadHistory()
 
@@ -105,16 +106,16 @@ class Search(object):
             url += convert.urlencode(kwargs)
         return url
 
-    def addMenuItem(self, name, iconImage=None, folder=True, menu=True, **kwargs):
+    def addMenuItem(self, name, folder=True, menu=True, **kwargs):
         """Add one submenu item to the list. [internal]"""
         if not iconImage:
             iconImage = 'DefaultAddonsSearch.png'
         # general menu item
-        # liz = xbmcgui.ListItem(title, iconImage="DefaultFolder.png", thumbnailImage=iconImage)
+        # liz = xbmcgui.ListItem(title)
         # liz.setInfo(type="Video", infoLabels={"Title": title})
         url = self.buildPluginUrl(name=name, **kwargs)
         xbmc.log('SEARCH: create menu item %s, query:"%s", url:"%s"' % (name, kwargs.get('query'), url))
-        li = xbmcgui.ListItem(kwargs.get('title', ''), iconImage="DefaultFolder.png", thumbnailImage=iconImage)
+        li = xbmcgui.ListItem(kwargs.get('title', ''))
         li.addContextMenuItems([
             (_('Remove'), 'RunPlugin(%s)' % (url + '&action=remove')),
             (_('Rename'), 'RunPlugin(%s)' % (url + '&action=rename')),
@@ -125,10 +126,10 @@ class Search(object):
     def listMenu(self):
         """Create menu list (submenu items). [internal]"""
         icon = os.path.join(common.Paths.imgDir, 'new_search.png')
-        self.addMenuItem('.search.new', menu=False, iconImage=icon, title='[B]%s[/B]' % _('New search'))
+        self.addMenuItem('.search.new', menu=False, title='[B]%s[/B]' % _('New search'))
         icon = os.path.join(common.Paths.imgDir, 'search_item.png')
         for query in self.history:
-            self.addMenuItem('.search.query', iconImage=icon, query=query, title=query)
+            self.addMenuItem('.search.query', query=query, title=query)
         #wnd = xbmcgui.Window(xbmcgui.getCurrentWindowId())
         #wnd.getControl(wnd.getFocusId()).selectItem(self._selectItem)
         xbmcplugin.endOfDirectory(self._addonHandle, cacheToDisc=False)

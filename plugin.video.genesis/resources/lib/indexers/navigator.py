@@ -19,12 +19,16 @@
 '''
 
 
-import os,sys,urlparse
+import os,sys
 import time
+
+try:
+    from urllib.parse import parse_qsl
+except ImportError:
+    from urlparse import parse_qsl
 
 
 from resources.lib.libraries import control
-from resources.lib.libraries import ntptime
 
 
 
@@ -32,7 +36,7 @@ artPath = control.artPath()
 
 addonFanart = control.addonFanart()
 
-try: action = dict(urlparse.parse_qsl(sys.argv[2].replace('?','')))['action']
+try: action = dict(parse_qsl(sys.argv[2].replace('?','')))['action']
 except: action = None
 
 traktMode = False if control.setting('trakt.user') == '' else True
@@ -104,12 +108,15 @@ class navigator:
 
         self.endDirectory()
 
-        if ntptime.checkDate():
-            control.log('Error date time setup')
-            msg = control.lang(32020).encode('utf-8')
-            msg1 ='Go to settings, set your correct date and time'.encode('utf-8')
-            msg = 'You have to set your clock in your tv box.'.encode('utf-8')
-            control.dialog.ok(control.addonInfo('name'),'',msg, msg1 )
+        try:
+            from resources.lib.libraries import ntptime
+            if ntptime.checkDate():
+                control.log('Error date time setup')
+                msg = 'You have to set your clock in your tv box.'
+                msg1 = 'Go to settings, set your correct date and time'
+                control.dialog.ok(control.addonInfo('name'), msg, msg1)
+        except Exception:
+            pass
 
 
         from resources.lib.libraries import cache
@@ -249,13 +256,26 @@ class navigator:
 
 
     def addDirectoryItem(self, name, query, thumb, icon, context=None, isAction=True, isFolder=True):
-        try: name = control.lang(name).encode('utf-8')
-        except: pass
+        try:
+            name = control.lang(name)
+            if isinstance(name, bytes):
+                name = name
+        except:
+            if isinstance(name, bytes):
+                name = name
         url = '%s?action=%s' % (sysaddon, query) if isAction == True else query
         thumb = os.path.join(artPath, thumb) if not artPath == None else icon
         cm = []
-        if not context == None: cm.append((control.lang(context[0]).encode('utf-8'), 'RunPlugin(%s?action=%s)' % (sysaddon, context[1])))
-        item = control.item(label=name, iconImage=thumb, thumbnailImage=thumb)
+        if not context == None:
+            try:
+                ctx_label = control.lang(context[0])
+                if isinstance(ctx_label, bytes):
+                    ctx_label = ctx_label
+            except:
+                ctx_label = str(context[0])
+            cm.append((ctx_label, 'RunPlugin(%s?action=%s)' % (sysaddon, context[1])))
+        item = control.item(label=name)
+        item.setArt({'icon': thumb, 'thumb': thumb})
         item.addContextMenuItems(cm, replaceItems=False)
         if not addonFanart == None: item.setProperty('Fanart_Image', addonFanart)
         control.addItem(handle=int(sys.argv[1]), url=url, listitem=item, isFolder=isFolder)

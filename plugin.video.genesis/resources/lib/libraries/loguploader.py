@@ -13,7 +13,7 @@ ADDON        = xbmcaddon.Addon()
 ADDONID      = ADDON.getAddonInfo('id')
 ADDONNAME    = ADDON.getAddonInfo('name')
 ADDONVERSION = ADDON.getAddonInfo('version')
-CWD          = ADDON.getAddonInfo('path').decode('utf-8')
+CWD          = ADDON.getAddonInfo('path')
 xbmc_version = xbmc.getInfoLabel( "System.BuildVersion" )
 LANGUAGE     = ADDON.getLocalizedString
 
@@ -21,16 +21,16 @@ socket.setdefaulttimeout(5)
 
 URL      = 'http://paste.filmkodi.com/api/create'
 MAINURL  = 'http://paste.filmkodi.com/%s'
-LOGPATH  = xbmc.translatePath('special://logpath')
+LOGPATH  = xbmcvfs.translatePath('special://logpath')
 LOGFILE  = os.path.join(LOGPATH, 'kodi.log')
 OLDLOG   = os.path.join(LOGPATH, 'kodi.old.log')
 REPLACES = (('//.+?:.+?@', '//USER:PASSWORD@'),('<user>.+?</user>', '<user>USER</user>'),('<pass>.+?</pass>', '<pass>PASSWORD</pass>'),)
 
 def log(txt):
     if isinstance (txt,str):
-        txt = txt.decode('utf-8')
+        txt = txt
     message = u'%s: %s' % (ADDONID, txt)
-    xbmc.log(msg=message.encode('utf-8'), level=xbmc.LOGDEBUG)
+    xbmc.log(msg=message, level=xbmc.LOGDEBUG)
 
 # Custom urlopener to set user-agent
 class pasteURLopener(FancyURLopener):

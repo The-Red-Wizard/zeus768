@@ -35,7 +35,7 @@ def download(name, image, url):
     from resources.lib.libraries import control
 
     if url == None:
-        return control.infoDialog(control.lang(30501).encode('utf-8'))
+        return control.infoDialog(control.lang(30501))
 
     try: headers = dict(urlparse.parse_qsl(url.rsplit('|', 1)[1]))
     except: headers = dict('')
@@ -50,7 +50,7 @@ def download(name, image, url):
         dest = control.setting('movie_downloads')
         control.log('DEST M: |%s|%s|' % (dest, len(dest)))
         if len(dest)==0:
-            control.infoDialog(control.lang(33002).encode('utf-8'))
+            control.infoDialog(control.lang(33002))
             control.openSettings('8.1')
             exit()
         dest = control.transPath(dest)
@@ -64,7 +64,7 @@ def download(name, image, url):
         dest = control.setting('tv_downloads')
         control.log('DEST TV: |%s|' % dest)
         if len(dest)==0:
-            control.infoDialog(control.lang(33002).encode('utf-8'))
+            control.infoDialog(control.lang(33002))
             control.openSettings('8.2')
             exit()
         dest = control.transPath(dest)
@@ -161,7 +161,7 @@ def doDownload(url, dest, title, image, headers):
     #print "Download Header"
     #print resp.headers
     if resumable:
-        print "Download is resumable"
+        print("Download is resumable")
 
     if content < 1:
         xbmcgui.Dialog().ok(title, file, 'Unknown filesize', 'Unable to download')
@@ -183,7 +183,7 @@ def doDownload(url, dest, title, image, headers):
     if xbmcgui.Dialog().yesno(title + ' - Confirm Download', file, 'Complete file is %dMB' % mb, 'Continue with download?', 'Confirm',  'Cancel') == 1:
         return
 
-    print 'Download File Size : %dMB %s ' % (mb, dest)
+    print('Download File Size : %dMB %s ' % (mb, dest))
 
     #f = open(dest, mode='wb')
     f = xbmcvfs.File(dest, 'w')
@@ -199,7 +199,7 @@ def doDownload(url, dest, title, image, headers):
         if percent >= notify:
             xbmc.executebuiltin( "XBMC.Notification(%s,%s,%i,%s)" % ( title + ' - Download Progress - ' + str(percent)+'%', dest, 10000, image))
 
-            print 'Download percent : %s %s %dMB downloaded : %sMB File Size : %sMB' % (str(percent)+'%', dest, mb, downloaded / 1000000, content / 1000000)
+            print('Download percent : %s %s %dMB downloaded : %sMB File Size : %sMB' % (str(percent)+'%', dest, mb, downloaded / 1000000, content / 1000000))
 
             notify += 10
 
@@ -218,11 +218,11 @@ def doDownload(url, dest, title, image, headers):
                         del c
 
                     f.close()
-                    print '%s download complete' % (dest)
+                    print('%s download complete' % (dest))
                     return done(title, dest, True)
 
-        except Exception, e:
-            print str(e)
+        except Exception as e:
+            print(str(e))
             error = True
             sleep = 10
             errno = 0
@@ -253,13 +253,13 @@ def doDownload(url, dest, title, image, headers):
         if error:
             errors += 1
             count  += 1
-            print '%d Error(s) whilst downloading %s' % (count, dest)
+            print('%d Error(s) whilst downloading %s' % (count, dest))
             xbmc.sleep(sleep*1000)
 
         if (resumable and errors > 0) or errors >= 10:
             if (not resumable and resume >= 50) or resume >= 500:
                 #Give up!
-                print '%s download canceled - too many error whilst downloading' % (dest)
+                print('%s download canceled - too many error whilst downloading' % (dest))
                 return done(title, dest, False)
 
             resume += 1
@@ -267,7 +267,7 @@ def doDownload(url, dest, title, image, headers):
             if resumable:
                 chunks  = []
                 #create new response
-                print 'Download resumed (%d) %s' % (resume, dest)
+                print('Download resumed (%d) %s' % (resume, dest))
                 resp = getResponse(url, headers, total)
             else:
                 #use existing response

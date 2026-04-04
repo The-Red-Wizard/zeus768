@@ -18,6 +18,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compat - must be FIRST import
+from resources.lib.libraries import py3compat
+
 import urlparse,sys
 from resources.lib.libraries import control
 

@@ -44,7 +44,7 @@ class player(xbmc.Player):
         else:
             poster, thumb, meta = self.getLibraryMeta()
 
-        item = control.item(path=url, iconImage='DefaultVideo.png', thumbnailImage=thumb)
+        item = control.item(path=url)
         item.setInfo(type='Video', infoLabels = meta)
         try: item.setArt({'poster': poster, 'tvshow.poster': poster, 'season.poster': poster})
         except: pass
@@ -94,7 +94,7 @@ class player(xbmc.Player):
                 if self.offset == '0': raise Exception()
 
                 minutes, seconds = divmod(float(self.offset), 60) ; hours, minutes = divmod(minutes, 60)
-                yes = control.yesnoDialog('%s %02d:%02d:%02d' % (control.lang(30461).encode('utf-8'), hours, minutes, seconds), '', '', self.name, control.lang(30463).encode('utf-8'), control.lang(30462).encode('utf-8'))
+                yes = control.yesnoDialog('%s %02d:%02d:%02d' % (control.lang(30461), hours, minutes, seconds), '', '', self.name, control.lang(30463), control.lang(30462))
 
                 if yes: self.offset = '0'
         except:
@@ -134,10 +134,10 @@ class player(xbmc.Player):
 
                 for k, v in meta.iteritems():
                     if type(v) == list:
-                        try: meta[k] = str(' / '.join([i.encode('utf-8') for i in v]))
+                        try: meta[k] = str(' / '.join([i for i in v]))
                         except: meta[k] = ''
                     else:
-                        try: meta[k] = str(v.encode('utf-8'))
+                        try: meta[k] = str(v)
                         except: meta[k] = str(v)
 
                 self.DBID = meta['movieid'] ; poster = thumb = meta['thumbnail']
@@ -155,10 +155,10 @@ class player(xbmc.Player):
 
                 for k, v in meta.iteritems():
                     if type(v) == list:
-                        try: meta[k] = str(' / '.join([i.encode('utf-8') for i in v]))
+                        try: meta[k] = str(' / '.join([i for i in v]))
                         except: meta[k] = ''
                     else:
-                        try: meta[k] = str(v.encode('utf-8'))
+                        try: meta[k] = str(v)
                         except: meta[k] = str(v)
 
                 self.DBID = meta['episodeid'] ; thumb = meta['thumbnail'] ; showtitle = meta['showtitle']
@@ -229,7 +229,7 @@ class player(xbmc.Player):
             control.sleep(100)
 
         if control.setting('playback_info') == 'true':
-            elapsedTime = '%s %s %s' % (control.lang(30464).encode('utf-8'), int((time.time() - self.loadingTime)), control.lang(30465).encode('utf-8'))
+            elapsedTime = '%s %s %s' % (control.lang(30464), int((time.time() - self.loadingTime)), control.lang(30465))
             control.infoDialog(elapsedTime, heading=self.name)
 
         try:

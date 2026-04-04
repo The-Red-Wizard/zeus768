@@ -39,9 +39,9 @@ def getCategory():
     getDirectory('0', phLink, '0', '0', '0', '0', '0', close=False)
 
     addCategoryItem('NHL', 'nhlDirectory', 'hockey.jpg')
-    addCategoryItem(control.lang(30701).encode('utf-8'), 'openSettings', 'settings.png')
-    addCategoryItem(control.lang(30721).encode('utf-8'), 'downloader', 'downloader.png')
-    addCategoryItem(control.lang(30702).encode('utf-8'), 'search', 'search.png')
+    addCategoryItem(control.lang(30701), 'openSettings', 'settings.png')
+    addCategoryItem(control.lang(30721), 'downloader', 'downloader.png')
+    addCategoryItem(control.lang(30702), 'search', 'search.png')
 
     if phTest in control.listDir(control.dataPath)[1]:
         addCategoryItem('Testings', 'localDirectory', 'home.png')
@@ -185,7 +185,7 @@ def getDirectory(name, url, audio, image, fanart, playable, content, close=True,
 
             if meta == True and content =='tvshows':
                 try:
-                    title = cleantitle(name).encode('utf-8')
+                    title = cleantitle(name)
                     data = {'title': title, 'tvshowtitle': title}
 
                     #data = metaget.get_meta('tvshow', title)
@@ -198,14 +198,14 @@ def getDirectory(name, url, audio, image, fanart, playable, content, close=True,
 
             elif content =='tvshows':
                 try:
-                    title = cleantitle(name).encode('utf-8')
+                    title = cleantitle(name)
                     data = {'title': title, 'tvshowtitle': title}
                 except:
                     pass
 
             elif content =='seasons':
                 try:
-                    title = cleantitle(tvshow).encode('utf-8')
+                    title = cleantitle(tvshow)
                     data = {'title': title, 'tvshowtitle': title}
 
                     data.update(tvd)
@@ -243,11 +243,11 @@ def getDirectory(name, url, audio, image, fanart, playable, content, close=True,
 
             if meta == True and content == 'movies':
                 try:
-                    title = cleantitle(name).encode('utf-8')
+                    title = cleantitle(name)
                     data = {'title': title}
 
                     title, year = re.compile('(.+?)[(](\d{4})[)]').findall(name)[0]
-                    title = cleantitle(title).encode('utf-8')
+                    title = cleantitle(title)
                     data = {'title': title, 'year': year}
 
                     #data = metaget.get_meta('movie', title, year=year)
@@ -262,24 +262,24 @@ def getDirectory(name, url, audio, image, fanart, playable, content, close=True,
 
             elif content =='movies':
                 try:
-                    title = cleantitle(name).encode('utf-8')
+                    title = cleantitle(name)
                     data = {'title': title}
 
                     title, year = re.compile('(.+?)[(](\d{4})[)]').findall(name)[0]
-                    title = cleantitle(title).encode('utf-8')
+                    title = cleantitle(title)
                     data = {'title': title, 'year': year}
                 except:
                     pass
 
             elif content == 'episodes':
                 try:
-                    title = cleantitle(name).encode('utf-8')
+                    title = cleantitle(name)
                     data = {'title': title, 'tvshowtitle': tvshow}
                 except:
                     pass
                 try:
                     i = cleaneptitle(tvshow, title)
-                    title, season, episode = i[0].encode('utf-8'), i[1], i[2]
+                    title, season, episode = i[0], i[1], i[2]
                     data = {'title': title, 'tvshowtitle': tvshow, 'season': season, 'episode': episode}
                 except:
                     pass
@@ -307,7 +307,7 @@ def subDirectory(name, url, audio, image, fanart, playable, tvshow, content):
     if len(match) == 0: return
 
     try:
-        title = cleantitle(name).encode('utf-8')
+        title = cleantitle(name)
         data = {'title': title}
     except:
         pass
@@ -315,11 +315,11 @@ def subDirectory(name, url, audio, image, fanart, playable, tvshow, content):
     try:
         if not content == 'movies': raise Exception()
 
-        title = cleantitle(name).encode('utf-8')
+        title = cleantitle(name)
         data = {'title': title}
 
         title, year = re.compile('(.+?)[(](\d{4})[)]').findall(name)[0]
-        title = cleantitle(title).encode('utf-8')
+        title = cleantitle(title)
         data = {'title': title, 'year': year}
 
         from metahandler import metahandlers
@@ -339,13 +339,13 @@ def subDirectory(name, url, audio, image, fanart, playable, tvshow, content):
         if tvshow == '0' and not content == 'episodes': raise Exception()
 
         try:
-            title = cleantitle(name).encode('utf-8')
+            title = cleantitle(name)
             data = {'title': title, 'tvshowtitle': tvshow}
         except:
             pass
         try:
             i = cleaneptitle(tvshow, title)
-            title, season, episode = i[0].encode('utf-8'), i[1], i[2]
+            title, season, episode = i[0], i[1], i[2]
             data = {'title': title, 'tvshowtitle': tvshow, 'season': season, 'episode': episode}
         except:
             pass
@@ -364,15 +364,15 @@ def subDirectory(name, url, audio, image, fanart, playable, tvshow, content):
 
     for i in range(0, len(match)):
         url = match[i]
-        label = '%s %s %s' % (name, control.lang(30704).encode('utf-8'), str(i+1))
+        label = '%s %s %s' % (name, control.lang(30704), str(i+1))
         addDirectoryItem(label, url, 'resolveUrl', image, image, fanart, '0', content, data, isFolder=False)
 
     control.directory(int(sys.argv[1]), cacheToDisc=True)
 
 
 def getSearch():
-    addDirectoryItem('%s...' % control.lang(30702).encode('utf-8'), '0', 'searchDirectory', '0', '0', '0', '0', '0', {})
-    addDirectoryItem(control.lang(30703).encode('utf-8'), '0', 'clearSearch', '0', '0', '0', '0', '0', {})
+    addDirectoryItem('%s...' % control.lang(30702), '0', 'searchDirectory', '0', '0', '0', '0', '0', {})
+    addDirectoryItem(control.lang(30703), '0', 'clearSearch', '0', '0', '0', '0', '0', {})
 
     try:
         def search(): return
@@ -388,7 +388,7 @@ def getSearch():
 
 def searchDirectory(query=None):
     if (query == None or query == ''):
-        keyboard = control.keyboard('', control.lang(30702).encode('utf-8'))
+        keyboard = control.keyboard('', control.lang(30702))
         keyboard.doModal()
         if not (keyboard.isConfirmed()): return
         query = keyboard.getText()
@@ -471,7 +471,7 @@ def searchDirectory(query=None):
 
                     if content =='tvshows':
                         try:
-                            title = cleantitle(name).encode('utf-8')
+                            title = cleantitle(name)
                             data = {'title': title, 'tvshowtitle': title}
                         except:
                             pass
@@ -505,11 +505,11 @@ def searchDirectory(query=None):
 
                     if content =='movies':
                         try:
-                            title = cleantitle(name).encode('utf-8')
+                            title = cleantitle(name)
                             data = {'title': title}
 
                             title, year = re.compile('(.+?)[(](\d{4})[)]').findall(name)[0]
-                            title = cleantitle(title).encode('utf-8')
+                            title = cleantitle(title)
                             data = {'title': title, 'year': year}
                         except:
                             pass
@@ -551,7 +551,7 @@ def resolveUrl(name, url, audio, image, fanart, playable, content):
             url = re.compile('(.+?)<source>').findall(url)[0]
 
             for i in ['_mv', '_tv', '_mv_tv']:
-                try: call = __import__('resources.lib.sources.%s%s' % (source, i), globals(), locals(), ['object'], -1).source()
+                try: call = __import__('resources.lib.sources.%s%s' % (source, i), globals(), locals(), ['object'], 0).source()
                 except: pass
 
             from resources.lib import sources ; d = sources.sources()
@@ -593,7 +593,7 @@ def resolveUrl(name, url, audio, image, fanart, playable, content):
 
         if url == None: raise Exception()
     except:
-        return control.infoDialog(control.lang(30705).encode('utf-8'))
+        return control.infoDialog(control.lang(30705))
         pass
 
 
@@ -602,7 +602,7 @@ def resolveUrl(name, url, audio, image, fanart, playable, content):
         return control.resolve(int(sys.argv[1]), True, item)
     else:
         label = cleantitle(name)
-        item = control.item(path=url, iconImage=image, thumbnailImage=image)
+        item = control.item(path=url)
         item.setInfo( type='Video', infoLabels = {'title': label} )
         control.playlist.clear()
         control.player.play(url, item)
@@ -611,7 +611,7 @@ def resolveUrl(name, url, audio, image, fanart, playable, content):
 def addCategoryItem(name, action, image, isFolder=True):
     u = '%s?action=%s' % (sys.argv[0], str(action))
     image = control.addonInfo('path') + '/resources/media/phstreams/' + image
-    item = control.item(name, iconImage=image, thumbnailImage=image)
+    item = control.item(name)
     item.addContextMenuItems([], replaceItems=False)
     item.setProperty('Fanart_Image', control.addonInfo('fanart'))
     control.addItem(handle=int(sys.argv[1]),url=u,listitem=item,isFolder=isFolder)
@@ -635,44 +635,44 @@ def addDirectoryItem(name, url, action, image, image2, fanart, audio, content, d
 
     if content in ['movies', 'tvshows']:
         data.update({'trailer': '%s?action=trailer&name=%s' % (sysaddon, urllib.quote_plus(name))})
-        cm.append((control.lang(30707).encode('utf-8'), 'RunPlugin(%s?action=trailer&name=%s)' % (sysaddon, urllib.quote_plus(name))))
+        cm.append((control.lang(30707), 'RunPlugin(%s?action=trailer&name=%s)' % (sysaddon, urllib.quote_plus(name))))
 
     if not 'plot' in data:
-        data.update({'plot': control.lang(30706).encode('utf-8')})
+        data.update({'plot': control.lang(30706)})
 
 
     if content == 'movies':
-        cm.append((control.lang(30708).encode('utf-8'), 'XBMC.Action(Info)'))
+        cm.append((control.lang(30708), 'XBMC.Action(Info)'))
     elif content in ['tvshows', 'seasons']:
-        cm.append((control.lang(30709).encode('utf-8'), 'XBMC.Action(Info)'))
+        cm.append((control.lang(30709), 'XBMC.Action(Info)'))
     elif content == 'episodes':
-        cm.append((control.lang(30710).encode('utf-8'), 'XBMC.Action(Info)'))
+        cm.append((control.lang(30710), 'XBMC.Action(Info)'))
 
 
     if content == 'movies' and not isFolder == True:
         downloadFile = name
         try: downloadFile = '%s (%s)' % (data['title'], data['year'])
         except: pass
-        cm.append((control.lang(30722).encode('utf-8'), 'RunPlugin(%s?action=addDownload&name=%s&url=%s&image=%s)' % (sysaddon, urllib.quote_plus(downloadFile), urllib.quote_plus(url), urllib.quote_plus(image))))
+        cm.append((control.lang(30722), 'RunPlugin(%s?action=addDownload&name=%s&url=%s&image=%s)' % (sysaddon, urllib.quote_plus(downloadFile), urllib.quote_plus(url), urllib.quote_plus(image))))
 
     elif content == 'episodes' and not isFolder == True:
         downloadFile = name
         try: downloadFile = '%s S%02dE%02d' % (data['tvshowtitle'], int(data['season']), int(data['episode']))
         except: pass
-        cm.append((control.lang(30722).encode('utf-8'), 'RunPlugin(%s?action=addDownload&name=%s&url=%s&image=%s)' % (sysaddon, urllib.quote_plus(downloadFile), urllib.quote_plus(url), urllib.quote_plus(image))))
+        cm.append((control.lang(30722), 'RunPlugin(%s?action=addDownload&name=%s&url=%s&image=%s)' % (sysaddon, urllib.quote_plus(downloadFile), urllib.quote_plus(url), urllib.quote_plus(image))))
 
 
     if content == 'movies':
-        cm.append((control.lang(30711).encode('utf-8'), 'RunPlugin(%s?action=addView&content=movies)' % sysaddon))
+        cm.append((control.lang(30711), 'RunPlugin(%s?action=addView&content=movies)' % sysaddon))
     elif content == 'tvshows':
-        cm.append((control.lang(30712).encode('utf-8'), 'RunPlugin(%s?action=addView&content=tvshows)' % sysaddon))
+        cm.append((control.lang(30712), 'RunPlugin(%s?action=addView&content=tvshows)' % sysaddon))
     elif content == 'seasons':
-        cm.append((control.lang(30713).encode('utf-8'), 'RunPlugin(%s?action=addView&content=seasons)' % sysaddon))
+        cm.append((control.lang(30713), 'RunPlugin(%s?action=addView&content=seasons)' % sysaddon))
     elif content == 'episodes':
-        cm.append((control.lang(30714).encode('utf-8'), 'RunPlugin(%s?action=addView&content=episodes)' % sysaddon))
+        cm.append((control.lang(30714), 'RunPlugin(%s?action=addView&content=episodes)' % sysaddon))
 
 
-    item = control.item(name, iconImage='DefaultFolder.png', thumbnailImage=image)
+    item = control.item(name)
     try: item.setArt({'poster': image2, 'tvshow.poster': image2, 'season.poster': image2, 'banner': image, 'tvshow.banner': image, 'season.banner': image})
     except: pass
     item.addContextMenuItems(cm, replaceItems=False)

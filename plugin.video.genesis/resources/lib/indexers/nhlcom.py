@@ -44,10 +44,10 @@ def nhlDirectory():
     items = json.loads(result)
     items = sorted(items, key=lambda k: k['est'])
 
-    addDirectoryItem(control.lang(30751).encode('utf-8'), 'Scoreboard', 'nhlScoreboard', '0', '0')
-    addDirectoryItem(control.lang(30752).encode('utf-8'), 'Archived', 'nhlArchives', '0', '0')
-    addDirectoryItem(control.lang(30753).encode('utf-8'), '0', '0', '0', '0')
-    addDirectoryItem(control.lang(30754).encode('utf-8'), '0', '0', '0', '0')
+    addDirectoryItem(control.lang(30751), 'Scoreboard', 'nhlScoreboard', '0', '0')
+    addDirectoryItem(control.lang(30752), 'Archived', 'nhlArchives', '0', '0')
+    addDirectoryItem(control.lang(30753), '0', '0', '0', '0')
+    addDirectoryItem(control.lang(30754), '0', '0', '0', '0')
 
     for item in items:
         try:
@@ -203,7 +203,7 @@ def nhlStreams(name, url):
         for i in l2: addDirectoryItem(i['name'], i['url'], 'nhlResolve', i['image'], '0', isFolder=False)
 
     if l1 == [] and l2 == []:
-        return control.infoDialog(control.lang(30755).encode('utf-8'), name, addonIcon)
+        return control.infoDialog(control.lang(30755), name, addonIcon)
 
     endDirectory()
 
@@ -228,7 +228,7 @@ def nhlResolve(url):
 
         q = [i[0] for i in result]
         u = [i[1] for i in result]
-        select = control.selectDialog(q, control.lang(30756).encode('utf-8'))
+        select = control.selectDialog(q, control.lang(30756))
         if select == -1: return
         url = u[select]
 
@@ -295,7 +295,7 @@ def addDirectoryItem(name, url, action, image, fanart, isFolder=True):
 
     u = '%s?name=%s&url=%s&image=%s&fanart=%s&action=%s' % (sys.argv[0], urllib.quote_plus(name), urllib.quote_plus(url), urllib.quote_plus(image), urllib.quote_plus(fanart), str(action))
 
-    item = control.item(name, iconImage=image, thumbnailImage=image)
+    item = control.item(name)
     item.setInfo(type='Video', infoLabels = {'title': name})
     item.addContextMenuItems([], replaceItems=False)
     item.setProperty('Fanart_Image', fanart)

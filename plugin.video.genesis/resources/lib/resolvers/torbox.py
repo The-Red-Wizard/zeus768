@@ -33,7 +33,7 @@ def tbAuthorize():
         progressDialog = control.progressDialog
         progressDialog.create('TorBox Authorization', '')
         
-        verification_url = control.lang(30416).encode('utf-8') + '[COLOR skyblue]https://torbox.app/settings[/COLOR]'
+        verification_url = control.lang(30416) + '[COLOR skyblue]https://torbox.app/settings[/COLOR]'
         instructions = 'Get your API key from TorBox settings and enter it below'
         
         progressDialog.update(0, verification_url, instructions)

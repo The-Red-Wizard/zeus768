@@ -44,12 +44,12 @@ def resolve(url):
                     except: referer = ''
                     referer = urllib.unquote_plus(referer)
                     referer = client.replaceHTMLCodes(referer)
-                    referer = referer.encode('utf-8')
+                    referer = referer
 
                     page = re.compile('<page>(.+?)</page>').findall(regex)[0]
                     page = urllib.unquote_plus(page)
                     page = client.replaceHTMLCodes(page)
-                    page = page.encode('utf-8')
+                    page = page
 
                     result = client.request(page, referer=referer)
                     result = str(result).replace('\r','').replace('\n','').replace('\t','')
@@ -62,7 +62,7 @@ def resolve(url):
 
         url = re.compile('(.+?)<regex>').findall(data)[0]
         url = client.replaceHTMLCodes(url)
-        url = url.encode('utf-8')
+        url = url
 
         if not '$doregex' in url: return url
     except:

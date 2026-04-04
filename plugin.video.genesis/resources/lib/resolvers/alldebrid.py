@@ -54,8 +54,8 @@ def adAuthorize():
         user_url = pin_data.get('user_url', '')
         expires_in = pin_data.get('expires_in', 600)
 
-        verification_url = control.lang(30416).encode('utf-8') + '[COLOR skyblue]%s[/COLOR]' % user_url
-        user_code = control.lang(30417).encode('utf-8') + '[COLOR skyblue]%s[/COLOR]' % pin
+        verification_url = control.lang(30416) + '[COLOR skyblue]%s[/COLOR]' % user_url
+        user_code = control.lang(30417) + '[COLOR skyblue]%s[/COLOR]' % pin
 
         progressDialog = control.progressDialog
         progressDialog.create('AllDebrid', verification_url, user_code)

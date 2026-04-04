@@ -76,7 +76,7 @@ def getTrakt(url, post=None):
 def authTrakt():
     try:
         if getTraktCredentialsInfo() == True:
-            if control.yesnoDialog(control.lang(32511).encode('utf-8'), control.lang(32512).encode('utf-8'), '', 'Trakt', control.lang(30483).encode('utf-8'), control.lang(30482).encode('utf-8')):
+            if control.yesnoDialog(control.lang(32511), control.lang(32512), '', 'Trakt', control.lang(30483), control.lang(30482)):
                 control.set_setting('trakt.user', '')
                 control.set_setting('trakt.token', '')
                 control.set_setting('trakt.refresh', '')
@@ -84,8 +84,8 @@ def authTrakt():
 
         result = getTrakt('/oauth/device/code', {"client_id": control.trakt_key })
         result = json.loads(result)
-        verification_url = (control.lang(30416) + '[COLOR skyblue]%s[/COLOR]' % result['verification_url']).encode('utf-8')
-        user_code = (control.lang(30417) + '[COLOR skyblue]%s[/COLOR]' % result['user_code']).encode('utf-8')
+        verification_url = (control.lang(30416) + '[COLOR skyblue]%s[/COLOR]' % result['verification_url'])
+        user_code = (control.lang(30417) + '[COLOR skyblue]%s[/COLOR]' % result['user_code'])
         expires_in = int(result['expires_in'])
         device_code = result['device_code']
         interval = result['interval']
@@ -165,28 +165,28 @@ def manager(name, imdb, tvdb, content):
     try:
         post = {"movies": [{"ids": {"imdb": imdb}}]} if content == 'movie' else {"shows": [{"ids": {"tvdb": tvdb}}]}
 
-        items = [(control.lang(30472).encode('utf-8'), '/sync/collection')]
-        items += [(control.lang(30473).encode('utf-8'), '/sync/collection/remove')]
-        items += [(control.lang(30474).encode('utf-8'), '/sync/watchlist')]
-        items += [(control.lang(30475).encode('utf-8'), '/sync/watchlist/remove')]
-        items += [(control.lang(30476).encode('utf-8'), '/users/me/lists/%s/items')]
+        items = [(control.lang(30472), '/sync/collection')]
+        items += [(control.lang(30473), '/sync/collection/remove')]
+        items += [(control.lang(30474), '/sync/watchlist')]
+        items += [(control.lang(30475), '/sync/watchlist/remove')]
+        items += [(control.lang(30476), '/users/me/lists/%s/items')]
 
         result = getTrakt('/users/me/lists')
         result = json.loads(result)
         lists = [(i['name'], i['ids']['slug']) for i in result]
         lists = [lists[i//2] for i in range(len(lists)*2)]
         for i in range(0, len(lists), 2):
-            lists[i] = ((control.lang(30477) + ' ' + lists[i][0]).encode('utf-8'), '/users/me/lists/%s/items' % lists[i][1])
+            lists[i] = ((control.lang(30477) + ' ' + lists[i][0]), '/users/me/lists/%s/items' % lists[i][1])
         for i in range(1, len(lists), 2):
-            lists[i] = ((control.lang(30478) + ' ' + lists[i][0]).encode('utf-8'), '/users/me/lists/%s/items/remove' % lists[i][1])
+            lists[i] = ((control.lang(30478) + ' ' + lists[i][0]), '/users/me/lists/%s/items/remove' % lists[i][1])
         items += lists
 
-        select = control.selectDialog([i[0] for i in items], control.lang(30471).encode('utf-8'))
+        select = control.selectDialog([i[0] for i in items], control.lang(30471))
 
         if select == -1:
             return
         elif select == 4:
-            t = control.lang(30476).encode('utf-8')
+            t = control.lang(30476)
             k = control.keyboard('', t) ; k.doModal()
             new = k.getText() if k.isConfirmed() else None
             if (new == None or new == ''): return

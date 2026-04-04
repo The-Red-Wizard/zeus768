@@ -23,6 +23,17 @@ import os,xbmc,xbmcaddon,xbmcplugin,xbmcgui,xbmcvfs
 import base64, jsunpack
 import random, time
 
+# Kodi 19+ compat
+try:
+    translatePath = xbmcvfs.translatePath
+except AttributeError:
+    translatePath = xbmc.translatePath
+
+try:
+    LOGNOTICE = xbmc.LOGINFO
+except AttributeError:
+    LOGNOTICE = xbmc.LOGINFO
+
 tmdb_key = jsunpack.jsunpack_keys()
 tvdb_key = base64.urlsafe_b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 fanarttv_key = base64.urlsafe_b64decode('YTc4YzhmZWRjN2U3NTE1MjRkMzkyNmNhMmQyOTU3OTg=')
@@ -94,15 +105,16 @@ deleteFile = xbmcvfs.delete
 
 listDir = xbmcvfs.listdir
 
-transPath = xbmc.translatePath
+transPath = translatePath
 
-skinPath = xbmc.translatePath('special://skin/')
+skinPath = translatePath('special://skin/')
 
-addonPath = xbmc.translatePath(addonInfo('path'))
+addonPath = translatePath(addonInfo('path'))
 
-addonPathMedia = xbmc.translatePath(addonInfoMedia('path'))
+addonPathMedia = translatePath(addonInfoMedia('path'))
 
-dataPath = xbmc.translatePath(addonInfo('profile')).decode('utf-8')
+_raw_dataPath = translatePath(addonInfo('profile'))
+dataPath = _raw_dataPath if isinstance(_raw_dataPath, bytes) else _raw_dataPath
 
 settingsFile = os.path.join(dataPath, 'settings.xml')
 
@@ -232,18 +244,15 @@ def set_setting(id, value):
     if not isinstance(value, basestring): value = str(value)
     ptv.setSetting(id=id, value=value)
 
-def log(msg, level=xbmc.LOGNOTICE):
-    level = xbmc.LOGNOTICE
-    print('[GENESIS]: %s' % (msg))
-
+def log(msg, level=None):
+    if level is None:
+        level = LOGNOTICE
     try:
-        if isinstance(msg, unicode):
-            msg = msg.encode('utf-8')
+        if isinstance(msg, bytes):
+            msg = msg
         xbmc.log('[GENESIS]: %s' % (msg), level)
-    except Exception as e:
-        try:
-            a=1
-        except: pass
+    except Exception:
+        pass
 
 
 def randomagent():

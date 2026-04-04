@@ -69,7 +69,7 @@ class alterepisode:
                 tmdb = tmdb['tv_results'][0]['id']
                 if tmdb == '' or tmdb == None: tmdb = '0'
                 tmdb = re.sub('[^0-9]', '', str(tmdb))
-                tmdb = tmdb.encode('utf-8')
+                tmdb = tmdb
 
 
             if tmdb == '0' and not tvdb == '0':
@@ -80,7 +80,7 @@ class alterepisode:
                 tmdb = tmdb['tv_results'][0]['id']
                 if tmdb == '' or tmdb == None: tmdb = '0'
                 tmdb = re.sub('[^0-9]', '', str(tmdb))
-                tmdb = tmdb.encode('utf-8')
+                tmdb = tmdb
 
             if tmdb == '0': raise Exception()
 
@@ -92,7 +92,7 @@ class alterepisode:
             tvrage = result['external_ids']['tvrage_id']
             if tvrage == '' or tvrage == None: raise Exception()
             tvrage = re.sub('[^0-9]', '', str(tvrage))
-            tvrage = tvrage.encode('utf-8')
+            tvrage = tvrage
             return tvrage
         except:
             pass

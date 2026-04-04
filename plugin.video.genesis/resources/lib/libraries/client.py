@@ -19,19 +19,46 @@
 '''
 
 
-import re,sys,urllib2,HTMLParser, urllib, urlparse
+import re,sys,urllib2,urllib, urlparse
 import xbmc, random, time, cookielib
-import base64, gzip, StringIO
+import gzip
+
+try:
+    import html.parser as HTMLParser
+except ImportError:
+    import HTMLParser
+
+try:
+    from io import BytesIO as _StringIO
+except ImportError:
+    from StringIO import StringIO as _StringIO
 
 from resources.lib.libraries import cache
 from resources.lib.libraries import control
 from resources.lib.libraries import workers
 
 
+def _ensure_str(data):
+    """Ensure data is str (not bytes) for string operations."""
+    if isinstance(data, bytes):
+        try:
+            return data
+        except UnicodeDecodeError:
+            return data.decode('latin-1')
+    return data
+
+
+def _ensure_bytes(data):
+    """Ensure data is bytes for binary operations."""
+    if isinstance(data, str):
+        return data.encode('utf-8')
+    return data
+
+
 def shrink_host(url):
     u = urlparse.urlparse(url)[1].split('.')
     u = u[-2] + '.' + u[-1]
-    return u.encode('utf-8')
+    return u
 
 
 
@@ -125,8 +152,9 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
                 try: encoding = response.info().getheader('Content-Encoding')
                 except: encoding = None
                 if encoding == 'gzip':
-                    cf_result = gzip.GzipFile(fileobj=StringIO.StringIO(cf_result)).read()
+                    cf_result = gzip.GzipFile(fileobj=_StringIO(cf_result)).read()
 
+                cf_result = _ensure_str(cf_result)
                 if 'cf-browser-verification' in cf_result:
 
                     netloc = '%s://%s' % (urlparse.urlparse(url).scheme, urlparse.urlparse(url).netloc)
@@ -185,9 +213,9 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
         try: encoding = response.info().getheader('Content-Encoding')
         except: encoding = None
         if encoding == 'gzip':
-            result = gzip.GzipFile(fileobj=StringIO.StringIO(result)).read()
+            result = gzip.GzipFile(fileobj=_StringIO(result)).read()
 
-
+        result = _ensure_str(result)
         if 'sucuri_cloudproxy_js' in result:
             su = sucuri().get(result)
 
@@ -211,7 +239,9 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
             try: encoding = response.info().getheader('Content-Encoding')
             except: encoding = None
             if encoding == 'gzip':
-                result = gzip.GzipFile(fileobj=StringIO.StringIO(result)).read()
+                result = gzip.GzipFile(fileobj=_StringIO(result)).read()
+
+            result = _ensure_str(result)
 
 
         if output == 'extended':
@@ -238,15 +268,15 @@ def parseDOM(html, name=u"", attrs={}, ret=False):
     # Copyright (C) 2010-2011 Tobias Ussing And Henrik Mosgaard Jensen
 
     if attrs is None: attrs = {}
-    if isinstance(html, str):
+    if isinstance(html, bytes):
         try:
-            html = [html.decode("utf-8")]  # Replace with chardet thingy
+            html = [html.decode("utf-8")]
         except:
             try:
                 html = [html.decode("utf-8", "replace")]
             except:
-                html = [html]
-    elif isinstance(html, unicode):
+                html = [html.decode("latin-1")]
+    elif isinstance(html, str):
         html = [html]
     elif not isinstance(html, list):
         return ''
@@ -334,7 +364,11 @@ def parseDOM(html, name=u"", attrs={}, ret=False):
 
 def replaceHTMLCodes(txt):
     txt = re.sub("(&#[0-9]+)([^;^0-9]+)", "\\1;\\2", txt)
-    txt = HTMLParser.HTMLParser().unescape(txt)
+    try:
+        import html as _html
+        txt = _html.unescape(txt)
+    except (ImportError, AttributeError):
+        txt = HTMLParser.HTMLParser().unescape(txt)
     txt = txt.replace("&quot;", "\"")
     txt = txt.replace("&amp;", "&")
     txt = txt.strip()
@@ -343,7 +377,11 @@ def replaceHTMLCodes(txt):
 def cleanHTMLCodes(txt):
     txt = txt.replace("'", "")
     txt = re.sub("(&#[0-9]+)([^;^0-9]+)", "\\1;\\2", txt)
-    txt = HTMLParser.HTMLParser().unescape(txt)
+    try:
+        import html as _html
+        txt = _html.unescape(txt)
+    except (ImportError, AttributeError):
+        txt = HTMLParser.HTMLParser().unescape(txt)
     txt = txt.replace("&quot;", "\"")
     txt = txt.replace("&amp;", "&")
 
@@ -426,8 +464,9 @@ class cfcookie:
                 try: encoding = response.info().getheader('Content-Encoding')
                 except: encoding = None
                 if encoding == 'gzip':
-                    result = gzip.GzipFile(fileobj=StringIO.StringIO(result)).read()
+                    result = gzip.GzipFile(fileobj=_StringIO(result)).read()
 
+            result = _ensure_str(result)
             jschl = re.findall('name="jschl_vc" value="(.+?)"/>', result)[0]
 
             init = re.findall('setTimeout\(function\(\){\s*.*?.*:(.*?)};', result)[-1]

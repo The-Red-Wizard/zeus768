@@ -39,24 +39,24 @@ def downloader():
     status = control.window.getProperty(property + '.status')
 
     if not downloadPath == '':
-        item = control.item('[COLOR FF00b8ff]Downloads[/COLOR]', iconImage=thumb, thumbnailImage=thumb)
+        item = control.item('[COLOR FF00b8ff]Downloads[/COLOR]')
         item.addContextMenuItems([], replaceItems=True)
         item.setProperty('fanart_image', fanart)
         control.addItem(handle=int(sys.argv[1]), url=downloadPath, listitem=item, isFolder=True)
 
     if status == 'downloading':
-        item = control.item('[COLOR red]Stop Downloads[/COLOR]', iconImage=thumb, thumbnailImage=thumb)
+        item = control.item('[COLOR red]Stop Downloads[/COLOR]')
         item.addContextMenuItems([], replaceItems=True)
         item.setProperty('fanart_image', fanart)
         control.addItem(handle=int(sys.argv[1]), url=sys.argv[0]+'?action=stopDownload', listitem=item, isFolder=True)
     else:
-        item = control.item('[COLOR FF00b8ff]Start Downloads[/COLOR]', iconImage=thumb, thumbnailImage=thumb)
+        item = control.item('[COLOR FF00b8ff]Start Downloads[/COLOR]')
         item.addContextMenuItems([], replaceItems=True)
         item.setProperty('fanart_image', fanart)
         control.addItem(handle=int(sys.argv[1]), url=sys.argv[0]+'?action=startDownload', listitem=item, isFolder=True)
 
     if status == 'downloading':
-        item = control.item('[COLOR gold]Download Status[/COLOR]', iconImage=thumb, thumbnailImage=thumb)
+        item = control.item('[COLOR gold]Download Status[/COLOR]')
         item.addContextMenuItems([], replaceItems=True)
         item.setProperty('Fanart_Image', fanart)
         control.addItem(handle=int(sys.argv[1]), url=sys.argv[0]+'?action=statusDownload', listitem=item, isFolder=True)
@@ -68,7 +68,7 @@ def downloader():
         try:
             cm = []
             cm.append(('Remove from Queue', 'RunPlugin(%s?action=removeDownload&url=%s)' % (sys.argv[0], urllib.quote_plus(i['url']))))
-            item = control.item(i['name'], iconImage=i['image'], thumbnailImage=i['image'])
+            item = control.item(i['name'])
             item.addContextMenuItems(cm, replaceItems=True)
             item.setProperty('fanart_image', fanart)
             item.setProperty('Video', 'true')
@@ -106,7 +106,7 @@ def addDownload(name, url, image, provider=None):
             url = re.compile('(.+?)<source>').findall(url)[0]
 
             for i in ['_mv', '_tv', '_mv_tv']:
-                try: call = __import__('resources.lib.sources.%s%s' % (source, i), globals(), locals(), ['object'], -1).source()
+                try: call = __import__('resources.lib.sources.%s%s' % (source, i), globals(), locals(), ['object'], 0).source()
                 except: pass
 
             from resources.lib import sources ; d = sources.sources()
@@ -318,9 +318,9 @@ class downloadThread(threading.Thread):
             try:
                 req = urllib2.Request(url, headers=headers)
                 resp = urllib2.urlopen(req, timeout=30)
-            except Exception,e:
+            except Exception as e:
                 removeDownload(self.url)
-                print '%s ERROR - File Failed To Open' % (dest)
+                print('%s ERROR - File Failed To Open' % (dest))
                 continue
 
             try: self.size = int(resp.headers['Content-Length'])
@@ -328,7 +328,7 @@ class downloadThread(threading.Thread):
 
             if self.size < 1:
                 removeDownload(self.url)
-                print '%s Unknown filesize - Unable to download' % (dest)
+                print('%s Unknown filesize - Unable to download' % (dest))
                 continue
 
             try:  resumable = 'bytes' in resp.headers['Accept-Ranges'].lower()
@@ -388,11 +388,11 @@ class downloadThread(threading.Thread):
                                 del c
 
                             f.close()
-                            print '%s download complete' % (dest)
+                            print('%s download complete' % (dest))
                             break
 
-                except Exception, e:
-                    print str(e)
+                except Exception as e:
+                    print(str(e))
                     error = True
                     sleep = 10
                     errno = 0
@@ -423,13 +423,13 @@ class downloadThread(threading.Thread):
                 if error:
                     errors += 1
                     count  += 1
-                    print '%d Error(s) whilst downloading %s' % (count, dest)
+                    print('%d Error(s) whilst downloading %s' % (count, dest))
                     control.sleep(sleep*1000)
 
                 if (resumable and errors > 0) or errors >= 10:
                     if (not resumable and resume >= 50) or resume >= 500:
                         #Give up!
-                        print '%s download canceled - too many error whilst downloading' % (dest)
+                        print('%s download canceled - too many error whilst downloading' % (dest))
                         break
 
                     resume += 1
@@ -437,7 +437,7 @@ class downloadThread(threading.Thread):
                     if resumable:
                         chunks  = []
                         #create new response
-                        print 'Download resumed (%d) %s' % (resume, dest)
+                        print('Download resumed (%d) %s' % (resume, dest))
                         h = headers ; h['Range'] = 'bytes=%d-' % int(total)
                         try: resp = urllib2.urlopen(urllib2.Request(url, headers=h), timeout=10)
                         except: resp = None

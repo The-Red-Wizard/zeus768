@@ -55,10 +55,10 @@ def request(url):
             z=False
             hmf = urlresolver.HostedMediaFile(url,include_disabled=False, include_universal=False)
             if hmf:
-                print 'yay! we can resolve this one'
+                print('yay! we can resolve this one')
                 z = hmf.resolve()
             else:
-                print 'sorry :( no resolvers available to handle this one.'
+                print('sorry :( no resolvers available to handle this one.')
 
             control.log("!!!!!!!!! OK #urlresolver2#  URL %s " % z)
 

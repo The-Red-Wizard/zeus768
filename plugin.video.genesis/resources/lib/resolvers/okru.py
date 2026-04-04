@@ -61,12 +61,12 @@ def resolve(url):
             if int(quality) > int(best): best = quality
 
         if len(lines) == 1:
-            return purged_jsonvars[lines[0]].encode('utf-8')
+            return purged_jsonvars[lines[0]]
         else:
-            return purged_jsonvars[str(best)].encode('utf-8')
+            return purged_jsonvars[str(best)]
 
         if result != -1:
-            return purged_jsonvars[lines[result]].encode('utf-8')
+            return purged_jsonvars[lines[result]]
         else:
             raise ResolverError('No link selected')
 

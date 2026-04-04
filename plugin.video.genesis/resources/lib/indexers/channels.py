@@ -80,12 +80,12 @@ class channels:
 
             year = result['d']
             year = re.findall('[(](\d{4})[)]', year)[0].strip()
-            year = year.encode('utf-8')
+            year = year
 
             title = result['t']
             title = title.replace('(%s)' % year, '').strip()
             title = client.replaceHTMLCodes(title)
-            title = title.encode('utf-8')
+            title = title
 
             self.items.append((title, year, channel, num))
         except:
@@ -100,79 +100,79 @@ class channels:
 
             title = item['Title']
             title = client.replaceHTMLCodes(title)
-            title = title.encode('utf-8')
+            title = title
 
             year = item['Year']
             year = re.sub('[^0-9]', '', str(year))
-            year = year.encode('utf-8')
+            year = year
 
             name = '%s (%s)' % (title, year)
-            try: name = name.encode('utf-8')
+            try: name = name
             except: pass
 
             imdb = item['imdbID']
             if imdb == None or imdb == '' or imdb == 'N/A': raise Exception()
             imdb = 'tt' + re.sub('[^0-9]', '', str(imdb))
-            imdb = imdb.encode('utf-8')
+            imdb = imdb
 
             poster = item['Poster']
             if poster == None or poster == '' or poster == 'N/A': poster = '0'
             if not ('_SX' in poster or '_SY' in poster): poster = '0'
             poster = re.sub('_SX\d*|_SY\d*|_CR\d+?,\d+?,\d+?,\d*','_SX500', poster)
-            poster = poster.encode('utf-8')
+            poster = poster
 
             genre = item['Genre']
             if genre == None or genre == '' or genre == 'N/A': genre = '0'
             genre = genre.replace(', ', ' / ')
-            genre = genre.encode('utf-8')
+            genre = genre
 
             duration = item['Runtime']
             if duration == None or duration == '' or duration == 'N/A': duration = '0'
             duration = re.sub('[^0-9]', '', str(duration))
-            duration = duration.encode('utf-8')
+            duration = duration
 
             rating = item['imdbRating']
             if rating == None or rating == '' or rating == 'N/A' or rating == '0.0': rating = '0'
-            rating = rating.encode('utf-8')
+            rating = rating
 
             votes = item['imdbVotes']
             try: votes = str(format(int(votes),',d'))
             except: pass
             if votes == None or votes == '' or votes == 'N/A': votes = '0'
-            votes = votes.encode('utf-8')
+            votes = votes
 
             mpaa = item['Rated']
             if mpaa == None or mpaa == '' or mpaa == 'N/A': mpaa = '0'
-            mpaa = mpaa.encode('utf-8')
+            mpaa = mpaa
 
             director = item['Director']
             if director == None or director == '' or director == 'N/A': director = '0'
             director = director.replace(', ', ' / ')
             director = re.sub(r'\(.*?\)', '', director)
             director = ' '.join(director.split())
-            director = director.encode('utf-8')
+            director = director
 
             writer = item['Writer']
             if writer == None or writer == '' or writer == 'N/A': writer = '0'
             writer = writer.replace(', ', ' / ')
             writer = re.sub(r'\(.*?\)', '', writer)
             writer = ' '.join(writer.split())
-            writer = writer.encode('utf-8')
+            writer = writer
 
             cast = item['Actors']
             if cast == None or cast == '' or cast == 'N/A': cast = '0'
             cast = [x.strip() for x in cast.split(',') if not x == '']
-            try: cast = [(x.encode('utf-8'), '') for x in cast]
+            try: cast = [(x, '') for x in cast]
             except: cast = []
             if cast == []: cast = '0'
 
             plot = item['Plot']
             if plot == None or plot == '' or plot == 'N/A': plot = '0'
             plot = client.replaceHTMLCodes(plot)
-            plot = plot.encode('utf-8')
+            plot = plot
 
             tagline = re.compile('[.!?][\s]{1,2}(?=[A-Z])').split(plot)[0]
-            try: tagline = tagline.encode('utf-8')
+            try: tagline = tagline
             except: pass
 
             self.list.append({'title': title, 'originaltitle': title, 'year': year, 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'director': director, 'writer': writer, 'cast': cast, 'plot': plot, 'tagline': tagline, 'name': name, 'code': imdb, 'imdb': imdb, 'poster': poster, 'channel': i[2], 'num': i[3]})
@@ -195,7 +195,7 @@ class channels:
     def channelDirectory(self, items):
         if items == None or len(items) == 0: return
 
-        playbackMenu = control.lang(30292).encode('utf-8') if control.setting('autoplay') == 'true' else control.lang(30291).encode('utf-8')
+        playbackMenu = control.lang(30292) if control.setting('autoplay') == 'true' else control.lang(30291)
 
         addonPoster, addonBanner = control.addonPoster(), control.addonBanner()
         addonFanart = control.addonFanart()
@@ -226,12 +226,12 @@ class channels:
 
                 cm = []
                 cm.append((playbackMenu, 'RunPlugin(%s?action=alterSources&url=%s&meta=%s)' % (sysaddon, sysurl, sysmeta)))
-                cm.append((control.lang(30293).encode('utf-8'), 'Action(Info)'))
-                cm.append((control.lang(30294).encode('utf-8'), 'RunPlugin(%s?action=refresh)' % (sysaddon)))
-                cm.append((control.lang(30295).encode('utf-8'), 'RunPlugin(%s?action=openSettings)' % (sysaddon)))
-                cm.append((control.lang(30296).encode('utf-8'), 'RunPlugin(%s?action=openPlaylist)' % (sysaddon)))
+                cm.append((control.lang(30293), 'Action(Info)'))
+                cm.append((control.lang(30294), 'RunPlugin(%s?action=refresh)' % (sysaddon)))
+                cm.append((control.lang(30295), 'RunPlugin(%s?action=openSettings)' % (sysaddon)))
+                cm.append((control.lang(30296), 'RunPlugin(%s?action=openPlaylist)' % (sysaddon)))
 
-                item = control.item(label=label, iconImage=poster, thumbnailImage=poster)
+                item = control.item(label=label)
 
                 try: item.setArt({'poster': poster, 'banner': banner})
                 except: pass

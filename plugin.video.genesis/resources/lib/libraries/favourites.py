@@ -34,7 +34,7 @@ def getFavourites(content):
         dbcur = dbcon.cursor()
         dbcur.execute("SELECT * FROM %s" % content)
         items = dbcur.fetchall()
-        items = [(i[0].encode('utf-8'), eval(i[1].encode('utf-8'))) for i in items]
+        items = [(i[0], eval(i[1])) for i in items]
     except:
         items = []
 
@@ -68,7 +68,7 @@ def addFavourite(meta, content, query):
         dbcon.commit()
 
         if query == None: control.refresh()
-        control.infoDialog(control.lang(30411).encode('utf-8'), heading=title)
+        control.infoDialog(control.lang(30411), heading=title)
     except:
         return
 
@@ -91,7 +91,7 @@ def deleteFavourite(meta, content):
             pass
 
         control.refresh()
-        control.infoDialog(control.lang(30412).encode('utf-8'), heading=title)
+        control.infoDialog(control.lang(30412), heading=title)
     except:
         return
 

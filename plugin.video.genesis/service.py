@@ -19,4 +19,11 @@
 '''
 
 import xbmc
+
+# Python 2/3 compat - must run before any other Genesis imports
+try:
+    from resources.lib.libraries import py3compat
+except Exception:
+    pass
+
 xbmc.executebuiltin('RunPlugin(plugin://plugin.video.genesis/?action=service)')

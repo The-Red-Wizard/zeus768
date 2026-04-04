@@ -93,7 +93,7 @@ def tvshows(tvshowtitle, year, imdb, tvdb, season, watched):
 
         dialog = control.progressDialog
         dialog.create(control.addonInfo('name'), str(tvshowtitle))
-        dialog.update(0, str(tvshowtitle), control.lang(30451).encode('utf-8') + '...')
+        dialog.update(0, str(tvshowtitle), control.lang(30451) + '...')
 
         metaget.get_meta('tvshow', '', imdb_id=imdb)
 

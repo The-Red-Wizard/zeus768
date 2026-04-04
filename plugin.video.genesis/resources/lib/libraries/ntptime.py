@@ -28,7 +28,7 @@ def getNTPTime(host="pool.ntp.org"):
     msg = '\x1b' + 47 * '\0'
 
     # reference time (in seconds since 1900-01-01 00:00:00)
-    TIME1970 = 2208988800L  # 1970-01-01 00:00:00
+    TIME1970 = 2208988800  # 1970-01-01 00:00:00
 
     # connect to server
     client = socket.socket(AF_INET, SOCK_DGRAM)
@@ -48,12 +48,12 @@ def checkDate():
         WhenExpire = int(time.mktime(expirewhen.timetuple()))
         NtpTime = getNTPTime()
         if WhenExpire < NtpTime:
-            print "Datetime setup"
+            print("Datetime setup")
             return True
         else:
             return False
     except Exception as e:
-        print "Error %s" % e
+        print("Error %s" % e)
         return False
 
 

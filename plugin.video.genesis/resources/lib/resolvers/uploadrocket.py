@@ -27,7 +27,7 @@ from resources.lib.libraries import captcha
 def resolve(url):
     try:
         result = client.request(url)
-        result = result.decode('iso-8859-1').encode('utf-8')
+        result = result.decode('iso-8859-1')
 
         post = {}
         f = client.parseDOM(result, 'Form', attrs = {'name': 'freeorpremium'})[0]
@@ -37,7 +37,7 @@ def resolve(url):
         post = urllib.urlencode(post)
 
         result = client.request(url, post=post)
-        result = result.decode('iso-8859-1').encode('utf-8')
+        result = result.decode('iso-8859-1')
 
         post = {}
         f = client.parseDOM(result, 'Form', attrs = {'name': 'F1'})[0]
@@ -47,7 +47,7 @@ def resolve(url):
         post = urllib.urlencode(post)
 
         result = client.request(url, post=post)
-        result = result.decode('iso-8859-1').encode('utf-8')
+        result = result.decode('iso-8859-1')
 
         url = client.parseDOM(result, 'a', ret='href', attrs = {'onclick': 'DL.+?'})[0]
         return url

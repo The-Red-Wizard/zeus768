@@ -20,14 +20,15 @@
 
 import urllib2,os,time
 import xbmc,xbmcgui,xbmcaddon,xbmcplugin
+import xbmcvfs
 
 supportsite = 'tvaddons.ag'
 
 
 def openDialog(image,audio):
     audio = audio
-    print 'MUSIC IS  '+audio
-    path = xbmc.translatePath(os.path.join('special://home/addons/plugin.video.phstreams/resources/skins/DefaultSkin','media'))
+    print('MUSIC IS  '+audio)
+    path = xbmcvfs.translatePath(os.path.join('special://home/addons/plugin.video.phstreams/resources/skins/DefaultSkin','media'))
     popimage=os.path.join(path, 'tempimage.jpg')
     downloadFile(image,popimage)
     musicsound=os.path.join(path, 'tempsound.mp3')
@@ -47,10 +48,10 @@ def downloadFile(url,dest,silent = False,cookie = None):
     try:
         import urllib2
         file_name = url.split('/')[-1]
-        print "Downloading: %s" % (file_name)
+        print("Downloading: %s" % (file_name))
         if cookie:
             import cookielib
-            cookie_file = os.path.join(os.path.join(xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile')),'Cookies'), cookie+'.cookies')
+            cookie_file = os.path.join(os.path.join(xbmcvfs.translatePath(xbmcaddon.Addon().getAddonInfo('profile')),'Cookies'), cookie+'.cookies')
             cj = cookielib.LWPCookieJar()
             if os.path.exists(cookie_file):
                 try: cj.load(cookie_file,True)
@@ -73,11 +74,11 @@ def downloadFile(url,dest,silent = False,cookie = None):
             if not buffer: break
             file_size_dl += len(buffer)
             f.write(buffer)
-        print "Downloaded: %s %s Bytes" % (file_name, file_size)
+        print("Downloaded: %s %s Bytes" % (file_name, file_size))
         f.close()
         return True
     except Exception:
-        print 'Error downloading file ' + url.split('/')[-1]
+        print('Error downloading file ' + url.split('/')[-1])
         #ErrorReport(e)
         if not silent:
             dialog = xbmcgui.Dialog()
@@ -113,7 +114,7 @@ class dialog( xbmcgui.WindowXMLDialog ):
             self._close_dialog()
 
     def _close_dialog( self ):
-        path = xbmc.translatePath(os.path.join('special://home/addons/plugin.video.phstreams/resources/skins/DefaultSkin','media'))
+        path = xbmcvfs.translatePath(os.path.join('special://home/addons/plugin.video.phstreams/resources/skins/DefaultSkin','media'))
         popimage=os.path.join(path, 'tempimage.jpg')
         musicsound=os.path.join(path, 'tempsound.mp3')
         xbmc.executebuiltin( "Skin.Reset(AnimeWindowXMLDialogClose)" )

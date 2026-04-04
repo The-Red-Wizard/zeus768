@@ -55,7 +55,7 @@ def get(function, timeout, *args, **table):
         dbcur.execute("SELECT * FROM %s WHERE func = '%s' AND args = '%s'" % (table, f, a))
         match = dbcur.fetchone()
 
-        response = eval(match[2].encode('utf-8'))
+        response = eval(match[2])
 
         t1 = int(match[3])
         t2 = int(time.time())
@@ -85,7 +85,7 @@ def get(function, timeout, *args, **table):
         pass
 
     try:
-        return eval(r.encode('utf-8'))
+        return eval(r)
     except:
         pass
 
@@ -126,7 +126,7 @@ def clear(table=None):
         if table == None: table = ['rel_list', 'rel_lib']
         elif not type(table) == list: table = [table]
 
-        yes = control.yesnoDialog(control.lang(30401).encode('utf-8'), '', '')
+        yes = control.yesnoDialog(control.lang(30401), '', '')
         if not yes: return
 
         dbcon = database.connect(control.cacheFile)
@@ -140,7 +140,7 @@ def clear(table=None):
             except:
                 pass
 
-        control.infoDialog(control.lang(30402).encode('utf-8'))
+        control.infoDialog(control.lang(30402))
     except:
         pass
 

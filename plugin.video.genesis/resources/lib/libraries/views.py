@@ -59,7 +59,7 @@ def addView(content):
         dbcon.commit()
         viewName = control.infoLabel('Container.Viewmode')
 
-        control.infoDialog(control.lang(30491).encode('utf-8'), heading=viewName)
+        control.infoDialog(control.lang(30491), heading=viewName)
     except:
         return
 

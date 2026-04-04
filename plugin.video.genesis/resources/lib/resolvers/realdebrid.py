@@ -41,8 +41,8 @@ def rdAuthorize():
         url = 'https://api.real-debrid.com/oauth/v2/device/code?client_id=%s&new_credentials=yes' % (CLIENT_ID)
         result = client.request(url, headers=headers)
         result = json.loads(result)
-        verification_url = control.lang(30416).encode('utf-8') + '[COLOR skyblue]%s[/COLOR]' % (result['verification_url'])
-        user_code = control.lang(30417).encode('utf-8') + '[COLOR skyblue]%s[/COLOR]' % (result['user_code'])
+        verification_url = str(control.lang(30416)) + '[COLOR skyblue]%s[/COLOR]' % (result['verification_url'])
+        user_code = str(control.lang(30417)) + '[COLOR skyblue]%s[/COLOR]' % (result['user_code'])
         device_code = result['device_code']
         interval = result['interval']
 
@@ -181,7 +181,7 @@ def getHosts():
     myhosts2 = rdDict()
     myhosts = rdDict()
     for i in range(len(myhosts)):
-        myhosts[i] = myhosts[i].split('.')[-2].encode('utf-8')
+        myhosts[i] = myhosts[i].split('.')[-2]
     myhosts = myhosts + myhosts2
     return myhosts
 

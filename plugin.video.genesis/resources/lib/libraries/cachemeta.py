@@ -49,7 +49,7 @@ def get(function, timeout, *args):
         dbcur.execute("SELECT * FROM rel_list WHERE func = '%s' AND args = '%s'" % (f, a))
         match = dbcur.fetchone()
 
-        response = eval(match[2].encode('utf-8'))
+        response = eval(match[2])
 
         t1 = int(match[3])
         t2 = int(time.time())
@@ -81,7 +81,7 @@ def get(function, timeout, *args):
         pass
 
     try:
-        return eval(r.encode('utf-8'))
+        return eval(r)
     except:
         pass
 

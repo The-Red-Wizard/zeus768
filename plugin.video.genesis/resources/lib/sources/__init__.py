@@ -20,6 +20,7 @@
 
 
 import sys,pkgutil,re,json,urllib,urlparse,datetime,time
+from functools import reduce
 
 try: import xbmc
 except: pass
@@ -102,7 +103,7 @@ class sources:
 
             return url
         except:
-            control.infoDialog(control.lang(30501).encode('utf-8'))
+            control.infoDialog(control.lang(30501))
 
 
     def addItem(self, name, title, year, imdb, tmdb, tvdb, tvrage, season, episode, tvshowtitle, alter, date, meta):
@@ -116,10 +117,10 @@ class sources:
             if self.sources == []: raise Exception()
             self.progressDialog = control.progressDialog
             self.progressDialog.create(control.addonInfo('name'), '')
-            self.progressDialog.update(0, control.lang(30515).encode('utf-8'), str(' '))
+            self.progressDialog.update(0, control.lang(30515), str(' '))
 
             self.sources = self.sourcesFilter()
-            infoMenu = control.lang(30502).encode('utf-8') if content == 'movie' else control.lang(30503).encode('utf-8')
+            infoMenu = control.lang(30502) if content == 'movie' else control.lang(30503)
 
             sysmeta = urllib.quote_plus(meta)
             sysaddon = sys.argv[0]
@@ -156,14 +157,15 @@ class sources:
                         query = 'action=playItem&content=%s&name=%s&year=%s&imdb=%s&tvdb=%s&source=%s' % (content, sysname, year, imdb, tvdb, syssource)
 
                     cm = []
-                    cm.append((control.lang(30504).encode('utf-8'), 'RunPlugin(%s?action=queueItem)' % sysaddon))
-                    cm.append((control.lang(30505).encode('utf-8'), 'RunPlugin(%s?action=download&name=%s&image=%s&url=%s&provider=%s)' % (sysaddon, sysname, sysimage, sysurl, sysprovider)))
+                    cm.append((control.lang(30504), 'RunPlugin(%s?action=queueItem)' % sysaddon))
+                    cm.append((control.lang(30505), 'RunPlugin(%s?action=download&name=%s&image=%s&url=%s&provider=%s)' % (sysaddon, sysname, sysimage, sysurl, sysprovider)))
                     cm.append((infoMenu, 'Action(Info)'))
-                    cm.append((control.lang(30506).encode('utf-8'), 'RunPlugin(%s?action=refresh)' % sysaddon))
-                    cm.append((control.lang(30507).encode('utf-8'), 'RunPlugin(%s?action=openSettings)' % sysaddon))
-                    cm.append((control.lang(30508).encode('utf-8'), 'RunPlugin(%s?action=openPlaylist)' % sysaddon))
+                    cm.append((control.lang(30506), 'RunPlugin(%s?action=refresh)' % sysaddon))
+                    cm.append((control.lang(30507), 'RunPlugin(%s?action=openSettings)' % sysaddon))
+                    cm.append((control.lang(30508), 'RunPlugin(%s?action=openPlaylist)' % sysaddon))
 
-                    item = control.item(label=label, iconImage='DefaultVideo.png', thumbnailImage=thumb)
+                    item = control.item(label=label)
+                    item.setArt({'icon': 'DefaultVideo.png', 'thumb': thumb})
                     try: item.setArt({'poster': poster, 'tvshow.poster': poster, 'season.poster': poster, 'banner': banner, 'tvshow.banner': banner, 'season.banner': banner})
                     except: pass
                     item.setInfo(type='Video', infoLabels = meta)
@@ -181,7 +183,7 @@ class sources:
             try: self.progressDialog.close()
             except: pass
         except:
-            control.infoDialog(control.lang(30501).encode('utf-8'))
+            control.infoDialog(control.lang(30501))
             try: self.progressDialog.close()
             except: pass
 
@@ -294,7 +296,7 @@ class sources:
             raise Exception()
 
         except:
-            control.infoDialog(control.lang(30501).encode('utf-8'))
+            control.infoDialog(control.lang(30501))
             pass
 
 
@@ -327,7 +329,7 @@ class sources:
             title = cleantitle.normalize(title)
             for source in sourceDict:
                 try:
-                    threads.append(workers.Thread(self.getMovieSource, title, year, imdb, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], -1).source()))
+                    threads.append(workers.Thread(self.getMovieSource, title, year, imdb, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], 1).source()))
                 except Exception as e:
                     control.log('Source getSources %s ERROR %s' % (source,e))
                     pass
@@ -336,7 +338,7 @@ class sources:
             season, episode = alterepisode.alterepisode().get(imdb, tmdb, tvdb, tvrage, season, episode, alter, title, date)
             for source in sourceDict:
                 try:
-                    threads.append(workers.Thread(self.getEpisodeSource, title, year, imdb, tvdb, season, episode, tvshowtitle, date, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], -1).source()))
+                    threads.append(workers.Thread(self.getEpisodeSource, title, year, imdb, tvdb, season, episode, tvshowtitle, date, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], 1).source()))
                 except Exception as e:
                     control.log('Source getSources %s ERROR %s' % (source, e))
                     pass
@@ -357,9 +359,9 @@ class sources:
         self.progressDialog.create(control.addonInfo('name'), '')
         self.progressDialog.update(0)
 
-        string1 = control.lang(30512).encode('utf-8')
-        string2 = control.lang(30513).encode('utf-8')
-        string3 = control.lang(30514).encode('utf-8')
+        string1 = control.lang(30512)
+        string2 = control.lang(30513)
+        string3 = control.lang(30514)
 
         for i in range(0, timeout * 2):
             try:
@@ -372,12 +374,12 @@ class sources:
                     if self.progressDialog.iscanceled(): break
                     string4 = string1 + ' %s' % str(int(i * 0.5))
                     if len(info) > 5: string5 = string3 + ' %s' % str(len(info))
-                    else: string5 = string3 + ' %s'  % str(info).translate(None, "[]'")
+                    else: string5 = string3 + ' %s'  % re.sub(r"[\[\]']", '', str(info))
                     self.progressDialog.update(int((100 / float(len(threads))) * len([x for x in threads if x.is_alive() == False])), str(string4), str(string5))
                 except Exception as e:
                     string4 = string2 + ' %s'  % str(int(i * 0.5))
                     if len(info) > 5: string5 = string3 + ' %s'  % str(len(info))
-                    else: string5 = str(info).translate(None, "[]'")
+                    else: string5 = re.sub(r"[\[\]']", '', str(info))
                     self.progressDialog.update(int((100 / float(len(threads))) * len([x for x in threads if x.is_alive() == False])), str(string4), str(string5))
 
                 is_alive = [x.is_alive() for x in threads]
@@ -421,7 +423,7 @@ class sources:
             title = cleantitle.normalize(title)
             for source in sourceDict:
                 try:
-                    threads.append(workers.Thread(self.getMovieSource, title, year, imdb, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], -1).source()))
+                    threads.append(workers.Thread(self.getMovieSource, title, year, imdb, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], 1).source()))
                 except:
                     control.log('Source checkSources %s ERROR %s' % (source,e))
                     pass
@@ -433,7 +435,7 @@ class sources:
             for source in sourceDict:
                 #control.log("SOURCE S2 %s" % source)
                 try:
-                    threads.append(workers.Thread(self.getEpisodeSource, title, year, imdb, tvdb, season, episode, tvshowtitle, date, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], -1).source()))
+                    threads.append(workers.Thread(self.getEpisodeSource, title, year, imdb, tvdb, season, episode, tvshowtitle, date, re.sub('_mv_tv$|_mv$|_tv$', '', source), __import__(source, globals(), locals(), [], 1).source()))
                 except:
                     control.log('Source checkSources %s ERROR %s' % (source,e))
                     pass
@@ -602,7 +604,7 @@ class sources:
         try:
             control.idle()
 
-            yes = control.yesnoDialog(control.lang(30510).encode('utf-8'), '', '')
+            yes = control.yesnoDialog(control.lang(30510), '', '')
             if not yes: return
 
             control.makeFile(control.dataPath)
@@ -615,7 +617,7 @@ class sources:
 
             dbcon.commit()
 
-            control.infoDialog(control.lang(30511).encode('utf-8'))
+            control.infoDialog(control.lang(30511))
         except:
             pass
 
@@ -741,14 +743,14 @@ class sources:
             settingsFile = control.settingsFile
             file = control.openFile(settingsFile) ; read = file.read().splitlines() ; file.close()
 
-            write = unicode( '<settings>' + '\n', 'UTF-8' )
+            write = '<settings>\n'
             for line in read:
                 if len(re.findall('<settings>', line)) > 0: continue
                 elif len(re.findall('</settings>', line)) > 0: continue
                 elif len(re.findall('id="(host|hosthd)500\d*"', line)) > 0: pass
                 elif len(re.findall('id="(host|hosthd)\d*"', line)) > 0: continue
-                write += unicode(line.rstrip() + '\n', 'UTF-8')
-            write += unicode('</settings>' + '\n', 'UTF-8')
+                write += line.rstrip() + '\n'
+            write += '</settings>\n'
 
             file = control.openFile(settingsFile, 'w') ; file.write(str(write)) ; file.close()
         except:
@@ -773,7 +775,7 @@ class sources:
 
                 provider = [i[0] for i in sourceDict if i[1] == False and i[0].startswith(provider + '_')][0]
 
-            source = __import__(provider, globals(), locals(), [], -1).source()
+            source = __import__(provider, globals(), locals(), [], 1).source()
             url = source.resolve(url)
             if url == False or url == None: raise Exception()
             try: headers = dict(urlparse.parse_qsl(url.rsplit('|', 1)[1]))
@@ -792,7 +794,7 @@ class sources:
 
     def sourcesDialog(self):
         try:
-            sources = [{'label': '00 | [B]%s[/B]' % control.lang(30509).encode('utf-8').upper()}] + self.sources
+            sources = [{'label': '00 | [B]%s[/B]' % control.lang(30509).upper()}] + self.sources
 
             labels = [i['label'] for i in sources]
 

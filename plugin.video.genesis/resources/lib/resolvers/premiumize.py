@@ -50,8 +50,8 @@ def pmAuthorize():
         expires_in = data.get('expires_in', 600)
         interval = data.get('interval', 5)
 
-        verification_text = control.lang(30416).encode('utf-8') + '[COLOR skyblue]%s[/COLOR]' % verification_url
-        user_code_text = control.lang(30417).encode('utf-8') + '[COLOR skyblue]%s[/COLOR]' % user_code
+        verification_text = control.lang(30416) + '[COLOR skyblue]%s[/COLOR]' % verification_url
+        user_code_text = control.lang(30417) + '[COLOR skyblue]%s[/COLOR]' % user_code
 
         progressDialog = control.progressDialog
         progressDialog.create('Premiumize', verification_text, user_code_text)

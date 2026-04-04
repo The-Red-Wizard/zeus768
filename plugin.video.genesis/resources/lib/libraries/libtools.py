@@ -42,7 +42,7 @@ class libmovies:
 
     def add(self, name, title, year, imdb, tmdb, range=False):
         if not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
-            control.infoDialog(control.lang(30421).encode('utf-8'), time=10000000)
+            control.infoDialog(control.lang(30421), time=10000000)
             self.infoDialog = True
 
         try:
@@ -52,7 +52,7 @@ class libmovies:
             lib = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["imdbnumber", "originaltitle", "year"]}, "id": 1}' % (year, str(int(year)+1), str(int(year)-1)))
             lib = unicode(lib, 'utf-8', errors='ignore')
             lib = json.loads(lib)['result']['movies']
-            lib = [i for i in lib if str(i['imdbnumber']) in id or (i['originaltitle'].encode('utf-8') == title and str(i['year']) == year)][0]
+            lib = [i for i in lib if str(i['imdbnumber']) in id or (i['originaltitle'] == title and str(i['year']) == year)][0]
         except:
             lib = []
 
@@ -71,7 +71,7 @@ class libmovies:
         if range == True: return
 
         if self.infoDialog == True:
-            control.infoDialog(control.lang(30423).encode('utf-8'), time=1)
+            control.infoDialog(control.lang(30423), time=1)
 
         if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
             control.execute('UpdateLibrary(video)')
@@ -80,11 +80,11 @@ class libmovies:
     def range(self, url):
         control.idle()
 
-        yes = control.yesnoDialog(control.lang(30425).encode('utf-8'), '', '')
+        yes = control.yesnoDialog(control.lang(30425), '', '')
         if not yes: return
 
         if not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
-            control.infoDialog(control.lang(30421).encode('utf-8'), time=10000000)
+            control.infoDialog(control.lang(30421), time=10000000)
             self.infoDialog = True
 
         from resources.lib.indexers import movies
@@ -101,7 +101,7 @@ class libmovies:
                 pass
 
         if self.infoDialog == True:
-            control.infoDialog(control.lang(30423).encode('utf-8'), time=1)
+            control.infoDialog(control.lang(30423), time=1)
 
         if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
             control.execute('UpdateLibrary(video)')
@@ -122,15 +122,15 @@ class libmovies:
             control.makeFile(folder)
 
             try:
-				if not 'ftp://' in folder: raise Exception()
-				from ftplib import FTP
-				ftparg = re.compile('ftp://(.+?):(.+?)@(.+?):?(\d+)?/(.+/?)').findall(folder)
-				ftp = FTP(ftparg[0][2],ftparg[0][0],ftparg[0][1])
-				try: ftp.cwd(ftparg[0][4])
-				except: ftp.mkd(ftparg[0][4])
-				ftp.quit()
+                if not 'ftp://' in folder: raise Exception()
+                from ftplib import FTP
+                ftparg = re.compile('ftp://(.+?):(.+?)@(.+?):?(\d+)?/(.+/?)').findall(folder)
+                ftp = FTP(ftparg[0][2],ftparg[0][0],ftparg[0][1])
+                try: ftp.cwd(ftparg[0][4])
+                except: ftp.mkd(ftparg[0][4])
+                ftp.quit()
             except:
-				pass
+                pass
 
             stream = os.path.join(folder, transname + '.strm')
             file = control.openFile(stream, 'w')
@@ -159,7 +159,7 @@ class libtvshows:
 
     def add(self, tvshowtitle, year, imdb, tmdb, tvdb, tvrage, range=False):
         if not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
-            control.infoDialog(control.lang(30421).encode('utf-8'), time=10000000)
+            control.infoDialog(control.lang(30421), time=10000000)
             self.infoDialog = True
 
         from resources.lib.indexers import episodes
@@ -178,7 +178,7 @@ class libtvshows:
             lib = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"properties" : ["imdbnumber", "title", "year"]}, "id": 1}')
             lib = unicode(lib, 'utf-8', errors='ignore')
             lib = json.loads(lib)['result']['tvshows']
-            lib = [i['title'].encode('utf-8') for i in lib if str(i['imdbnumber']) in id or (i['title'].encode('utf-8') == items[0]['tvshowtitle'] and str(i['year']) == items[0]['year'])][0]
+            lib = [i['title'] for i in lib if str(i['imdbnumber']) in id or (i['title'] == items[0]['tvshowtitle'] and str(i['year']) == items[0]['year'])][0]
 
             lib = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": {"filter":{"and": [{"field": "tvshow", "operator": "is", "value": "%s"}]}, "properties": ["season", "episode"]}, "id": 1}' % lib)
             lib = unicode(lib, 'utf-8', errors='ignore')
@@ -213,7 +213,7 @@ class libtvshows:
         if range == True: return
 
         if self.infoDialog == True:
-            control.infoDialog(control.lang(30423).encode('utf-8'), time=1)
+            control.infoDialog(control.lang(30423), time=1)
 
         if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
             control.execute('UpdateLibrary(video)')
@@ -222,11 +222,11 @@ class libtvshows:
     def range(self, url):
         control.idle()
 
-        yes = control.yesnoDialog(control.lang(30425).encode('utf-8'), '', '')
+        yes = control.yesnoDialog(control.lang(30425), '', '')
         if not yes: return
 
         if not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
-            control.infoDialog(control.lang(30421).encode('utf-8'), time=10000000)
+            control.infoDialog(control.lang(30421), time=10000000)
             self.infoDialog = True
 
         from resources.lib.indexers import tvshows
@@ -241,7 +241,7 @@ class libtvshows:
                 pass
 
         if self.infoDialog == True:
-            control.infoDialog(control.lang(30423).encode('utf-8'), time=1)
+            control.infoDialog(control.lang(30423), time=1)
 
         if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
             control.execute('UpdateLibrary(video)')
@@ -271,29 +271,29 @@ class libtvshows:
             control.makeFile(folder)
 
             try:
-				if not 'ftp://' in folder: raise Exception()
-				from ftplib import FTP
-				ftparg = re.compile('ftp://(.+?):(.+?)@(.+?):?(\d+)?/(.+/?)').findall(folder)
-				ftp = FTP(ftparg[0][2],ftparg[0][0],ftparg[0][1])
-				try: ftp.cwd(ftparg[0][4])
-				except: ftp.mkd(ftparg[0][4])
-				ftp.quit()
+                if not 'ftp://' in folder: raise Exception()
+                from ftplib import FTP
+                ftparg = re.compile('ftp://(.+?):(.+?)@(.+?):?(\d+)?/(.+/?)').findall(folder)
+                ftp = FTP(ftparg[0][2],ftparg[0][0],ftparg[0][1])
+                try: ftp.cwd(ftparg[0][4])
+                except: ftp.mkd(ftparg[0][4])
+                ftp.quit()
             except:
-				pass
+                pass
 
             folder = os.path.join(folder, transseason)
             control.makeFile(folder)
 
             try:
-				if not 'ftp://' in folder: raise Exception()
-				from ftplib import FTP
-				ftparg = re.compile('ftp://(.+?):(.+?)@(.+?):?(\d+)?/(.+/?)').findall(folder)
-				ftp = FTP(ftparg[0][2],ftparg[0][0],ftparg[0][1])
-				try: ftp.cwd(ftparg[0][4])
-				except: ftp.mkd(ftparg[0][4])
-				ftp.quit()
+                if not 'ftp://' in folder: raise Exception()
+                from ftplib import FTP
+                ftparg = re.compile('ftp://(.+?):(.+?)@(.+?):?(\d+)?/(.+/?)').findall(folder)
+                ftp = FTP(ftparg[0][2],ftparg[0][0],ftparg[0][1])
+                try: ftp.cwd(ftparg[0][4])
+                except: ftp.mkd(ftparg[0][4])
+                ftp.quit()
             except:
-				pass
+                pass
 
             stream = os.path.join(folder, transname + '.strm')
             file = control.openFile(stream, 'w')
@@ -335,7 +335,7 @@ class libepisodes:
                 try:
                     file = control.openFile(file)
                     read = file.read()
-                    read = read.encode('utf-8')
+                    read = read
                     file.close()
 
                     if not read.startswith(sys.argv[0]): raise Exception()
@@ -375,7 +375,7 @@ class libepisodes:
             return
 
         if info == 'true' and not control.condVisibility('Window.IsVisible(infodialog)') and not control.condVisibility('Player.HasVideo'):
-            control.infoDialog(control.lang(30422).encode('utf-8'), time=10000000)
+            control.infoDialog(control.lang(30422), time=10000000)
             self.infoDialog = True
 
         try:
@@ -398,7 +398,7 @@ class libepisodes:
             try:
                 dbcur.execute("SELECT * FROM tvshows WHERE id = '%s'" % item['tvdb'])
                 fetch = dbcur.fetchone()
-                it = eval(fetch[1].encode('utf-8'))
+                it = eval(fetch[1])
             except:
                 pass
 
@@ -421,7 +421,7 @@ class libepisodes:
                 id = [item['imdb'], item['tvdb']]
                 if not item['tmdb'] == '0': id += [item['tmdb']]
 
-                ep = [x['title'].encode('utf-8') for x in lib if str(x['imdbnumber']) in id or (x['title'].encode('utf-8') == item['tvshowtitle'] and str(x['year']) == item['year'])][0]
+                ep = [x['title'] for x in lib if str(x['imdbnumber']) in id or (x['title'] == item['tvshowtitle'] and str(x['year']) == item['year'])][0]
                 ep = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": {"filter":{"and": [{"field": "tvshow", "operator": "is", "value": "%s"}]}, "properties": ["season", "episode"]}, "id": 1}' % ep)
                 ep = unicode(ep, 'utf-8', errors='ignore')
                 ep = json.loads(ep)['result']['episodes'][-1]
@@ -447,7 +447,7 @@ class libepisodes:
                     pass
 
         if self.infoDialog == True:
-            control.infoDialog(control.lang(30423).encode('utf-8'), time=1)
+            control.infoDialog(control.lang(30423), time=1)
 
         if self.library_setting == 'true' and not control.condVisibility('Library.IsScanningVideo'):
             control.execute('UpdateLibrary(video)')

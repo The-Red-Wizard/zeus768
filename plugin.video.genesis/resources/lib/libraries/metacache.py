@@ -46,7 +46,7 @@ def fetch(items, lang):
             update = (abs(t2 - t1) / 3600) >= 720
             if update == True: raise Exception()
 
-            item = eval(match[4].encode('utf-8'))
+            item = eval(match[4])
             item = dict((k,v) for k, v in item.iteritems() if not v == '0')
 
             try: items[i].update({'poster': item['poster']})
