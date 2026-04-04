@@ -152,6 +152,49 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
+<addon id="plugin.video.genesis" name="Genesis" version="2026.04.04.01" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.requests"/>
+        <import addon="script.module.metahandler"/>
+        <import addon="plugin.video.youtube" optional="true"/>
+        <import addon="script.mrknow.urlresolver"/>
+        <import addon="script.genesis.media"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
+        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support.</description>
+        <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="script.genesis.media" version="2026.04.04" name="Genesis Themepak" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="2.19.0"/>
+    </requires>
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Themes for Genesis</summary>
+        <description>Themes for Genesis.</description>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
 <addon id="repository.zeus768" name="Zeus768 Repository" version="1.0.8" provider-name="zeus768, [COLOR red]The Red Wizard[/COLOR]">
     <extension point="xbmc.addon.repository" name="Zeus768 Repository">
         <dir><!--Zeus768 Repository-->
@@ -170,11 +213,13 @@ v2.0.0 (2026)
         <description>Zeus768's Kodi Addon Repository.
 
 Available Addons:
+- Genesis - Stream Movies and TV Shows with torrent support
 - SALTS (Stream All The Sources) - 35+ scrapers, Free Streams, Autoplay, Up Next, Skip Intro, Trakt, Debrid Support
 - Trakt Player - Click and Play, Torrent-only, Debrid-powered (RD, PM, AD, TorBox)
 - Orion - Torrent and Usenet Indexer
 - Strike Zone - Sports Streaming Add-on
 - The Accountant - Kodi Maintenance and Debrid Management Tool
+- Genesis Themepak - Themes for Genesis
 - ResolveURL - URL Resolver Module</description>
         <platform>all</platform>
         <assets>
