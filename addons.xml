@@ -150,7 +150,7 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="09.1.0" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="9.2.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.media"/>
