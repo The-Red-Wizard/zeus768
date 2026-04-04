@@ -125,7 +125,7 @@ def _build_feed_items(tmdb_items, media_type='movie'):
 
         label = '%s (%s)' % (title, year) if year else title
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'poster': poster, 'fanart': backdrop or FANART, 'thumb': poster, 'icon': poster})
+        li.setArt({'poster': poster, 'fanart': FANART, 'thumb': poster, 'icon': ICON})
         li.setInfo('video', {
             'title': title, 'year': year, 'plot': overview,
             'rating': rating, 'mediatype': media_type
@@ -233,7 +233,7 @@ def feed_shuffle():
         label = '%s (%s)' % (title, year) if year else title
         tag = '[MOVIE]' if media_type == 'movie' else '[TV]'
         li = xbmcgui.ListItem(label='%s %s' % (tag, label))
-        li.setArt({'poster': poster, 'fanart': backdrop or FANART, 'thumb': poster, 'icon': poster})
+        li.setArt({'poster': poster, 'fanart': FANART, 'thumb': poster, 'icon': ICON})
         li.setInfo('video', {'title': title, 'year': year, 'plot': item.get('overview', ''),
                               'rating': item.get('vote_average', 0)})
         li.setProperty('IsPlayable', 'true')
@@ -294,7 +294,7 @@ def feed_marathon():
 
         label = '%s (%s)' % (title, year) if year else title
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'poster': poster, 'thumb': poster})
+        li.setArt({'poster': poster, 'thumb': poster, 'fanart': FANART, 'icon': ICON})
         li.setInfo('video', {'title': title, 'year': year})
 
         playlist.add(stream_url, li)

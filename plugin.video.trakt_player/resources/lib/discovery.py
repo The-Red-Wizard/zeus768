@@ -179,9 +179,9 @@ def vibe_discovery():
         li = xbmcgui.ListItem(label=label)
         li.setArt({
             'poster': meta.get('poster', ''),
-            'fanart': meta.get('backdrop', '') or FANART,
+            'fanart': FANART,
             'thumb': meta.get('poster', ''),
-            'icon': meta.get('poster', '')
+            'icon': ICON
         })
         li.setInfo('video', {
             'title': actual_title, 'year': actual_year,
@@ -288,7 +288,7 @@ def vibe_play(vibe):
         label = '%s (%s)' % (actual_title, actual_year) if actual_year else actual_title
 
         li = xbmcgui.ListItem(label=label)
-        li.setArt({'poster': meta.get('poster', ''), 'fanart': meta.get('backdrop', '') or FANART, 'thumb': meta.get('poster', ''), 'icon': meta.get('poster', '')})
+        li.setArt({'poster': meta.get('poster', ''), 'fanart': FANART, 'thumb': meta.get('poster', ''), 'icon': ICON})
         li.setInfo('video', {
             'title': actual_title, 'year': actual_year,
             'plot': meta.get('overview', ''), 'rating': meta.get('rating', 0),
