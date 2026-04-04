@@ -1,5 +1,5 @@
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon, xbmcvfs
-import json, os, sys, shutil, urllib.parse, time
+import json, os, sys, shutil, urllib.parse, urllib.request, time
 
 # --- CRITICAL: PREVENT STARTUP CRASH ---
 try:
@@ -1257,7 +1257,6 @@ if __name__ == '__main__':
         help_menu()
     elif action == 'buy_beer':
         import ssl
-        import urllib.request
         kofi_url = 'https://ko-fi.com/zeus768'
         qr_file = os.path.join(KODI_TEMP, 'kofi_qr.png')
         try:

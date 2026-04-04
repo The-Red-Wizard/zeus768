@@ -6,6 +6,7 @@ Multi-scraper support with debrid, history, favorites, and auto-play
 
 import sys
 import urllib.parse
+import urllib.request
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
@@ -1730,7 +1731,6 @@ elif action == 'noop':
     pass
 elif action == 'buy_beer':
     import ssl
-    import urllib.request
     kofi_url = 'https://ko-fi.com/zeus768'
     qr_file = os.path.join(xbmcvfs.translatePath('special://temp/'), 'kofi_qr.png')
     try:

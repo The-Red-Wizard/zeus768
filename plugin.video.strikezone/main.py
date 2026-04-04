@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import urllib.parse
+import urllib.request
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
@@ -506,7 +507,6 @@ def run():
     elif action == 'donate':
         # Show Ko-fi QR code for donation
         import ssl
-        import urllib.request
         kofi_url = 'https://ko-fi.com/zeus768'
         temp_path = xbmcvfs.translatePath('special://temp/')
         qr_file = os.path.join(temp_path, 'kofi_qr.png')
