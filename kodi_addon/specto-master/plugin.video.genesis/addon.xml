@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.genesis" name="Genesis" version="2026.04.04.01" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0" />
+        <import addon="script.module.requests" />
+        <import addon="script.module.metahandler" />
+        <import addon="plugin.video.youtube" optional="true" />
+        <import addon="script.mrknow.urlresolver" />
+        <import addon="script.genesis.media" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
+        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support.</description>
+        <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
+        <platform>all</platform>
+    </extension>
+</addon>

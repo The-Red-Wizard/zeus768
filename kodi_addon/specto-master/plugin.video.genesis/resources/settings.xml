@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="30800">
+        <setting id="appearance" type="select" label="30801" values="-|4orbs|Clean|Embossed|GOne|Metro" default="GOne" />
+        <setting id="fanart" type="bool" label="30802" default="true" />
+        <setting id="infoLang" visible="false" type="select" label="30803" values="bg|cs|da|de|el|en|es|fi|fr|he|hr|hu|it|ja|ko|nl|no|pl|pt|ru|sl|sv|tr|zh" default="en" />
+        <setting type="sep" />
+        <setting id="sources_timeout_40" type="slider" label="30804" default="30" range="10,60" option="int" />
+        <setting type="sep" />
+        <setting type="lsep" label="30805" />
+        <setting id="movie_widget" type="enum" label="30806" lvalues="30807|30808|30809|30810" default="1" />
+        <setting id="tv_alt_widget" type="enum" label="30811" lvalues="30812|30813|30814|30815|30816" default="3" visible="!eq(-1,)+!eq(-2,)" />
+        <setting id="tv_widget" type="enum" label="30811" lvalues="30812|30813|30814" default="1" visible="eq(-2,)|eq(-3,)" />
+        <setting id="calendar_widget" type="enum" label="30817" lvalues="30818|30819" default="0" />
+    </category>
+    <category label="30830">
+        <setting id="playback_quality" type="enum" label="30831" values="1080p|720p|HQ|MQ|LQ" default="0" />
+        <setting id="host_select" type="enum" label="30832" lvalues="30833|30834" default="1" enable="eq(6,false)" />
+        <setting type="lsep" label="30835" />
+        <setting id="playback_captcha_hosts" type="bool" label="30836" default="true" />
+        <setting id="playback_1080p_hosts" type="bool" label="30837" default="true" />
+        <setting id="playback_720p_hosts" type="bool" label="30838" default="true" />
+        <setting type="lsep" label="30839" />
+        <setting id="autoplay" type="bool" label="30840" default="false" />
+        <setting id="autoplay_library" type="bool" label="30841" default="false" />
+        <setting id="playback_auto_sd" type="bool" label="30842" default="false" />
+        <setting type="lsep" label="30843" />
+        <setting id="resume_playback" type="bool" label="30844" default="true" />
+        <setting id="playback_info" type="bool" label="30845" default="false" />
+    </category>
+    
+    <!-- Torrent Scrapers - Movies -->
+    <category label="Torrent Scrapers (Movies)">
+        <setting type="lsep" label="Torrent Sources" />
+        <setting id="torrent_1337x" type="bool" label="1337x" default="true" />
+        <setting id="torrent_tgx" type="bool" label="TorrentGalaxy" default="true" />
+        <setting id="torrent_yts" type="bool" label="YTS" default="true" />
+        <setting id="torrent_tpb" type="bool" label="ThePirateBay" default="true" />
+    </category>
+    
+    <!-- Torrent Scrapers - TV Shows -->
+    <category label="Torrent Scrapers (TV)">
+        <setting type="lsep" label="Torrent Sources" />
+        <setting id="torrent_1337x_tv" type="bool" label="1337x" default="true" />
+        <setting id="torrent_tgx_tv" type="bool" label="TorrentGalaxy" default="true" />
+        <setting id="torrent_eztv_tv" type="bool" label="EZTV" default="true" />
+        <setting id="torrent_tpb_tv" type="bool" label="ThePirateBay" default="true" />
+    </category>
+
+    <!-- Debrid & Torrent Services -->
+    <category label="Debrid Services">
+        <setting type="lsep" label="Trakt" />
+        <setting id="trakt.user" type="action" label="30142" option="close" action="RunPlugin(plugin://plugin.video.genesis/?action=authTrakt)" />
+        <setting id="trakt.token" type="text" option="hidden" visible="false" label="" default="" />
+        <setting id="trakt.refresh" type="text" option="hidden" visible="false" label="" default="" />
+        
+        <setting type="lsep" label="Real-Debrid (PIN Auth)" />
+        <setting id="realdebrid_auth" label="Authorize Real-Debrid" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=realdebridauth)" option="close" visible="True"/>
+        <setting id="realdebrid_token" visible="false" type="text" default=""/>
+        <setting id="realdebrid_refresh" visible="false" type="text" default=""/>
+        <setting id="realdebrid_client_id" visible="false" type="text" default=""/>
+        <setting id="realdebrid_client_secret" visible="false" type="text" default=""/>
+        <setting id="realdebrid_tokenExpireIn" type="text" visible="false" default="" />
+        
+        <setting type="lsep" label="Premiumize (PIN Auth)" />
+        <setting id="premiumize_auth" label="Authorize Premiumize" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=premiumizeauth)" option="close" visible="True"/>
+        <setting id="premiumize_token" visible="false" type="text" default=""/>
+        <setting id="premiumize_user" visible="false" type="text" default=""/>
+        
+        <setting type="lsep" label="AllDebrid (PIN Auth)" />
+        <setting id="alldebrid_auth" label="Authorize AllDebrid" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=alldebridauth)" option="close" visible="True"/>
+        <setting id="alldebrid_api_key" visible="false" type="text" default=""/>
+        <setting id="alldebrid_username" visible="false" type="text" default=""/>
+        
+        <setting type="lsep" label="TorBox (API Key Auth)" />
+        <setting id="torbox_auth" label="Authorize TorBox" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=torboxauth)" option="close" visible="True"/>
+        <setting id="torbox_api_key" visible="false" type="text" default=""/>
+        
+        <setting type="lsep" label="IMDb" />
+        <setting id="imdb_user" type="number" label="30911" default="" />
+    </category>
+
+    <category label="30920">
+        <setting id="movie_library" type="folder" label="30922" default="special://userdata/addon_data/plugin.video.genesis/Movies" />
+        <setting id="tv_library" type="folder" label="30923" default="special://userdata/addon_data/plugin.video.genesis/TVShows" />
+        <setting type="lsep" label="30921" />
+        <setting type="sep" />
+        <setting id="service_update" type="bool" label="30924" default="true" />
+        <setting id="service_notification" type="bool" label="30925" default="true" />
+        <setting type="sep" />
+        <setting id="update_library" type="bool" label="30926" default="true" />
+        <setting id="check_library" type="bool" label="30927" default="true" />
+        <setting type="sep" />
+        <setting id="check_movie_link" type="bool" label="30928" default="false" />
+        <setting id="check_episode_link" type="bool" label="30929" default="false" />
+    </category>
+    <category label="30950">
+        <setting id="movie_downloads" type="folder" label="30951" default="" />
+        <setting id="tv_downloads" type="folder" label="30952" default="" />
+    </category>
+    <category label="30940">
+        <setting id="subtitles" type="bool" label="30943" default="false" />
+        <setting type="sep" />
+        <setting id="autoconvert_utf8" type="bool" label="30944" enable="!eq(-2,false)" default="false" />
+        <setting type="sep" />
+        <setting id="sublang1" type="select" label="30945" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-4,false)" default="English" />
+        <setting id="sublang2" type="select" label="30946" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-5,false)" default="English" />
+        <setting type="sep" />
+        <setting id="OSuser" type="text" label="32006" default=""/>
+        <setting id="OSpass" type="text" option = "hidden" label="32007" default=""/>
+        <setting type="sep" />
+        <setting type="lsep" label="[CR]" />
+        <setting type="lsep" label="30941" />
+        <setting type="lsep" label="30942" />
+    </category>
+
+    <setting id="current_ua" type="text" visible="false"/>
+    <setting id="last_ua_create" type="number" default="0" visible="false"/>
+</settings>
