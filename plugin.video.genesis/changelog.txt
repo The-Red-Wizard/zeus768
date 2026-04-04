@@ -3,6 +3,11 @@
   Revived & Modernized by: zeus768
 ================================================================================
 
+v2026.04.04.03 (April 2026)
+================================================================================
+  * Fixed crash: 'No module named jsunpack' - control.py now uses proper
+    relative import from resources.lib.libraries instead of bare import
+
 v2026.04.04.01 (April 2026)
 ================================================================================
 

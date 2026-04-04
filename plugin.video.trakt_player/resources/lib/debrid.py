@@ -15,6 +15,11 @@ SSL_CTX = ssl._create_unverified_context()
 VIDEO_EXTS = ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.m4v', '.mpg', '.mpeg', '.ts', '.webm')
 
 
+def _addon():
+    """Always return a fresh Addon instance so settings reads are never stale."""
+    return xbmcaddon.Addon()
+
+
 def _http(url, data=None, headers=None, method='GET'):
     hdrs = {'User-Agent': 'TraktPlayer/2.0'}
     if headers:
@@ -40,10 +45,10 @@ class RealDebrid:
     CLIENT_ID = 'X245A4XAIBGVM'
 
     def __init__(self):
-        self.token = ADDON.getSetting('rd_access_token')
+        self.token = _addon().getSetting('rd_access_token')
 
     def is_authorized(self):
-        return bool(self.token) and ADDON.getSetting('rd_auth_done') == 'true'
+        return bool(self.token) and _addon().getSetting('rd_auth_done') == 'true'
 
     def authorize(self):
         _, data = _http(f'{self.OAUTH_URL}/device/code?client_id={self.CLIENT_ID}&new_credentials=yes')
@@ -71,11 +76,11 @@ class RealDebrid:
                     'code': device_code, 'grant_type': 'http://oauth.net/grant_type/device/1.0'
                 }, method='POST')
                 if tokens.get('access_token'):
-                    ADDON.setSetting('rd_access_token', tokens['access_token'])
-                    ADDON.setSetting('rd_refresh_token', tokens.get('refresh_token', ''))
-                    ADDON.setSetting('rd_client_id', creds['client_id'])
-                    ADDON.setSetting('rd_client_secret', creds['client_secret'])
-                    ADDON.setSetting('rd_auth_done', 'true')
+                    _addon().setSetting('rd_access_token', tokens['access_token'])
+                    _addon().setSetting('rd_refresh_token', tokens.get('refresh_token', ''))
+                    _addon().setSetting('rd_client_id', creds['client_id'])
+                    _addon().setSetting('rd_client_secret', creds['client_secret'])
+                    _addon().setSetting('rd_auth_done', 'true')
                     self.token = tokens['access_token']
                     dlg.close()
                     xbmcgui.Dialog().notification('Success', 'Real-Debrid linked!', xbmcgui.NOTIFICATION_INFO)
@@ -143,8 +148,8 @@ class RealDebrid:
 
     def revoke(self):
         for k in ('rd_access_token', 'rd_refresh_token', 'rd_client_id', 'rd_client_secret'):
-            ADDON.setSetting(k, '')
-        ADDON.setSetting('rd_auth_done', 'false')
+            _addon().setSetting(k, '')
+        _addon().setSetting('rd_auth_done', 'false')
         xbmcgui.Dialog().notification('Real-Debrid', 'Unlinked', xbmcgui.NOTIFICATION_INFO)
 
 
@@ -153,10 +158,10 @@ class AllDebrid:
     AGENT = 'TraktPlayer'
 
     def __init__(self):
-        self.token = ADDON.getSetting('ad_api_key')
+        self.token = _addon().getSetting('ad_api_key')
 
     def is_authorized(self):
-        return bool(self.token) and ADDON.getSetting('ad_auth_done') == 'true'
+        return bool(self.token) and _addon().getSetting('ad_auth_done') == 'true'
 
     def authorize(self):
         _, data = _http(f'{self.BASE_URL}/pin/get?agent={self.AGENT}')
@@ -179,8 +184,8 @@ class AllDebrid:
             if ck.get('status') == 'success':
                 apikey = ck.get('data', {}).get('apikey')
                 if apikey:
-                    ADDON.setSetting('ad_api_key', apikey)
-                    ADDON.setSetting('ad_auth_done', 'true')
+                    _addon().setSetting('ad_api_key', apikey)
+                    _addon().setSetting('ad_auth_done', 'true')
                     self.token = apikey
                     dlg.close()
                     xbmcgui.Dialog().notification('Success', 'AllDebrid linked!', xbmcgui.NOTIFICATION_INFO)
@@ -241,8 +246,8 @@ class AllDebrid:
         }
 
     def revoke(self):
-        ADDON.setSetting('ad_api_key', '')
-        ADDON.setSetting('ad_auth_done', 'false')
+        _addon().setSetting('ad_api_key', '')
+        _addon().setSetting('ad_auth_done', 'false')
         xbmcgui.Dialog().notification('AllDebrid', 'Unlinked', xbmcgui.NOTIFICATION_INFO)
 
 
@@ -252,10 +257,10 @@ class Premiumize:
     CLIENT_ID = '855400527'
 
     def __init__(self):
-        self.token = ADDON.getSetting('pm_access_token')
+        self.token = _addon().getSetting('pm_access_token')
 
     def is_authorized(self):
-        return bool(self.token) and ADDON.getSetting('pm_auth_done') == 'true'
+        return bool(self.token) and _addon().getSetting('pm_auth_done') == 'true'
 
     def authorize(self):
         _, data = _http(self.OAUTH_URL, data={'grant_type': 'device_code', 'client_id': self.CLIENT_ID}, method='POST')
@@ -280,8 +285,8 @@ class Premiumize:
             time.sleep(interval)
             _, ck = _http(self.OAUTH_URL, data={'grant_type': 'device_code', 'client_id': self.CLIENT_ID, 'code': device_code}, method='POST')
             if ck.get('access_token'):
-                ADDON.setSetting('pm_access_token', ck['access_token'])
-                ADDON.setSetting('pm_auth_done', 'true')
+                _addon().setSetting('pm_access_token', ck['access_token'])
+                _addon().setSetting('pm_auth_done', 'true')
                 self.token = ck['access_token']
                 dlg.close()
                 xbmcgui.Dialog().notification('Success', 'Premiumize linked!', xbmcgui.NOTIFICATION_INFO)
@@ -329,8 +334,8 @@ class Premiumize:
         }
 
     def revoke(self):
-        ADDON.setSetting('pm_access_token', '')
-        ADDON.setSetting('pm_auth_done', 'false')
+        _addon().setSetting('pm_access_token', '')
+        _addon().setSetting('pm_auth_done', 'false')
         xbmcgui.Dialog().notification('Premiumize', 'Unlinked', xbmcgui.NOTIFICATION_INFO)
 
 
@@ -338,10 +343,10 @@ class TorBox:
     BASE_URL = 'https://api.torbox.app/v1/api'
 
     def __init__(self):
-        self.token = ADDON.getSetting('tb_api_key')
+        self.token = _addon().getSetting('tb_api_key')
 
     def is_authorized(self):
-        return bool(self.token) and ADDON.getSetting('tb_auth_done') == 'true'
+        return bool(self.token) and _addon().getSetting('tb_auth_done') == 'true'
 
     def authorize(self):
         kb = xbmc.Keyboard('', 'Enter TorBox API Key')
@@ -351,8 +356,8 @@ class TorBox:
             if key:
                 _, res = _http(f'{self.BASE_URL}/user/me', headers={'Authorization': f'Bearer {key}'})
                 if isinstance(res, dict) and res.get('success'):
-                    ADDON.setSetting('tb_api_key', key)
-                    ADDON.setSetting('tb_auth_done', 'true')
+                    _addon().setSetting('tb_api_key', key)
+                    _addon().setSetting('tb_auth_done', 'true')
                     self.token = key
                     plan = res.get('data', {}).get('plan', 'Unknown')
                     xbmcgui.Dialog().notification('Success', f'TorBox linked! Plan: {plan}', xbmcgui.NOTIFICATION_INFO)
@@ -431,8 +436,8 @@ class TorBox:
         }
 
     def revoke(self):
-        ADDON.setSetting('tb_api_key', '')
-        ADDON.setSetting('tb_auth_done', 'false')
+        _addon().setSetting('tb_api_key', '')
+        _addon().setSetting('tb_auth_done', 'false')
         xbmcgui.Dialog().notification('TorBox', 'Unlinked', xbmcgui.NOTIFICATION_INFO)
 
 

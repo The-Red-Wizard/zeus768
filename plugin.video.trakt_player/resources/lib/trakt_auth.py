@@ -12,6 +12,12 @@ import xbmcaddon
 ADDON = xbmcaddon.Addon()
 SSL_CTX = ssl._create_unverified_context()
 
+
+def _addon():
+    """Always return a fresh Addon instance so settings reads are never stale."""
+    return xbmcaddon.Addon()
+
+
 CLIENT_ID = 'd2a8e820fec0d46079cbbceaca851648df9431cbc73ede2c10d35dfb1c7a36e2'
 CLIENT_SECRET = '9c7c29e76166465882ba6723d578e97fce466cf466414a76c36184540b31e9a6'
 
@@ -43,11 +49,11 @@ def _post(url, data, headers=None):
 
 
 def is_authorized():
-    return bool(ADDON.getSetting('trakt_access_token')) and ADDON.getSetting('trakt_auth_done') == 'true'
+    return bool(_addon().getSetting('trakt_access_token')) and _addon().getSetting('trakt_auth_done') == 'true'
 
 
 def get_token():
-    return ADDON.getSetting('trakt_access_token')
+    return _addon().getSetting('trakt_access_token')
 
 
 def authorize():
@@ -88,9 +94,9 @@ def authorize():
             'code': device_code, 'client_id': CLIENT_ID, 'client_secret': CLIENT_SECRET
         })
         if s == 200 and tokens.get('access_token'):
-            ADDON.setSetting('trakt_access_token', tokens['access_token'])
-            ADDON.setSetting('trakt_refresh_token', tokens.get('refresh_token', ''))
-            ADDON.setSetting('trakt_auth_done', 'true')
+            _addon().setSetting('trakt_access_token', tokens['access_token'])
+            _addon().setSetting('trakt_refresh_token', tokens.get('refresh_token', ''))
+            _addon().setSetting('trakt_auth_done', 'true')
             progress.close()
             xbmcgui.Dialog().notification('Success', 'Trakt authorized!', xbmcgui.NOTIFICATION_INFO)
             return True
@@ -103,7 +109,7 @@ def authorize():
 
 
 def refresh_token():
-    refresh = ADDON.getSetting('trakt_refresh_token')
+    refresh = _addon().getSetting('trakt_refresh_token')
     if not refresh:
         return False
     s, tokens = _post('https://api.trakt.tv/oauth/token', {
@@ -112,14 +118,14 @@ def refresh_token():
         'grant_type': 'refresh_token'
     })
     if s == 200 and tokens.get('access_token'):
-        ADDON.setSetting('trakt_access_token', tokens['access_token'])
-        ADDON.setSetting('trakt_refresh_token', tokens.get('refresh_token', refresh))
+        _addon().setSetting('trakt_access_token', tokens['access_token'])
+        _addon().setSetting('trakt_refresh_token', tokens.get('refresh_token', refresh))
         return True
     return False
 
 
 def revoke():
-    ADDON.setSetting('trakt_access_token', '')
-    ADDON.setSetting('trakt_refresh_token', '')
-    ADDON.setSetting('trakt_auth_done', 'false')
+    _addon().setSetting('trakt_access_token', '')
+    _addon().setSetting('trakt_refresh_token', '')
+    _addon().setSetting('trakt_auth_done', 'false')
     xbmcgui.Dialog().notification('Trakt', 'Account unlinked', xbmcgui.NOTIFICATION_INFO)

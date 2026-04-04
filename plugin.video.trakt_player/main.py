@@ -100,7 +100,7 @@ def tv_menu():
 # ── My Trakt Menu ────────────────────────────────────────────────────────
 
 def my_trakt():
-    if ADDON.getSetting('trakt_auth_done') != 'true':
+    if xbmcaddon.Addon().getSetting('trakt_auth_done') != 'true':
         xbmcgui.Dialog().notification('Trakt', 'Please authorize Trakt first', xbmcgui.NOTIFICATION_WARNING)
         return
     items = [

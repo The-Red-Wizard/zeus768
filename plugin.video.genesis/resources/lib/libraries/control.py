@@ -20,8 +20,17 @@
 
 
 import os,xbmc,xbmcaddon,xbmcplugin,xbmcgui,xbmcvfs
-import base64, jsunpack
+import base64
 import random, time
+
+# jsunpack is in the same package
+try:
+    from resources.lib.libraries import jsunpack
+except ImportError:
+    try:
+        import jsunpack
+    except ImportError:
+        jsunpack = None
 
 # Kodi 19+ compat
 try:
