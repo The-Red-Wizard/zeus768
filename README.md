@@ -1,5 +1,7 @@
 # Zeus768 Kodi Repository
 
+<img src="repository.zeus768/icon.png" width="200">
+
 The official Kodi addon repository by **zeus768** and **The Red Wizard**. All addons are built for **Kodi 21 Omega** and above (Python 3).
 
 ## How to Install
@@ -18,7 +20,7 @@ The official Kodi addon repository by **zeus768** and **The Red Wizard**. All ad
 
 **Stream Movies and TV Shows** | `plugin.video.genesis` | v2026.04.04.01
 
-Your ultimate streaming addon for Movies and TV Shows with torrent support. Features torrent scrapers for 1337x, YTS, EZTV, TPB, TorrentGalaxy and more. Includes Trakt integration, TMDB metadata, search, favourites, and custom skins.
+Your ultimate streaming addon for Movies and TV Shows with torrent support. Features torrent scrapers for 1337x, YTS, EZTV, TPB, TorrentGalaxy and more. Includes Trakt integration, TMDB metadata, search, favourites, and custom skins. Fully audited for Python 3 / Kodi 21+.
 
 <br clear="both">
 
@@ -38,9 +40,9 @@ Required dependency for Genesis. Provides custom themes, artwork, and skin asset
 ### SALTS - Stream All The Sources
 <img src="plugin.video.salts/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Multi-Source Video Addon** | `plugin.video.salts` | v2.4.2
+**Multi-Source Video Addon** | `plugin.video.salts` | v2.5.0
 
-The legendary SALTS addon, revived and modernized for Kodi 21+. 34+ scrapers across torrent sites, free streaming sources, anime trackers, and international sources. Features include custom source dialog with quality breakdown, Up Next auto-play, Skip Intro, 24/7 Channels (actor, show, genre, AI vibe), AI Search, Franchises, Actors, batch debrid cache checking, and Trakt integration. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. Original author: tknorris.
+The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers running concurrently for superfast source resolution. Features include custom source dialog with quality breakdown, Up Next auto-play, Skip Intro, 24/7 Channels (actor, show, genre, AI vibe), AI Search, Franchises, Actors, batch debrid cache checking, and Trakt integration. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. Original author: tknorris.
 
 <br clear="both">
 
