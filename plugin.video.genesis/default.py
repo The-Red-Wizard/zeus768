@@ -24,10 +24,10 @@ from resources.lib.libraries import py3compat
 import urlparse,sys
 from resources.lib.libraries import control
 
-import xbmcaddon, os, xbmc
+import xbmcaddon, os, xbmc, xbmcvfs
 scriptID = 'plugin.video.genesis'
 ptv = xbmcaddon.Addon(scriptID)
-datapath = xbmc.translatePath(ptv.getAddonInfo('profile'))
+datapath = xbmcvfs.translatePath(ptv.getAddonInfo('profile'))
 
 BASE_RESOURCE_PATH = os.path.join( ptv.getAddonInfo('path'), "mylib" )
 sys.path.append( os.path.join( ptv.getAddonInfo('path'), "mylib" ) )
@@ -405,7 +405,7 @@ elif action == 'buy_beer':
         from urllib2 import urlopen as _urlopen, Request as _Request
         from urllib import quote_plus as _qp
     kofi_url = 'https://ko-fi.com/zeus768'
-    qr_file = os.path.join(xbmc.translatePath('special://temp/'), 'kofi_qr.png')
+    qr_file = os.path.join(xbmcvfs.translatePath('special://temp/'), 'kofi_qr.png')
     try:
         ctx = ssl._create_unverified_context()
         req = _Request('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s&bgcolor=0-0-0&color=255-255-255' % _qp(kofi_url), headers={'User-Agent': 'Mozilla/5.0'})

@@ -43,7 +43,10 @@ try:
 except AttributeError:
     LOGNOTICE = xbmc.LOGINFO
 
-tmdb_key = jsunpack.jsunpack_keys()
+try:
+    tmdb_key = jsunpack.jsunpack_keys() if jsunpack else ''
+except Exception:
+    tmdb_key = ''
 tvdb_key = base64.urlsafe_b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
 fanarttv_key = base64.urlsafe_b64decode('YTc4YzhmZWRjN2U3NTE1MjRkMzkyNmNhMmQyOTU3OTg=')
 # Genesis Trakt API Keys - zeus768
