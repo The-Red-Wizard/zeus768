@@ -17,14 +17,18 @@
         <description>Zeus768's Kodi Addon Repository.
 
 Available Addons:
+- Genesis - Stream Movies and TV Shows with torrent support
 - SALTS (Stream All The Sources) - 35+ scrapers, Free Streams, Autoplay, Up Next, Skip Intro, Trakt, Debrid Support
+- Trakt Player - Click and Play, Torrent-only, Debrid-powered (RD, PM, AD, TorBox)
 - Orion - Torrent and Usenet Indexer
 - Strike Zone - Sports Streaming Add-on
 - The Accountant - Kodi Maintenance and Debrid Management Tool
+- Genesis Themepak - Themes for Genesis
 - ResolveURL - URL Resolver Module</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
 </addon>
