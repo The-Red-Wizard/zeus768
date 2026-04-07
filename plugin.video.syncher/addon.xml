@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.syncher" name="Syncher" version="3.1.1" provider-name="zeus768">
+<addon id="plugin.video.syncher" name="Syncher" version="3.2.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.0"/>
@@ -8,12 +8,24 @@
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Syncher - Scene Release Downloader and Streamer with Debrid, Trakt, RapidRAR</summary>
-        <description lang="en">Syncher v2.0.0 by zeus768 - Browse Movies, TV Shows, Sports Highlights and Music. Scrapes scene release sites (RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource) plus sports replay sites. Resolves links through Real-Debrid, Premiumize, AllDebrid, TorBox and RapidRAR premium. Trakt integration for browsing, watchlists, scrobbling. TMDB metadata with posters, cast, directors. NOTE: A Debrid service (Real-Debrid, Premiumize, AllDebrid, TorBox) OR RapidRAR premium account is required for best results.</description>
+        <summary lang="en">Syncher - Scene Release Streamer with Debrid, Trakt, Music via Deezer</summary>
+        <description lang="en">Syncher v3.2.0 by zeus768 - Browse Movies, TV Shows, Sports Highlights and Music. Scrapes scene release sites (RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource) plus sports replay sites. NEW: Rich Music section powered by Deezer API with genres, artists, albums, charts, curated playlists, user-created playlists, autoplay, and music torrent scene search. Resolves links through Real-Debrid, Premiumize, AllDebrid, TorBox and RapidRAR premium. Trakt integration for browsing, watchlists, scrobbling. TMDB metadata with posters, cast, directors.</description>
         <disclaimer lang="en">This addon does not host any content. A debrid service or RapidRAR.cr premium account is recommended.</disclaimer>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <news>
+v3.2.0 (2026)
+- NEW: Rich Music section with Deezer API integration
+- Music genres, artists, albums, top charts, curated playlists
+- Artist pages with top tracks, albums, related artists
+- Album view with track listing and auto-play all
+- User-created playlists with add/remove tracks
+- Music scene site search (RLSbb, DDLValley, SceneSource, PSA)
+- Auto-play mode for albums and playlists via scene torrent sources
+
+v3.1.1 (2026)
+- Version bump and metadata updates
+
 v2.0.1 (2026)
 - FIXED: Icon and fanart now display correctly in Kodi repo browser
 

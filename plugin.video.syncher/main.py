@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Syncher v2.0.0 by zeus768
-Scene Release Downloader and Streamer with Debrid, Trakt, RapidRAR
+Syncher v3.2.0 by zeus768
+Scene Release Downloader and Streamer with Debrid, Trakt, RapidRAR, Deezer Music
 """
 
 import sys
@@ -1045,7 +1045,8 @@ def trakt_list_items(params):
 def search_menu():
     add_dir('[COLOR skyblue]Search Movies[/COLOR]', 'searchmovie')
     add_dir('[COLOR skyblue]Search TV Shows[/COLOR]', 'searchtv')
-    add_dir('[COLOR skyblue]Search Music[/COLOR]', 'searchmusic')
+    add_dir('[COLOR skyblue]Search Music (Deezer)[/COLOR]', 'searchtrack')
+    add_dir('[COLOR skyblue]Search Music (Scene Sites)[/COLOR]', 'musicscenesearch')
     end_directory()
 
 def search_movie():
@@ -1071,24 +1072,6 @@ def search_tv():
             item.update({k: v for k, v in meta.items() if v and v != '0'})
         add_show_item(item, meta)
     end_directory('tvshows')
-
-def search_music():
-    query = control.keyboard('', 'Search Music')
-    if not query:
-        return
-    from resources.lib.scrapers import rlsbb, ddlvalley
-    for scraper_mod in [rlsbb, ddlvalley]:
-        try:
-            results = scraper_mod._search(query)
-            for url, name in results[:15]:
-                li = xbmcgui.ListItem(label=name)
-                li.setArt({'icon': control.addonIcon(), 'fanart': control.addonFanart()})
-                li.setInfo('Video', {'title': name})
-                url_params = {'action': 'musiclinks', 'url': url, 'name': name}
-                xbmcplugin.addDirectoryItem(HANDLE, build_url(url_params), li, isFolder=True)
-        except:
-            pass
-    end_directory()
 
 # ============================================================
 # PLAYBACK
@@ -1271,9 +1254,35 @@ def router():
     elif action == 'sportsources': sport_sources(params)
     elif action == 'playsport': play_sport(params)
 
-    # Music
-    elif action == 'musictrending': music_trending()
-    elif action == 'musiclinks': music_links(params)
+    # Music - Browsing
+    elif action == 'musictracks': music_tracks(params)
+    elif action == 'musicalbums': music_albums(params)
+    elif action == 'musicartists': music_artists(params)
+    elif action == 'musicgenres': music_genres()
+    elif action == 'musicgenreartists': music_genre_artists(params)
+    elif action == 'musicartist': music_artist(params)
+    elif action == 'musicrelated': music_related(params)
+    elif action == 'musicalbum': music_album(params)
+    elif action == 'musicplaylists': music_playlists(params)
+    elif action == 'musicplaylist': music_playlist(params)
+    elif action == 'musicscenesearch': music_scene_search(params)
+
+    # Music - Search
+    elif action == 'searchartist': search_artist_menu()
+    elif action == 'searchalbum': search_album_menu()
+    elif action == 'searchtrack': search_track_menu()
+
+    # Music - User Playlists
+    elif action == 'myplaylists': my_playlists()
+    elif action == 'createplaylist': create_playlist()
+    elif action == 'myplaylist': my_playlist(params)
+    elif action == 'addtoplaylist': add_to_playlist(params)
+    elif action == 'removefromplaylist': remove_from_playlist(params)
+    elif action == 'deleteplaylist': delete_playlist(params)
+
+    # Music - Playback
+    elif action == 'musicautoplay': music_autoplay(params)
+    elif action == 'playmusic': play_music(params)
 
     # Trakt
     elif action == 'traktlists': trakt_lists()
@@ -1282,7 +1291,6 @@ def router():
     # Search
     elif action == 'searchmovie': search_movie()
     elif action == 'searchtv': search_tv()
-    elif action == 'searchmusic': search_music()
 
     # Playback
     elif action == 'playmovie': play_movie(params)

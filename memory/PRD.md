@@ -1,7 +1,7 @@
 # Zeus768 Kodi Repository - PRD
 
 ## Original Problem Statement
-Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding new addons (Poseidon Player/Guide, Syncher), removing StrikeZone, fixing SALTS, Trakt Player, Genesis, and building the Syncher addon from scratch.
+Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding new addons (Poseidon Player/Guide, Syncher), removing StrikeZone, fixing SALTS, Trakt Player, Genesis, and building the Syncher addon from scratch with a rich Music section powered by Deezer API.
 
 ## Architecture
 ```
@@ -10,7 +10,7 @@ Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding n
 ├── plugin.video.genesis/             # v9.4.1 - TMDB/Trakt powered, auth fixed
 ├── plugin.video.salts/               # v2.6.0 - Stable
 ├── plugin.video.trakt_player/        # v2.2.0 - Stable
-├── plugin.video.syncher/             # v2.0.0 - NEW (Scene release scraper)
+├── plugin.video.syncher/             # v3.2.0 - Scene+Music addon (Deezer+Debrid+Trakt)
 ├── plugin.video.poseidonplayer/      # v2.3.0 - Stable
 ├── program.poseidonguide/            # v1.1.0 - Stable
 ├── plugin.program.theaccountant/     # v3.9.7 - Stable
@@ -37,12 +37,22 @@ Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding n
   - Full menus: Movies, TV Shows, Sports, Music, My Trakt, Search, Settings
   - Warez site per-site login support
   - Sports categories with sub-menus (NBA, NFL, Premier League, Champions League, etc.)
-  - Music search/trending from scene sites
   - Auto-play and source select modes
+- [x] **Syncher v3.2.0**: Music Section (Feb 2026)
+  - Deezer API integration for music metadata (no auth needed)
+  - Music genres, top charts (tracks/albums/artists), curated playlists
+  - Artist pages: top tracks, albums, related artists
+  - Album view with full track listing and auto-play all
+  - Search: artists, albums, tracks via Deezer
+  - User-created local playlists (JSON file storage) with add/remove
+  - Auto-play mode for albums, Deezer playlists, and user playlists
+  - Music scene site search (RLSbb, DDLValley, SceneSource, PSA)
+  - Full router wired with 28 music action routes
+  - Zip rebuilt, addons.xml updated, md5 regenerated
 
 ## Pending / Backlog
-- [ ] P1: User testing of Syncher in Kodi
+- [ ] P0: User must click "Save to Github" so Kodi can detect repo updates
+- [ ] P1: User testing of Syncher in Kodi (all sections)
 - [ ] P1: Fix StrikeZone scraper offline
 - [ ] P2: Test Genesis debrid resolvers
 - [ ] P2: Full Kodi verification of all addons
-- [ ] P2: Push to GitHub for repo updates
