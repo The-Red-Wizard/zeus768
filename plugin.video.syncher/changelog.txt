@@ -1,6 +1,10 @@
 Syncher Changelog
 ==================
 
+Version 3.1.1 (February 2026)
+- Version bump
+- FIXED: Icon and fanart display in Kodi repo browser
+
 Version 2.0.1 (February 2026)
 - FIXED: Icon and fanart now display correctly in Kodi repo browser
 
