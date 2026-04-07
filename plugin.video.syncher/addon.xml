@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.syncher" name="Syncher" version="2.0.0" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Syncher - Scene Release Downloader and Streamer with Debrid, Trakt, RapidRAR</summary>
+        <description lang="en">Syncher v2.0.0 by zeus768 - Browse Movies, TV Shows, Sports Highlights and Music. Scrapes scene release sites (RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource) plus sports replay sites. Resolves links through Real-Debrid, Premiumize, AllDebrid, TorBox and RapidRAR premium. Trakt integration for browsing, watchlists, scrobbling. TMDB metadata with posters, cast, directors. NOTE: A Debrid service (Real-Debrid, Premiumize, AllDebrid, TorBox) OR RapidRAR premium account is required for best results.</description>
+        <disclaimer lang="en">This addon does not host any content. A debrid service or RapidRAR.cr premium account is recommended.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <news>
+v2.0.0 (2026)
+- Initial release by zeus768
+- Trakt API powered browsing (Movies, TV Shows, Sports, Music)
+- TMDB metadata enrichment (posters, cast, directors, fanart)
+- Scene scrapers: RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource
+- Sports replay scrapers: Sport-Video, FullMatchShows, FootballOrgin, Basketball-Video
+- Debrid resolvers: Real-Debrid, Premiumize, AllDebrid, TorBox (device code auth)
+- RapidRAR.cr premium resolver with login
+- Trakt authorization with device code
+- Warez site login support (per-site credentials)
+- Favourites, Search, Trakt Lists
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

@@ -1,0 +1,35 @@
+Syncher Changelog
+==================
+
+Version 2.0.0 (February 2026 - Full Rebuild by zeus768)
+- Complete rebuild from scratch
+- Trakt API powered browsing for Movies, TV Shows, Sports Highlights, Music
+- TMDB metadata enrichment (posters, fanart, cast, directors, plot)
+- Scene release scrapers:
+  * RapidRAR.cr (premium hoster with login)
+  * PSA.wf (scene releases / torrents)
+  * RapidMoviez.me (DDL scene releases)
+  * TFPDL.se (DDL scene releases)
+  * WatchSeriesHD.org (streaming aggregator)
+  * RLSbb.to (scene releases)
+  * DDLValley.me (DDL scene releases)
+  * SceneSource.me (scene NFO/links)
+- Sports replay scrapers:
+  * Sport-Video.org.ua (NBA, NFL, MLB, football)
+  * FullMatchShows.com (football replays)
+  * FootballOrgin.com (football replays)
+  * Basketball-Video.com (NBA, FIBA replays)
+- Debrid resolvers with device code auth:
+  * Real-Debrid
+  * Premiumize
+  * AllDebrid
+  * TorBox
+- RapidRAR.cr premium resolver with login auth
+- Trakt authorization (device code)
+- Warez site per-site login support
+- Favourites system
+- Search (Movies, TV Shows, People)
+- My Trakt section (Watchlist, Collection, History, Lists, Liked Lists)
+
+Version 1.0.0
+- Original Cineby/Videasy based addon
