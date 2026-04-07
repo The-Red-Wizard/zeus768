@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Trakt Player v2.0.0 - Superpowered Trakt addon. Click-and-Play, Scrobble, Up Next, Recommendations, Calendar, and more."""
+"""Trakt Player v2.2.0 - Superpowered Trakt addon.
+Click-and-Play, Scrobble, Up Next, Discovery Feed, AI Vibes, Recommendations, Calendar, and more.
+Based on zeus768's v2.1.6 fixed build with all custom features merged in."""
 import sys
 import ssl
 import json
@@ -11,32 +13,46 @@ import xbmcgui
 import xbmcplugin
 import xbmcaddon
 import xbmc
-from resources.lib import tmdb, trakt_auth, trakt_api, player, debrid, discovery, feed
+import xbmcvfs
+from resources.lib import tmdb, trakt_auth, trakt_api, filehost, debrid, discovery, feed, player
 
-ADDON = xbmcaddon.Addon()
+def get_addon():
+    return xbmcaddon.Addon()
+
+ADDON_ID = 'plugin.video.trakt_player'
+ADDON_PATH = xbmcvfs.translatePath(f'special://home/addons/{ADDON_ID}/')
 HANDLE = int(sys.argv[1]) if len(sys.argv) > 1 else -1
 KOFI_URL = 'https://ko-fi.com/zeus768'
-FANART = os.path.join(ADDON.getAddonInfo('path'), 'fanart.jpg')
-ICON = os.path.join(ADDON.getAddonInfo('path'), 'icon.png')
 
-# Category icons - use addon icon for all menu categories
-# TMDB poster art is used for actual content items (movies/shows/episodes)
-CAT_ICONS = {}
+
+def get_addon_icon():
+    icon_path = os.path.join(ADDON_PATH, 'icon.png')
+    if os.path.exists(icon_path):
+        return icon_path
+    return 'DefaultAddonVideo.png'
+
+
+def get_addon_fanart():
+    fanart_path = os.path.join(ADDON_PATH, 'fanart.jpg')
+    if os.path.exists(fanart_path):
+        return fanart_path
+    return ''
 
 
 def build_url(query):
     return sys.argv[0] + '?' + urlencode(query)
 
 
-def _menu_item(label, action, icon_key='', is_folder=True, extra_params=None):
-    """Create a menu item with addon fanart and TMDB/Trakt icon."""
+def _menu_item(label, action, is_folder=True, extra_params=None):
+    """Create a menu item with addon icon/fanart."""
     q = {'action': action}
     if extra_params:
         q.update(extra_params)
     url = build_url(q)
     li = xbmcgui.ListItem(label=label)
-    icon = CAT_ICONS.get(icon_key, ICON)
-    li.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'fanart': FANART})
+    icon = get_addon_icon()
+    fanart = get_addon_fanart()
+    li.setArt({'icon': icon, 'thumb': icon, 'poster': icon, 'fanart': fanart})
     return url, li, is_folder
 
 
@@ -45,16 +61,17 @@ def _menu_item(label, action, icon_key='', is_folder=True, extra_params=None):
 def main_menu():
     tmdb.prompt_for_api_key()
     items = [
-        _menu_item('Movies', 'movie_menu', 'movies'),
-        _menu_item('TV Shows', 'tv_menu', 'tv'),
-        _menu_item('Continue Watching', 'continue_watching', 'continue'),
-        _menu_item('Discovery Feed', 'feed_menu', 'feed'),
-        _menu_item('AI Vibes', 'discovery_menu', 'vibes'),
-        _menu_item('My Trakt', 'my_trakt', 'trakt'),
-        _menu_item('My Stats', 'user_stats', 'stats', is_folder=False),
-        _menu_item('Account Status', 'account_status', 'account', is_folder=False),
-        _menu_item('Buy Me a Beer', 'donate', 'donate', is_folder=False),
-        _menu_item('Settings', 'open_settings', 'settings', is_folder=False),
+        _menu_item('Movies', 'movie_menu'),
+        _menu_item('TV Shows', 'tv_menu'),
+        _menu_item('Search', 'search_menu'),
+        _menu_item('Continue Watching', 'continue_watching'),
+        _menu_item('Discovery Feed', 'feed_menu'),
+        _menu_item('AI Vibes', 'discovery_menu'),
+        _menu_item('My Trakt', 'my_trakt'),
+        _menu_item('My Stats', 'user_stats', is_folder=False),
+        _menu_item('Account Status', 'account_status', is_folder=False),
+        _menu_item('Buy Me a Beer', 'donate', is_folder=False),
+        _menu_item('Settings', 'open_settings', is_folder=False),
     ]
     for url, li, is_folder in items:
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
@@ -65,14 +82,14 @@ def main_menu():
 
 def movie_menu():
     items = [
-        _menu_item('Trending', 'trakt_list', 'trending', extra_params={'path': 'movies/trending', 'media_type': 'movie'}),
-        _menu_item('Popular', 'trakt_list', 'popular', extra_params={'path': 'movies/popular', 'media_type': 'movie'}),
-        _menu_item('Most Watched (Week)', 'trakt_list', 'watched', extra_params={'path': 'movies/watched/weekly', 'media_type': 'movie'}),
-        _menu_item('Most Watched (All Time)', 'trakt_list', 'watched', extra_params={'path': 'movies/watched/all', 'media_type': 'movie'}),
-        _menu_item('Box Office', 'trakt_list', 'boxoffice', extra_params={'path': 'movies/boxoffice', 'media_type': 'movie'}),
-        _menu_item('Anticipated', 'anticipated', 'anticipated', extra_params={'media_type': 'movie'}),
-        _menu_item('Recommended For You', 'recommendations', 'recommended', extra_params={'media_type': 'movie'}),
-        _menu_item('Genres', 'list_genres', 'genres', extra_params={'path': 'movie'}),
+        _menu_item('Trending', 'trakt_list', extra_params={'path': 'movies/trending', 'media_type': 'movie'}),
+        _menu_item('Popular', 'trakt_list', extra_params={'path': 'movies/popular', 'media_type': 'movie'}),
+        _menu_item('Most Watched (Week)', 'trakt_list', extra_params={'path': 'movies/watched/weekly', 'media_type': 'movie'}),
+        _menu_item('Most Watched (All Time)', 'trakt_list', extra_params={'path': 'movies/watched/all', 'media_type': 'movie'}),
+        _menu_item('Box Office', 'trakt_list', extra_params={'path': 'movies/boxoffice', 'media_type': 'movie'}),
+        _menu_item('Anticipated', 'anticipated', extra_params={'media_type': 'movie'}),
+        _menu_item('Recommended For You', 'recommendations', extra_params={'media_type': 'movie'}),
+        _menu_item('Genres', 'list_genres', extra_params={'path': 'movie'}),
     ]
     for url, li, is_folder in items:
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
@@ -83,14 +100,26 @@ def movie_menu():
 
 def tv_menu():
     items = [
-        _menu_item('Trending Shows', 'trakt_list', 'trending', extra_params={'path': 'shows/trending', 'media_type': 'show'}),
-        _menu_item('Popular Shows', 'trakt_list', 'popular', extra_params={'path': 'shows/popular', 'media_type': 'show'}),
-        _menu_item('Most Watched (Week)', 'trakt_list', 'watched', extra_params={'path': 'shows/watched/weekly', 'media_type': 'show'}),
-        _menu_item('Most Watched (All Time)', 'trakt_list', 'watched', extra_params={'path': 'shows/watched/all', 'media_type': 'show'}),
-        _menu_item('Anticipated', 'anticipated', 'anticipated', extra_params={'media_type': 'show'}),
-        _menu_item('Recommended For You', 'recommendations', 'recommended', extra_params={'media_type': 'show'}),
-        _menu_item('My Calendar', 'calendar', 'calendar', extra_params={'media_type': 'show'}),
-        _menu_item('Genres', 'list_genres', 'genres', extra_params={'path': 'tv'}),
+        _menu_item('Trending Shows', 'trakt_list', extra_params={'path': 'shows/trending', 'media_type': 'show'}),
+        _menu_item('Popular Shows', 'trakt_list', extra_params={'path': 'shows/popular', 'media_type': 'show'}),
+        _menu_item('Most Watched (Week)', 'trakt_list', extra_params={'path': 'shows/watched/weekly', 'media_type': 'show'}),
+        _menu_item('Most Watched (All Time)', 'trakt_list', extra_params={'path': 'shows/watched/all', 'media_type': 'show'}),
+        _menu_item('Anticipated', 'anticipated', extra_params={'media_type': 'show'}),
+        _menu_item('Recommended For You', 'recommendations', extra_params={'media_type': 'show'}),
+        _menu_item('My Calendar', 'calendar', extra_params={'media_type': 'show'}),
+        _menu_item('Genres', 'list_genres', extra_params={'path': 'tv'}),
+    ]
+    for url, li, is_folder in items:
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ── Search Menu ───────────────────────────────────────────────────────────
+
+def search_menu():
+    items = [
+        _menu_item('Search Movies', 'search_dialog', extra_params={'media_type': 'movie'}),
+        _menu_item('Search TV Shows', 'search_dialog', extra_params={'media_type': 'show'}),
     ]
     for url, li, is_folder in items:
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
@@ -100,30 +129,40 @@ def tv_menu():
 # ── My Trakt Menu ────────────────────────────────────────────────────────
 
 def my_trakt():
-    if xbmcaddon.Addon().getSetting('trakt_auth_done') != 'true':
+    if not trakt_auth.is_authorized():
         xbmcgui.Dialog().notification('Trakt', 'Please authorize Trakt first', xbmcgui.NOTIFICATION_WARNING)
         return
     items = [
-        _menu_item('Movie Watchlist', 'trakt_list', 'watchlist', extra_params={'path': 'sync/watchlist/movies', 'media_type': 'movie'}),
-        _menu_item('Show Watchlist', 'trakt_list', 'watchlist', extra_params={'path': 'sync/watchlist/shows', 'media_type': 'show'}),
-        _menu_item('Movie Collection', 'trakt_list', 'collection', extra_params={'path': 'sync/collection/movies', 'media_type': 'movie'}),
-        _menu_item('Show Collection', 'trakt_list', 'collection', extra_params={'path': 'sync/collection/shows', 'media_type': 'show'}),
-        _menu_item('Recently Watched Movies', 'history', 'history', extra_params={'media_type': 'movie'}),
-        _menu_item('Recently Watched Episodes', 'history', 'history', extra_params={'media_type': 'show'}),
-        _menu_item('My Calendar', 'calendar', 'calendar', extra_params={'media_type': 'show'}),
-        _menu_item('My Custom Lists', 'my_lists', 'lists'),
-        _menu_item('Popular Lists', 'popular_lists', 'lists'),
-        _menu_item('Friends', 'friends', 'friends'),
+        _menu_item('Movie Watchlist', 'trakt_list', extra_params={'path': 'sync/watchlist/movies', 'media_type': 'movie'}),
+        _menu_item('Show Watchlist', 'trakt_list', extra_params={'path': 'sync/watchlist/shows', 'media_type': 'show'}),
+        _menu_item('Movie Collection', 'trakt_list', extra_params={'path': 'sync/collection/movies', 'media_type': 'movie'}),
+        _menu_item('Show Collection', 'trakt_list', extra_params={'path': 'sync/collection/shows', 'media_type': 'show'}),
+        _menu_item('Watched Movies', 'trakt_list', extra_params={'path': 'sync/watched/movies', 'media_type': 'movie'}),
+        _menu_item('Watched Shows', 'trakt_list', extra_params={'path': 'sync/watched/shows', 'media_type': 'show'}),
+        _menu_item('Recently Watched Movies', 'history', extra_params={'media_type': 'movie'}),
+        _menu_item('Recently Watched Episodes', 'history', extra_params={'media_type': 'show'}),
+        _menu_item('My Calendar', 'calendar', extra_params={'media_type': 'show'}),
+        _menu_item('My Custom Lists', 'my_lists'),
+        _menu_item('Popular Lists', 'popular_lists'),
+        _menu_item('Friends', 'friends'),
     ]
     for url, li, is_folder in items:
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
     xbmcplugin.endOfDirectory(HANDLE)
 
 
+def search_dialog(media_type):
+    keyboard = xbmc.Keyboard('', f'Search {"Movies" if media_type == "movie" else "TV Shows"}')
+    keyboard.doModal()
+    if keyboard.isConfirmed():
+        query = keyboard.getText()
+        if query:
+            trakt_api.search(query, media_type)
+
+
 # ── Donation ──────────────────────────────────────────────────────────────
 
 def show_donation():
-    """Show compact donation dialog with QR code."""
     qr_path = os.path.join(tempfile.gettempdir(), 'trakt_player_qr.png')
     try:
         ctx = ssl._create_unverified_context()
@@ -147,16 +186,13 @@ def show_donation():
 # ── Account Status ────────────────────────────────────────────────────────
 
 def show_account_status():
-    """Show debrid account status with renewal info."""
     progress = xbmcgui.DialogProgress()
     progress.create('Account Status', 'Checking debrid accounts...')
 
     accounts = debrid.get_all_account_info()
     progress.close()
 
-    lines = []
-    lines.append('[B][COLOR skyblue]--- Debrid Account Status ---[/COLOR][/B]\n')
-
+    lines = ['[B][COLOR skyblue]--- Debrid Account Status ---[/COLOR][/B]\n']
     for acct in accounts:
         name = acct.get('name', 'Unknown')
         if acct.get('configured') is False:
@@ -199,7 +235,6 @@ def show_account_status():
         line += '\n'
         lines.append(line)
 
-    # Trakt status
     lines.append('\n[B][COLOR skyblue]--- Trakt Account ---[/COLOR][/B]\n')
     if trakt_auth.is_authorized():
         lines.append('[COLOR lime]Trakt: Authorized[/COLOR]')
@@ -223,20 +258,27 @@ if __name__ == '__main__':
         movie_menu()
     elif action == 'tv_menu':
         tv_menu()
+    elif action == 'search_menu':
+        search_menu()
     elif action == 'my_trakt':
         my_trakt()
     elif action == 'open_settings':
-        ADDON.openSettings()
+        get_addon().openSettings()
     elif action == 'donate':
         show_donation()
     elif action == 'account_status':
         show_account_status()
 
-    # Trakt Browse
+    # Content - with pagination support
     elif action == 'list_genres':
         tmdb.get_genres(params.get('path'))
     elif action == 'trakt_list':
-        trakt_api.get_list(params.get('path'), params.get('media_type', 'movie'))
+        page = params.get('page', '1')
+        trakt_api.get_list(params.get('path'), params.get('media_type', 'movie'), page)
+    elif action == 'search_dialog':
+        search_dialog(params.get('media_type', 'movie'))
+    elif action == 'search_results':
+        trakt_api.search(params.get('query', ''), params.get('media_type', 'movie'), params.get('page', '1'))
     elif action == 'show_seasons':
         trakt_api.show_seasons(params.get('tmdb_id'), params.get('title'))
     elif action == 'show_episodes':
@@ -306,8 +348,9 @@ if __name__ == '__main__':
     elif action == 'play_trailer':
         feed.play_trailer(params.get('yt_key', ''), params.get('title', ''))
 
-    # Click-and-Play
+    # Playback - Use filehost (user's v2.1.6 engine) for main play, player.py for click-and-play
     elif action == 'play':
+        # Try player.py first (our debrid click-and-play with cache check)
         player.play(params.get('title', ''), params.get('year', ''), params.get('imdb_id', ''))
     elif action == 'play_episode':
         player.play_episode(
@@ -336,7 +379,3 @@ if __name__ == '__main__':
         debrid.Premiumize().authorize()
     elif action == 'revoke_pm':
         debrid.Premiumize().revoke()
-    elif action == 'auth_tb':
-        debrid.TorBox().authorize()
-    elif action == 'revoke_tb':
-        debrid.TorBox().revoke()

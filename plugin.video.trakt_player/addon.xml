@@ -1,16 +1,64 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.1.3" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.2.0" provider-name="zeus768">
     <requires>
-        <import addon="xbmc.python" version="3.0.1"/>
+        <import addon="xbmc.python" version="3.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
     </extension>
-    <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Trakt Player - Click and Play</summary>
-        <description lang="en">Trakt Player - Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next, Continue Watching, Discovery Feed (trailer scroll), AI Vibe Marathons, Personalized Recommendations, My Calendar, Watch History, Friends Activity, User Stats, Custom Lists, Popular Community Lists, Cached Torrent Indicator, Rate on Trakt, Debrid Account Status. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. 5 torrent scrapers. Native urllib for Kodi 21+.</description>
-        <news>[2.1.1] Fixed Trakt auth 403 error (Cloudflare). Added User-Agent to all API calls. Fixed menu icon 404s.</news>
+        <summary lang="en">Superpowered Trakt Player - Click and Play with Debrid, AI Vibes, Discovery Feed</summary>
+        <description lang="en">Full Trakt and TMDB integration for Movies and TV Shows. Click-and-Play via Debrid services (Real-Debrid, AllDebrid, Premiumize). AI-powered discovery, trailer feed, and marathon mode.
+
+Features:
+- Click-and-Play: Auto 1080p via debrid with cache-first priority
+- AI Vibes: Mood-based movie marathons powered by AI
+- Discovery Feed: Trending/upcoming trailers with marathon mode
+- Trakt Superpowers: Recommendations, Calendar, Continue Watching, Friends, Stats
+- Debrid: Real-Debrid, AllDebrid, Premiumize with file-based token storage
+- Scrobble: Automatic Trakt scrobbling during playback
+- Up Next: Auto-play next episode
+- Custom Lists: Create, browse, and manage Trakt lists
+
+Created by zeus768.
+
+CHANGELOG:
+
+v2.2.0 - Feature Merge + Premiumize Fix
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- ADDED: AI Vibes - mood-based discovery with 12 presets + custom
+- ADDED: Discovery Feed - trending trailers, new releases, upcoming, shuffle, marathon
+- ADDED: Continue Watching from Trakt playback progress
+- ADDED: Recommended For You (personalized Trakt recommendations)
+- ADDED: Anticipated movies/shows
+- ADDED: My Calendar (upcoming episodes)
+- ADDED: My Custom Lists (create, browse, manage)
+- ADDED: Popular Community Lists
+- ADDED: Friends activity feed
+- ADDED: User Stats dashboard
+- ADDED: Account Status (debrid expiry, premium status)
+- ADDED: Buy Me a Beer (Ko-fi QR code)
+- ADDED: Rate on Trakt, Add to Watchlist, Add to List
+
+v2.1.6 - Speed Optimizations
+- FASTER: Trakt lists now load 3-5x faster with parallel TMDB image fetching
+- FASTER: Reduced items per page to 30 for quicker loading
+- FASTER: Added image caching to avoid re-fetching
+- FASTER: Reduced API timeouts for snappier response
+
+v2.1.5 - Major Fixes
+- FIXED: Trakt and Debrid authorization now persists properly
+- FIXED: Uses file-based token storage (trakt_token.json, rd_token.json)
+- FIXED: Auto-play with proper quality fallback (1080p to 720p to 480p)
+- FIXED: Cached torrent detection and priority playback
+- ADDED: Unlimited scroll/pagination in all lists
+- ADDED: Addon icon and fanart in all subfolders
+
+v1.0.8 - Initial Release
+- Trakt and Debrid authorization using native urllib</description>
+        <disclaimer lang="en">This addon does not host any content.</disclaimer>
+        <language>en</language>
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <assets>
