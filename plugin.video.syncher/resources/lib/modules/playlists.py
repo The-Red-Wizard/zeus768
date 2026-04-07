@@ -86,3 +86,9 @@ def delete(playlist_id):
         os.remove(path)
         return True
     return False
+
+def _save(playlist_id, data):
+    """Save playlist data directly"""
+    path = os.path.join(_get_dir(), '%s.json' % playlist_id)
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)

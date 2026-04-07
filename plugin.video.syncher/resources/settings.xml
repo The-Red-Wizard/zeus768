@@ -6,6 +6,9 @@
         <setting id="fanart" type="bool" label="Show Fanart" default="true"/>
         <setting id="timeout" type="slider" label="Scraper Timeout (seconds)" default="30" range="10,5,60"/>
         <setting id="info_lang" type="labelenum" label="Metadata Language" values="en|de|fr|es|it|pt|nl|ru|ja|ko|zh" default="en"/>
+
+        <setting type="lsep" label="[COLOR gold]AI Music Playlists (Powered by Emergent)[/COLOR]" />
+        <setting id="emergent_key" type="text" label="Emergent Universal Key" default=""/>
     </category>
 
     <category label="Debrid Services">

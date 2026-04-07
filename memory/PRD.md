@@ -1,7 +1,7 @@
 # Zeus768 Kodi Repository - PRD
 
 ## Original Problem Statement
-Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding new addons (Poseidon Player/Guide, Syncher), removing StrikeZone, fixing SALTS, Trakt Player, Genesis, and building the Syncher addon from scratch with a rich Music section powered by Deezer API.
+Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding new addons, fixing existing ones, and building the Syncher addon from scratch with a massive Music section powered by Deezer API, AI-generated playlists via Emergent Universal Key, and live radio streams.
 
 ## Architecture
 ```
@@ -10,7 +10,21 @@ Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding n
 ├── plugin.video.genesis/             # v9.4.1 - TMDB/Trakt powered, auth fixed
 ├── plugin.video.salts/               # v2.6.0 - Stable
 ├── plugin.video.trakt_player/        # v2.2.0 - Stable
-├── plugin.video.syncher/             # v3.2.0 - Scene+Music addon (Deezer+Debrid+Trakt)
+├── plugin.video.syncher/             # v3.3.0 - AI Music + Debrid + Trakt + Radio
+│   ├── main.py                       # Router (74 actions), all menus and playback
+│   ├── resources/lib/modules/
+│   │   ├── ai_playlists.py           # AI daily playlists via Emergent Universal Key
+│   │   ├── radio_api.py              # Radio Browser API (30k+ live stations)
+│   │   ├── deezer_api.py             # Deezer API for music metadata
+│   │   ├── playlists.py              # User playlist management (shuffle/sort/export)
+│   │   ├── trakt_api.py              # Trakt API
+│   │   ├── tmdb_api.py               # TMDB API
+│   │   ├── sources.py                # Source coordination + resolver chain
+│   │   ├── control.py                # Addon helpers
+│   │   ├── client.py                 # HTTP client
+│   │   └── cache.py                  # Cache management
+│   ├── resources/lib/scrapers/       # 8 scene + 4 sports + 1 music scraper
+│   └── resources/lib/resolvers/      # RD, PM, AD, TB, RapidRAR
 ├── plugin.video.poseidonplayer/      # v2.3.0 - Stable
 ├── program.poseidonguide/            # v1.1.0 - Stable
 ├── plugin.program.theaccountant/     # v3.9.7 - Stable
@@ -25,30 +39,22 @@ Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding n
 - [x] Removed StrikeZone from repo
 - [x] SALTS v2.6.0: Fixed Trakt scrobbling, added Stremio scrapers
 - [x] Trakt Player v2.2.0: Merged AI Vibes/Discovery features, fixed Premiumize device auth
-- [x] Genesis v9.3.0: Python 3 porting, CocoScrapers/Gears wrappers, Trakt auth URL fix
-- [x] Genesis v9.4.0: Migrated all movie/TV indexers from IMDB to Trakt API + TMDB metadata
-- [x] Genesis v9.4.1: Fixed ALL debrid auth dialogs + Trakt auth (Kodi 21 progressDialog compat)
-- [x] **Syncher v2.0.0**: Complete addon build (Feb 2026)
-  - Trakt API browsing (Movies, TV Shows) with TMDB metadata (posters, cast, directors)
-  - 8 scene scrapers: RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource
-  - 4 sports replay scrapers: Sport-Video, FullMatchShows, FootballOrgin, Basketball-Video
-  - 5 resolvers: Real-Debrid, Premiumize, AllDebrid, TorBox (device code auth), RapidRAR (login)
-  - Trakt device code auth with user's own client ID/secret
-  - Full menus: Movies, TV Shows, Sports, Music, My Trakt, Search, Settings
-  - Warez site per-site login support
-  - Sports categories with sub-menus (NBA, NFL, Premier League, Champions League, etc.)
-  - Auto-play and source select modes
-- [x] **Syncher v3.2.0**: Music Section (Feb 2026)
-  - Deezer API integration for music metadata (no auth needed)
-  - Music genres, top charts (tracks/albums/artists), curated playlists
-  - Artist pages: top tracks, albums, related artists
-  - Album view with full track listing and auto-play all
-  - Search: artists, albums, tracks via Deezer
-  - User-created local playlists (JSON file storage) with add/remove
-  - Auto-play mode for albums, Deezer playlists, and user playlists
-  - Music scene site search (RLSbb, DDLValley, SceneSource, PSA)
-  - Full router wired with 28 music action routes
-  - Zip rebuilt, addons.xml updated, md5 regenerated
+- [x] Genesis v9.3.0 -> v9.4.1: Python 3 porting, TMDB/Trakt migration, auth fixes
+- [x] **Syncher v2.0.0**: Complete addon build - Trakt/TMDB/Debrid/Scene scrapers/Sports
+- [x] **Syncher v3.2.0**: Deezer Music section - genres, artists, albums, charts, playlists, autoplay, scene search
+- [x] **Syncher v3.3.0**: Massive Music upgrade
+  - AI Daily Playlists via Emergent Universal Key (14 rotating themes, mood, decade, similar artist)
+  - Live Radio via Radio Browser API (20 genres, 20 countries, search)
+  - Enhanced playlists (shuffle, sort, export, import)
+  - All tested: Deezer API, Radio Browser API, Emergent AI proxy, py_compile
+
+## 3rd Party Integrations
+- Trakt API: `https://api.trakt.tv/` (user's client ID/secret stored in addon)
+- TMDB API: `https://api.themoviedb.org/3/` (key in control.py)
+- Deezer API: `https://api.deezer.com/` (no auth needed)
+- Emergent LLM Proxy: `https://integrations.emergentagent.com/llm` (GPT-4o-mini via Emergent Universal Key)
+- Radio Browser API: `https://de1.api.radio-browser.info/json` (no auth needed)
+- Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox (device code auth in settings)
 
 ## Pending / Backlog
 - [ ] P0: User must click "Save to Github" so Kodi can detect repo updates

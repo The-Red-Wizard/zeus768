@@ -1,6 +1,28 @@
 Syncher Changelog
 ==================
 
+Version 3.3.0 (February 2026)
+- NEW: AI Daily Playlists powered by Emergent Universal Key
+  * 14 rotating daily themes (Discovery, Chill Vibes, Throwback Classics, Workout Energy, Late Night Grooves, Feel Good Anthems, Indie Underground, Hip-Hop Essentials, Electronic Dreams, Acoustic Sessions, World Music Journey, Rock Revival, Jazz & Soul Cafe, Party Starters)
+  * AI generates fresh playlists every day using GPT via Emergent proxy
+  * Mood-based playlists (Happy, Sad, Chill, Party, Focus, Workout, Romantic, Angry, Nostalgic, Sleepy)
+  * Decade playlists (60s through 2020s best-of compilations)
+  * "Similar To..." AI artist mix on any artist page
+  * All AI playlists look up tracks on Deezer for metadata and artwork
+  * Results cached daily for instant repeat access
+- NEW: Live Radio via Radio Browser API (30,000+ free stations)
+  * Browse by genre (Pop, Rock, Hip-Hop, Electronic, Jazz, Classical, R&B, Country, Reggae, Metal, Blues, Latin, Ambient, Indie, Dance, Punk, Funk, Lounge, House, DnB)
+  * Browse by country (US, UK, DE, FR, BR, JP, AU, CA, ES, IT, NL, MX, SE, KR, IN, RU, NG, ZA, JM, IE)
+  * Top voted, most popular, trending stations
+  * Search radio stations by name
+- NEW: Enhanced user playlists
+  * Shuffle play mode
+  * Sort playlists by artist or title
+  * Export playlist as text
+  * Import playlist from text (looks up tracks on Deezer)
+- NEW: Emergent Universal Key setting in addon Settings
+- AI powered by Emergent Universal Key (https://integrations.emergentagent.com)
+
 Version 3.2.0 (February 2026)
 - NEW: Rich Music section powered by Deezer API
   * Browse music genres, artists, albums, top charts

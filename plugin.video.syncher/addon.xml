@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.syncher" name="Syncher" version="3.2.0" provider-name="zeus768">
+<addon id="plugin.video.syncher" name="Syncher" version="3.3.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.0"/>
@@ -8,38 +8,42 @@
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Syncher - Scene Release Streamer with Debrid, Trakt, Music via Deezer</summary>
-        <description lang="en">Syncher v3.2.0 by zeus768 - Browse Movies, TV Shows, Sports Highlights and Music. Scrapes scene release sites (RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource) plus sports replay sites. NEW: Rich Music section powered by Deezer API with genres, artists, albums, charts, curated playlists, user-created playlists, autoplay, and music torrent scene search. Resolves links through Real-Debrid, Premiumize, AllDebrid, TorBox and RapidRAR premium. Trakt integration for browsing, watchlists, scrobbling. TMDB metadata with posters, cast, directors.</description>
-        <disclaimer lang="en">This addon does not host any content. A debrid service or RapidRAR.cr premium account is recommended.</disclaimer>
+        <summary lang="en">Syncher - Scene Streamer with AI Music, Debrid, Trakt, Deezer, Radio</summary>
+        <description lang="en">Syncher v3.3.0 by zeus768 - Browse Movies, TV Shows, Sports Highlights and a massive Music section. AI Daily Playlists powered by Emergent Universal Key (like Spotify Daily Mix), Mood playlists, Decade playlists, Similar Artist AI mixes. Live Radio via Radio Browser API (20+ genres, 20 countries). Full Deezer integration for genres, artists, albums, charts, curated playlists, user playlists with shuffle/sort/export/import and autoplay. Scene release scrapers (RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource) plus sports replay sites. Resolves through Real-Debrid, Premiumize, AllDebrid, TorBox. Trakt browsing, watchlists, scrobbling. TMDB metadata.</description>
+        <disclaimer lang="en">This addon does not host any content. A debrid service or RapidRAR.cr premium account is recommended. AI features require an Emergent Universal Key.</disclaimer>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <news>
+v3.3.0 (2026)
+- NEW: AI Daily Playlists powered by Emergent Universal Key
+  * 14 rotating daily themes (Discovery, Chill, Throwback, Workout, etc.)
+  * Mood-based playlists (Happy, Sad, Chill, Party, Focus, Workout, etc.)
+  * Decade playlists (60s through 2020s best-of)
+  * "Similar To..." AI artist mix on any artist page
+  * All AI playlists cached daily for speed
+- NEW: Live Radio via Radio Browser API (30,000+ stations)
+  * Browse by genre (20 categories), country (20 countries)
+  * Top voted, most popular, trending stations
+  * Search radio stations
+- NEW: Enhanced playlists
+  * Shuffle play mode
+  * Sort by artist or title
+  * Export playlist as text
+  * Import playlist from text
+- AI powered by Emergent Universal Key (set in Settings)
+
 v3.2.0 (2026)
-- NEW: Rich Music section with Deezer API integration
+- Rich Music section with Deezer API integration
 - Music genres, artists, albums, top charts, curated playlists
-- Artist pages with top tracks, albums, related artists
-- Album view with track listing and auto-play all
 - User-created playlists with add/remove tracks
-- Music scene site search (RLSbb, DDLValley, SceneSource, PSA)
-- Auto-play mode for albums and playlists via scene torrent sources
+- Auto-play mode for albums and playlists
+- Music scene site search
 
 v3.1.1 (2026)
 - Version bump and metadata updates
 
-v2.0.1 (2026)
-- FIXED: Icon and fanart now display correctly in Kodi repo browser
-
 v2.0.0 (2026)
-- Initial release by zeus768
-- Trakt API powered browsing (Movies, TV Shows, Sports, Music)
-- TMDB metadata enrichment (posters, cast, directors, fanart)
-- Scene scrapers: RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource
-- Sports replay scrapers: Sport-Video, FullMatchShows, FootballOrgin, Basketball-Video
-- Debrid resolvers: Real-Debrid, Premiumize, AllDebrid, TorBox (device code auth)
-- RapidRAR.cr premium resolver with login
-- Trakt authorization with device code
-- Warez site login support (per-site credentials)
-- Favourites, Search, Trakt Lists
+- Initial release: Movies, TV, Sports, Debrid, Trakt, TMDB
         </news>
         <assets>
             <icon>icon.png</icon>

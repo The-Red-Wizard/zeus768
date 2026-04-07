@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Syncher v3.2.0 by zeus768
-Scene Release Downloader and Streamer with Debrid, Trakt, RapidRAR, Deezer Music
+Syncher v3.3.0 by zeus768
+Scene Release Streamer with Debrid, Trakt, Deezer Music, AI Playlists (Emergent), Radio
 """
 
 import sys
@@ -443,6 +443,10 @@ def sport_sources(params):
 # ============================================================
 
 def music_menu():
+    add_dir('[COLOR gold]AI Daily Playlists[/COLOR]', 'aidaily', image=control.addonIcon())
+    add_dir('[COLOR gold]Mood Playlists[/COLOR]', 'aimood', image=control.addonIcon())
+    add_dir('[COLOR gold]Decades[/COLOR]', 'aidecades', image=control.addonIcon())
+    add_dir('[COLOR cyan]Radio[/COLOR]', 'radiomenu', image=control.addonIcon())
     add_dir('[COLOR gold]Top Charts[/COLOR]', 'musictracks', url='chart_tracks')
     add_dir('[COLOR gold]Top Albums[/COLOR]', 'musicalbums', url='chart_albums')
     add_dir('[COLOR gold]Top Artists[/COLOR]', 'musicartists', url='chart_artists')
@@ -497,6 +501,8 @@ def music_artist(params):
             url='artist_albums|%s' % artist_id, image=image)
     add_dir('[COLOR skyblue]Related Artists[/COLOR]', 'musicrelated',
             url=artist_id, image=image)
+    add_dir('[COLOR magenta]AI: Similar To %s[/COLOR]' % name, 'aisimilar',
+            url=name, image=image)
     add_dir('[COLOR lime]Search Scene Sites[/COLOR] for %s' % name, 'musicscenesearch',
             url=name, image=image)
     end_directory()
@@ -684,6 +690,7 @@ def my_playlists():
     from resources.lib.modules import playlists as pl
 
     add_dir('[COLOR gold]+ Create New Playlist[/COLOR]', 'createplaylist', is_folder=False)
+    add_dir('[COLOR skyblue]+ Import Playlist[/COLOR]', 'importplaylist', is_folder=False)
 
     user_playlists = pl.get_all()
     for p in user_playlists:
@@ -713,7 +720,15 @@ def my_playlist(params):
     if tracks:
         add_dir('[COLOR gold]>>> Auto-Play All <<<[/COLOR]', 'musicautoplay',
                 url='myplaylist|%s' % playlist_id, is_folder=False)
+        add_dir('[COLOR magenta]>>> Shuffle Play <<<[/COLOR]', 'shuffleplay',
+                url=playlist_id, is_folder=False)
 
+    add_dir('[COLOR skyblue]Sort by Artist[/COLOR]', 'sortplaylist',
+            url='%s|artist' % playlist_id, is_folder=False)
+    add_dir('[COLOR skyblue]Sort by Title[/COLOR]', 'sortplaylist',
+            url='%s|title' % playlist_id, is_folder=False)
+    add_dir('[COLOR skyblue]Export Playlist[/COLOR]', 'exportplaylist',
+            url=playlist_id, is_folder=False)
     add_dir('[COLOR red]Delete Playlist[/COLOR]', 'deleteplaylist',
             url=playlist_id, is_folder=False)
 
@@ -786,6 +801,327 @@ def delete_playlist(params):
         pl.delete(playlist_id)
         control.infoDialog('Playlist deleted')
         xbmc.executebuiltin('Container.Refresh')
+
+def shuffle_play(params):
+    """Shuffle play a user playlist"""
+    import random
+    from resources.lib.modules import playlists as pl
+    playlist_id = params.get('url', '')
+    data = pl.get(playlist_id)
+    if not data or not data.get('tracks'):
+        control.infoDialog('No tracks to play')
+        return
+    tracks = list(data['tracks'])
+    random.shuffle(tracks)
+    # Play first, queue rest
+    from resources.lib.scrapers import music_scraper
+    first = tracks[0]
+    query = '%s %s' % (first.get('artist', ''), first.get('title', ''))
+    dp = control.progressDialog()
+    dp.create('Syncher', 'Shuffling %d tracks...' % len(tracks))
+    results = music_scraper.search_music(query.strip())
+    dp.close()
+    if results:
+        resolved = sources.resolve_source(results[0])
+        if resolved:
+            kodi_pl = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+            kodi_pl.clear()
+            li = xbmcgui.ListItem(label='%s - %s' % (first.get('artist', ''), first.get('title', '')), path=resolved)
+            kodi_pl.add(resolved, li)
+            for t in tracks[1:]:
+                t_label = '%s - %s' % (t.get('artist', ''), t.get('title', ''))
+                t_li = xbmcgui.ListItem(label=t_label)
+                t_url = build_url({'action': 'playmusic', 'title': t.get('title', ''), 'artist': t.get('artist', '')})
+                kodi_pl.add(t_url, t_li)
+            xbmc.Player().play(kodi_pl)
+            return
+    control.infoDialog('No sources found')
+
+def sort_playlist(params):
+    """Sort a playlist by field"""
+    from resources.lib.modules import playlists as pl
+    url = params.get('url', '')
+    parts = url.split('|', 1)
+    if len(parts) != 2:
+        return
+    playlist_id, sort_by = parts
+    data = pl.get(playlist_id)
+    if not data:
+        return
+    if sort_by == 'artist':
+        data['tracks'].sort(key=lambda t: t.get('artist', '').lower())
+    elif sort_by == 'title':
+        data['tracks'].sort(key=lambda t: t.get('title', '').lower())
+    pl._save(playlist_id, data)
+    control.infoDialog('Sorted by %s' % sort_by)
+    xbmc.executebuiltin('Container.Refresh')
+
+def export_playlist(params):
+    """Export playlist as text to clipboard/dialog"""
+    from resources.lib.modules import playlists as pl
+    playlist_id = params.get('url', '')
+    data = pl.get(playlist_id)
+    if not data:
+        return
+    lines = ['Playlist: %s' % data['name'], '']
+    for i, t in enumerate(data.get('tracks', []), 1):
+        lines.append('%d. %s - %s' % (i, t.get('artist', ''), t.get('title', '')))
+    text = '\n'.join(lines)
+    control.okDialog(text[:2000], heading='Export: %s' % data['name'])
+
+def import_playlist_menu():
+    """Import a playlist from text"""
+    from resources.lib.modules import playlists as pl
+    from resources.lib.modules import deezer_api
+    text = control.keyboard('', 'Paste: Artist - Title (one per line)')
+    if not text:
+        return
+    name = control.keyboard('', 'Playlist Name')
+    if not name:
+        return
+    new_pl = pl.create(name)
+    lines = text.split(',') if ',' in text else text.split('\n')
+    count = 0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        results = deezer_api.search_track(line, limit=1)
+        if results:
+            track = results[0]
+            pl.add_track(new_pl['id'], track)
+            count += 1
+    control.infoDialog('Imported %d tracks into: %s' % (count, name))
+    xbmc.executebuiltin('Container.Refresh')
+
+# ============================================================
+# AI DAILY PLAYLISTS (Powered by Emergent Universal Key)
+# ============================================================
+
+def ai_daily_menu():
+    from resources.lib.modules import ai_playlists
+    key = ai_playlists._get_api_key()
+    if not key:
+        add_dir('[COLOR red]Set your Emergent Universal Key in Settings first[/COLOR]', 'settings', is_folder=False)
+        end_directory()
+        return
+    playlists = ai_playlists.get_daily_playlists()
+    for p in playlists:
+        add_dir('[COLOR %s]%s[/COLOR]  [COLOR grey](refreshes daily)[/COLOR]' % (p['color'], p['name']),
+                'aidailyplay', url=str(p['index']), image=control.addonIcon())
+    add_dir('[COLOR grey]Powered by Emergent Universal Key + Deezer[/COLOR]', 'settings', is_folder=False)
+    end_directory()
+
+def ai_daily_play(params):
+    from resources.lib.modules import ai_playlists
+    theme_index = params.get('url', '0')
+    dp = control.progressDialog()
+    dp.create('Syncher AI', 'Generating your daily playlist...')
+    tracks = ai_playlists.get_daily_playlist_tracks(theme_index)
+    dp.close()
+    if not tracks:
+        control.infoDialog('Could not generate playlist. Check your Emergent key in Settings.')
+        return
+    _show_ai_track_list(tracks, 'aidaily_%s' % theme_index)
+
+def ai_mood_menu():
+    from resources.lib.modules import ai_playlists
+    key = ai_playlists._get_api_key()
+    if not key:
+        add_dir('[COLOR red]Set your Emergent Universal Key in Settings first[/COLOR]', 'settings', is_folder=False)
+        end_directory()
+        return
+    moods = ai_playlists.get_mood_list()
+    for m in moods:
+        add_dir('[COLOR %s]%s[/COLOR]' % (m['color'], m['name']),
+                'aimoodplay', url=m['id'], image=control.addonIcon())
+    end_directory()
+
+def ai_mood_play(params):
+    from resources.lib.modules import ai_playlists
+    mood = params.get('url', '')
+    dp = control.progressDialog()
+    dp.create('Syncher AI', 'Creating %s playlist...' % mood)
+    tracks = ai_playlists.get_mood_playlist(mood)
+    dp.close()
+    if not tracks:
+        control.infoDialog('Could not generate playlist. Check your Emergent key.')
+        return
+    _show_ai_track_list(tracks, 'mood_%s' % mood)
+
+def ai_decades_menu():
+    from resources.lib.modules import ai_playlists
+    key = ai_playlists._get_api_key()
+    if not key:
+        add_dir('[COLOR red]Set your Emergent Universal Key in Settings first[/COLOR]', 'settings', is_folder=False)
+        end_directory()
+        return
+    decades = ai_playlists.get_decade_list()
+    for d in decades:
+        add_dir('[COLOR %s]%s[/COLOR]' % (d['color'], d['name']),
+                'aidecadeplay', url=d['id'], image=control.addonIcon())
+    end_directory()
+
+def ai_decade_play(params):
+    from resources.lib.modules import ai_playlists
+    decade = params.get('url', '')
+    dp = control.progressDialog()
+    dp.create('Syncher AI', 'Creating best of %s...' % decade)
+    tracks = ai_playlists.get_decade_playlist(decade)
+    dp.close()
+    if not tracks:
+        control.infoDialog('Could not generate playlist. Check your Emergent key.')
+        return
+    _show_ai_track_list(tracks, 'decade_%s' % decade)
+
+def ai_similar(params):
+    from resources.lib.modules import ai_playlists
+    artist_name = params.get('url', '')
+    if not artist_name:
+        artist_name = control.keyboard('', 'Artist name')
+    if not artist_name:
+        return
+    key = ai_playlists._get_api_key()
+    if not key:
+        control.infoDialog('Set your Emergent Universal Key in Settings first')
+        return
+    dp = control.progressDialog()
+    dp.create('Syncher AI', 'Finding music similar to %s...' % artist_name)
+    tracks = ai_playlists.get_similar_artist_playlist(artist_name)
+    dp.close()
+    if not tracks:
+        control.infoDialog('Could not generate playlist. Check your Emergent key.')
+        return
+    _show_ai_track_list(tracks, 'similar_%s' % artist_name[:20])
+
+def _show_ai_track_list(tracks, cache_id=''):
+    """Display AI-generated track list with Deezer metadata"""
+    if not tracks:
+        control.infoDialog('No tracks')
+        return
+
+    # Auto-play all button
+    add_dir('[COLOR gold]>>> Auto-Play All <<<[/COLOR]', 'musicautoplay',
+            url='ai|%s' % cache_id, is_folder=False)
+
+    for t in tracks:
+        mins = int(t.get('duration', '0')) // 60
+        secs = int(t.get('duration', '0')) % 60
+        label = '%s - %s' % (t.get('artist', ''), t['title'])
+        if int(t.get('duration', '0')) > 0:
+            label += '  [COLOR grey](%d:%02d)[/COLOR]' % (mins, secs)
+
+        li = xbmcgui.ListItem(label=label)
+        img = t.get('image') or control.addonIcon()
+        li.setArt({'icon': img, 'thumb': img, 'fanart': control.addonFanart()})
+        li.setInfo('Music', {
+            'title': t['title'], 'artist': t.get('artist', ''),
+            'album': t.get('album', ''), 'duration': int(t.get('duration', '0')),
+        })
+        li.setProperty('IsPlayable', 'true')
+        url_params = {
+            'action': 'playmusic',
+            'title': t['title'], 'artist': t.get('artist', ''),
+            'album': t.get('album', ''), 'album_id': t.get('album_id', ''),
+        }
+        cm = [('Add to Playlist', 'RunPlugin(%s)' % build_url({
+            'action': 'addtoplaylist',
+            'track_id': t['id'], 'title': t['title'],
+            'artist': t.get('artist', ''), 'album': t.get('album', ''),
+            'album_id': t.get('album_id', ''), 'image': img,
+            'duration': t.get('duration', '0'),
+        }))]
+        li.addContextMenuItems(cm)
+        xbmcplugin.addDirectoryItem(HANDLE, build_url(url_params), li, isFolder=False)
+
+    end_directory('songs')
+
+# ============================================================
+# RADIO (Powered by Radio Browser API)
+# ============================================================
+
+def radio_menu():
+    from resources.lib.modules import radio_api
+    add_dir('[COLOR gold]Top Stations[/COLOR]', 'radiotop', image=control.addonIcon())
+    add_dir('[COLOR gold]Most Popular[/COLOR]', 'radiopopular', image=control.addonIcon())
+    add_dir('[COLOR gold]Trending[/COLOR]', 'radiotrending', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Browse by Genre[/COLOR]', 'radiogenres', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Browse by Country[/COLOR]', 'radiocountries', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Search Radio[/COLOR]', 'radiosearch', image=control.addonIcon())
+    end_directory()
+
+def radio_station_list(stations):
+    """Display a list of radio stations"""
+    for s in stations:
+        li = xbmcgui.ListItem(label=s['label'])
+        icon = s.get('icon') or control.addonIcon()
+        li.setArt({'icon': icon, 'thumb': icon, 'fanart': control.addonFanart()})
+        li.setInfo('Music', {'title': s['name'], 'genre': s.get('tags', '')})
+        li.setProperty('IsPlayable', 'true')
+        url_params = {'action': 'playradio', 'url': s['url'], 'name': s['name']}
+        xbmcplugin.addDirectoryItem(HANDLE, build_url(url_params), li, isFolder=False)
+    end_directory('songs')
+
+def radio_top():
+    from resources.lib.modules import radio_api
+    stations = radio_api.get_top_stations()
+    radio_station_list(stations)
+
+def radio_popular():
+    from resources.lib.modules import radio_api
+    stations = radio_api.get_popular_stations()
+    radio_station_list(stations)
+
+def radio_trending():
+    from resources.lib.modules import radio_api
+    stations = radio_api.get_trending_stations()
+    radio_station_list(stations)
+
+def radio_genres():
+    from resources.lib.modules import radio_api
+    tags = radio_api.get_genre_tags()
+    for t in tags:
+        add_dir('[COLOR %s]%s[/COLOR]' % (t['color'], t['name']),
+                'radiobytag', url=t['tag'], image=control.addonIcon())
+    end_directory()
+
+def radio_by_tag(params):
+    from resources.lib.modules import radio_api
+    tag = params.get('url', '')
+    stations = radio_api.search_by_tag(tag)
+    radio_station_list(stations)
+
+def radio_countries():
+    from resources.lib.modules import radio_api
+    countries = radio_api.get_countries()
+    for c in countries:
+        add_dir(c['name'], 'radiobycountry', url=c['code'], image=control.addonIcon())
+    end_directory()
+
+def radio_by_country(params):
+    from resources.lib.modules import radio_api
+    code = params.get('url', '')
+    stations = radio_api.search_by_country(code)
+    radio_station_list(stations)
+
+def radio_search():
+    from resources.lib.modules import radio_api
+    query = control.keyboard('', 'Search Radio Stations')
+    if not query:
+        return
+    stations = radio_api.search_stations(query)
+    radio_station_list(stations)
+
+def play_radio(params):
+    """Play a live radio stream"""
+    url = params.get('url', '')
+    name = params.get('name', 'Radio')
+    if not url:
+        return
+    li = xbmcgui.ListItem(label=name, path=url)
+    li.setInfo('Music', {'title': name})
+    li.setProperty('IsPlayable', 'true')
+    xbmcplugin.setResolvedUrl(HANDLE, True, li)
 
 # ============================================================
 # MUSIC SCENE SEARCH
@@ -901,6 +1237,13 @@ def music_autoplay(params):
         data = pl.get(source_id)
         if data:
             tracks = data.get('tracks', [])
+        album_name = ''
+        artist_name = ''
+    elif source_type == 'ai':
+        from resources.lib.modules import ai_playlists
+        cached = ai_playlists._load_cache(source_id)
+        if cached:
+            tracks = cached
         album_name = ''
         artist_name = ''
     else:
@@ -1267,6 +1610,27 @@ def router():
     elif action == 'musicplaylist': music_playlist(params)
     elif action == 'musicscenesearch': music_scene_search(params)
 
+    # Music - AI Playlists (Emergent Universal Key)
+    elif action == 'aidaily': ai_daily_menu()
+    elif action == 'aidailyplay': ai_daily_play(params)
+    elif action == 'aimood': ai_mood_menu()
+    elif action == 'aimoodplay': ai_mood_play(params)
+    elif action == 'aidecades': ai_decades_menu()
+    elif action == 'aidecadeplay': ai_decade_play(params)
+    elif action == 'aisimilar': ai_similar(params)
+
+    # Music - Radio
+    elif action == 'radiomenu': radio_menu()
+    elif action == 'radiotop': radio_top()
+    elif action == 'radiopopular': radio_popular()
+    elif action == 'radiotrending': radio_trending()
+    elif action == 'radiogenres': radio_genres()
+    elif action == 'radiobytag': radio_by_tag(params)
+    elif action == 'radiocountries': radio_countries()
+    elif action == 'radiobycountry': radio_by_country(params)
+    elif action == 'radiosearch': radio_search()
+    elif action == 'playradio': play_radio(params)
+
     # Music - Search
     elif action == 'searchartist': search_artist_menu()
     elif action == 'searchalbum': search_album_menu()
@@ -1279,6 +1643,10 @@ def router():
     elif action == 'addtoplaylist': add_to_playlist(params)
     elif action == 'removefromplaylist': remove_from_playlist(params)
     elif action == 'deleteplaylist': delete_playlist(params)
+    elif action == 'shuffleplay': shuffle_play(params)
+    elif action == 'sortplaylist': sort_playlist(params)
+    elif action == 'exportplaylist': export_playlist(params)
+    elif action == 'importplaylist': import_playlist_menu()
 
     # Music - Playback
     elif action == 'musicautoplay': music_autoplay(params)
