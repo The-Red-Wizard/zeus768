@@ -11,7 +11,7 @@
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">Stream All The Sources - 45+ scrapers, Stremio, Trakt, Debrid</summary>
-        <description lang="en_GB">SALTS is a multi-source video addon with 45+ scrapers across torrent sites, Stremio protocol, streaming sources, anime trackers, and international sources.
+        <description lang="en_GB">SALTS is a multi-source video addon with 45+ scrapers including Stremio protocol (Torrentio, MediaFusion, Comet, CyberFlix, PeerFlix).
 
 Features:
 - Stremio Scrapers: Torrentio, MediaFusion, Comet, CyberFlix (free), Annatar, PeerFlix (free), EasyNews+
@@ -41,12 +41,11 @@ v2.6.0 (2026)
 - Fixed: Trakt scrobbling now fires during playback (start at 2%, stop on finish)
 - Fixed: Trakt mark watched - items marked after 80% playback completion
 - Fixed: Trakt lists now show TMDB posters, fanart, ratings, and watched overlay
-- Fixed: Trakt stale ADDON instance bug (same fix as Trakt Player) - fresh xbmcaddon.Addon() in all settings reads/writes
+- Fixed: Trakt stale ADDON instance bug - fresh xbmcaddon.Addon() for all settings reads/writes
 - Fixed: Watched tick indicator ([W]) on Trakt list items with playcount overlay
 
-v2.5.2 (2026)
-- Fixed: 24/7 channels - stop when user quits stream (no more auto-advancing)
-- Added: Superfast concurrent scraping (ThreadPoolExecutor, 20 workers, 30s timeout)
+v2.5.3 (2026)
+- User's custom fixes and improvements
 
 v2.1.8 (2026)
 - Fixed: Source dialog rendering - moved to inline native Kodi Dialog().select() with color-coded formatting
@@ -58,9 +57,6 @@ v2.1.7 (2026)
 - Added: Bento UI Source Dialog - custom skin with quality-colored badges, cached/free tags, seeds, size
 - Added: Pre-Scrape hover caching - background scrape after 2s hover on movie items (4-link rule)
 - Added: 24hr TTL hover cache in SQLite for instant source availability
-- Added: "Instant!" notification when pre-scraped sources are available
-- Added: Clear Pre-Scrape Cache in Tools menu
-- Added: Fallback to standard dialog if skin XML not available
         </news>
         <assets>
             <icon>icon.png</icon>

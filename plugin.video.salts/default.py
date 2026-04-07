@@ -1230,7 +1230,6 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
             from salts_lib.trakt_api import TraktAPI
             trakt_obj = TraktAPI()
             if trakt_obj.is_authorized() and tmdb_id:
-                # Resolve TMDB ID to Trakt ID
                 mt = 'movie' if media_type == 'movie' else 'show'
                 results = trakt_obj._call_api(f'/search/tmdb/{tmdb_id}?type={mt}', cache_limit=24)
                 if results and isinstance(results, list) and len(results) > 0:
@@ -1238,7 +1237,6 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                     trakt_item_type = 'movies' if media_type == 'movie' else 'episodes'
                     
                     if trakt_item_type == 'episodes' and season and episode:
-                        # For episodes, look up the specific episode Trakt ID
                         show_trakt = results[0].get('show', {}).get('ids', {}).get('trakt')
                         if not show_trakt:
                             show_trakt = trakt_item_id
@@ -1332,7 +1330,6 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
     # Playback ended - Trakt scrobble stop + mark watched
     if trakt_obj and trakt_item_id and trakt_scrobble_started:
         try:
-            # Get final progress
             final_pct = progress_pct if progress_pct > 0 else 100
             trakt_obj.scrobble_stop(trakt_item_type, trakt_item_id, final_pct)
             log_utils.log(f'Trakt scrobble stopped at {final_pct:.0f}%', xbmc.LOGINFO)
@@ -1805,13 +1802,25 @@ def trakt_menu():
     from salts_lib.trakt_api import TraktAPI
     trakt = TraktAPI()
     
-    if trakt.is_authorized():
+    is_auth = trakt.is_authorized()
+    
+    if is_auth:
         auth_status = '[COLOR lime]Authorized[/COLOR]'
+        auth_action = 'Re-Authorize Trakt'
     else:
         auth_status = '[COLOR red]Not Authorized[/COLOR]'
+        auth_action = 'Authorize Trakt'
     
     items = [
-        {'title': f'Authorization: {auth_status}', 'mode': 'trakt_auth'},
+        {'title': f'Status: {auth_status}', 'mode': 'trakt_status'},
+        {'title': auth_action, 'mode': 'trakt_auth'},
+    ]
+    
+    # Add revoke option if authorized
+    if is_auth:
+        items.append({'title': '[COLOR red]Revoke Authorization[/COLOR]', 'mode': 'trakt_revoke'})
+    
+    items.extend([
         {'title': 'My Watchlist (Movies)', 'mode': 'trakt_watchlist', 'media_type': 'movies'},
         {'title': 'My Watchlist (TV Shows)', 'mode': 'trakt_watchlist', 'media_type': 'shows'},
         {'title': 'My Collection (Movies)', 'mode': 'trakt_collection', 'media_type': 'movies'},
@@ -1821,7 +1830,7 @@ def trakt_menu():
         {'title': 'Popular Movies', 'mode': 'trakt_popular', 'media_type': 'movies'},
         {'title': 'Popular TV Shows', 'mode': 'trakt_popular', 'media_type': 'shows'},
         {'title': 'My Lists', 'mode': 'trakt_lists'},
-    ]
+    ])
     
     for item in items:
         li = xbmcgui.ListItem(item['title'])
@@ -1831,12 +1840,42 @@ def trakt_menu():
     
     xbmcplugin.endOfDirectory(HANDLE)
 
+def trakt_status():
+    """Show Trakt authorization status"""
+    from salts_lib.trakt_api import TraktAPI
+    trakt = TraktAPI()
+    
+    if trakt.is_authorized():
+        try:
+            user_info = trakt.get_user_settings()
+            username = user_info.get('user', {}).get('username', 'Unknown')
+            xbmcgui.Dialog().ok('Trakt Status', f'Authorized as: [COLOR lime]{username}[/COLOR]')
+        except Exception:
+            xbmcgui.Dialog().ok('Trakt Status', 'Authorized (unable to fetch username)')
+    else:
+        xbmcgui.Dialog().ok('Trakt Status', '[COLOR red]Not Authorized[/COLOR]\n\nSelect "Authorize Trakt" to connect your account.')
+
 def trakt_auth():
     """Authorize Trakt"""
     from salts_lib.trakt_api import TraktAPI
     trakt = TraktAPI()
     trakt.authorize()
     xbmc.executebuiltin('Container.Refresh')
+
+def trakt_revoke():
+    """Revoke Trakt authorization"""
+    from salts_lib.trakt_api import TraktAPI
+    
+    confirm = xbmcgui.Dialog().yesno(
+        'Revoke Trakt',
+        'Are you sure you want to revoke Trakt authorization?\n\nYou will need to re-authorize to use Trakt features.'
+    )
+    
+    if confirm:
+        trakt = TraktAPI()
+        trakt.clear_authorization()
+        xbmcgui.Dialog().notification('Trakt', 'Authorization revoked', xbmcgui.NOTIFICATION_INFO)
+        xbmc.executebuiltin('Container.Refresh')
 
 def trakt_watchlist(media_type='movies'):
     """Show Trakt watchlist"""
@@ -3059,9 +3098,21 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
             if not scraper.is_enabled():
                 return []
             is_free = issubclass(scraper_cls, FreeStreamScraper)
-            if not debrid_enabled and not is_free:
+            is_stremio = False
+            try:
+                from scrapers.stremio_scrapers import StremioBaseScraper
+                is_stremio = isinstance(scraper, StremioBaseScraper)
+            except ImportError:
+                pass
+            if not debrid_enabled and not is_free and not (is_stremio and scraper.is_free):
                 return []
             if is_free:
+                results = scraper.search(
+                    query, media_type,
+                    tmdb_id=tmdb_id, title=title, year=year,
+                    season=season, episode=episode
+                )
+            elif is_stremio:
                 results = scraper.search(
                     query, media_type,
                     tmdb_id=tmdb_id, title=title, year=year,
@@ -3235,6 +3286,10 @@ def router(params):
         trakt_menu()
     elif mode == 'trakt_auth':
         trakt_auth()
+    elif mode == 'trakt_status':
+        trakt_status()
+    elif mode == 'trakt_revoke':
+        trakt_revoke()
     elif mode == 'trakt_watchlist':
         trakt_watchlist(params.get('media_type', 'movies'))
     elif mode == 'trakt_collection':

@@ -136,7 +136,7 @@ ALL_SCRAPERS = [
     # APIs
     TorrentAPIScraper,
     
-    # STREMIO PROTOCOL - Torrent Aggregators (use Stremio addon API)
+    # STREMIO PROTOCOL - Torrent Aggregators
     TorrentioScraper,
     MediaFusionScraper,
     CometScraper,

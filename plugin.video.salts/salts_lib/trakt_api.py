@@ -5,50 +5,91 @@ Uses native urllib (no external requests module)
 """
 import json
 import time
+import os
 import xbmc
 import xbmcgui
 import xbmcaddon
+import xbmcvfs
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlencode
 
 from . import log_utils
 from .db_utils import DB_Connection
+
+ADDON = xbmcaddon.Addon()
+ADDON_ID = ADDON.getAddonInfo('id')
+ADDON_DATA_PATH = xbmcvfs.translatePath(f'special://profile/addon_data/{ADDON_ID}/')
+
+def _fresh_addon():
+    """Always return a fresh Addon instance to avoid stale settings cache."""
+    return xbmcaddon.Addon()
 
 # Trakt API v2 settings
 CLIENT_ID = '42eba69a18795ae48fc5d6dbdd99396e9e3894dc4f18930e6187d36c8b4346d3'
 CLIENT_SECRET = 'e5bc7e20660e73622344ebf93c250a8fc2814a8f7c2b082bdee51545d5f71969'
 API_URL = 'https://api.trakt.tv'
 REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
+USER_AGENT = 'SALTS Kodi Addon/2.5.2'
 
-def _fresh_addon():
-    """Always return a fresh Addon instance to avoid stale settings cache."""
-    return xbmcaddon.Addon()
+# Token file path
+TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'trakt_auth.json')
+
 
 class TraktError(Exception):
     pass
 
+
 class TransientTraktError(Exception):
     pass
 
+
 class TraktAPI:
-    """Trakt.tv API v2 integration"""
+    """Trakt.tv API v2 integration with device authentication"""
     
     def __init__(self):
         self.client_id = CLIENT_ID
         self.client_secret = CLIENT_SECRET
-        addon = _fresh_addon()
-        self.access_token = addon.getSetting('trakt_access_token')
-        self.refresh_token = addon.getSetting('trakt_refresh_token')
-        self.expires = float(addon.getSetting('trakt_expires') or 0)
         self.db = DB_Connection()
+        
+        # Load tokens from file first, then fall back to addon settings
+        self._load_tokens()
         
         self.headers = {
             'Content-Type': 'application/json',
             'trakt-api-version': '2',
-            'trakt-api-key': self.client_id
+            'trakt-api-key': self.client_id,
+            'User-Agent': USER_AGENT
         }
+    
+    def _ensure_data_path(self):
+        """Ensure addon data directory exists"""
+        if not xbmcvfs.exists(ADDON_DATA_PATH):
+            xbmcvfs.mkdirs(ADDON_DATA_PATH)
+    
+    def _load_tokens(self):
+        """Load OAuth tokens from file or addon settings"""
+        self._ensure_data_path()
+        
+        # Try loading from file first (more reliable)
+        if os.path.exists(TOKEN_FILE):
+            try:
+                with open(TOKEN_FILE, 'r') as f:
+                    data = json.load(f)
+                    self.access_token = data.get('access_token', '')
+                    self.refresh_token = data.get('refresh_token', '')
+                    self.expires = float(data.get('expires', 0))
+                    log_utils.log('Trakt: Loaded tokens from file', xbmc.LOGDEBUG)
+                    return
+            except Exception as e:
+                log_utils.log(f'Trakt: Failed to load tokens from file: {e}', xbmc.LOGWARNING)
+        
+        # Fall back to addon settings (use fresh instance)
+        addon = _fresh_addon()
+        self.access_token = addon.getSetting('trakt_access_token')
+        self.refresh_token = addon.getSetting('trakt_refresh_token')
+        self.expires = float(addon.getSetting('trakt_expires') or 0)
     
     def is_authorized(self):
         """Check if we have valid authorization"""
@@ -63,7 +104,10 @@ class TraktAPI:
     
     def _http_request(self, url, method='GET', data=None, headers=None, timeout=30):
         """Make HTTP request using urllib, returns (status_code, response_body)"""
-        hdrs = headers or {}
+        hdrs = self.headers.copy()
+        if headers:
+            hdrs.update(headers)
+        
         post_data = None
         if data is not None:
             post_data = json.dumps(data).encode('utf-8')
@@ -80,9 +124,14 @@ class TraktAPI:
                 body = e.read().decode('utf-8')
             except Exception:
                 pass
+            log_utils.log(f'Trakt HTTP Error: {e.code} - {body}', xbmc.LOGWARNING)
             return e.code, body
         except URLError as e:
+            log_utils.log(f'Trakt URL Error: {e.reason}', xbmc.LOGERROR)
             raise TransientTraktError(f'Trakt connection error: {e.reason}')
+        except Exception as e:
+            log_utils.log(f'Trakt Request Error: {e}', xbmc.LOGERROR)
+            raise TransientTraktError(f'Trakt request failed: {e}')
     
     def _refresh_token(self):
         """Refresh the access token"""
@@ -101,70 +150,150 @@ class TraktAPI:
             status, body = self._http_request(
                 f'{API_URL}/oauth/token',
                 method='POST',
-                data=data,
-                headers={'Content-Type': 'application/json'}
+                data=data
             )
             
             if status == 200:
                 result = json.loads(body)
                 self._save_tokens(result)
+                log_utils.log('Trakt: Token refreshed successfully', xbmc.LOGINFO)
                 return True
+            else:
+                log_utils.log(f'Trakt: Token refresh failed with status {status}', xbmc.LOGWARNING)
             
         except Exception as e:
-            log_utils.log_error(f'Trakt refresh error: {e}')
+            log_utils.log(f'Trakt refresh error: {e}', xbmc.LOGERROR)
         
         return False
     
     def _save_tokens(self, data):
-        """Save OAuth tokens using a fresh Addon instance"""
-        self.access_token = data['access_token']
-        self.refresh_token = data['refresh_token']
-        self.expires = time.time() + data['expires_in']
+        """Save OAuth tokens to file and addon settings"""
+        self._ensure_data_path()
         
+        self.access_token = data.get('access_token', '')
+        self.refresh_token = data.get('refresh_token', '')
+        expires_in = data.get('expires_in', 7776000)  # Default 90 days
+        self.expires = time.time() + expires_in
+        
+        # Save to file (primary storage)
+        token_data = {
+            'access_token': self.access_token,
+            'refresh_token': self.refresh_token,
+            'expires': self.expires,
+            'created_at': time.time()
+        }
+        
+        try:
+            with open(TOKEN_FILE, 'w') as f:
+                json.dump(token_data, f, indent=2)
+            log_utils.log('Trakt: Tokens saved to file', xbmc.LOGDEBUG)
+        except Exception as e:
+            log_utils.log(f'Trakt: Failed to save tokens to file: {e}', xbmc.LOGWARNING)
+        
+        # Also save to addon settings (backup) - use fresh instance
         addon = _fresh_addon()
         addon.setSetting('trakt_access_token', self.access_token)
         addon.setSetting('trakt_refresh_token', self.refresh_token)
         addon.setSetting('trakt_expires', str(self.expires))
+        addon.setSetting('trakt_enabled', 'true')
+    
+    def clear_authorization(self):
+        """Clear all stored authorization data"""
+        self.access_token = ''
+        self.refresh_token = ''
+        self.expires = 0
+        
+        # Clear file
+        if os.path.exists(TOKEN_FILE):
+            try:
+                os.remove(TOKEN_FILE)
+            except Exception:
+                pass
+        
+        # Clear addon settings (use fresh instance)
+        addon = _fresh_addon()
+        addon.setSetting('trakt_access_token', '')
+        addon.setSetting('trakt_refresh_token', '')
+        addon.setSetting('trakt_expires', '0')
+        addon.setSetting('trakt_enabled', 'false')
     
     def authorize(self):
-        """OAuth device authorization flow"""
+        """OAuth device authorization flow - get device code and poll for token"""
         try:
-            # Get device code
+            # Step 1: Request device code
+            log_utils.log('Trakt: Requesting device code...', xbmc.LOGINFO)
+            
             data = {'client_id': self.client_id}
+            
             status, body = self._http_request(
                 f'{API_URL}/oauth/device/code',
                 method='POST',
-                data=data,
-                headers={'Content-Type': 'application/json'}
+                data=data
             )
             
+            log_utils.log(f'Trakt: Device code response - Status: {status}', xbmc.LOGDEBUG)
+            
             if status != 200:
-                raise TraktError('Failed to get device code')
+                error_msg = f'Failed to get device code (HTTP {status})'
+                try:
+                    error_data = json.loads(body)
+                    error_msg = error_data.get('error_description', error_data.get('error', error_msg))
+                except Exception:
+                    pass
+                log_utils.log(f'Trakt: {error_msg}', xbmc.LOGERROR)
+                xbmcgui.Dialog().ok('Trakt Error', error_msg)
+                return False
             
             result = json.loads(body)
             
-            device_code = result['device_code']
-            user_code = result['user_code']
-            verification_url = result['verification_url']
-            interval = result['interval']
-            expires_in = result['expires_in']
+            device_code = result.get('device_code')
+            user_code = result.get('user_code')
+            verification_url = result.get('verification_url', 'https://trakt.tv/activate')
+            interval = result.get('interval', 5)
+            expires_in = result.get('expires_in', 600)
             
-            # Show dialog
+            if not device_code or not user_code:
+                log_utils.log('Trakt: Invalid device code response', xbmc.LOGERROR)
+                xbmcgui.Dialog().ok('Trakt Error', 'Invalid response from Trakt. Please try again.')
+                return False
+            
+            log_utils.log(f'Trakt: Got device code, user_code: {user_code}', xbmc.LOGINFO)
+            
+            # Step 2: Show dialog with instructions
             dialog = xbmcgui.DialogProgress()
             dialog.create(
                 'Trakt Authorization',
-                f'Go to: {verification_url}\n\nEnter code: {user_code}\n\nWaiting for authorization...'
+                f'Visit: [COLOR cyan]{verification_url}[/COLOR]\n\n'
+                f'Enter Code: [COLOR lime][B]{user_code}[/B][/COLOR]\n\n'
+                'Waiting for authorization...'
             )
             
-            # Poll for authorization
+            # Step 3: Poll for token
             start_time = time.time()
+            poll_count = 0
+            
             while time.time() - start_time < expires_in:
                 if dialog.iscanceled():
                     dialog.close()
+                    log_utils.log('Trakt: Authorization cancelled by user', xbmc.LOGINFO)
                     return False
                 
-                time.sleep(interval)
+                # Update progress
+                elapsed = time.time() - start_time
+                remaining = expires_in - elapsed
+                percent = int((elapsed / expires_in) * 100)
+                dialog.update(
+                    percent,
+                    f'Visit: [COLOR cyan]{verification_url}[/COLOR]\n\n'
+                    f'Enter Code: [COLOR lime][B]{user_code}[/B][/COLOR]\n\n'
+                    f'Time remaining: {int(remaining)} seconds'
+                )
                 
+                # Wait for interval
+                time.sleep(interval)
+                poll_count += 1
+                
+                # Poll for token
                 try:
                     token_data = {
                         'code': device_code,
@@ -175,31 +304,98 @@ class TraktAPI:
                     token_status, token_body = self._http_request(
                         f'{API_URL}/oauth/device/token',
                         method='POST',
-                        data=token_data,
-                        headers={'Content-Type': 'application/json'}
+                        data=token_data
                     )
                     
+                    log_utils.log(f'Trakt: Poll #{poll_count} - Status: {token_status}', xbmc.LOGDEBUG)
+                    
                     if token_status == 200:
-                        self._save_tokens(json.loads(token_body))
-                        _fresh_addon().setSetting('trakt_enabled', 'true')
+                        # Success! Save tokens
+                        token_result = json.loads(token_body)
+                        self._save_tokens(token_result)
                         
                         dialog.close()
-                        xbmcgui.Dialog().notification('Trakt', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
-                        return True
-                    elif token_status != 400:
-                        # 400 means pending, anything else is an error
-                        break
                         
+                        # Verify authorization
+                        try:
+                            user_info = self.get_user_settings()
+                            username = user_info.get('user', {}).get('username', 'User')
+                            xbmcgui.Dialog().ok(
+                                'Trakt Authorization',
+                                f'Success! Authorized as: [COLOR lime]{username}[/COLOR]'
+                            )
+                        except Exception:
+                            xbmcgui.Dialog().ok(
+                                'Trakt Authorization',
+                                'Authorization successful!'
+                            )
+                        
+                        log_utils.log('Trakt: Authorization completed successfully', xbmc.LOGINFO)
+                        return True
+                    
+                    elif token_status == 400:
+                        # Still pending - continue polling
+                        continue
+                    
+                    elif token_status == 404:
+                        # Invalid device code
+                        dialog.close()
+                        log_utils.log('Trakt: Invalid device code', xbmc.LOGERROR)
+                        xbmcgui.Dialog().ok('Trakt Error', 'Invalid device code. Please try again.')
+                        return False
+                    
+                    elif token_status == 409:
+                        # Code already used
+                        dialog.close()
+                        log_utils.log('Trakt: Device code already used', xbmc.LOGERROR)
+                        xbmcgui.Dialog().ok('Trakt Error', 'This code has already been used. Please try again.')
+                        return False
+                    
+                    elif token_status == 410:
+                        # Code expired
+                        dialog.close()
+                        log_utils.log('Trakt: Device code expired', xbmc.LOGERROR)
+                        xbmcgui.Dialog().ok('Trakt Error', 'Authorization code expired. Please try again.')
+                        return False
+                    
+                    elif token_status == 418:
+                        # User denied
+                        dialog.close()
+                        log_utils.log('Trakt: User denied authorization', xbmc.LOGINFO)
+                        xbmcgui.Dialog().ok('Trakt', 'Authorization was denied.')
+                        return False
+                    
+                    elif token_status == 429:
+                        # Rate limited - increase interval
+                        interval = min(interval + 1, 10)
+                        log_utils.log(f'Trakt: Rate limited, increasing interval to {interval}s', xbmc.LOGWARNING)
+                        continue
+                    
+                    else:
+                        # Unknown error
+                        log_utils.log(f'Trakt: Unexpected status {token_status}: {token_body}', xbmc.LOGWARNING)
+                        continue
+                        
+                except TransientTraktError as e:
+                    log_utils.log(f'Trakt: Network error during poll: {e}', xbmc.LOGWARNING)
+                    continue
                 except Exception as e:
-                    log_utils.log_error(f'Trakt poll error: {e}')
+                    log_utils.log(f'Trakt: Poll error: {e}', xbmc.LOGWARNING)
+                    continue
             
+            # Timeout
             dialog.close()
-            xbmcgui.Dialog().notification('Trakt', 'Authorization timeout', xbmcgui.NOTIFICATION_ERROR)
+            log_utils.log('Trakt: Authorization timeout', xbmc.LOGWARNING)
+            xbmcgui.Dialog().ok('Trakt', 'Authorization timeout. Please try again.')
             return False
             
+        except TransientTraktError as e:
+            log_utils.log(f'Trakt: Connection error during auth: {e}', xbmc.LOGERROR)
+            xbmcgui.Dialog().ok('Trakt Error', f'Connection error: {e}')
+            return False
         except Exception as e:
-            log_utils.log_error(f'Trakt auth error: {e}')
-            xbmcgui.Dialog().notification('Trakt', f'Error: {e}', xbmcgui.NOTIFICATION_ERROR)
+            log_utils.log(f'Trakt auth error: {e}', xbmc.LOGERROR)
+            xbmcgui.Dialog().ok('Trakt Error', f'Authorization failed: {e}')
             return False
     
     def _call_api(self, endpoint, method='GET', data=None, cache_limit=1):
@@ -212,7 +408,7 @@ class TraktAPI:
             if cached:
                 return json.loads(cached)
         
-        headers = self.headers.copy()
+        headers = {}
         if self.access_token:
             headers['Authorization'] = f'Bearer {self.access_token}'
         
@@ -493,22 +689,3 @@ class TraktAPI:
             'progress': progress
         }
         return self._call_api('/scrobble/stop', method='POST', data=data)
-
-    # ==================== Watched ====================
-    
-    def get_watched(self, media_type):
-        """Get watched history. media_type: 'movies' or 'shows'"""
-        return self._call_api(f'/sync/watched/{media_type}', cache_limit=0.25)
-    
-    def mark_watched(self, media_type, items):
-        """Mark items as watched.
-        media_type: 'movies' or 'episodes'
-        items: list of dicts with 'ids' key, e.g. [{'ids': {'trakt': 123}}]
-        """
-        data = {media_type: items}
-        return self._call_api('/sync/history', method='POST', data=data)
-    
-    def remove_watched(self, media_type, items):
-        """Remove items from watched history."""
-        data = {media_type: items}
-        return self._call_api('/sync/history/remove', method='POST', data=data)
