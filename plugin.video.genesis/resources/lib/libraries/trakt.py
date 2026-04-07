@@ -38,7 +38,7 @@ control.trakt_secret
 
 def getTrakt(url, post=None):
     try:
-        url = urlparse.urljoin('http://api-v2launch.trakt.tv', url)
+        url = urlparse.urljoin('https://api.trakt.tv', url)
 
         headers = {'Content-Type': 'application/json', 'trakt-api-key': control.trakt_key, 'trakt-api-version': '2'}
 
@@ -58,7 +58,7 @@ def getTrakt(url, post=None):
         if not (result[1] == '401' or result[1] == '405'): return result[0]
 
 
-        oauth = 'http://api-v2launch.trakt.tv/oauth/token'
+        oauth = 'https://api.trakt.tv/oauth/token'
         opost = {'client_id': control.trakt_key , 'client_secret': control.trakt_secret, 'redirect_uri': 'urn:ietf:wg:oauth:2.0:oob', 'grant_type': 'refresh_token', 'refresh_token': control.setting('trakt.refresh')}
 
         #result = client.request(oauth, post=json.dumps(opost), headers=headers)
@@ -116,7 +116,7 @@ def authTrakt():
 
         headers = {'Content-Type': 'application/json', 'trakt-api-key': control.trakt_key , 'trakt-api-version': '2', 'Authorization': 'Bearer %s' % token}
 
-        result = client.request('http://api-v2launch.trakt.tv/users/me', headers=headers)
+        result = client.request('https://api.trakt.tv/users/me', headers=headers)
         result = json.loads(result)
 
         user = result['username']

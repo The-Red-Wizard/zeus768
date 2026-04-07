@@ -267,6 +267,9 @@ class navigator:
                 name = name
         url = '%s?action=%s' % (sysaddon, query) if isAction == True else query
         thumb = os.path.join(artPath, thumb) if not artPath == None else icon
+        # Fallback to addon icon if the theme image doesn't exist
+        if not os.path.exists(thumb):
+            thumb = icon
         cm = []
         if not context == None:
             try:

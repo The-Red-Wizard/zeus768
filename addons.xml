@@ -80,10 +80,12 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="9.2.6" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="9.3.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.media" version="9.2.4"/>
+        <import addon="script.module.cocoscrapers" optional="true"/>
+        <import addon="script.module.gears" optional="true"/>
         <import addon="script.module.requests" optional="true"/>
         <import addon="plugin.video.youtube" optional="true"/>
     </requires>
@@ -92,9 +94,9 @@
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
-        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support. Features Meteor, Streamthru, Torz, and Webstreamr scrapers. Fully compatible with Kodi 21 Omega and above (Python 3).</description>
-        <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
+        <summary lang="en">Genesis - Stream Movies and TV Shows with Debrid, Trakt, CocoScrapers, Gears</summary>
+        <description lang="en">Genesis - Movies and TV Shows with debrid support (Real-Debrid, Premiumize, AllDebrid, TorBox), Trakt.tv integration, CocoScrapers and Gears Scrapers external provider support, plus built-in torrent and streaming scrapers. Kodi 21+ Python 3 compatible.</description>
+        <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon.</disclaimer>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>

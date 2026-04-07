@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.genesis" name="Genesis" version="9.2.6" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="9.3.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.genesis.media" version="9.2.4" />
+        <import addon="script.module.cocoscrapers" optional="true" />
+        <import addon="script.module.gears" optional="true" />
         <import addon="script.module.requests" optional="true" />
         <import addon="plugin.video.youtube" optional="true" />
     </requires>
@@ -11,10 +13,37 @@
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup" />
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
-        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support. Features Meteor, Streamthru, Torz, and Webstreamr scrapers. Fully compatible with Kodi 21 Omega and above (Python 3).</description>
+        <summary lang="en">Genesis - Stream Movies and TV Shows with Debrid, Trakt, CocoScrapers, Gears</summary>
+        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows. Torrent and streaming scrapers with debrid support (Real-Debrid, Premiumize, AllDebrid, TorBox). External scraper support for CocoScrapers and Gears Scrapers modules. Full Trakt.tv integration. Fully compatible with Kodi 21 Omega and above (Python 3).
+
+Features:
+- Built-in scrapers: Meteor, Streamthru, Torz, Webstreamr
+- Torrent scrapers: 1337x, YTS, EZTV, TorrentGalaxy, ThePirateBay
+- External scrapers: CocoScrapers, Gears Scrapers (install separately)
+- Debrid: Real-Debrid, Premiumize, AllDebrid, TorBox
+- Trakt.tv: Auth, watchlists, collections, progress, history
+- TMDB metadata, poster art, genre browsing
+- Multiple skins/themes via Genesis Themepak
+- Autoplay and resume playback</description>
         <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
         <platform>all</platform>
+        <news>
+v9.3.0 (2026)
+- FIXED: Python 3 / Kodi 21 compatibility across ALL files (urlparse, urllib, unicode removed)
+- FIXED: Trakt auth URL updated from api-v2launch.trakt.tv to api.trakt.tv (HTTPS)
+- FIXED: Real-Debrid, Premiumize, AllDebrid, TorBox auth now works on Python 3
+- FIXED: Missing genre/menu icons - falls back to addon icon when theme image not found
+- FIXED: Player unicode() calls replaced with Python 3 compatible byte decode
+- FIXED: All torrent scrapers (1337x, YTS, EZTV, TGX, TPB) patched for Python 3
+- ADDED: CocoScrapers external provider support (script.module.cocoscrapers)
+- ADDED: Gears Scrapers external provider support (script.module.gears)
+- ADDED: External Scrapers settings category (enable/disable providers)
+- ADDED: Both external scrapers listed as optional dependencies
+
+v9.2.6 (2026)
+- User's fixed build for Kodi 21
+- Meteor, Streamthru, Torz, Webstreamr scrapers
+        </news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

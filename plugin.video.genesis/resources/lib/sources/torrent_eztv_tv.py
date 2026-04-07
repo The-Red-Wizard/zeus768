@@ -8,7 +8,16 @@
 '''
 
 import re
-import urllib
+try:
+    import urllib
+except ImportError:
+    import urllib.parse
+    class urllib:
+        urlencode = staticmethod(urllib.parse.urlencode)
+        quote_plus = staticmethod(urllib.parse.quote_plus)
+        quote = staticmethod(urllib.parse.quote)
+        unquote = staticmethod(urllib.parse.unquote)
+        unquote_plus = staticmethod(urllib.parse.unquote_plus)
 import json
 
 from resources.lib.libraries import cleantitle

@@ -19,7 +19,12 @@
 '''
 
 
-import urllib
+try:
+    import urllib
+    _urlparse = urllib
+except ImportError:
+    import urllib.parse as urllib
+    _urlparse = urllib
 from resources.lib.libraries import client
 
 

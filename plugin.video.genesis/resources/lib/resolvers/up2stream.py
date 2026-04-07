@@ -19,7 +19,10 @@
 '''
 
 
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 from resources.lib.libraries import client
 
 

@@ -80,6 +80,19 @@
         <setting id="imdb_user" type="number" label="30911" default="" />
     </category>
 
+    <!-- External Scraper Providers -->
+    <category label="External Scrapers">
+        <setting type="lsep" label="CocoScrapers (script.module.cocoscrapers)" />
+        <setting id="cocoscrapers_enabled" type="bool" label="Enable CocoScrapers" default="true" />
+        <setting id="cocoscrapers" type="bool" label="CocoScrapers (Movies &amp; TV)" default="true" visible="false" />
+        <setting type="lsep" label="[CR]Install CocoScrapers from: cocojoe2411.github.io" />
+        
+        <setting type="lsep" label="Gears Scrapers (script.module.gears)" />
+        <setting id="gears_enabled" type="bool" label="Enable Gears Scrapers" default="true" />
+        <setting id="gears" type="bool" label="Gears (Movies &amp; TV)" default="true" visible="false" />
+        <setting type="lsep" label="[CR]Install Gears from: unhingedthemes.github.io (Chains Repo)" />
+    </category>
+
     <category label="30920">
         <setting id="movie_library" type="folder" label="30922" default="special://userdata/addon_data/plugin.video.genesis/Movies" />
         <setting id="tv_library" type="folder" label="30923" default="special://userdata/addon_data/plugin.video.genesis/TVShows" />

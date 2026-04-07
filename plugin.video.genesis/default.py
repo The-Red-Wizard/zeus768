@@ -21,7 +21,11 @@
 # Python 2/3 compat - must be FIRST import
 from resources.lib.libraries import py3compat
 
-import urlparse,sys
+import sys
+try:
+    from urllib.parse import parse_qsl
+except ImportError:
+    from urlparse import parse_qsl
 from resources.lib.libraries import control
 
 import xbmcaddon, os, xbmc, xbmcvfs
@@ -33,7 +37,7 @@ BASE_RESOURCE_PATH = os.path.join( ptv.getAddonInfo('path'), "mylib" )
 sys.path.append( os.path.join( ptv.getAddonInfo('path'), "mylib" ) )
 
 
-params = dict(urlparse.parse_qsl(sys.argv[2].replace('?','')))
+params = dict(parse_qsl(sys.argv[2].replace('?','')))
 control.log("->----------                PARAMS: %s" % params)
 
 

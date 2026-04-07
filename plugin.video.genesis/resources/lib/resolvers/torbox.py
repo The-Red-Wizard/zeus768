@@ -7,9 +7,12 @@
     TorBox resolver with PIN-based authentication
 '''
 
-import urllib
 import json
 import time
+try:
+    import urllib
+except ImportError:
+    import urllib.parse as urllib
 
 from resources.lib.libraries import cache
 from resources.lib.libraries import control

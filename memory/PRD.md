@@ -12,22 +12,29 @@ Fix old Kodi addons for Kodi 21+ (Python 3). Rewrite broken addons, optimize scr
 
 ## Completed
 
-### Genesis — v9.2.6
-- [x] User's fixed v9.2.6 zip (Kodi 21 compatible)
+### Genesis — v9.3.0 (major Python 3 fix + external scrapers)
+- [x] Fixed `default.py` Python 3 import (`import urlparse` → `from urllib.parse import parse_qsl`)
+- [x] Fixed Trakt auth URL: `api-v2launch.trakt.tv` → `api.trakt.tv` (HTTPS)
+- [x] Fixed all 4 debrid resolvers (RD, PM, AD, TorBox) Python 3 imports
+- [x] Fixed player.py `unicode()` calls → Python 3 `bytes.decode()`
+- [x] Fixed all 9 torrent/streaming scrapers Python 3 imports
+- [x] Fixed all 90+ old resolvers Python 3 imports (batch-patched)
+- [x] Fixed missing genre icons — falls back to addon icon when theme image not found
+- [x] Added CocoScrapers external provider (`cocoscrapers_mv_tv.py`)
+- [x] Added Gears Scrapers external provider (`gears_mv_tv.py`)
+- [x] Added `script.module.cocoscrapers` and `script.module.gears` as optional dependencies
+- [x] Added External Scrapers settings category
 
 ### Genesis Themepak — v9.2.4
-- [x] User's fixed v9.2.4 zip
 
 ### SALTS — v2.6.0 (user's v2.5.3 base + fixes)
-- [x] 45+ scrapers: 7 Stremio (Torrentio, MediaFusion, Comet, CyberFlix, Annatar, PeerFlix, EasyNews+)
+- [x] 45+ scrapers: 7 Stremio + torrent + free streams
 - [x] Trakt scrobbling, mark watched, TMDB posters, watched overlay
-- [x] Stale ADDON fix (fresh xbmcaddon.Addon())
+- [x] Stale ADDON fix
 
 ### Trakt Player — v2.2.0 (user's v2.1.6 base + features merged)
-- [x] **Base**: User's v2.1.6 with file-based token storage, filehost.py, faster TMDB loading
-- [x] **Premiumize fix**: OAuth device code was hitting /api/token instead of /token
-- [x] **Merged features**: AI Vibes, Discovery Feed, Continue Watching, Recommendations, Calendar, Friends, Stats, Custom Lists, Account Status, Buy Me a Beer, Rate/Watchlist/Add to List
-- [x] **debrid.py helpers**: get_active_services, check_cache_all, resolve_magnet, get_all_account_info
+- [x] Premiumize device code fix
+- [x] AI Vibes, Discovery Feed, Continue Watching, all superpower features merged
 
 ### Orion — v3.2.5 [STABLE]
 ### The Accountant — v3.9.7 [STABLE]
@@ -35,7 +42,7 @@ Fix old Kodi addons for Kodi 21+ (Python 3). Rewrite broken addons, optimize scr
 ### Poseidon Guide — v1.1.0
 ### Repository — v1.1.1
 
-### StrikeZone — REMOVED FROM REPO
+### StrikeZone — REMOVED
 
 ---
 

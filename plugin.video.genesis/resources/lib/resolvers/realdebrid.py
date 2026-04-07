@@ -7,10 +7,14 @@
     Real-Debrid resolver with device code authentication
 '''
 
-import urllib
 import json
 import time
-import urlparse
+try:
+    import urllib
+    import urlparse
+except ImportError:
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
 
 from resources.lib.libraries import cache
 from resources.lib.libraries import control

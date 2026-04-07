@@ -128,7 +128,8 @@ class player(xbmc.Player):
         try:
             if self.content == 'movie':
                 meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetMovies", "params": {"filter":{"or": [{"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}, {"field": "year", "operator": "is", "value": "%s"}]}, "properties" : ["title", "originaltitle", "year", "genre", "studio", "country", "runtime", "rating", "votes", "mpaa", "director", "writer", "plot", "plotoutline", "tagline", "thumbnail", "file"]}, "id": 1}' % (self.year, str(int(self.year)+1), str(int(self.year)-1)))
-                meta = unicode(meta, 'utf-8', errors='ignore')
+                if isinstance(meta, bytes):
+                    meta = meta.decode('utf-8', errors='ignore')
                 meta = json.loads(meta)['result']['movies']
                 meta = [i for i in meta if i['file'].endswith(self.file)][0]
 
@@ -147,7 +148,8 @@ class player(xbmc.Player):
 
             elif self.content == 'episode':
                 meta = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetEpisodes", "params": {"filter":{"and": [{"field": "season", "operator": "is", "value": "%s"}, {"field": "episode", "operator": "is", "value": "%s"}]}, "properties": ["title", "season", "episode", "showtitle", "firstaired", "runtime", "rating", "director", "writer", "plot", "thumbnail", "file"]}, "id": 1}' % (self.season, self.episode))
-                meta = unicode(meta, 'utf-8', errors='ignore')
+                if isinstance(meta, bytes):
+                    meta = meta.decode('utf-8', errors='ignore')
                 meta = json.loads(meta)['result']['episodes']
                 match = [i for i in meta if i['file'].endswith(self.file2)]
                 match += [i for i in meta if i['file'].endswith(self.file)]
@@ -166,7 +168,8 @@ class player(xbmc.Player):
                 meta = {'title': meta['title'], 'season' : meta['season'], 'episode': meta['episode'], 'tvshowtitle': meta['showtitle'], 'premiered' : meta['firstaired'], 'duration' : meta['runtime'], 'rating': meta['rating'], 'director': meta['director'], 'writer': meta['writer'], 'plot': meta['plot']}
 
                 poster = control.jsonrpc('{"jsonrpc": "2.0", "method": "VideoLibrary.GetTVShows", "params": {"filter": {"field": "title", "operator": "is", "value": "%s"}, "properties": ["thumbnail"]}, "id": 1}' % showtitle)
-                poster = unicode(poster, 'utf-8', errors='ignore')
+                if isinstance(poster, bytes):
+                    poster = poster.decode('utf-8', errors='ignore')
                 poster = json.loads(poster)['result']['tvshows'][0]['thumbnail']
 
 

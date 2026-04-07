@@ -8,8 +8,17 @@
 '''
 
 import re
-import urllib
-import urlparse
+try:
+    import urllib
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+    class urllib:
+        urlencode = staticmethod(urlparse.urlencode)
+        quote_plus = staticmethod(urlparse.quote_plus)
+        quote = staticmethod(urlparse.quote)
+        unquote = staticmethod(urlparse.unquote)
+        unquote_plus = staticmethod(urlparse.unquote_plus)
 
 from resources.lib.libraries import cleantitle
 from resources.lib.libraries import client
