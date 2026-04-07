@@ -1,6 +1,22 @@
 Genesis Changelog
 ==================
 
+Version 9.3.0 (April 2026 - Python 3 Overhaul + External Scrapers)
+- FIXED: default.py Python 3 crash (import urlparse → from urllib.parse import parse_qsl)
+- FIXED: Trakt auth URL updated from http://api-v2launch.trakt.tv to https://api.trakt.tv
+- FIXED: Real-Debrid auth Python 3 compatibility (urllib.urlencode → urlparse.urlencode)
+- FIXED: Premiumize auth Python 3 compatibility
+- FIXED: AllDebrid auth Python 3 compatibility
+- FIXED: TorBox auth Python 3 compatibility
+- FIXED: player.py unicode() calls replaced with Python 3 bytes.decode()
+- FIXED: All 9 torrent/streaming scrapers patched for Python 3 (urllib/urlparse imports)
+- FIXED: All 90+ legacy resolvers patched for Python 3 (urllib/urlparse imports)
+- FIXED: Missing genre/menu icons now fall back to addon icon when theme image not found
+- ADDED: CocoScrapers external provider support (script.module.cocoscrapers)
+- ADDED: Gears Scrapers external provider support (script.module.gears)
+- ADDED: External Scrapers settings category (enable/disable each provider)
+- ADDED: Both scraper modules listed as optional dependencies in addon.xml
+
 Version 9.2.6 (January 2026 - Critical Python 3 Fixes)
 - Fixed "a bytes-like object is required, not 'str'" error in urllib2.Request POST data
 - Fixed StringIO.StringIO to use BytesIO for handling binary zip data in episodes.py
@@ -11,22 +27,13 @@ Version 9.2.6 (January 2026 - Critical Python 3 Fixes)
 Version 9.2.5 (January 2026 - IMDB/TMDB Menu Fix)
 - Fixed critical Python 3 bug: str.decode() called on string objects causing menus to fail
 - Fixed _ensure_str() in client.py to properly decode bytes to strings
-- Added isinstance(result, bytes) checks before .decode('iso-8859-1') calls in:
-  * movies.py (3 locations - imdb_list, imdb_user_list, imdb_person_list)
-  * tvshows.py (3 locations - imdb_list, imdb_watchlist, imdb_user_list)  
-  * episodes.py (1 location - scn_list)
-  * uploadrocket.py (3 locations - resolve function)
-- Movie and TV Show menus now load correctly from IMDB
+- Added isinstance(result, bytes) checks before .decode('iso-8859-1') calls
 
 Version 9.2.4 (Kodi 21+ Compatibility Update)
 - Fixed Python 3 compatibility issues for Kodi 21 Omega and above
 - Fixed base64.b64encode() bytes/string encoding issues
 - Fixed xrange compatibility for Python 3
 - Fixed yesnoDialog deprecated API for Kodi 19+
-- Fixed tvdb_key and fanarttv_key bytes decoding
-- Fixed self.lang to self.info_lang in tvshows.py
-- Added proper error handling for string/bytes operations
-- Updated addon version to 9.2.4
 
 Version 9.2.3-fixed
 - Initial attempted fixes

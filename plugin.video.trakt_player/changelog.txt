@@ -1,0 +1,40 @@
+Trakt Player Changelog
+======================
+
+Version 2.2.0 (April 2026 - Feature Merge + Premiumize Fix)
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- ADDED: AI Vibes - mood-based discovery with 12 presets + custom vibe input
+- ADDED: Discovery Feed - trending trailers, new releases, upcoming, shuffle, marathon mode
+- ADDED: Continue Watching from Trakt playback progress
+- ADDED: Recommended For You (personalized Trakt recommendations)
+- ADDED: Anticipated movies/shows
+- ADDED: My Calendar (upcoming episodes from your shows)
+- ADDED: My Custom Lists (create, browse, manage Trakt lists)
+- ADDED: Popular Community Lists browser
+- ADDED: Friends activity feed
+- ADDED: User Stats dashboard (watched/collected/ratings breakdown)
+- ADDED: Account Status (debrid expiry, premium status, Trakt auth check)
+- ADDED: Buy Me a Beer (Ko-fi QR code donation)
+- ADDED: Rate on Trakt from any item
+- ADDED: Add to Watchlist from any item
+- ADDED: Add to Custom List from any item
+
+Version 2.1.6 (April 2026 - Speed Optimizations)
+- FASTER: Trakt lists now load 3-5x faster with parallel TMDB image fetching
+- FASTER: Reduced items per page to 30 for quicker loading
+- FASTER: Added image caching to avoid re-fetching
+- FASTER: Reduced API timeouts for snappier response
+
+Version 2.1.5 (April 2026 - Major Fixes)
+- FIXED: Trakt and Debrid authorization now persists properly
+- FIXED: Uses file-based token storage (trakt_token.json, rd_token.json)
+- FIXED: Auto-play with proper quality fallback (1080p to 720p to 480p)
+- FIXED: Cached torrent detection and priority playback
+- ADDED: Unlimited scroll/pagination in all lists
+- ADDED: Addon icon and fanart in all subfolders
+
+Version 1.0.8 (March 2026 - Initial Release)
+- Trakt and Debrid authorization using native urllib
+- Click-and-Play via debrid services
+- Basic Trakt list browsing

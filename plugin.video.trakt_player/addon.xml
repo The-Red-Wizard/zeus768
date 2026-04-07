@@ -61,6 +61,22 @@ v1.0.8 - Initial Release
         <language>en</language>
         <platform>all</platform>
         <license>GPL-2.0-only</license>
+        <news>
+v2.2.0 (2026)
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- ADDED: AI Vibes, Discovery Feed, Continue Watching, Recommendations
+- ADDED: Calendar, Custom Lists, Popular Lists, Friends, Stats
+- ADDED: Account Status, Buy Me a Beer, Rate, Watchlist, Add to List
+
+v2.1.6 (2026)
+- FASTER: Trakt lists 3-5x faster with parallel TMDB image fetching
+- FASTER: Image caching, reduced API timeouts
+
+v2.1.5 (2026)
+- FIXED: Trakt/Debrid auth persistence (file-based token storage)
+- ADDED: Unlimited pagination, quality fallback playback
+        </news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>

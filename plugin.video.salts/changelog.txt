@@ -4,6 +4,32 @@
   Original Author: tknorris | Revived & Modernized by: zeus768
 ================================================================================
 ================================================================================
+v2.6.0 (2026-04-07)
+================================================================================
+
+  STREMIO PROTOCOL SCRAPERS (NEW)
+  --------------------------------
+  * Torrentio - #1 Stremio aggregator, indexes 20+ torrent sites
+  * MediaFusion - Community torrent/stream aggregator
+  * Comet - Fast torrent aggregator
+  * CyberFlix - FREE direct streams (no debrid required)
+  * Annatar - Jackett/Prowlarr via Stremio protocol
+  * PeerFlix - FREE P2P streams (no debrid required)
+  * EasyNews+ - Usenet streams
+  * All use IMDB IDs via TMDB→IMDB conversion for accurate matching
+
+  TRAKT FIXES
+  -----------
+  * Fixed stale ADDON instance bug - all settings reads/writes now use
+    fresh xbmcaddon.Addon() instances (same root cause as Trakt Player auth bug)
+  * Added Trakt scrobbling during playback (start at 2%, stop on finish)
+  * Added Trakt mark watched - items auto-marked after 80% playback completion
+  * Trakt list items now show TMDB posters, fanart, and ratings
+  * Watched tick indicator [W] with playcount overlay on Trakt list items
+
+  SCRAPER COUNT: 45+
+
+================================================================================
 v2.5.3 (2026-04-04)
 ================================================================================
   * Trakt Bug fixes
