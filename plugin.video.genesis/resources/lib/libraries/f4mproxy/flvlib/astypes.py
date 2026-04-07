@@ -3,6 +3,17 @@ import calendar
 import datetime
 import logging
 
+# Python 2/3 compatibility
+try:
+    xrange
+except NameError:
+    xrange = range
+
+try:
+    unicode
+except NameError:
+    unicode = str
+
 from primitives import *
 from constants import *
 from helpers import OrderedAttrDict, utc

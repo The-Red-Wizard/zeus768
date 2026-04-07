@@ -53,6 +53,12 @@ there clears it up.
 
 from array import array
 
+# Python 2/3 compatibility
+try:
+    xrange
+except NameError:
+    xrange = range
+
 # Globals mandated by PEP 272:
 # http://www.python.org/dev/peps/pep-0272/
 MODE_ECB = 1

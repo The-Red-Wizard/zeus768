@@ -18,8 +18,18 @@
 """
 import re
 import sys
-import urllib
 import string
+
+# Python 2/3 compatibility
+try:
+    import urllib
+except ImportError:
+    import urllib.parse as urllib
+
+try:
+    xrange
+except NameError:
+    xrange = range
 
 
 class JSUnfuck(object):

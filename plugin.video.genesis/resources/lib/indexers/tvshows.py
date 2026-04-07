@@ -379,7 +379,8 @@ class tvshows:
                 pass
 
             result = result.replace('\n','')
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             items = client.parseDOM(result, 'div', attrs = {'class': 'lister-item mode-advanced'})
             items += client.parseDOM(result, 'div', attrs = {'class': 'list_item.+?'})
         except:
@@ -691,7 +692,8 @@ class tvshows:
                 pass
 
             result = result.replace('\n','')
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             items = client.parseDOM(result, 'div', attrs = {'class': 'list_item.+?'})
         except:
             return
@@ -757,7 +759,8 @@ class tvshows:
     def imdb_user_list(self, url):
         try:
             result = client.request(url)
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             items = client.parseDOM(result, 'div', attrs = {'class': 'list_name'})
         except:
             pass
@@ -1116,7 +1119,7 @@ class tvshows:
                 if not plot == '0': self.list[i].update({'plot': plot})
 
 
-            self.meta.append({'imdb': imdb, 'tmdb': '0', 'tvdb': tvdb, 'lang': self.lang, 'item': {'title': title, 'year': year, 'code': imdb, 'imdb': imdb, 'tmdb': '0', 'tvdb': tvdb, 'poster': poster, 'banner': banner, 'fanart': fanart, 'premiered': premiered, 'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'cast': cast, 'plot': plot}})
+            self.meta.append({'imdb': imdb, 'tmdb': '0', 'tvdb': tvdb, 'lang': self.info_lang, 'item': {'title': title, 'year': year, 'code': imdb, 'imdb': imdb, 'tmdb': '0', 'tvdb': tvdb, 'poster': poster, 'banner': banner, 'fanart': fanart, 'premiered': premiered, 'studio': studio, 'genre': genre, 'duration': duration, 'rating': rating, 'votes': votes, 'mpaa': mpaa, 'cast': cast, 'plot': plot}})
 
         except:
             pass

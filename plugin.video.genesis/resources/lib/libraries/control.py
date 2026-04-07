@@ -55,8 +55,8 @@ try:
     tmdb_key = jsunpack.jsunpack_keys() if jsunpack else ''
 except Exception:
     tmdb_key = ''
-tvdb_key = base64.urlsafe_b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
-fanarttv_key = base64.urlsafe_b64decode('YTc4YzhmZWRjN2U3NTE1MjRkMzkyNmNhMmQyOTU3OTg=')
+tvdb_key = base64.urlsafe_b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==').decode('utf-8')
+fanarttv_key = base64.urlsafe_b64decode('YTc4YzhmZWRjN2U3NTE1MjRkMzkyNmNhMmQyOTU3OTg=').decode('utf-8')
 # Genesis Trakt API Keys - zeus768
 trakt_key = '215436e27377a2e330cd8406ac1cd19de93eb956c3af50242ddf92c20e604f76'
 trakt_secret = '9cc86f0c0aa4fb8d38fa1fd9d5daecceb7d25700ca1319416543a06591746468'
@@ -214,8 +214,14 @@ def infoDialog(message, heading=addonInfo('name'), icon=addonIcon(), time=3000):
     except: execute("Notification(%s,%s, %s, %s)" % (heading, message, time, icon))
 
 
-def yesnoDialog(line1, line2, line3, heading=addonInfo('name'), nolabel='', yeslabel=''):
-    return dialog.yesno(heading, line1, line2, line3, nolabel, yeslabel)
+def yesnoDialog(line1, line2='', line3='', heading=addonInfo('name'), nolabel='', yeslabel=''):
+    # Kodi 19+ uses single message parameter instead of line1/line2/line3
+    message = line1
+    if line2:
+        message += '\n' + line2
+    if line3:
+        message += '\n' + line3
+    return dialog.yesno(heading, message, nolabel=nolabel, yeslabel=yeslabel)
 
 
 def selectDialog(list, heading=addonInfo('name')):

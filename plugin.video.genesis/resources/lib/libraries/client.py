@@ -22,6 +22,7 @@
 from resources.lib.libraries import py3compat
 
 import re,sys
+import base64
 import xbmc, random, time
 
 # Python 2/3 compatible imports
@@ -48,6 +49,12 @@ try:
 except ImportError:
     from StringIO import StringIO as _StringIO
 
+# Python 2/3 xrange compatibility
+try:
+    xrange
+except NameError:
+    xrange = range
+
 from resources.lib.libraries import cache
 from resources.lib.libraries import control
 from resources.lib.libraries import workers
@@ -57,9 +64,9 @@ def _ensure_str(data):
     """Ensure data is str (not bytes) for string operations."""
     if isinstance(data, bytes):
         try:
-            return data
+            return data.decode('utf-8')
         except UnicodeDecodeError:
-            return data.decode('latin-1')
+            return data.decode('iso-8859-1')
     return data
 
 
@@ -154,6 +161,9 @@ def request(url, close=True, redirect=True, error=False, proxy=None, post=None, 
             try: del headers['Referer']
             except: pass
 
+        # In Python 3, data must be bytes
+        if post is not None and isinstance(post, str):
+            post = post.encode('utf-8')
 
         request = urllib2.Request(url, data=post, headers=headers)
 
@@ -544,6 +554,8 @@ class sucuri:
         try:
             s = re.compile("S\s*=\s*'([^']+)").findall(result)[0]
             s = base64.b64decode(s)
+            if isinstance(s, bytes):
+                s = s.decode('utf-8')
             s = s.replace(' ', '')
             s = re.sub('String\.fromCharCode\(([^)]+)\)', r'chr(\1)', s)
             s = re.sub('\.slice\((\d+),(\d+)\)', r'[\1:\2]', s)

@@ -25,12 +25,13 @@ import os,sys,re,json,zipfile,base64,datetime
 
 # Python 2/3 compatible imports
 try:
-    import StringIO
+    from StringIO import StringIO
+    BytesIO = StringIO
     import urllib
     import urllib2
     import urlparse
 except ImportError:
-    import io as StringIO
+    from io import StringIO, BytesIO
     import urllib.parse as urllib
     import urllib.request as urllib2
     import urllib.parse as urlparse
@@ -164,10 +165,16 @@ class seasons:
             url = self.tvdb_info_link % (tvdb, tvdb_lang)
             data = urllib2.urlopen(url, timeout=30).read()
 
-            zip = zipfile.ZipFile(StringIO.StringIO(data))
+            zip = zipfile.ZipFile(BytesIO(data))
             result = zip.read('%s.xml' % tvdb_lang)
             artwork = zip.read('banners.xml')
             zip.close()
+
+            # Decode bytes to string for parsing
+            if isinstance(result, bytes):
+                result = result.decode('utf-8', errors='replace')
+            if isinstance(artwork, bytes):
+                artwork = artwork.decode('utf-8', errors='replace')
 
             dupe = client.parseDOM(result, 'SeriesName')[0]
             dupe = re.compile('[***]Duplicate (\d*)[***]').findall(dupe)
@@ -175,10 +182,15 @@ class seasons:
                 tvdb = str(dupe[0])
                 url = self.tvdb_info_link % (tvdb, tvdb_lang)
                 data = urllib2.urlopen(url, timeout=30).read()
-                zip = zipfile.ZipFile(StringIO.StringIO(data))
+                zip = zipfile.ZipFile(BytesIO(data))
                 result = zip.read('%s.xml' % tvdb_lang)
                 artwork = zip.read('banners.xml')
                 zip.close()
+                # Decode bytes to string for parsing
+                if isinstance(result, bytes):
+                    result = result.decode('utf-8', errors='replace')
+                if isinstance(artwork, bytes):
+                    artwork = artwork.decode('utf-8', errors='replace')
 
 
             artwork = artwork.split('<Banner>')
@@ -1006,10 +1018,16 @@ class episodes:
                 url = self.tvdb_info_link % (i['tvdb'], tvdb_lang)
                 data = urllib2.urlopen(url, timeout=10).read()
 
-                zip = zipfile.ZipFile(StringIO.StringIO(data))
+                zip = zipfile.ZipFile(BytesIO(data))
                 result = zip.read('%s.xml' % tvdb_lang)
                 artwork = zip.read('banners.xml')
                 zip.close()
+
+                # Decode bytes to string for parsing
+                if isinstance(result, bytes):
+                    result = result.decode('utf-8', errors='replace')
+                if isinstance(artwork, bytes):
+                    artwork = artwork.decode('utf-8', errors='replace')
 
                 result = result.split('<Episode>')
                 item = [x for x in result if '<EpisodeNumber>' in x]
@@ -1259,10 +1277,16 @@ class episodes:
                 url = self.tvdb_info_link % (i['tvdb'], tvdb_lang)
                 data = urllib2.urlopen(url, timeout=10).read()
 
-                zip = zipfile.ZipFile(StringIO.StringIO(data))
+                zip = zipfile.ZipFile(BytesIO(data))
                 result = zip.read('%s.xml' % tvdb_lang)
                 artwork = zip.read('banners.xml')
                 zip.close()
+
+                # Decode bytes to string for parsing
+                if isinstance(result, bytes):
+                    result = result.decode('utf-8', errors='replace')
+                if isinstance(artwork, bytes):
+                    artwork = artwork.decode('utf-8', errors='replace')
 
                 result = result.split('<Episode>')
                 item = [x for x in result if '<EpisodeNumber>' in x]
@@ -1458,7 +1482,8 @@ class episodes:
                 url = client.replaceHTMLCodes(url)
                 result += client.request(url)
 
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             result = client.parseDOM(result, 'tr', attrs = {'class': 'MainTable'})
 
             dates = [re.compile('(\d{4}-\d{2}-\d{2})').findall(i) for i in result]

@@ -18,9 +18,9 @@ The official Kodi addon repository by **zeus768** and **The Red Wizard**. All ad
 ### Genesis
 <img src="plugin.video.genesis/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Stream Movies and TV Shows** | `plugin.video.genesis` | v2026.04.04.02
+**Stream Movies and TV Shows** | `plugin.video.genesis` | v9.2.6
 
-Your ultimate streaming addon for Movies and TV Shows with torrent support. Features torrent scrapers for 1337x, YTS, EZTV, TPB, TorrentGalaxy and more. Includes Trakt integration, TMDB metadata, search, favourites, and custom skins. Fully audited for Python 3 / Kodi 21+.
+Your ultimate streaming addon for Movies and TV Shows with torrent support. Features Meteor, Streamthru, Torz, and Webstreamr scrapers. Includes Trakt integration, TMDB metadata, search, favourites, and custom skins. Fully compatible with Kodi 21 Omega and above (Python 3).
 
 <br clear="both">
 
@@ -29,9 +29,9 @@ Your ultimate streaming addon for Movies and TV Shows with torrent support. Feat
 ### Genesis Themepak
 <img src="script.genesis.media/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Themes for Genesis** | `script.genesis.media` | v2026.04.04
+**Themes for Genesis** | `script.genesis.media` | v9.2.4
 
-Required dependency for Genesis. Provides custom themes, artwork, and skin assets used by the Genesis video addon.
+Required dependency for Genesis. Provides custom themes, artwork, and skin assets used by the Genesis video addon. Compatible with Kodi 21 Omega and above.
 
 <br clear="both">
 
@@ -40,7 +40,7 @@ Required dependency for Genesis. Provides custom themes, artwork, and skin asset
 ### SALTS - Stream All The Sources
 <img src="plugin.video.salts/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Multi-Source Video Addon** | `plugin.video.salts` | v2.5.1
+**Multi-Source Video Addon** | `plugin.video.salts` | v2.5.2
 
 The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers running concurrently for superfast source resolution. Features include custom source dialog with quality breakdown, Up Next auto-play, Skip Intro, 24/7 Channels (actor, show, genre, AI vibe), AI Search, Franchises, Actors, batch debrid cache checking, and Trakt integration. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. Original author: tknorris.
 
@@ -51,9 +51,9 @@ The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers run
 ### Trakt Player
 <img src="plugin.video.trakt_player/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Click and Play** | `plugin.video.trakt_player` | v2.1.1
+**Click and Play** | `plugin.video.trakt_player` | v2.1.3
 
-Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next, Continue Watching, Discovery Feed (trailer scroll with 6 modes), AI Vibe Marathons, Personalized Recommendations, My Calendar, Watch History, Friends Activity Feed, User Stats Dashboard, Custom Lists, Popular Community Lists, Cached Torrent Indicator, Rate on Trakt, and Debrid Account Status. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. 5 torrent scrapers. 100% native urllib.
+Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next, Continue Watching, Discovery Feed (trailer scroll with 6 modes), AI Vibe Marathons, Personalized Recommendations, My Calendar, Watch History, Friends Activity Feed, User Stats Dashboard, Custom Lists, Popular Community Lists, Cached Torrent Indicator, Rate on Trakt, and Debrid Account Status. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox.
 
 <br clear="both">
 
@@ -62,7 +62,7 @@ Superpowered Trakt addon. Click any movie or episode and it plays instantly via 
 ### Orion
 <img src="plugin.video.orion/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Media Explorer** | `plugin.video.orion` | v3.2.4
+**Media Explorer** | `plugin.video.orion` | v3.2.5
 
 Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support. Trakt integration with scrobbling, watchlists and liked lists. ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.
 
@@ -70,12 +70,23 @@ Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jac
 
 ---
 
-### Strike Zone
-<img src="plugin.video.strikezone/icon.png" width="120" align="left" style="margin-right:15px">
+### Poseidon Player
+<img src="plugin.video.poseidonplayer/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Watch Fight Replays** | `plugin.video.strikezone` | v1.2.3
+**Premium IPTV Player** | `plugin.video.poseidonplayer` | v2.3.0
 
-Watch UFC, MMA, Boxing, Kickboxing, and more fight replays. Auto-scrapes all categories, infinite scroll pagination, search, local favourites, fight metadata and thumbnails, multiple video sources via ResolveURL, and custom category images.
+Premium Xtream Codes IPTV Player with Poseidon Guide EPG Grid. Features: Live TV, Movies (VOD), TV Series, Favorites, Search, Recently Watched, Catch-up TV, Reminders, and IPTV Manager Integration. All powered by Xtream Codes API.
+
+<br clear="both">
+
+---
+
+### Poseidon Guide
+<img src="program.poseidonguide/icon.png" width="120" align="left" style="margin-right:15px">
+
+**EPG Grid Guide** | `program.poseidonguide` | v1.1.0
+
+Full EPG grid view for Poseidon Player with channel numbers, icons and names. Requires Poseidon Player v2.2.0+.
 
 <br clear="both">
 
@@ -84,7 +95,7 @@ Watch UFC, MMA, Boxing, Kickboxing, and more fight replays. Auto-scrapes all cat
 ### The Accountant
 <img src="plugin.program.theaccountant/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Kodi Maintenance Suite** | `plugin.program.theaccountant` | v3.9.6
+**Kodi Maintenance Suite** | `plugin.program.theaccountant` | v3.9.7
 
 Master Pro Suite for Kodi maintenance. Speed Optimizer, Scheduled Auto-Clean, RD/PM/AD/Trakt/TMDB Auth management, IPTV Vault, Favourites Vault, USB Backup, Repair Tools, Cache and Package Cleaner.
 

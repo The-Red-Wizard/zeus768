@@ -1,41 +1,35 @@
-================================================================================
-  Genesis Video Addon Changelog
-================================================================================
+Genesis Changelog
+==================
 
-v9.2.2 (April 2026)
-================================================================================
-  NEW FEATURES:
-  * Added Meteor scraper for movies and TV shows
-  * Added Streamthru scraper for movies and TV shows  
-  * Added Torz torrent aggregator for movies and TV shows
-  * Added Webstreamr scraper for movies and TV shows
-  * Added "Buy Me a Beer" donation feature with QR code
-    - Displays for 60 seconds with countdown timer
-    - Shows Ko-fi donation link (ko-fi.com/zeus768)
-    - User can close earlier with Back/ESC
+Version 9.2.6 (January 2026 - Critical Python 3 Fixes)
+- Fixed "a bytes-like object is required, not 'str'" error in urllib2.Request POST data
+- Fixed StringIO.StringIO to use BytesIO for handling binary zip data in episodes.py
+- Added proper bytes-to-string decoding for TVDB XML data
+- Fixed NoneType error in movies.py when IMDB list returns None
+- All menus and categories should now load properly
 
-  BUG FIXES:
-  * Fixed Python 2/3 compatibility issues in movies.py
-    - Updated urllib/urlparse imports for Python 3
-  * Fixed TypeError: object of type 'NoneType' has no len()
-    - Added null check in persons() method
-  * Fixed potential crashes when movie lists return empty
+Version 9.2.5 (January 2026 - IMDB/TMDB Menu Fix)
+- Fixed critical Python 3 bug: str.decode() called on string objects causing menus to fail
+- Fixed _ensure_str() in client.py to properly decode bytes to strings
+- Added isinstance(result, bytes) checks before .decode('iso-8859-1') calls in:
+  * movies.py (3 locations - imdb_list, imdb_user_list, imdb_person_list)
+  * tvshows.py (3 locations - imdb_list, imdb_watchlist, imdb_user_list)  
+  * episodes.py (1 location - scn_list)
+  * uploadrocket.py (3 locations - resolve function)
+- Movie and TV Show menus now load correctly from IMDB
 
-  IMPROVEMENTS:
-  * Updated addon metadata and description
-  * Improved error handling in scrapers
+Version 9.2.4 (Kodi 21+ Compatibility Update)
+- Fixed Python 3 compatibility issues for Kodi 21 Omega and above
+- Fixed base64.b64encode() bytes/string encoding issues
+- Fixed xrange compatibility for Python 3
+- Fixed yesnoDialog deprecated API for Kodi 19+
+- Fixed tvdb_key and fanarttv_key bytes decoding
+- Fixed self.lang to self.info_lang in tvshows.py
+- Added proper error handling for string/bytes operations
+- Updated addon version to 9.2.4
 
-v9.2.1 (April 2026)
-================================================================================
-  * Rebranded from Specto to Genesis
-  * Initial Kodi 21 Omega compatibility
-  * Added TorBox resolver support
-  * Version sync with script.genesis.media
+Version 9.2.3-fixed
+- Initial attempted fixes
 
-v2026.04.04 (April 2026)
-================================================================================
-  * Added to Zeus768 Repository
-  * Base functionality from Specto fork
-
-v1.0.0
-  * Initial version
+Version 9.2.2
+- Original release

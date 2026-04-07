@@ -150,7 +150,10 @@ class movies:
                 if idx == True: self.worker()
 
 
-            if idx == True: self.movieDirectory(self.list)
+            if idx == True: 
+                if self.list is None:
+                    self.list = []
+                self.movieDirectory(self.list)
             return self.list
         except Exception as e:
             control.log("movies get e:%s" % e)
@@ -393,13 +396,13 @@ class movies:
                 imdb = 'tt' + re.sub('[^0-9]', '', str(imdb))
                 imdb = imdb
 
-                poster = 'http://films4u.org/poster/'+base64.b64encode(imdb)+'.png'
+                poster = 'http://films4u.org/poster/'+base64.b64encode(imdb.encode()).decode()+'.png'
                 poster = poster
 
-                banner = 'http://films4u.org/banner/'+base64.b64encode(imdb)+'.png'
+                banner = 'http://films4u.org/banner/'+base64.b64encode(imdb.encode()).decode()+'.png'
                 banner = banner
 
-                fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb)+'.png'
+                fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb.encode()).decode()+'.png'
                 fanart = fanart
 
                 try:
@@ -505,7 +508,8 @@ class movies:
                 pass
 
             result = result.replace('\n','')
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             items = client.parseDOM(result, 'div', attrs = {'class': 'lister-item mode-advanced'})
             items += client.parseDOM(result, 'div', attrs = {'class': 'list_item.+?'})
         except:
@@ -616,7 +620,7 @@ class movies:
                 plot = client.replaceHTMLCodes(plot)
                 plot = plot
 
-                fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb)+'.png'
+                fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb.encode()).decode()+'.png'
                 fanart = fanart
 
 
@@ -635,7 +639,8 @@ class movies:
 
         try:
             result = client.request(url, headers=self.en_headers)
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             items = client.parseDOM(result, 'div', attrs = {'class': 'list_name'})
             #control.log("##################><><><><> trakt_list item  %s" % item)
             print("Items",items)
@@ -665,7 +670,8 @@ class movies:
     def imdb_person_list(self, url):
         try:
             result = client.request(url)
-            result = result.decode('iso-8859-1')
+            if isinstance(result, bytes):
+                result = result.decode('iso-8859-1')
             items = client.parseDOM(result, 'tr', attrs = {'class': '.+? detailed'})
         except:
             return
@@ -754,7 +760,7 @@ class movies:
                 poster = re.sub('_SX\d*|_SY\d*|_CR\d+?,\d+?,\d+?,\d*','_SX500', poster)
                 poster = poster
 
-                fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb)+'.png'
+                fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb.encode()).decode()+'.png'
                 fanart = fanart
 
                 genre = item['Genre']
@@ -904,7 +910,7 @@ class movies:
 
             try:
                 if not imdb == '0':
-                    fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb)+'.png'
+                    fanart = 'http://films4u.org/fanart/'+base64.b64encode(imdb.encode()).decode()+'.png'
                     fanart= fanart
 
                 else:

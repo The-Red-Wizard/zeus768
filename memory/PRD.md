@@ -12,37 +12,49 @@ Fix old Kodi addons for Kodi 21+ (Python 3). Rewrite broken addons, optimize scr
 
 ## Completed
 
-### Genesis — v2026.04.04.02
-- [x] Full Python 3 / Kodi 21+ audit (147 files, 0 failures)
-- [x] py3compat.py shim for transparent Python 2 module compatibility
-- [x] Removed dead dependencies (script.mrknow.urlresolver, script.module.metahandler)
-- [x] xbmc.python version bumped to 3.0.0
-- [x] Resolvers __init__.py: urlresolver9 made optional, falls back to resolveurl
+### Genesis — v9.2.6
+- [x] Replaced with user's fixed v9.2.6 zip (Kodi 21 compatible)
+- [x] Features Meteor, Streamthru, Torz, Webstreamr scrapers
 - [x] Buy Me a Beer added
-- [x] Assets block added to addon.xml
+- [x] Assets block in addon.xml
 
-### SALTS — v2.5.1
+### Genesis Themepak — v9.2.4
+- [x] Replaced with user's fixed v9.2.4 zip (Kodi 21 compatible)
+
+### SALTS — v2.5.2
 - [x] Concurrent scraping: ThreadPoolExecutor (20 workers, 30s timeout)
 - [x] 24/7 Channels fixed: proper scraper instantiation + correct search()
-- [x] 24/7 Channels: stops when user quits stream (user-stop detection via position tracking)
+- [x] 24/7 Channels: stops when user quits stream
 - [x] Pre-scrape fixed: concurrent (4 workers, 15s timeout)
 - [x] Compact donation dialog
 
-### StrikeZone — v1.2.3
-- [x] Rewrote scraper.py from requests+BeautifulSoup → native urllib+regex
-- [x] Removed dead dependencies (requests, beautifulsoup4)
-- [x] resolveurl made optional
+### Trakt Player — v2.1.3 [STABLE]
+- [x] Real-Debrid & Premiumize pair code OAuth fixed
+- [x] Settings persistence fixed (fresh xbmcaddon.Addon() instances)
 
-### Genesis Themepak — v2026.04.04
-- [x] xbmc.python bumped to 3.0.0
-- [x] Icon/fanart matched to Genesis branding
+### Orion — v3.2.5 [STABLE]
+### The Accountant — v3.9.7 [STABLE]
 
-### Trakt Player — v2.1.1 [STABLE]
-### Orion — v3.2.4 [STABLE]
-### The Accountant — v3.9.6 [STABLE]
-### Repository — v1.0.9 [STABLE]
+### Poseidon Player — v2.3.0 [NEW]
+- [x] Added to repository from user's zip
+- [x] Premium Xtream Codes IPTV Player with EPG Grid
+
+### Poseidon Guide — v1.1.0 [NEW]
+- [x] Added to repository from user's zip
+- [x] EPG Grid Guide for Poseidon Player
+
+### Repository — v1.1.1
+- [x] Updated addons.xml with all 9 addons (StrikeZone removed)
+- [x] All zips rebuilt with icon/fanart in zip folders
+- [x] MD5 checksum regenerated
+- [x] README updated with Poseidon addons, StrikeZone removed
+- [x] repository.zeus768 addon.xml bumped to v1.1.1
+
+### StrikeZone — REMOVED FROM REPO
+- [x] Removed from addons.xml, zips, and README per user request
 
 ---
 
 ## Backlog
+- [ ] Fix plugin.video.strikezone scraper offline, re-add to repo when ready
 - [ ] Test all addons in user's Kodi installation
