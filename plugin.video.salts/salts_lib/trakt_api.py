@@ -16,13 +16,15 @@ from urllib.parse import quote_plus
 from . import log_utils
 from .db_utils import DB_Connection
 
-ADDON = xbmcaddon.Addon()
-
 # Trakt API v2 settings
 CLIENT_ID = '42eba69a18795ae48fc5d6dbdd99396e9e3894dc4f18930e6187d36c8b4346d3'
 CLIENT_SECRET = 'e5bc7e20660e73622344ebf93c250a8fc2814a8f7c2b082bdee51545d5f71969'
 API_URL = 'https://api.trakt.tv'
 REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob'
+
+def _fresh_addon():
+    """Always return a fresh Addon instance to avoid stale settings cache."""
+    return xbmcaddon.Addon()
 
 class TraktError(Exception):
     pass
@@ -36,9 +38,10 @@ class TraktAPI:
     def __init__(self):
         self.client_id = CLIENT_ID
         self.client_secret = CLIENT_SECRET
-        self.access_token = ADDON.getSetting('trakt_access_token')
-        self.refresh_token = ADDON.getSetting('trakt_refresh_token')
-        self.expires = float(ADDON.getSetting('trakt_expires') or 0)
+        addon = _fresh_addon()
+        self.access_token = addon.getSetting('trakt_access_token')
+        self.refresh_token = addon.getSetting('trakt_refresh_token')
+        self.expires = float(addon.getSetting('trakt_expires') or 0)
         self.db = DB_Connection()
         
         self.headers = {
@@ -113,14 +116,15 @@ class TraktAPI:
         return False
     
     def _save_tokens(self, data):
-        """Save OAuth tokens"""
+        """Save OAuth tokens using a fresh Addon instance"""
         self.access_token = data['access_token']
         self.refresh_token = data['refresh_token']
         self.expires = time.time() + data['expires_in']
         
-        ADDON.setSetting('trakt_access_token', self.access_token)
-        ADDON.setSetting('trakt_refresh_token', self.refresh_token)
-        ADDON.setSetting('trakt_expires', str(self.expires))
+        addon = _fresh_addon()
+        addon.setSetting('trakt_access_token', self.access_token)
+        addon.setSetting('trakt_refresh_token', self.refresh_token)
+        addon.setSetting('trakt_expires', str(self.expires))
     
     def authorize(self):
         """OAuth device authorization flow"""
@@ -177,7 +181,7 @@ class TraktAPI:
                     
                     if token_status == 200:
                         self._save_tokens(json.loads(token_body))
-                        ADDON.setSetting('trakt_enabled', 'true')
+                        _fresh_addon().setSetting('trakt_enabled', 'true')
                         
                         dialog.close()
                         xbmcgui.Dialog().notification('Trakt', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
@@ -489,3 +493,22 @@ class TraktAPI:
             'progress': progress
         }
         return self._call_api('/scrobble/stop', method='POST', data=data)
+
+    # ==================== Watched ====================
+    
+    def get_watched(self, media_type):
+        """Get watched history. media_type: 'movies' or 'shows'"""
+        return self._call_api(f'/sync/watched/{media_type}', cache_limit=0.25)
+    
+    def mark_watched(self, media_type, items):
+        """Mark items as watched.
+        media_type: 'movies' or 'episodes'
+        items: list of dicts with 'ids' key, e.g. [{'ids': {'trakt': 123}}]
+        """
+        data = {media_type: items}
+        return self._call_api('/sync/history', method='POST', data=data)
+    
+    def remove_watched(self, media_type, items):
+        """Remove items from watched history."""
+        data = {media_type: items}
+        return self._call_api('/sync/history/remove', method='POST', data=data)

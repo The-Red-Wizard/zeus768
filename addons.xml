@@ -39,7 +39,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.5.2" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.6.0" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -50,8 +50,8 @@
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Stream All The Sources - Modernized for Kodi 21+</summary>
-        <description lang="en">SALTS is a multi-source video addon with 34+ scrapers. Features concurrent scraping, Up Next, Skip Intro, 24/7 Channels, Debrid support (RD, PM, AD, TorBox), Trakt integration. Thanks to Mister X and Zaxxon709.</description>
+        <summary lang="en">Stream All The Sources - 45+ scrapers, Stremio, Trakt, Debrid</summary>
+        <description lang="en">SALTS is a multi-source video addon with 45+ scrapers including Stremio protocol (Torrentio, MediaFusion, Comet, CyberFlix, PeerFlix). Features concurrent scraping, Trakt scrobbling and watched tracking, Up Next, Skip Intro, 24/7 Channels, Debrid support (RD, PM, AD, TorBox), Trakt integration with TMDB posters. Free streams available without debrid. Thanks to Mister X and Zaxxon709.</description>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <assets>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.salts" version="2.5.2" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.6.0" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -10,17 +10,16 @@
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">Stream All The Sources - Modernized for Kodi 21+</summary>
-        <description lang="en_GB">SALTS is a multi-source video addon with 34+ scrapers across torrent sites, streaming sources, anime trackers, and international sources.
+        <summary lang="en_GB">Stream All The Sources - 45+ scrapers, Stremio, Trakt, Debrid</summary>
+        <description lang="en_GB">SALTS is a multi-source video addon with 45+ scrapers across torrent sites, Stremio protocol, streaming sources, anime trackers, and international sources.
 
 Features:
-- Custom source dialog with quality breakdown
-- Up Next: auto-play next episode for TV series
-- Skip Intro prompt for TV episodes
+- Stremio Scrapers: Torrentio, MediaFusion, Comet, CyberFlix (free), Annatar, PeerFlix (free), EasyNews+
 - Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, TPB, NNM-Club, RuTracker, RuTor, Nyaa, etc.
+- Free Streams: VidSrc, 2Embed, AutoEmbed, CyberFlix, PeerFlix (no debrid needed)
 - Jackett/Prowlarr Integration: Connect to any indexer
 - Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox
-- Trakt.tv: Watchlists, collections, scrobbling, history
+- Trakt.tv: Scrobbling, mark watched, watchlists, collections, history with TMDB posters
 - ResolveURL for 270+ hosting sites
 
 Revived and modernized by zeus768 for Kodi 21 Omega and above.
@@ -31,6 +30,24 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.6.0 (2026)
+- Added: Torrentio scraper (Stremio protocol) - 20+ torrent indexers aggregated
+- Added: MediaFusion scraper (Stremio protocol) - community torrent/stream aggregator
+- Added: Comet scraper (Stremio protocol) - fast torrent aggregator
+- Added: CyberFlix scraper (Stremio, FREE) - direct streams, no debrid required
+- Added: Annatar scraper (Stremio protocol) - Jackett/Prowlarr via Stremio
+- Added: PeerFlix scraper (Stremio, FREE) - P2P streams, no debrid required
+- Added: EasyNews+ scraper (Stremio protocol) - Usenet streams
+- Fixed: Trakt scrobbling now fires during playback (start at 2%, stop on finish)
+- Fixed: Trakt mark watched - items marked after 80% playback completion
+- Fixed: Trakt lists now show TMDB posters, fanart, ratings, and watched overlay
+- Fixed: Trakt stale ADDON instance bug (same fix as Trakt Player) - fresh xbmcaddon.Addon() in all settings reads/writes
+- Fixed: Watched tick indicator ([W]) on Trakt list items with playcount overlay
+
+v2.5.2 (2026)
+- Fixed: 24/7 channels - stop when user quits stream (no more auto-advancing)
+- Added: Superfast concurrent scraping (ThreadPoolExecutor, 20 workers, 30s timeout)
+
 v2.1.8 (2026)
 - Fixed: Source dialog rendering - moved to inline native Kodi Dialog().select() with color-coded formatting
 - Fixed: Eliminated external module dependency for source dialog (no more import failures)
@@ -44,53 +61,6 @@ v2.1.7 (2026)
 - Added: "Instant!" notification when pre-scraped sources are available
 - Added: Clear Pre-Scrape Cache in Tools menu
 - Added: Fallback to standard dialog if skin XML not available
-
-v2.1.6 (2026)
-- Added: Franchises menu (30 curated + search with unlimited pagination via TMDB collections)
-- Added: Actors menu (Popular actors with pagination + search + full filmography with pagination)
-- Added: 24/7 Movie Channels - pick an actor, shuffles all their movies, autoplay marathon (max 1080p)
-- Added: 24/7 TV Channels - pick a show, random season/episode start, plays sequentially
-- Added: Search for franchises, actors, and 24/7 channels
-
-v2.1.5 (2026)
-- Added: TorBox debrid service support (API key auth, magnet resolve, cache check)
-- Added: Batch cache checking - all scraped torrents checked against debrid services in one pass
-- Added: [CACHED] tag and green highlighting for pre-cached sources in source dialog
-- Added: Debrid gate - torrent scrapers blocked until a debrid service is enabled
-- Added: Source sorting now prioritizes cached torrents
-- Fixed: Replaced all 'requests' usage with native urllib in base_scraper.py and debrid.py
-- Fixed: All 34+ scrapers now work (not just PirateBay) - base class urllib migration complete
-- Fixed: Trakt API - real CLIENT_ID and CLIENT_SECRET for proper OAuth
-- Fixed: Trakt lists/menus hardened for all response formats (Trending/Popular/Watchlist/Collection)
-- Fixed: Trakt list items now pass TMDB IDs for metadata
-- Removed: script.module.requests and script.module.six dependencies
-
-v2.1.4 (2026)
-- Fixed: Debrid container refresh on authorisation.
-
-v2.1.3 (2026)
-- Fixed: AllDebrid authorisation.
-
-v2.1.2 (2026)
-- Fixed: Busy spinner on playback.
-
-v2.1.1 (2026)
-- Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop
-- Fixed: Trakt API now uses native urllib (no more requests dependency crash)
-- Added: Custom source dialog showing source/scraper count and quality breakdown
-- Added: Up Next - auto-play next episode for TV series
-- Added: Skip Intro prompt during first 90 seconds of TV episodes
-- Removed: repository.gujal from repo
-
-v2.1.0 (2026)
-- Added 34+ scrapers including Russian, Chinese, Anime sources
-- Fixed TMDB integration with native urllib
-
-v2.0.0 (2026)
-- Complete rewrite for Kodi 21+ (Python 3)
-- Added modern torrent scrapers
-- Added Jackett integration
-- Added Real-Debrid, Premiumize, AllDebrid support
         </news>
         <assets>
             <icon>icon.png</icon>

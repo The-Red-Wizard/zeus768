@@ -2,10 +2,11 @@
 SALTS Scrapers Package - STREAM ALL THE SOURCES!
 Revived by zeus768 for Kodi 21+
 
-Total Scrapers: 35+
+Total Scrapers: 45+
 
 Includes:
 - Free Streams: VidSrc, 2Embed, AutoEmbed, MultiEmbed, Embed.su, VidLink (direct play, no debrid)
+- Stremio Protocol: Torrentio, MediaFusion, Comet, CyberFlix (free), Annatar, PeerFlix (free), EasyNews+
 - Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, Nyaa, ThePirateBay, LimeTorrents, Torrentz2, RARBG, Kickass, MagnetDL, GLODLS, iDope, SolidTorrents, TorrentDownload, TorrentProject, Zooqle, BTDigg
 - International: RuTracker, RuTor, NNM-Club (Russian), DyTT, BTBTT (Chinese)
 - Anime: Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex
@@ -67,6 +68,17 @@ from .jackett_scraper import JackettScraper
 from .prowlarr_scraper import ProwlarrScraper
 from .torrentapi_scraper import TorrentAPIScraper
 
+# Stremio Protocol scrapers
+from .stremio_scrapers import (
+    TorrentioScraper,
+    MediaFusionScraper,
+    CometScraper,
+    CyberFlixScraper,
+    AnnatarScraper,
+    PeerFlixScraper,
+    EasyNewsScraper,
+)
+
 # List of all scraper classes - ORDER MATTERS (faster/better first)
 ALL_SCRAPERS = [
     # FREE STREAMS (no debrid needed - direct play)
@@ -123,6 +135,17 @@ ALL_SCRAPERS = [
     
     # APIs
     TorrentAPIScraper,
+    
+    # STREMIO PROTOCOL - Torrent Aggregators (use Stremio addon API)
+    TorrentioScraper,
+    MediaFusionScraper,
+    CometScraper,
+    AnnatarScraper,
+    EasyNewsScraper,
+    
+    # STREMIO PROTOCOL - Free Streams (no debrid needed)
+    CyberFlixScraper,
+    PeerFlixScraper,
 ]
 
 def get_all_scrapers():

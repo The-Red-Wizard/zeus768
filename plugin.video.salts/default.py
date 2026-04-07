@@ -864,9 +864,25 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
             if not scraper.is_enabled():
                 return scraper_name, [], False
             is_free_scraper = isinstance(scraper, FreeStreamScraper)
-            if not debrid_enabled and not is_free_scraper:
+            
+            # Check for Stremio-based scrapers
+            is_stremio = False
+            try:
+                from scrapers.stremio_scrapers import StremioBaseScraper
+                is_stremio = isinstance(scraper, StremioBaseScraper)
+            except ImportError:
+                pass
+            
+            if not debrid_enabled and not is_free_scraper and not (is_stremio and scraper.is_free):
                 return scraper_name, [], False
-            if isinstance(scraper, FreeStreamScraper):
+            if is_free_scraper:
+                results = scraper.search(
+                    query, media_type,
+                    tmdb_id=tmdb_id,
+                    title=title, year=year,
+                    season=season, episode=episode
+                )
+            elif is_stremio:
                 results = scraper.search(
                     query, media_type,
                     tmdb_id=tmdb_id,
@@ -1189,11 +1205,11 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
         return
     
     # Monitor playback for skip intro and next episode
-    _monitor_playback(player, media_type, show_title, year, season, episode)
+    _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id)
 
 
-def _monitor_playback(player, media_type, show_title, year, season, episode):
-    """Monitor playback for skip intro, next episode, and pre-emptive scraping"""
+def _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id=''):
+    """Monitor playback for skip intro, next episode, Trakt scrobbling, and pre-emptive scraping"""
     skip_intro_shown = False
     next_ep_shown = False
     preemptive_done = False
@@ -1202,8 +1218,41 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
     skip_intro_enabled = ADDON.getSetting('skip_intro_enabled') == 'true'
     preemptive_enabled = ADDON.getSetting('preemptive_scrape') == 'true'
     
+    # Trakt scrobbling setup
+    trakt_enabled = xbmcaddon.Addon().getSetting('trakt_enabled') == 'true'
+    trakt_scrobble_started = False
+    trakt_obj = None
+    trakt_item_id = None
+    trakt_item_type = None
+    
+    if trakt_enabled:
+        try:
+            from salts_lib.trakt_api import TraktAPI
+            trakt_obj = TraktAPI()
+            if trakt_obj.is_authorized() and tmdb_id:
+                # Resolve TMDB ID to Trakt ID
+                mt = 'movie' if media_type == 'movie' else 'show'
+                results = trakt_obj._call_api(f'/search/tmdb/{tmdb_id}?type={mt}', cache_limit=24)
+                if results and isinstance(results, list) and len(results) > 0:
+                    trakt_item_id = results[0].get(mt, {}).get('ids', {}).get('trakt')
+                    trakt_item_type = 'movies' if media_type == 'movie' else 'episodes'
+                    
+                    if trakt_item_type == 'episodes' and season and episode:
+                        # For episodes, look up the specific episode Trakt ID
+                        show_trakt = results[0].get('show', {}).get('ids', {}).get('trakt')
+                        if not show_trakt:
+                            show_trakt = trakt_item_id
+                        if show_trakt:
+                            ep_data = trakt_obj._call_api(
+                                f'/shows/{show_trakt}/seasons/{int(season)}/episodes/{int(episode)}',
+                                cache_limit=24
+                            )
+                            if ep_data and isinstance(ep_data, dict):
+                                trakt_item_id = ep_data.get('ids', {}).get('trakt', trakt_item_id)
+        except Exception as e:
+            log_utils.log(f'Trakt scrobble init error: {e}', xbmc.LOGDEBUG)
+    
     total_time = 0
-    preemptive_sources = None
     
     while player.isPlaying():
         try:
@@ -1213,6 +1262,18 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
                     total_time = player.getTotalTime()
                 except Exception:
                     pass
+            
+            progress_pct = (current_time / total_time * 100) if total_time > 0 else 0
+            
+            # Trakt: start scrobble after 2% of playback
+            if (trakt_obj and trakt_item_id and not trakt_scrobble_started
+                    and progress_pct > 2):
+                trakt_scrobble_started = True
+                try:
+                    trakt_obj.scrobble_start(trakt_item_type, trakt_item_id, progress_pct)
+                    log_utils.log(f'Trakt scrobble started: {trakt_item_type}/{trakt_item_id}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Trakt scrobble start error: {e}', xbmc.LOGDEBUG)
             
             # Skip Intro: show during first N seconds of TV episodes
             if (skip_intro_enabled and media_type == 'tvshow' and not skip_intro_shown
@@ -1228,12 +1289,10 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
             # Pre-emptive scraping: start scraping next episode at 75% through
             if (preemptive_enabled and media_type == 'tvshow' and not preemptive_done
                     and total_time > 0 and season and episode):
-                progress_pct = (current_time / total_time) * 100
                 if progress_pct > 75:
                     preemptive_done = True
                     next_ep = int(episode) + 1
                     log_utils.log(f'Pre-emptive scrape: {show_title} S{int(season):02d}E{next_ep:02d}', xbmc.LOGINFO)
-                    # Pre-scrape next episode sources in background (cache only)
                     try:
                         _preemptive_scrape(show_title, year, season, str(next_ep))
                     except Exception as e:
@@ -1253,6 +1312,12 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
                         nolabel='Stop',
                         autoclose=30000
                     ):
+                        # Scrobble stop before switching
+                        if trakt_obj and trakt_item_id and trakt_scrobble_started:
+                            try:
+                                trakt_obj.scrobble_stop(trakt_item_type, trakt_item_id, progress_pct)
+                            except Exception:
+                                pass
                         player.stop()
                         xbmc.sleep(500)
                         get_sources(show_title, year, season, str(next_ep), 'tvshow')
@@ -1263,6 +1328,27 @@ def _monitor_playback(player, media_type, show_title, year, season, episode):
             break
         
         xbmc.sleep(2000)
+    
+    # Playback ended - Trakt scrobble stop + mark watched
+    if trakt_obj and trakt_item_id and trakt_scrobble_started:
+        try:
+            # Get final progress
+            final_pct = progress_pct if progress_pct > 0 else 100
+            trakt_obj.scrobble_stop(trakt_item_type, trakt_item_id, final_pct)
+            log_utils.log(f'Trakt scrobble stopped at {final_pct:.0f}%', xbmc.LOGINFO)
+            
+            # If watched > 80%, explicitly mark as watched
+            if final_pct > 80:
+                try:
+                    if trakt_item_type == 'movies':
+                        trakt_obj.mark_watched('movies', [{'ids': {'trakt': trakt_item_id}}])
+                    else:
+                        trakt_obj.mark_watched('episodes', [{'ids': {'trakt': trakt_item_id}}])
+                    log_utils.log(f'Trakt: marked as watched ({trakt_item_type}/{trakt_item_id})', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Trakt mark watched error: {e}', xbmc.LOGDEBUG)
+        except Exception as e:
+            log_utils.log(f'Trakt scrobble stop error: {e}', xbmc.LOGDEBUG)
 
 
 def _preemptive_scrape(title, year, season, episode):
@@ -1904,7 +1990,7 @@ def trakt_list(list_id):
     xbmcplugin.endOfDirectory(HANDLE)
 
 def _show_trakt_items(items, media_type, key=None):
-    """Helper to display Trakt items.
+    """Helper to display Trakt items with TMDB posters and watched overlay.
     
     Handles all Trakt response formats:
     - Trending: [{movie: {...}, watchers: N}, ...]
@@ -1922,6 +2008,24 @@ def _show_trakt_items(items, media_type, key=None):
         xbmcgui.Dialog().notification(ADDON_NAME, 'Unexpected Trakt response', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE)
         return
+    
+    # Fetch watched list from Trakt for overlay
+    watched_set = set()
+    try:
+        from salts_lib.trakt_api import TraktAPI
+        trakt_w = TraktAPI()
+        if trakt_w.is_authorized():
+            wt = media_type if media_type in ('movies', 'shows') else 'movies'
+            watched_items = trakt_w.get_watched(wt)
+            if watched_items and isinstance(watched_items, list):
+                for wi in watched_items:
+                    w_key = 'movie' if wt == 'movies' else 'show'
+                    w_data = wi.get(w_key, {})
+                    w_ids = w_data.get('ids', {})
+                    if w_ids.get('trakt'):
+                        watched_set.add(w_ids['trakt'])
+    except Exception as e:
+        log_utils.log(f'Trakt watched fetch error: {e}', xbmc.LOGDEBUG)
     
     count = 0
     for item in items:
@@ -1948,18 +2052,52 @@ def _show_trakt_items(items, media_type, key=None):
             title = data.get('title', 'Unknown')
             year = data.get('year', '')
             
-            label = f'{title} ({year})' if year else title
+            ids = data.get('ids', {})
+            tmdb_id = str(ids.get('tmdb', '')) if ids else ''
+            trakt_id = ids.get('trakt', 0) if ids else 0
+            
+            # Watched indicator
+            is_watched = trakt_id in watched_set
+            watched_tag = '[COLOR FF00CC66]W[/COLOR] ' if is_watched else ''
+            label = f'{watched_tag}{title} ({year})' if year else f'{watched_tag}{title}'
+            
+            # Fetch TMDB poster/fanart
+            poster_url = ADDON_ICON
+            backdrop_url = ADDON_FANART
+            overview = data.get('overview', '')
+            rating = 0
+            
+            if tmdb_id:
+                try:
+                    search_type = 'movie' if media_type == 'movies' else 'tv'
+                    tmdb_data = _tmdb_get(f'/{search_type}/{tmdb_id}')
+                    if tmdb_data:
+                        poster = tmdb_data.get('poster_path', '')
+                        backdrop = tmdb_data.get('backdrop_path', '')
+                        if poster:
+                            poster_url = f'{TMDB_IMG}/w500{poster}'
+                        if backdrop:
+                            backdrop_url = f'{TMDB_IMG}/original{backdrop}'
+                        overview = tmdb_data.get('overview', overview)
+                        rating = tmdb_data.get('vote_average', 0)
+                except Exception:
+                    pass
             
             li = xbmcgui.ListItem(label)
-            li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+            li.setArt({
+                'icon': poster_url, 'thumb': poster_url,
+                'poster': poster_url, 'fanart': backdrop_url
+            })
             
             info_tag = li.getVideoInfoTag()
             info_tag.setTitle(title)
             info_tag.setYear(int(year) if year else 0)
-            info_tag.setPlot(data.get('overview', ''))
-            
-            ids = data.get('ids', {})
-            tmdb_id = str(ids.get('tmdb', '')) if ids else ''
+            info_tag.setPlot(overview)
+            if rating:
+                info_tag.setRating(float(rating))
+            info_tag.setMediaType('movie' if media_type == 'movies' else 'tvshow')
+            if is_watched:
+                info_tag.setPlaycount(1)
             
             if media_type == 'movies':
                 url = build_url({

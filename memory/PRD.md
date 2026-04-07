@@ -5,7 +5,7 @@ Fix old Kodi addons for Kodi 21+ (Python 3). Rewrite broken addons, optimize scr
 
 ## Architecture
 - **Type**: Kodi Addons (Python 3), native `urllib` only (no `requests`)
-- **APIs**: TMDB, Trakt, Real-Debrid, Premiumize, AllDebrid, TorBox, Orionoid
+- **APIs**: TMDB, Trakt, Real-Debrid, Premiumize, AllDebrid, TorBox, Orionoid, Stremio Protocol
 - **Ko-fi**: https://ko-fi.com/zeus768
 
 ---
@@ -15,43 +15,37 @@ Fix old Kodi addons for Kodi 21+ (Python 3). Rewrite broken addons, optimize scr
 ### Genesis — v9.2.6
 - [x] Replaced with user's fixed v9.2.6 zip (Kodi 21 compatible)
 - [x] Features Meteor, Streamthru, Torz, Webstreamr scrapers
-- [x] Buy Me a Beer added
-- [x] Assets block in addon.xml
 
 ### Genesis Themepak — v9.2.4
 - [x] Replaced with user's fixed v9.2.4 zip (Kodi 21 compatible)
 
-### SALTS — v2.5.2
+### SALTS — v2.6.0
+- [x] 45+ scrapers: torrent sites, Stremio protocol, free streams, anime, international
+- [x] **Stremio scrapers**: Torrentio, MediaFusion, Comet, CyberFlix (free), Annatar, PeerFlix (free), EasyNews+
+- [x] **Trakt scrobbling**: fires during playback (start at 2%, stop on finish)
+- [x] **Trakt mark watched**: items marked after 80% playback completion
+- [x] **Trakt watched overlay**: [W] tag + playcount on list items
+- [x] **Trakt TMDB posters**: all Trakt list items show TMDB poster, fanart, ratings
+- [x] **Trakt stale ADDON fix**: fresh xbmcaddon.Addon() in all settings reads/writes (same fix as Trakt Player)
 - [x] Concurrent scraping: ThreadPoolExecutor (20 workers, 30s timeout)
-- [x] 24/7 Channels fixed: proper scraper instantiation + correct search()
-- [x] 24/7 Channels: stops when user quits stream
-- [x] Pre-scrape fixed: concurrent (4 workers, 15s timeout)
-- [x] Compact donation dialog
+- [x] 24/7 Channels, Skip Intro, Up Next, Pre-Scrape hover cache
+- [x] Buy Me a Beer (Ko-fi) donation dialog
 
 ### Trakt Player — v2.1.3 [STABLE]
-- [x] Real-Debrid & Premiumize pair code OAuth fixed
-- [x] Settings persistence fixed (fresh xbmcaddon.Addon() instances)
-
 ### Orion — v3.2.5 [STABLE]
 ### The Accountant — v3.9.7 [STABLE]
 
 ### Poseidon Player — v2.3.0 [NEW]
-- [x] Added to repository from user's zip
 - [x] Premium Xtream Codes IPTV Player with EPG Grid
 
 ### Poseidon Guide — v1.1.0 [NEW]
-- [x] Added to repository from user's zip
 - [x] EPG Grid Guide for Poseidon Player
 
 ### Repository — v1.1.1
-- [x] Updated addons.xml with all 9 addons (StrikeZone removed)
-- [x] All zips rebuilt with icon/fanart in zip folders
-- [x] MD5 checksum regenerated
-- [x] README updated with Poseidon addons, StrikeZone removed
-- [x] repository.zeus768 addon.xml bumped to v1.1.1
+- [x] All 9 addons, StrikeZone removed
+- [x] All zips rebuilt, MD5 regenerated
 
 ### StrikeZone — REMOVED FROM REPO
-- [x] Removed from addons.xml, zips, and README per user request
 
 ---
 
