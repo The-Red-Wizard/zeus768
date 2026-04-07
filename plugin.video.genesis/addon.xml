@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.genesis" name="Genesis" version="9.3.0" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="9.4.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0" />
         <import addon="script.genesis.media" version="9.2.4" />
@@ -28,17 +28,21 @@ Features:
         <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
         <platform>all</platform>
         <news>
+v9.4.0 (2026)
+- FIXED: All movie/TV categories now load properly (migrated from broken IMDB scraping to Trakt API)
+- FIXED: Metadata enrichment migrated from dead OMDB to TMDB API (posters, cast, directors, plot)
+- FIXED: Genre browsing uses correct Trakt genre slugs (science-fiction, superhero, etc.)
+- FIXED: All Trakt API URLs updated to api.trakt.tv (HTTPS)
+- ADDED: TMDB poster/fanart/backdrop artwork for all movies and TV shows
+- ADDED: Full cast and director info from TMDB credits API
+- ADDED: Updated TV Networks list (Disney+, Apple TV+, Paramount+, Peacock, Hulu)
+- ADDED: TMDB-powered person search and popular actors browsing
+
 v9.3.0 (2026)
-- FIXED: Python 3 / Kodi 21 compatibility across ALL files (urlparse, urllib, unicode removed)
+- FIXED: Python 3 / Kodi 21 compatibility across ALL files
 - FIXED: Trakt auth URL updated from api-v2launch.trakt.tv to api.trakt.tv (HTTPS)
-- FIXED: Real-Debrid, Premiumize, AllDebrid, TorBox auth now works on Python 3
-- FIXED: Missing genre/menu icons - falls back to addon icon when theme image not found
-- FIXED: Player unicode() calls replaced with Python 3 compatible byte decode
-- FIXED: All torrent scrapers (1337x, YTS, EZTV, TGX, TPB) patched for Python 3
-- ADDED: CocoScrapers external provider support (script.module.cocoscrapers)
-- ADDED: Gears Scrapers external provider support (script.module.gears)
-- ADDED: External Scrapers settings category (enable/disable providers)
-- ADDED: Both external scrapers listed as optional dependencies
+- FIXED: All debrid resolvers (RD, PM, AD, TorBox) Python 3 imports
+- ADDED: CocoScrapers and Gears Scrapers external provider support
 
 v9.2.6 (2026)
 - User's fixed build for Kodi 21

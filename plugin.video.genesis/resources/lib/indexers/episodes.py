@@ -572,7 +572,7 @@ class episodes:
     def __init__(self):
         self.list = []
 
-        self.trakt_link = 'http://api-v2launch.trakt.tv'
+        self.trakt_link = 'https://api.trakt.tv'
         self.tvdb_key = base64.urlsafe_b64decode('MUQ2MkYyRjkwMDMwQzQ0NA==')
         self.tvmaze_link = 'http://api.tvmaze.com'
         self.datetime = (datetime.datetime.utcnow() - datetime.timedelta(hours = 5))
@@ -584,10 +584,10 @@ class episodes:
         self.tvdb_image = 'http://thetvdb.com/banners/'
         self.tvdb_poster = 'http://thetvdb.com/banners/_cache/'
 
-        self.mycalendar_link = 'http://api-v2launch.trakt.tv/calendars/my/shows/%s/31/' % (self.datetime - datetime.timedelta(days = 32)).strftime('%Y-%m-%d')
+        self.mycalendar_link = 'https://api.trakt.tv/calendars/my/shows/%s/31/' % (self.datetime - datetime.timedelta(days = 32)).strftime('%Y-%m-%d')
 
-        self.progress_link = 'http://api-v2launch.trakt.tv/users/me/watched/shows'
-        self.calendar_link = 'http://api-v2launch.trakt.tv/calendars/all/shows/%s/%s'
+        self.progress_link = 'https://api.trakt.tv/users/me/watched/shows'
+        self.calendar_link = 'https://api.trakt.tv/calendars/all/shows/%s/%s'
         self.calendar_link = 'http://api.tvmaze.com/schedule?date=%s'
 
         self.scn_link = 'http://m2v.ru'

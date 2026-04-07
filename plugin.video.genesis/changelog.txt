@@ -1,6 +1,19 @@
 Genesis Changelog
 ==================
 
+Version 9.4.0 (February 2026 - TMDB/Trakt Migration - Categories Fixed)
+- FIXED: All movie categories now load (Popular, Trending, Box Office, Genres, Years, etc.)
+- FIXED: All TV show categories now load (Popular, Trending, Genres, Years, Networks, etc.)
+- FIXED: Migrated from broken IMDB HTML scraping to Trakt API for all browsing
+- FIXED: Metadata enrichment migrated from dead OMDB API to TMDB API
+- FIXED: Genre slugs updated for Trakt compatibility (sci_fi → science-fiction, etc.)
+- FIXED: All remaining api-v2launch.trakt.tv URLs updated to api.trakt.tv
+- ADDED: TMDB poster, fanart, and backdrop artwork for movies and TV shows
+- ADDED: Full cast and director info from TMDB credits API
+- ADDED: TMDB-powered person search and popular actors browsing
+- ADDED: Updated TV Networks list with modern streaming services (Disney+, Apple TV+, Paramount+, Peacock, Hulu)
+- ADDED: Movie certifications browsing (G, PG, PG-13, R, NC-17)
+
 Version 9.3.0 (April 2026 - Python 3 Overhaul + External Scrapers)
 - FIXED: default.py Python 3 crash (import urlparse → from urllib.parse import parse_qsl)
 - FIXED: Trakt auth URL updated from http://api-v2launch.trakt.tv to https://api.trakt.tv

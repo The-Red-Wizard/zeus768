@@ -80,7 +80,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="9.3.0" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="9.4.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.media" version="9.2.4"/>
@@ -94,8 +94,8 @@
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Genesis - Stream Movies and TV Shows with Debrid, Trakt, CocoScrapers, Gears</summary>
-        <description lang="en">Genesis - Movies and TV Shows with debrid support (Real-Debrid, Premiumize, AllDebrid, TorBox), Trakt.tv integration, CocoScrapers and Gears Scrapers external provider support, plus built-in torrent and streaming scrapers. Kodi 21+ Python 3 compatible.</description>
+        <summary lang="en">Genesis - Stream Movies and TV Shows with Debrid, Trakt, TMDB, CocoScrapers, Gears</summary>
+        <description lang="en">Genesis v9.4.0 - Movies and TV Shows powered by Trakt API browsing and TMDB metadata (posters, cast, directors). Debrid support (Real-Debrid, Premiumize, AllDebrid, TorBox), Trakt.tv integration, CocoScrapers and Gears Scrapers external providers, plus built-in torrent and streaming scrapers. Kodi 21+ Python 3 compatible.</description>
         <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon.</disclaimer>
         <platform>all</platform>
         <assets>

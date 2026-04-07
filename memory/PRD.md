@@ -1,51 +1,41 @@
 # Zeus768 Kodi Repository - PRD
 
-## Problem Statement
-Fix old Kodi addons for Kodi 21+ (Python 3). Rewrite broken addons, optimize scrapers, add donation support.
+## Original Problem Statement
+Maintain and upgrade the Zeus768 custom Kodi repository. Tasks include: adding new addons (Poseidon Player/Guide), removing StrikeZone, fixing SALTS (Trakt + Stremio scrapers), fixing Trakt Player (Premiumize auth + AI features merge), and comprehensive Genesis fixes (Python 3 porting, external scrapers, fixing broken category menus).
 
 ## Architecture
-- **Type**: Kodi Addons (Python 3), native `urllib` only (no `requests`)
-- **APIs**: TMDB, Trakt, Real-Debrid, Premiumize, AllDebrid, TorBox, Orionoid, Stremio Protocol
-- **Ko-fi**: https://ko-fi.com/zeus768
+```
+/app/
+├── addons.xml / addons.xml.md5       # Repo manifest
+├── plugin.video.genesis/             # v9.4.0 - TMDB/Trakt powered
+├── plugin.video.salts/               # v2.6.0 - Stable
+├── plugin.video.trakt_player/        # v2.2.0 - Stable
+├── plugin.video.poseidonplayer/      # v2.3.0 - Stable
+├── program.poseidonguide/            # v1.1.0 - Stable
+├── plugin.program.theaccountant/     # v3.9.7 - Stable
+├── plugin.video.orion/               # v3.2.5 - Stable
+├── repository.zeus768/               # Repo config
+└── zips/                             # Compiled distributables
+```
 
----
+## Completed Tasks
+- [x] Replaced Genesis/Themepak with user's v9.2.6/v9.2.4 zips
+- [x] Added Poseidon Player v2.3.0 and Poseidon Guide v1.1.0
+- [x] Removed StrikeZone from repo
+- [x] SALTS v2.6.0: Fixed Trakt scrobbling, added Stremio scrapers (Torrentio, MediaFusion, Comet, etc.)
+- [x] Trakt Player v2.2.0: Merged AI Vibes/Discovery features, fixed Premiumize device auth
+- [x] Genesis v9.3.0: Python 3 porting, CocoScrapers/Gears wrappers, Trakt auth URL fix
+- [x] Genesis v9.4.0: **Migrated all movie/TV indexers from broken IMDB scraping to Trakt API** (Feb 2026)
+  - Movies: popular, trending, box office, genres, years, search all now use Trakt API
+  - TV Shows: popular, trending, genres, years, networks, search all now use Trakt API
+  - Metadata enrichment: migrated from dead OMDB to TMDB API (Orion key: f15af109700aab95d564acda15bdcd97)
+  - Full cast/director/poster/fanart from TMDB credits API
+  - Episodes indexer: fixed api-v2launch → api.trakt.tv
+  - Updated genres to Trakt slugs (science-fiction, superhero, etc.)
+  - Rebuilt zip, addons.xml, MD5
 
-## Completed
-
-### Genesis — v9.3.0 (major Python 3 fix + external scrapers)
-- [x] Fixed `default.py` Python 3 import (`import urlparse` → `from urllib.parse import parse_qsl`)
-- [x] Fixed Trakt auth URL: `api-v2launch.trakt.tv` → `api.trakt.tv` (HTTPS)
-- [x] Fixed all 4 debrid resolvers (RD, PM, AD, TorBox) Python 3 imports
-- [x] Fixed player.py `unicode()` calls → Python 3 `bytes.decode()`
-- [x] Fixed all 9 torrent/streaming scrapers Python 3 imports
-- [x] Fixed all 90+ old resolvers Python 3 imports (batch-patched)
-- [x] Fixed missing genre icons — falls back to addon icon when theme image not found
-- [x] Added CocoScrapers external provider (`cocoscrapers_mv_tv.py`)
-- [x] Added Gears Scrapers external provider (`gears_mv_tv.py`)
-- [x] Added `script.module.cocoscrapers` and `script.module.gears` as optional dependencies
-- [x] Added External Scrapers settings category
-
-### Genesis Themepak — v9.2.4
-
-### SALTS — v2.6.0 (user's v2.5.3 base + fixes)
-- [x] 45+ scrapers: 7 Stremio + torrent + free streams
-- [x] Trakt scrobbling, mark watched, TMDB posters, watched overlay
-- [x] Stale ADDON fix
-
-### Trakt Player — v2.2.0 (user's v2.1.6 base + features merged)
-- [x] Premiumize device code fix
-- [x] AI Vibes, Discovery Feed, Continue Watching, all superpower features merged
-
-### Orion — v3.2.5 [STABLE]
-### The Accountant — v3.9.7 [STABLE]
-### Poseidon Player — v2.3.0
-### Poseidon Guide — v1.1.0
-### Repository — v1.1.1
-
-### StrikeZone — REMOVED
-
----
-
-## Backlog
-- [ ] Fix plugin.video.strikezone scraper offline, re-add later
-- [ ] User verification of all addons in Kodi
+## Pending / Backlog
+- [ ] P1: Re-test Genesis debrid resolvers (RD, PM, AD, TorBox)
+- [ ] P1: Fix StrikeZone scraper offline (user requested future re-addition)
+- [ ] P2: Test Genesis Trakt user lists / watchlists / collections
+- [ ] P2: User verification of all addons in Kodi
