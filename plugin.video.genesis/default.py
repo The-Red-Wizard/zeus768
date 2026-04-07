@@ -397,6 +397,7 @@ elif action == 'loguploader':
 
 elif action == 'buy_beer':
     import xbmcgui, xbmcvfs
+    import time as _time
     try:
         import ssl
         from urllib.request import urlopen as _urlopen, Request as _Request
@@ -404,20 +405,114 @@ elif action == 'buy_beer':
     except:
         from urllib2 import urlopen as _urlopen, Request as _Request
         from urllib import quote_plus as _qp
+    
     kofi_url = 'https://ko-fi.com/zeus768'
     qr_file = os.path.join(xbmcvfs.translatePath('special://temp/'), 'kofi_qr.png')
+    DONATION_TIMEOUT = 60  # 60 seconds display time
+    
+    # Generate QR code
+    qr_generated = False
     try:
         ctx = ssl._create_unverified_context()
-        req = _Request('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s&bgcolor=0-0-0&color=255-255-255' % _qp(kofi_url), headers={'User-Agent': 'Mozilla/5.0'})
+        req = _Request(
+            'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=%s&bgcolor=0-0-0&color=255-255-255&margin=20' % _qp(kofi_url), 
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
         resp = _urlopen(req, context=ctx, timeout=10)
         with open(qr_file, 'wb') as f:
             f.write(resp.read())
-        xbmc.executebuiltin('ShowPicture(%s)' % qr_file)
-        xbmc.sleep(300)
-    except:
-        pass
-    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+        qr_generated = True
+    except Exception as e:
+        xbmc.log('[Genesis] QR generation error: %s' % str(e), xbmc.LOGERROR)
+    
+    # Show donation dialog with 60 second countdown
+    class DonationWindow(xbmcgui.WindowDialog):
+        def __init__(self, qr_path, url, timeout):
+            self.qr_path = qr_path
+            self.url = url
+            self.timeout = timeout
+            self.start_time = _time.time()
+            self.running = True
+            self.controls = []
+            self._create_ui()
+        
+        def _create_ui(self):
+            # Screen dimensions
+            w, h = 1920, 1080
+            
+            # Semi-transparent background
+            bg = xbmcgui.ControlImage(int(w*0.2), int(h*0.05), int(w*0.6), int(h*0.9), '', aspectRatio=0)
+            self.addControl(bg)
+            bg.setColorDiffuse('DD000000')
+            self.controls.append(bg)
+            
+            # Title
+            title = xbmcgui.ControlLabel(int(w*0.2), int(h*0.08), int(w*0.6), 60,
+                '[B][COLOR gold]Buy Me a Beer![/COLOR][/B]', alignment=0x00000002, font='font37')
+            self.addControl(title)
+            self.controls.append(title)
+            
+            # QR Code
+            if self.qr_path and os.path.exists(self.qr_path):
+                qr_img = xbmcgui.ControlImage(int(w*0.35), int(h*0.18), int(w*0.3), int(h*0.5), self.qr_path, aspectRatio=2)
+                self.addControl(qr_img)
+                self.controls.append(qr_img)
+            
+            # URL
+            url_lbl = xbmcgui.ControlLabel(int(w*0.2), int(h*0.7), int(w*0.6), 40,
+                '[COLOR skyblue]%s[/COLOR]' % self.url, alignment=0x00000002)
+            self.addControl(url_lbl)
+            self.controls.append(url_lbl)
+            
+            # Instructions
+            instr = xbmcgui.ControlLabel(int(w*0.2), int(h*0.75), int(w*0.6), 30,
+                'Scan QR code or visit the link above', alignment=0x00000002)
+            self.addControl(instr)
+            self.controls.append(instr)
+            
+            # Countdown
+            self.countdown_lbl = xbmcgui.ControlLabel(int(w*0.2), int(h*0.8), int(w*0.6), 30,
+                '[COLOR yellow]Closing in %d seconds...[/COLOR]' % self.timeout, alignment=0x00000002)
+            self.addControl(self.countdown_lbl)
+            self.controls.append(self.countdown_lbl)
+            
+            # Close instruction
+            close_lbl = xbmcgui.ControlLabel(int(w*0.2), int(h*0.85), int(w*0.6), 25,
+                'Press [B]Back[/B] or [B]ESC[/B] to close earlier', alignment=0x00000002)
+            self.addControl(close_lbl)
+            self.controls.append(close_lbl)
+            
+            # Thanks
+            thanks = xbmcgui.ControlLabel(int(w*0.2), int(h*0.9), int(w*0.6), 30,
+                '[COLOR lime]Thank you for supporting Genesis development![/COLOR]', alignment=0x00000002)
+            self.addControl(thanks)
+            self.controls.append(thanks)
+        
+        def doModal(self):
+            self.show()
+            while self.running:
+                elapsed = _time.time() - self.start_time
+                remaining = max(0, self.timeout - int(elapsed))
+                if remaining <= 0:
+                    break
+                try:
+                    self.countdown_lbl.setLabel('[COLOR yellow]Closing in %d seconds...[/COLOR]' % remaining)
+                except:
+                    pass
+                xbmc.sleep(1000)
+            self.close()
+        
+        def onAction(self, action):
+            if action.getId() in [xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, 10, 92]:
+                self.running = False
+    
+    # Show the window
     try:
-        xbmc.executebuiltin('Action(Back)')
-    except:
-        pass
+        donation_win = DonationWindow(qr_file if qr_generated else None, kofi_url, DONATION_TIMEOUT)
+        donation_win.doModal()
+        del donation_win
+    except Exception as e:
+        xbmc.log('[Genesis] Donation window error: %s' % str(e), xbmc.LOGERROR)
+        # Fallback to simple dialog
+        xbmcgui.Dialog().ok('Support zeus768', 
+            'Scan QR or visit:\n[COLOR cyan]%s[/COLOR]\n\nThank you for your support!' % kofi_url)

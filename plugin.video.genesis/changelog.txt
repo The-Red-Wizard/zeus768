@@ -1,42 +1,41 @@
 ================================================================================
-  Genesis Changelog
-  Revived & Modernized by: zeus768
+  Genesis Video Addon Changelog
 ================================================================================
 
-v2026.04.04.03 (April 2026)
+v9.2.2 (April 2026)
 ================================================================================
-  * Fixed crash: 'No module named jsunpack' - control.py now uses proper
-    relative import from resources.lib.libraries instead of bare import
+  NEW FEATURES:
+  * Added Meteor scraper for movies and TV shows
+  * Added Streamthru scraper for movies and TV shows  
+  * Added Torz torrent aggregator for movies and TV shows
+  * Added Webstreamr scraper for movies and TV shows
+  * Added "Buy Me a Beer" donation feature with QR code
+    - Displays for 60 seconds with countdown timer
+    - Shows Ko-fi donation link (ko-fi.com/zeus768)
+    - User can close earlier with Back/ESC
 
-v2026.04.04.01 (April 2026)
+  BUG FIXES:
+  * Fixed Python 2/3 compatibility issues in movies.py
+    - Updated urllib/urlparse imports for Python 3
+  * Fixed TypeError: object of type 'NoneType' has no len()
+    - Added null check in persons() method
+  * Fixed potential crashes when movie lists return empty
+
+  IMPROVEMENTS:
+  * Updated addon metadata and description
+  * Improved error handling in scrapers
+
+v9.2.1 (April 2026)
 ================================================================================
+  * Rebranded from Specto to Genesis
+  * Initial Kodi 21 Omega compatibility
+  * Added TorBox resolver support
+  * Version sync with script.genesis.media
 
-  NEW
-  ---
+v2026.04.04 (April 2026)
+================================================================================
   * Added to Zeus768 Repository
-  * Buy Me a Beer - Ko-fi donation with QR code support
-  
-  PYTHON 3 / KODI 21+ COMPATIBILITY
-  ----------------------------------
-  * Full Python 3 audit - all 147 files compile clean
-  * Created py3compat.py shim for transparent Python 2 module compatibility
-    (urlparse, urllib2, cookielib, httplib, HTMLParser, StringIO, Queue)
-  * Removed all .encode('utf-8') / .decode('utf-8') string calls
-  * Converted print statements to print() functions
-  * Fixed except syntax (except X, e → except X as e)
-  * Fixed __import__ level argument (-1 → 0/1)
-  * Replaced deprecated iconImage/thumbnailImage with setArt()
-  * Replaced xbmc.LOGNOTICE with xbmc.LOGINFO
-  * Replaced xbmc.translatePath with xbmcvfs.translatePath
-  * Added functools.reduce import
-  * Fixed long integer literals (2208988800L → 2208988800)
-  * Fixed tab/space indentation inconsistencies
+  * Base functionality from Specto fork
 
-================================================================================
-  Legacy Changelog (pre-zeus768)
-================================================================================
-
-2017.04.03.1 - fix putlocker, fmovies
-2017.01.28.1 - added gvideo hosts from Exodus.
-2017.01.20.2 - small fix movieshd, putlocker, in trakt episodes fix posters and fanart.
-2016.11.20.3 small fix putlocker
+v1.0.0
+  * Initial version

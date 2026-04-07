@@ -1,12 +1,12 @@
-# Addon Name: Specto
-# Addon id: plugin.video.specto
-# Addon Provider: Specto
+# Addon Name: Genesis
+# Addon id: plugin.video.genesis
+# Addon Provider: Genesis
 # Translators:
 # Translators:
 # Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: Specto\n"
+"Project-Id-Version: Genesis\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: 2016-01-31 04:54+0100\n"
 "Last-Translator: Marian <mrknow@interia.pl>\n"
@@ -32,8 +32,8 @@ msgid "Channels"
 msgstr "Kanały"
 
 msgctxt "#30004"
-msgid "My Specto"
-msgstr "Moje Specto"
+msgid "My Genesis"
+msgstr "Moje Genesis"
 
 msgctxt "#30005"
 msgid "Latest Movies"
@@ -292,36 +292,36 @@ msgid "[B]HOSTS[/B] : SD Priority"
 msgstr "[B]HOSTY[/B] : Pierwszeństwo SD"
 
 msgctxt "#30119"
-msgid "[B]Specto[/B] : Clear sources..."
-msgstr "[B]SPECTO[/B] : Wyczyść źródła..."
+msgid "[B]Genesis[/B] : Clear sources..."
+msgstr "[B]GENESIS[/B] : Wyczyść źródła..."
 
 msgctxt "#30120"
-msgid "[B]Specto[/B] : Clear cache..."
-msgstr "[B]SPECTO[/B] : Wyczyść cache..."
+msgid "[B]Genesis[/B] : Clear cache..."
+msgstr "[B]GENESIS[/B] : Wyczyść cache..."
 
 msgctxt "#30121"
-msgid "[B]Specto[/B] : Library"
-msgstr "[B]SPECTO[/B] : Biblioteka"
+msgid "[B]Genesis[/B] : Library"
+msgstr "[B]GENESIS[/B] : Biblioteka"
 
 msgctxt "#30122"
-msgid "[B]Specto[/B] : Downloads"
-msgstr "[B]SPECTO[/B] : Pobrane"
+msgid "[B]Genesis[/B] : Downloads"
+msgstr "[B]GENESIS[/B] : Pobrane"
 
 msgctxt "#30131"
 msgid "[B]LIBRARY[/B] : Settings"
 msgstr "[B]BIBLIOTEKA[/B] : Ustawienia"
 
 msgctxt "#30132"
-msgid "[B]Specto[/B] : Update folders..."
-msgstr "[B]SPECTO[/B] : Aktualizuj foldery..."
+msgid "[B]Genesis[/B] : Update folders..."
+msgstr "[B]GENESIS[/B] : Aktualizuj foldery..."
 
 msgctxt "#30133"
-msgid "[B]Specto[/B] : Movie folder..."
-msgstr "[B]SPECTO[/B] : Folder filmów..."
+msgid "[B]Genesis[/B] : Movie folder..."
+msgstr "[B]GENESIS[/B] : Folder filmów..."
 
 msgctxt "#30134"
-msgid "[B]Specto[/B] : TV folder..."
-msgstr "[B]SPECTO[/B] : Folder seriali..."
+msgid "[B]Genesis[/B] : TV folder..."
+msgstr "[B]GENESIS[/B] : Folder seriali..."
 
 msgctxt "#30135"
 msgid "[B]TRAKT[/B] : Import Collection..."
@@ -1041,10 +1041,10 @@ msgstr "Biblioteka"
 
 msgctxt "#30921"
 msgid ""
-"Specto folderswill be imported to library if they are added to media "
+"Genesis folderswill be imported to library if they are added to media "
 "sources."
 msgstr ""
-"Foldery Specto będą zaimportowane do biblioteki jeśli zostaną dodane do źródeł mediów."
+"Foldery Genesis będą zaimportowane do biblioteki jeśli zostaną dodane do źródeł mediów."
 
 msgctxt "#30922"
 msgid "Movies"
@@ -1123,7 +1123,7 @@ msgid "A RealDebrid account already exists"
 msgstr ""
 
 msgctxt "#32412"
-msgid "After reset, save Specto settings"
+msgid "After reset, save Genesis settings"
 msgstr ""
 
 msgctxt "#32413"

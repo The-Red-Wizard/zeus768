@@ -132,7 +132,7 @@ class player(xbmc.Player):
                 meta = json.loads(meta)['result']['movies']
                 meta = [i for i in meta if i['file'].endswith(self.file)][0]
 
-                for k, v in meta.iteritems():
+                for k, v in meta.items():
                     if type(v) == list:
                         try: meta[k] = str(' / '.join([i for i in v]))
                         except: meta[k] = ''
@@ -153,7 +153,7 @@ class player(xbmc.Player):
                 match += [i for i in meta if i['file'].endswith(self.file)]
                 meta = match[0]
 
-                for k, v in meta.iteritems():
+                for k, v in meta.items():
                     if type(v) == list:
                         try: meta[k] = str(' / '.join([i for i in v]))
                         except: meta[k] = ''

@@ -2,6 +2,15 @@
   Script Genesis Media (Themepak) Changelog
 ================================================================================
 
+v9.2.2 (April 2026)
+================================================================================
+  * Rebranded from Specto to Genesis
+  * Renamed myspecto.jpg to mygenesis.jpg in all theme folders
+    (4orbs, clean, embossed, gone, metro)
+  * Fixed default.py to open Genesis settings instead of Specto
+  * Updated addon metadata with proper assets declaration
+  * Version sync with plugin.video.genesis
+
 v2026.04.04 (April 2026)
 ================================================================================
   * Added to Zeus768 Repository

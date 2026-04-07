@@ -10,7 +10,7 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">The Accountant: Master Pro Suite</summary>
-        <description lang="en">v3.9.6: FULL FEATURES - Speed Optimizer, Scheduled Auto-Clean, RD/PM/AD/Trakt/TMDB Auth, IPTV Vault, Favourites Vault, USB Backup, Repair Tools, Cache and Package Cleaner.</description>
+        <description lang="en">v3.9.7: FULL FEATURES - Speed Optimizer, Scheduled Auto-Clean, RD/PM/AD/Trakt/TMDB Auth, IPTV Vault, Favourites Vault, USB Backup, Repair Tools, Cache and Package Cleaner.</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
@@ -29,8 +29,7 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Orion Media Explorer</summary>
-        <description lang="en">Orion v3.2.2 - Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration with scrobbling, watchlists and liked lists, ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.</description>
-        <news>[3.2.2] Fixed Real-Debrid resolving .rar files instead of videos - now selects only video files and skips archives. Added clear error dialog when no debrid service is configured. Added ResolveURL debrid fallback for magnets.</news>
+        <description lang="en">Orion v3.2.5 - Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration with scrobbling, watchlists and liked lists, ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.</description>
         <platform>all</platform>
         <license>GPL-3.0</license>
         <assets>
@@ -51,77 +50,10 @@
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">Stream All The Sources - Modernized for Kodi 21+</summary>
-        <description lang="en_GB">SALTS is a multi-source video addon with 34+ scrapers across torrent sites, streaming sources, anime trackers, and international sources.
-
-Features:
-- Custom source dialog with quality breakdown
-- Up Next: auto-play next episode for TV series
-- Skip Intro prompt for TV episodes
-- Torrent Sites: 1337x, YTS, EZTV, TorrentGalaxy, TPB, NNM-Club, RuTracker, RuTor, Nyaa, etc.
-- Jackett/Prowlarr Integration: Connect to any indexer
-- Debrid Services: Real-Debrid, Premiumize, AllDebrid
-- Trakt.tv: Watchlists, collections, scrobbling, history
-- ResolveURL for 270+ hosting sites
-
-Revived and modernized by zeus768 for Kodi 21 Omega and above.
-Original author: tknorris
-Thank you to Mister X and Zaxxon709</description>
+        <summary lang="en">Stream All The Sources - Modernized for Kodi 21+</summary>
+        <description lang="en">SALTS is a multi-source video addon with 34+ scrapers. Features concurrent scraping, Up Next, Skip Intro, 24/7 Channels, Debrid support (RD, PM, AD, TorBox), Trakt integration. Thanks to Mister X and Zaxxon709.</description>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
-        <website>https://github.com/zeus768/plugin.video.salts</website>
-        <source>https://github.com/zeus768/plugin.video.salts</source>
-        <news>
-v2.1.4 (2026)
-- Fixed: Debrid container refresh on authorisation.
-
-v2.1.3 (2026)
-- Fixed: AllDebrid authorisation.
-
-v2.1.2 (2026)
-- Fixed: Busy spinner on playback.
-
-v2.1.1 (2026)
-- Fixed: Replaced setResolvedUrl with xbmc.Player().play() to prevent rescrape loop
-- Fixed: Trakt API now uses native urllib (no more requests dependency crash)
-- Added: Custom source dialog showing source/scraper count and quality breakdown
-- Added: Up Next - auto-play next episode for TV series
-- Added: Skip Intro prompt during first 90 seconds of TV episodes
-- Removed: repository.gujal from repo
-
-v2.1.0 (2026)
-- Added 34+ scrapers including Russian, Chinese, Anime sources
-- Fixed TMDB integration with native urllib
-
-v2.0.0 (2026)
-- Complete rewrite for Kodi 21+ (Python 3)
-- Added modern torrent scrapers
-- Added Jackett integration
-- Added Real-Debrid, Premiumize, AllDebrid support
-        </news>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-</addon>
-
-<addon id="plugin.video.strikezone" name="Strike Zone" version="1.2.5" provider-name="zeus768">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.resolveurl" optional="true"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en_GB">Strike Zone by zeus768 - Watch Fight Replays</summary>
-        <description lang="en_GB">Watch UFC, MMA, Boxing, Kickboxing, and more fight replays. Features include:\n- Auto-scrape all categories from FullFightReplays\n- Infinite scroll pagination\n- Search functionality\n- Local favourites\n- Fight metadata and thumbnails\n- Multiple video sources with ResolveURL\n- Custom category images support</description>
-        <disclaimer lang="en_GB">This addon does not host any content. All videos are third-party links available free on the Internet.</disclaimer>
-        <platform>all</platform>
-        <license>GPL-3.0</license>
-        <website>https://fullfightreplays.com</website>
-        <source>https://github.com/zeus768/plugin.video.strikezone</source>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
@@ -139,8 +71,7 @@ v2.0.0 (2026)
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Trakt Player - Click and Play</summary>
-        <description lang="en">Trakt Player - Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next, Continue Watching, Discovery Feed (trailer scroll), AI Vibe Marathons, Personalized Recommendations, My Calendar, Watch History, Friends Activity, User Stats, Custom Lists, Popular Community Lists, Cached Torrent Indicator, Rate on Trakt, Debrid Account Status. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox. 5 torrent scrapers. Native urllib for Kodi 21+.</description>
-        <news>[2.1.0] Discovery Feed with 6 modes (trending trailers, marathon mode). Friends activity feed. User stats dashboard. Custom Trakt lists. Cached torrent indicator. AI vibe marathons. Fixed service startup crash. Visual overhaul with addon fanart on all menus.</news>
+        <description lang="en">Trakt Player - Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play, Trakt Scrobbling, Up Next, Discovery Feed, AI Vibe Marathons, Recommendations, Calendar, Friends Activity, User Stats, Custom Lists. Supports Real-Debrid, Premiumize, AllDebrid, TorBox.</description>
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <assets>
@@ -150,7 +81,7 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="9.2.0" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="9.2.2" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.media"/>
@@ -163,8 +94,8 @@ v2.0.0 (2026)
     <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
-        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support. Fully compatible with Kodi 21 Omega.</description>
-        <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon. The author does not have any affiliation with the content provider.</disclaimer>
+        <description lang="en">Genesis - Your ultimate streaming addon for Movies and TV Shows with torrent support. Features Meteor, Streamthru, Torz, and Webstreamr scrapers. Fully compatible with Kodi 21 Omega.</description>
+        <disclaimer lang="en">The author does not host or distribute any of the content displayed by this addon.</disclaimer>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
@@ -173,7 +104,7 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="script.genesis.media" version="2026.04.04" name="Genesis Themepak" provider-name="zeus768">
+<addon id="script.genesis.media" version="9.2.2" name="Genesis Themepak" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -182,7 +113,7 @@ v2.0.0 (2026)
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary>Themes for Genesis</summary>
-        <description>Themes for Genesis.</description>
+        <description>Themes and media resources for Genesis addon.</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
@@ -191,30 +122,73 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="repository.zeus768" name="Zeus768 Repository" version="1.1.0" provider-name="zeus768, [COLOR red]The Red Wizard[/COLOR]">
+<addon id="plugin.video.poseidonplayer" name="Poseidon Player" version="2.3.0" provider-name="poseidon12">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Premium Xtream Codes IPTV Player with Poseidon Guide EPG Grid</summary>
+        <description lang="en">Poseidon Player - Premium IPTV experience with EPG Grid, TV Guide, Live TV, Movies (VOD), TV Series, Favorites, Search, Recently Watched, Catch-up TV, Reminders, and IPTV Manager Integration. Powered by Xtream Codes API.</description>
+        <disclaimer lang="en">Poseidon Player does not provide any content. You must provide your own Xtream Codes credentials.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="program.poseidonguide" name="Poseidon Guide" version="1.1.0" provider-name="poseidon12">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+        <import addon="plugin.video.poseidonplayer" version="2.2.0"/>
+    </requires>
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">EPG Grid Guide for Poseidon Player</summary>
+        <description lang="en">Poseidon Guide - Full EPG grid view for Poseidon Player with channel numbers, icons and names.</description>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="repository.zeus768" name="Zeus768 Repository" version="1.1.1" provider-name="zeus768, [COLOR red]The Red Wizard[/COLOR]">
     <extension point="xbmc.addon.repository" name="Zeus768 Repository">
-        <dir><!--Zeus768 Repository-->
+        <dir>
             <info compressed="false">https://raw.githubusercontent.com/Zeus768/zeus768/main/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/Zeus768/zeus768/main/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/Zeus768/zeus768/main/zips/</datadir>
         </dir>
-		<dir><!--ResolveURL Repository-->
-			<info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
-			<checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
-			<datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
-		</dir>
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
+        </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary>Zeus768 Repository - Kodi Addons</summary>
         <description>Zeus768's Kodi Addon Repository.
 
 Available Addons:
-- Genesis - Stream Movies and TV Shows with torrent support
-- SALTS (Stream All The Sources) - 35+ scrapers, Free Streams, Autoplay, Up Next, Skip Intro, Trakt, Debrid Support
-- Trakt Player - Click and Play, Torrent-only, Debrid-powered (RD, PM, AD, TorBox)
-- Orion - Torrent and Usenet Indexer
-- Strike Zone - Sports Streaming Add-on
-- The Accountant - Kodi Maintenance and Debrid Management Tool
+- Genesis - Stream Movies and TV Shows
+- SALTS (Stream All The Sources) - 35+ scrapers, Debrid, Trakt
+- Trakt Player - Click and Play, Debrid-powered
+- Orion - Media Explorer with Torrent Scrapers
+- Poseidon Player - Premium IPTV Player with EPG
+- Poseidon Guide - EPG Grid for Poseidon Player
+- The Accountant - Kodi Maintenance Suite
 - Genesis Themepak - Themes for Genesis
 - ResolveURL - URL Resolver Module</description>
         <platform>all</platform>

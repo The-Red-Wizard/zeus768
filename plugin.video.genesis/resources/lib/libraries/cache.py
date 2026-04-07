@@ -20,6 +20,7 @@
 
 
 import re,hashlib,time, json
+import sys
 
 try:
     from sqlite3 import dbapi2 as database
@@ -27,7 +28,6 @@ except:
     from pysqlite2 import dbapi2 as database
 
 from resources.lib.libraries import control
-
 
 
 def get(function, timeout, *args, **table):
@@ -38,7 +38,12 @@ def get(function, timeout, *args, **table):
         f = re.sub('.+\smethod\s|.+function\s|\sat\s.+|\sof\s.+', '', f)
 
         a = hashlib.md5()
-        for i in args: a.update(str(i))
+        for i in args:
+            # Python 3 requires bytes for md5.update()
+            if sys.version_info[0] >= 3:
+                a.update(str(i).encode('utf-8'))
+            else:
+                a.update(str(i))
         a = str(a.hexdigest())
     except:
         pass

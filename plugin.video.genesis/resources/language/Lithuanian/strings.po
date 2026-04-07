@@ -1,12 +1,12 @@
-# Addon Name: Specto
-# Addon id: plugin.video.specto
-# Addon Provider: Specto
+# Addon Name: Genesis
+# Addon id: plugin.video.genesis
+# Addon Provider: Genesis
 # Translators:
 # Translators:
 # Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: Specto\n"
+"Project-Id-Version: Genesis\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: 2017-04-03 14:00+0300\n"
 "Language-Team: English (http://www.transifex.com/tv-addons/genesis/language/"
@@ -33,8 +33,8 @@ msgid "Channels"
 msgstr "Kanalai"
 
 msgctxt "#30004"
-msgid "My Specto"
-msgstr "Mano Specto"
+msgid "My Genesis"
+msgstr "Mano Genesis"
 
 msgctxt "#30005"
 msgid "Latest Movies"
@@ -293,36 +293,36 @@ msgid "[B]HOSTS[/B] : SD Priority"
 msgstr "[B]SERVERIAI[/B] : SD Prioritetas"
 
 msgctxt "#30119"
-msgid "[B]Specto[/B] : Clear sources..."
-msgstr "[B]Specto[/B] : išvalyti šaltinius..."
+msgid "[B]Genesis[/B] : Clear sources..."
+msgstr "[B]Genesis[/B] : išvalyti šaltinius..."
 
 msgctxt "#30120"
-msgid "[B]Specto[/B] : Clear cache..."
-msgstr "[B]Specto[/B] : išvalyti podėlį..."
+msgid "[B]Genesis[/B] : Clear cache..."
+msgstr "[B]Genesis[/B] : išvalyti podėlį..."
 
 msgctxt "#30121"
-msgid "[B]Specto[/B] : Library"
-msgstr "[B]Specto[/B] : biblioteka"
+msgid "[B]Genesis[/B] : Library"
+msgstr "[B]Genesis[/B] : biblioteka"
 
 msgctxt "#30122"
-msgid "[B]Specto[/B] : Downloads"
-msgstr "[B]Specto[/B] : Atsiuntimai"
+msgid "[B]Genesis[/B] : Downloads"
+msgstr "[B]Genesis[/B] : Atsiuntimai"
 
 msgctxt "#30131"
 msgid "[B]LIBRARY[/B] : Settings"
 msgstr "[B]BIBLIOTEKA[/B] : Nustatymai"
 
 msgctxt "#30132"
-msgid "[B]Specto[/B] : Update folders..."
-msgstr "[B]Specto[/B] : atnaujinti aplankus..."
+msgid "[B]Genesis[/B] : Update folders..."
+msgstr "[B]Genesis[/B] : atnaujinti aplankus..."
 
 msgctxt "#30133"
-msgid "[B]Specto[/B] : Movie folder..."
-msgstr "[B]Specto[/B] : perkelti aplanką..."
+msgid "[B]Genesis[/B] : Movie folder..."
+msgstr "[B]Genesis[/B] : perkelti aplanką..."
 
 msgctxt "#30134"
-msgid "[B]Specto[/B] : TV folder..."
-msgstr "[B]Specto[/B] : TV aplankas..."
+msgid "[B]Genesis[/B] : TV folder..."
+msgstr "[B]Genesis[/B] : TV aplankas..."
 
 msgctxt "#30135"
 msgid "[B]TRAKT[/B] : Import Collection..."
@@ -1042,9 +1042,9 @@ msgstr "Biblioteka"
 
 msgctxt "#30921"
 msgid ""
-"Specto folderswill be imported to library if they are added to media sources."
+"Genesis folderswill be imported to library if they are added to media sources."
 msgstr ""
-"Jei Specto aplankai pridėti į media šaltinius, jie bus importuoti į "
+"Jei Genesis aplankai pridėti į media šaltinius, jie bus importuoti į "
 "biblioteką."
 
 msgctxt "#30922"
@@ -1124,8 +1124,8 @@ msgid "Trakt Account Authorization"
 msgstr "Trakt paskyros autorizavimas"
 
 msgctxt "#31162"
-msgid "To authorize SPECTO to access your trakt.tv account:"
-msgstr "Leisti SPECTO pasiekti mano trakt.tv paskyrą:"
+msgid "To authorize GENESIS to access your trakt.tv account:"
+msgstr "Leisti GENESIS pasiekti mano trakt.tv paskyrą:"
 
 msgctxt "#31163"
 msgid ""
@@ -1136,8 +1136,8 @@ msgstr ""
 "nuskenuokite QR kodą."
 
 msgctxt "#31164"
-msgid "2) If prompted, authorize SPECTO to access your account."
-msgstr "2) Jei paprašys, leiskite SPECTO pasiekti paskyrą."
+msgid "2) If prompted, authorize GENESIS to access your account."
+msgstr "2) Jei paprašys, leiskite GENESIS pasiekti paskyrą."
 
 msgctxt "#31165"
 msgid "3) Enter the PIN provided in the box below."
@@ -1145,11 +1145,11 @@ msgstr "3) Įveskite PIN iš žemiau esančio langelio."
 
 msgctxt "#31166"
 msgid ""
-"SPECTO can be used without a trakt.tv account, but to take full advantage of "
-"SPECTO you should authorize it to access your trakt.tv account."
+"GENESIS can be used without a trakt.tv account, but to take full advantage of "
+"GENESIS you should authorize it to access your trakt.tv account."
 msgstr ""
-"Galima SPECTO naudoti ir be trakt.tv paskyros, bet norint išnaudoti visas "
-"SPECTO galimybes turėtumėte susieti trakt.tv paskyrą."
+"Galima GENESIS naudoti ir be trakt.tv paskyros, bet norint išnaudoti visas "
+"GENESIS galimybes turėtumėte susieti trakt.tv paskyrą."
 
 msgctxt "#31167"
 msgid "Authorize"
@@ -1196,8 +1196,8 @@ msgid "A RealDebrid account already exists"
 msgstr "RealDebrid paskyra jau yra"
 
 msgctxt "#32412"
-msgid "After reset, save Specto settings"
-msgstr "Po atstatymo, išsaugoti Specto nustatymus"
+msgid "After reset, save Genesis settings"
+msgstr "Po atstatymo, išsaugoti Genesis nustatymus"
 
 msgctxt "#32413"
 msgid "Do you want to reset?"

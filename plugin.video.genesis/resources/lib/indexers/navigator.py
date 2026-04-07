@@ -18,6 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
 import os,sys
 import time

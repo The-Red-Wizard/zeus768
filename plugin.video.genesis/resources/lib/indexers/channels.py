@@ -18,8 +18,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import sys,re,json,urllib,urlparse,datetime
+import sys,re,json,datetime
+
+# Python 2/3 compatible imports
+try:
+    import urllib
+    import urlparse
+except ImportError:
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
 
 from resources.lib.libraries import control
 from resources.lib.libraries import client
@@ -214,7 +224,7 @@ class channels:
                 if banner == '0' and poster == '0': banner = addonBanner
                 elif banner == '0': banner = poster
 
-                meta = dict((k,v) for k, v in i.iteritems() if not v == '0')
+                meta = dict((k,v) for k, v in i.items() if not v == '0')
                 meta.update({'trailer': '%s?action=trailer&name=%s' % (sysaddon, sysname)})
                 if i['duration'] == '0': meta.update({'duration': '120'})
                 try: meta.update({'duration': str(int(meta['duration']) * 60)})

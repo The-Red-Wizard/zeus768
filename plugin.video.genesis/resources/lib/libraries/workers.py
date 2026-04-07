@@ -28,5 +28,9 @@ class Thread(threading.Thread):
         self._args = args
         threading.Thread.__init__(self)
     def run(self):
-        self._target(*self._args)
+        if self._target is not None:
+            try:
+                self._target(*self._args)
+            except Exception as e:
+                pass  # Silently handle thread errors to prevent crashes
 

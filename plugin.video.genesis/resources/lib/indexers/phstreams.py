@@ -19,8 +19,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import os,re,sys,urllib,urlparse
+import os,re,sys
+
+# Python 2/3 compatible imports
+try:
+    import urllib
+    import urlparse
+except ImportError:
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
 
 from resources.lib.libraries import cache
 from resources.lib.libraries import cachemeta
@@ -563,8 +573,8 @@ def resolveUrl(name, url, audio, image, fanart, playable, content):
 
             elif type(url) == list:
                 url = sorted(url, key=lambda k: k['quality'])
-                for i in url: i.update((k, '720p') for k, v in i.iteritems() if v == 'HD')
-                for i in url: i.update((k, '480p') for k, v in i.iteritems() if v == 'SD')
+                for i in url: i.update((k, '720p') for k, v in i.items() if v == 'HD')
+                for i in url: i.update((k, '480p') for k, v in i.items() if v == 'SD')
                 q = ['[B]%s[/B] | %s' % (i['source'].upper(), i['quality'].upper()) for i in url]
                 u = [i['url'] for i in url]
                 select = control.selectDialog(q)
@@ -583,8 +593,8 @@ def resolveUrl(name, url, audio, image, fanart, playable, content):
 
         elif type(url) == list:
             url = sorted(url, key=lambda k: k['quality'])
-            for i in url: i.update((k, '720p') for k, v in i.iteritems() if v == 'HD')
-            for i in url: i.update((k, '480p') for k, v in i.iteritems() if v == 'SD')
+            for i in url: i.update((k, '720p') for k, v in i.items() if v == 'HD')
+            for i in url: i.update((k, '480p') for k, v in i.items() if v == 'SD')
             q = ['[B]%s[/B] | %s' % (host.upper(), i['quality'].upper()) for i in url]
             u = [i['url'] for i in url]
             select = control.selectDialog(q)

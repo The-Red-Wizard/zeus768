@@ -18,8 +18,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import os,sys,re,json,zipfile,StringIO,urllib,urllib2,urlparse,base64,datetime
+import os,sys,re,json,zipfile,base64,datetime
+
+# Python 2/3 compatible imports
+try:
+    import StringIO
+    import urllib
+    import urllib2
+    import urlparse
+except ImportError:
+    import io as StringIO
+    import urllib.parse as urllib
+    import urllib.request as urllib2
+    import urllib.parse as urlparse
 
 from resources.lib.libraries import trakt
 from resources.lib.libraries import cleantitle
@@ -475,7 +489,7 @@ class seasons:
                 if thumb == '0' and poster == '0': thumb = addonPoster
                 elif thumb == '0': thumb = poster
 
-                meta = dict((k,v) for k, v in i.iteritems() if not v == '0')
+                meta = dict((k,v) for k, v in i.items() if not v == '0')
                 meta.update({'trailer': '%s?action=trailer&name=%s' % (sysaddon, sysname)})
                 if i['duration'] == '0': meta.update({'duration': '60'})
                 try: meta.update({'duration': str(int(meta['duration']) * 60)})
@@ -1524,7 +1538,7 @@ class episodes:
                 if thumb == '0' and fanart == '0': thumb = addonFanart
                 elif thumb == '0': thumb = fanart
 
-                meta = dict((k,v) for k, v in i.iteritems() if not v == '0')
+                meta = dict((k,v) for k, v in i.items() if not v == '0')
                 meta.update({'trailer': '%s?action=trailer&name=%s' % (sysaddon, sysname)})
                 if i['duration'] == '0': meta.update({'duration': '60'})
                 try: meta.update({'duration': str(int(meta['duration']) * 60)})

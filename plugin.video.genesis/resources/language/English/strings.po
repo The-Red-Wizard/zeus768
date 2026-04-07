@@ -1,12 +1,12 @@
-# Addon Name: Specto
-# Addon id: plugin.video.specto
-# Addon Provider: Specto
+# Addon Name: Genesis
+# Addon id: plugin.video.genesis
+# Addon Provider: zeus768
 # Translators:
 # Translators:
 # Translators:
 msgid ""
 msgstr ""
-"Project-Id-Version: Specto\n"
+"Project-Id-Version: Genesis\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: 2015-10-05 02:21+0000\n"
 "Last-Translator: lambda81\n"
@@ -30,8 +30,8 @@ msgid "Channels"
 msgstr "Channels"
 
 msgctxt "#30004"
-msgid "My Specto"
-msgstr "My Specto"
+msgid "My Genesis"
+msgstr "My Genesis"
 
 msgctxt "#30005"
 msgid "Latest Movies"
@@ -290,36 +290,36 @@ msgid "[B]HOSTS[/B] : SD Priority"
 msgstr "[B]HOSTS[/B] : SD Priority"
 
 msgctxt "#30119"
-msgid "[B]Specto[/B] : Clear sources..."
-msgstr "[B]Specto[/B] : Clear sources..."
+msgid "[B]Genesis[/B] : Clear sources..."
+msgstr "[B]Genesis[/B] : Clear sources..."
 
 msgctxt "#30120"
-msgid "[B]Specto[/B] : Clear cache..."
-msgstr "[B]Specto[/B] : Clear cache..."
+msgid "[B]Genesis[/B] : Clear cache..."
+msgstr "[B]Genesis[/B] : Clear cache..."
 
 msgctxt "#30121"
-msgid "[B]Specto[/B] : Library"
-msgstr "[B]Specto[/B] : Library"
+msgid "[B]Genesis[/B] : Library"
+msgstr "[B]Genesis[/B] : Library"
 
 msgctxt "#30122"
-msgid "[B]Specto[/B] : Downloads"
-msgstr "[B]Specto[/B] : Downloads"
+msgid "[B]Genesis[/B] : Downloads"
+msgstr "[B]Genesis[/B] : Downloads"
 
 msgctxt "#30131"
 msgid "[B]LIBRARY[/B] : Settings"
 msgstr "[B]LIBRARY[/B] : Settings"
 
 msgctxt "#30132"
-msgid "[B]Specto[/B] : Update folders..."
-msgstr "[B]Specto[/B] : Update folders..."
+msgid "[B]Genesis[/B] : Update folders..."
+msgstr "[B]Genesis[/B] : Update folders..."
 
 msgctxt "#30133"
-msgid "[B]Specto[/B] : Movie folder..."
-msgstr "[B]Specto[/B] : Movie folder..."
+msgid "[B]Genesis[/B] : Movie folder..."
+msgstr "[B]Genesis[/B] : Movie folder..."
 
 msgctxt "#30134"
-msgid "[B]Specto[/B] : TV folder..."
-msgstr "[B]Specto[/B] : TV folder..."
+msgid "[B]Genesis[/B] : TV folder..."
+msgstr "[B]Genesis[/B] : TV folder..."
 
 msgctxt "#30135"
 msgid "[B]TRAKT[/B] : Import Collection..."
@@ -347,7 +347,7 @@ msgstr "[B]IMDB[/B] : Import TV Watchlist..."
 
 msgctxt "#30141"
 msgid "[B]DIAGNOSTIC[/B] : Log uploader"
-msgstr ""
+msgstr "[B]DIAGNOSTIC[/B] : Log uploader"
 
 msgctxt "#30142"
 msgid "Authorization..."
@@ -1039,9 +1039,9 @@ msgstr "Library"
 
 msgctxt "#30921"
 msgid ""
-"Specto folders will be imported to library if they are added to media "
+"Genesis folders will be imported to library if they are added to media "
 "sources."
-msgstr "Specto folders will be imported to library if they are added to media sources."
+msgstr "Genesis folders will be imported to library if they are added to media sources."
 
 msgctxt "#30922"
 msgid "Movies"
@@ -1117,51 +1117,51 @@ msgstr "TV"
 
 msgctxt "#31161"
 msgid "Trakt Account Authorization"
-msgstr ""
+msgstr "Trakt Account Authorization"
 
 msgctxt "#31162"
-msgid "To authorize SPECTO to access your trakt.tv account:"
-msgstr ""
+msgid "To authorize GENESIS to access your trakt.tv account:"
+msgstr "To authorize GENESIS to access your trakt.tv account:"
 
 msgctxt "#31163"
 msgid "1) Visit [COLOR skyblue]http://trakt.tv/pin/8219[/COLOR] or scan the QR Code below."
-msgstr ""
+msgstr "1) Visit [COLOR skyblue]http://trakt.tv/pin/8219[/COLOR] or scan the QR Code below."
 
 msgctxt "#31164"
-msgid "2) If prompted, authorize SPECTO to access your account."
-msgstr ""
+msgid "2) If prompted, authorize GENESIS to access your account."
+msgstr "2) If prompted, authorize GENESIS to access your account."
 
 msgctxt "#31165"
 msgid "3) Enter the PIN provided in the box below."
-msgstr ""
+msgstr "3) Enter the PIN provided in the box below."
 
 msgctxt "#31166"
-msgid "SPECTO can be used without a trakt.tv account, but to take full advantage of SPECTO you should authorize it to access your trakt.tv account."
-msgstr ""
+msgid "GENESIS can be used without a trakt.tv account, but to take full advantage of GENESIS you should authorize it to access your trakt.tv account."
+msgstr "GENESIS can be used without a trakt.tv account, but to take full advantage of GENESIS you should authorize it to access your trakt.tv account."
 
 msgctxt "#31167"
 msgid "Authorize"
-msgstr ""
+msgstr "Authorize"
 
 msgctxt "#31168"
 msgid "Remind Me Later"
-msgstr ""
+msgstr "Remind Me Later"
 
 msgctxt "#31169"
 msgid "No Thanks"
-msgstr ""
+msgstr "No Thanks"
 
 msgctxt "#31170"
 msgid "Trakt.tv PIN Authorization Failed"
-msgstr ""
+msgstr "Trakt.tv PIN Authorization Failed"
 
 msgctxt "#31171"
 msgid "You will be reminded in 24 hours"
-msgstr ""
+msgstr "You will be reminded in 24 hours"
 
 msgctxt "#31172"
 msgid "Use Addon Settings later if you change your mind"
-msgstr ""
+msgstr "Use Addon Settings later if you change your mind"
 
 msgctxt "#31173"
 msgid "Trakt Authorization Complete"
@@ -1181,35 +1181,35 @@ msgstr "Trakt Timeout"
 
 msgctxt "#32411"
 msgid "A RealDebrid account already exists"
-msgstr ""
+msgstr "A RealDebrid account already exists"
 
 msgctxt "#32412"
-msgid "After reset, save Specto settings"
-msgstr ""
+msgid "After reset, save Genesis settings"
+msgstr "After reset, save Genesis settings"
 
 msgctxt "#32413"
 msgid "Do you want to reset?"
-msgstr ""
+msgstr "Do you want to reset?"
 
 msgctxt "#32414"
 msgid "Yes"
-msgstr ""
+msgstr "Yes"
 
 msgctxt "#32415"
 msgid "No"
-msgstr ""
+msgstr "No"
 
 msgctxt "#32511"
 msgid "An account already exists."
-msgstr ""
+msgstr "An account already exists."
 
 msgctxt "#32512"
 msgid "Do you want to reset?"
-msgstr ""
+msgstr "Do you want to reset?"
 
 msgctxt "#33001"
-msgid "Authoriztaion..."
-msgstr ""
+msgid "Authorization..."
+msgstr "Authorization..."
 
 msgctxt "#33002"
 msgid "Set download folder location"
@@ -1218,60 +1218,59 @@ msgstr "Set download folder location"
 msgctxt "#33003"
 msgid "Trailer"
 msgstr "Trailer"
+
 msgctxt "#32011"
 msgid "Error posting the crashlog file"
-msgstr ""
+msgstr "Error posting the crashlog file"
 
 msgctxt "#32012"
 msgid "Error posting the old file"
-msgstr ""
+msgstr "Error posting the old file"
 
 msgctxt "#32005"
-msgid "Post this paste url for your %s, together with a problem description, on the Mrknow support forum:[CR]%s"
-msgstr ""
+msgid "Post this paste url for your %s, together with a problem description, on the Genesis support forum:[CR]%s"
+msgstr "Post this paste url for your %s, together with a problem description, on the Genesis support forum:[CR]%s"
 
 msgctxt "#32031"
 msgid "logfile"
-msgstr ""
+msgstr "logfile"
 
 msgctxt "#32032"
 msgid "old log"
-msgstr ""
-
+msgstr "old log"
 
 msgctxt "#32021"
 msgid "No old log file found"
-msgstr ""
+msgstr "No old log file found"
 
 msgctxt "#32001"
 msgid "The file is empty"
-msgstr ""
+msgstr "The file is empty"
 
 msgctxt "#32002"
 msgid "Failed to read the file"
-msgstr ""
+msgstr "Failed to read the file"
 
 msgctxt "#32003"
 msgid "Failed to connect to the server"
-msgstr ""
+msgstr "Failed to connect to the server"
 
 msgctxt "#32004"
 msgid "Failed to retrieve the paste url"
-msgstr ""
+msgstr "Failed to retrieve the paste url"
 
 msgctxt "#32006"
 msgid "Opensubtitles username"
-msgstr ""
+msgstr "Opensubtitles username"
 
 msgctxt "#32007"
 msgid "Opensubtitles password"
-msgstr ""
+msgstr "Opensubtitles password"
 
 msgctxt "#32008"
 msgid "Opensubtitles Login Details"
-msgstr ""
+msgstr "Opensubtitles Login Details"
 
 msgctxt "#32020"
 msgid "You have to set your clock in your tv box."
 msgstr "You have to set your clock in your tv box."
-

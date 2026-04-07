@@ -18,8 +18,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
-import json,urlparse,base64
+import json,base64
 import re, time
 
 from resources.lib.libraries import cache

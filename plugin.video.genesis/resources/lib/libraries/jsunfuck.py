@@ -106,7 +106,7 @@ class JSUnfuck(object):
                 break
 
     def repl_uniqs(self, uniqs):
-        for key, value in uniqs.iteritems():
+        for key, value in uniqs.items():
             if key in self.js:
                 if value == 1:
                     self.__handle_tostring()

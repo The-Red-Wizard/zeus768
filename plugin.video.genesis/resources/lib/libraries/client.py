@@ -18,9 +18,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import re,sys,urllib2,urllib, urlparse
-import xbmc, random, time, cookielib
+import re,sys
+import xbmc, random, time
+
+# Python 2/3 compatible imports
+try:
+    import urllib2
+    import urllib
+    import urlparse
+    import cookielib
+except ImportError:
+    import urllib.request as urllib2
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
+    import http.cookiejar as cookielib
+
 import gzip
 
 try:

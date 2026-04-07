@@ -18,9 +18,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import sys,pkgutil,re,json,urllib,urlparse,datetime,time
+import sys,pkgutil,re,json,datetime,time
 from functools import reduce
+
+# Python 2/3 compatible imports
+try:
+    import urllib
+    import urlparse
+except ImportError:
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
 
 try: import xbmc
 except: pass

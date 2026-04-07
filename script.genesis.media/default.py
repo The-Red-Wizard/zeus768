@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Specto Add-on
-    Copyright (C) 2016 Mrknow
+    Genesis Add-on
+    Copyright (C) 2026 zeus768
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,6 +42,5 @@ def openSettings(query=None, id=addonInfo('id')):
         return
 
 
-openSettings(query='0.1', id='plugin.video.specto')
-
+openSettings(query='0.1', id='plugin.video.genesis')
 

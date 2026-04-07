@@ -18,6 +18,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility
+import sys
+if sys.version_info[0] >= 3:
+    string_types = str
+    xrange = range
+else:
+    string_types = basestring
+    xrange = xrange
 
 import os,xbmc,xbmcaddon,xbmcplugin,xbmcgui,xbmcvfs
 import base64
@@ -253,7 +261,7 @@ def openSettings(query=None, id=addonInfo('id')):
 
 
 def set_setting(id, value):
-    if not isinstance(value, basestring): value = str(value)
+    if not isinstance(value, string_types): value = str(value)
     ptv.setSetting(id=id, value=value)
 
 def log(msg, level=None):

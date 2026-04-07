@@ -43,7 +43,7 @@ def resolve(url):
             result = result['streams']
         except:
             result = result['data']['streams']
-            result = [i[1] for i in result.iteritems()]
+            result = [i[1] for i in result.items()]
 
         strm = [(i['url'], int(i['watch-timeout'])) for i in result]
         strm = [i for i in strm if '.m3u8' in i[0]]

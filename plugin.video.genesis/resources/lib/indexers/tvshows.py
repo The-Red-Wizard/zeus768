@@ -18,8 +18,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import os,sys,re,json,urllib,urlparse,base64,datetime
+import os,sys,re,json,base64,datetime
+
+# Python 2/3 compatible imports
+try:
+    import urllib
+    import urlparse
+except ImportError:
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
 
 try: action = dict(urlparse.parse_qsl(sys.argv[2].replace('?','')))['action']
 except: action = None
@@ -208,6 +218,8 @@ class tvshows:
             url = self.persons_link % urllib.quote_plus(self.query)
             self.list = cache.get(self.tmdb_person_list, 0, url)
 
+            if self.list is None:
+                self.list = []
             for i in range(0, len(self.list)): self.list[i].update({'action': 'tvshows'})
             self.addDirectory(self.list)
             return self.list
@@ -337,6 +349,8 @@ class tvshows:
             pass
 
         self.list = userlists
+        if self.list is None:
+            self.list = []
         for i in range(0, len(self.list)): self.list[i].update({'image': 'tvUserlists.jpg', 'action': 'tvshows'})
         self.addDirectory(self.list)
         return self.list
@@ -1147,7 +1161,7 @@ class tvshows:
                 elif banner == '0': banner = poster
 
 
-                meta = dict((k,v) for k, v in i.iteritems() if not v == '0')
+                meta = dict((k,v) for k, v in i.items() if not v == '0')
                 meta.update({'trailer': '%s?action=trailer&name=%s' % (sysaddon, sysname)})
                 if i['duration'] == '0': meta.update({'duration': '60'})
                 try: meta.update({'duration': str(int(meta['duration']) * 60)})

@@ -18,12 +18,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+# Python 2/3 compatibility - must be FIRST
+from resources.lib.libraries import py3compat
 
-import os,sys,re,json,urllib,urlparse,datetime
+import os,sys,re,json,datetime
 import re
 import base64
 
-try: action = dict(urlparse.parse_qsl(sys.argv[2].replace('?','')))['action']
+# Python 2/3 compatibility
+try:
+    from urllib import quote_plus, urlencode
+    from urlparse import urlparse, parse_qsl, urlsplit
+    import urllib
+    import urlparse
+except ImportError:
+    from urllib.parse import quote_plus, urlencode, urlparse, parse_qsl, urlsplit
+    import urllib.parse as urllib
+    import urllib.parse as urlparse
+
+try: action = dict(parse_qsl(sys.argv[2].replace('?','')))['action']
 except: action = None
 
 from resources.lib.libraries import trakt
@@ -220,6 +233,8 @@ class movies:
             url = self.persons_link % urllib.quote_plus(self.query)
             self.list = cache.get(self.imdb_person_list, 0, url)
 
+            if self.list is None:
+                self.list = []
             for i in range(0, len(self.list)): self.list[i].update({'action': 'movies'})
             self.addDirectory(self.list)
             return self.list
@@ -262,6 +277,8 @@ class movies:
             url = self.certifications_link
             self.list = cache.get(self.tmdb_certification_list, 24, url)
 
+            if self.list is None:
+                self.list = []
             for i in range(0, len(self.list)): self.list[i].update({'image': 'movieCertificates.jpg', 'action': 'movies'})
             self.addDirectory(self.list)
             return self.list
@@ -277,7 +294,10 @@ class movies:
 
     def persons(self):
         self.list = cache.get(self.imdb_person_list, 24, self.personlist_link)
-        for i in range(0, len(self.list)): self.list[i].update({'action': 'movies'})
+        if self.list is None:
+            self.list = []
+        if len(self.list) > 0:
+            for i in range(0, len(self.list)): self.list[i].update({'action': 'movies'})
         self.addDirectory(self.list)
         return self.list
 
@@ -318,6 +338,8 @@ class movies:
             pass
 
         self.list = userlists
+        if self.list is None:
+            self.list = []
         for i in range(0, len(self.list)): self.list[i].update({'image': 'userlists.png', 'action': 'movies'})
         #self.addDirectory(self.list, queue=True)
         self.addDirectory(self.list)
@@ -1043,7 +1065,7 @@ class movies:
                 elif banner == '0': banner = poster
 
 
-                meta = dict((k,v) for k, v in i.iteritems() if not v == '0')
+                meta = dict((k,v) for k, v in i.items() if not v == '0')
                 meta.update({'trailer': '%s?action=trailer&name=%s' % (sysaddon, sysname)})
                 if i['duration'] == '0': meta.update({'duration': '120'})
                 try: meta.update({'duration': str(int(meta['duration']) * 60)})

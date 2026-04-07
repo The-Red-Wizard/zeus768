@@ -47,7 +47,7 @@ def fetch(items, lang):
             if update == True: raise Exception()
 
             item = eval(match[4])
-            item = dict((k,v) for k, v in item.iteritems() if not v == '0')
+            item = dict((k,v) for k, v in item.items() if not v == '0')
 
             try: items[i].update({'poster': item['poster']})
             except: pass
@@ -57,7 +57,7 @@ def fetch(items, lang):
                 try: items[i].update({'fanart': item['fanart']})
                 except: pass
 
-            item = dict((k,v) for k, v in item.iteritems() if not k == 'fanart')
+            item = dict((k,v) for k, v in item.items() if not k == 'fanart')
             items[i].update(item)
 
             items[i].update({'metacache': True})
