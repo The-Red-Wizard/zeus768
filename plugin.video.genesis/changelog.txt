@@ -1,6 +1,13 @@
 Genesis Changelog
 ==================
 
+Version 9.4.1 (February 2026 - Debrid & Trakt Auth Fix)
+- FIXED: All debrid authorization dialogs (Real-Debrid, Premiumize, AllDebrid, TorBox) now show pairing codes
+- FIXED: Trakt authorization dialog now shows device code properly
+- FIXED: Root cause was Kodi 21 progressDialog.create() only accepts 2 args (heading, message), not 3+
+- FIXED: All source scraping progress dialogs updated for Kodi 19+ single-message API
+- FIXED: Settings focus navigation corrected for Debrid Services category (was pointing to wrong tab)
+
 Version 9.4.0 (February 2026 - TMDB/Trakt Migration - Categories Fixed)
 - FIXED: All movie categories now load (Popular, Trending, Box Office, Genres, Years, etc.)
 - FIXED: All TV show categories now load (Popular, Trending, Genres, Years, Networks, etc.)

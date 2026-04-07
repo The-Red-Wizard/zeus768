@@ -96,7 +96,7 @@ def authTrakt():
         interval = result['interval']
 
         progressDialog = control.progressDialog
-        progressDialog.create('Trakt', verification_url, user_code)
+        progressDialog.create('Trakt', verification_url + '\n' + user_code)
 
         for i in range(0, expires_in):
             try:
@@ -126,7 +126,7 @@ def authTrakt():
         control.set_setting('trakt.refresh', refresh)
         raise Exception()
     except:
-        control.openSettings('6.1')
+        control.openSettings('4.1')
 
 
 def getTraktCredentialsInfo():

@@ -57,7 +57,7 @@ def pmAuthorize():
         user_code_text = control.lang(30417) + '[COLOR skyblue]%s[/COLOR]' % user_code
 
         progressDialog = control.progressDialog
-        progressDialog.create('Premiumize', verification_text, user_code_text)
+        progressDialog.create('Premiumize', verification_text + '\n' + user_code_text)
 
         # Poll for authorization
         for i in range(0, expires_in, interval):
@@ -96,7 +96,7 @@ def pmAuthorize():
             pass
         
     except:
-        control.openSettings('3.14')
+        control.openSettings('4.5')
 
 
 def getUserInfo(token=None):

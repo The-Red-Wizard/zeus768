@@ -127,7 +127,7 @@ class sources:
             if self.sources == []: raise Exception()
             self.progressDialog = control.progressDialog
             self.progressDialog.create(control.addonInfo('name'), '')
-            self.progressDialog.update(0, control.lang(30515), str(' '))
+            self.progressDialog.update(0, control.lang(30515))
 
             self.sources = self.sourcesFilter()
             infoMenu = control.lang(30502) if content == 'movie' else control.lang(30503)
@@ -244,7 +244,7 @@ class sources:
 
             for i in range(len(items)):
                 try:
-                    self.progressDialog.update(int((100 / float(len(items))) * i), str(items[i]['label']), str(' '))
+                    self.progressDialog.update(int((100 / float(len(items))) * i), str(items[i]['label']))
 
                     if items[i]['source'] == block: raise Exception()
 
@@ -385,12 +385,12 @@ class sources:
                     string4 = string1 + ' %s' % str(int(i * 0.5))
                     if len(info) > 5: string5 = string3 + ' %s' % str(len(info))
                     else: string5 = string3 + ' %s'  % re.sub(r"[\[\]']", '', str(info))
-                    self.progressDialog.update(int((100 / float(len(threads))) * len([x for x in threads if x.is_alive() == False])), str(string4), str(string5))
+                    self.progressDialog.update(int((100 / float(len(threads))) * len([x for x in threads if x.is_alive() == False])), str(string4) + '\n' + str(string5))
                 except Exception as e:
                     string4 = string2 + ' %s'  % str(int(i * 0.5))
                     if len(info) > 5: string5 = string3 + ' %s'  % str(len(info))
                     else: string5 = re.sub(r"[\[\]']", '', str(info))
-                    self.progressDialog.update(int((100 / float(len(threads))) * len([x for x in threads if x.is_alive() == False])), str(string4), str(string5))
+                    self.progressDialog.update(int((100 / float(len(threads))) * len([x for x in threads if x.is_alive() == False])), str(string4) + '\n' + str(string5))
 
                 is_alive = [x.is_alive() for x in threads]
                 if all(x == False for x in is_alive): break
@@ -831,7 +831,7 @@ class sources:
                 try:
                     if self.progressDialog.iscanceled(): break
 
-                    self.progressDialog.update(int((100 / float(len(items))) * i), str(items[i]['label']), str(' '))
+                    self.progressDialog.update(int((100 / float(len(items))) * i), str(items[i]['label']))
 
                     if items[i]['source'] == block: raise Exception()
 
@@ -895,7 +895,7 @@ class sources:
             try:
                 if self.progressDialog.iscanceled(): break
 
-                self.progressDialog.update(int((100 / float(len(self.sources))) * i), str(self.sources[i]['label']), str(' '))
+                self.progressDialog.update(int((100 / float(len(self.sources))) * i), str(self.sources[i]['label']))
 
                 if xbmc.abortRequested == True: return sys.exit()
 

@@ -51,7 +51,7 @@ def rdAuthorize():
         interval = result['interval']
 
         progressDialog = control.progressDialog
-        progressDialog.create('Real-Debrid', verification_url, user_code)
+        progressDialog.create('Real-Debrid', verification_url + '\n' + user_code)
 
         for i in range(0, 3600):
             try:
@@ -87,7 +87,7 @@ def rdAuthorize():
         control.infoDialog('Authorization Successful', heading='Real-Debrid')
         raise Exception()
     except:
-        control.openSettings('3.13')
+        control.openSettings('4.3')
 
 
 def rdDict():

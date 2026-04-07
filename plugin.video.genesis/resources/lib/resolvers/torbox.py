@@ -39,7 +39,7 @@ def tbAuthorize():
         verification_url = control.lang(30416) + '[COLOR skyblue]https://torbox.app/settings[/COLOR]'
         instructions = 'Get your API key from TorBox settings and enter it below'
         
-        progressDialog.update(0, verification_url, instructions)
+        progressDialog.update(0, verification_url + '\n' + instructions)
 
         # Close progress and ask for API key
         time.sleep(2)
@@ -76,7 +76,7 @@ def tbAuthorize():
         control.infoDialog('Authorization Successful', heading='TorBox')
         
     except:
-        control.openSettings('3.16')
+        control.openSettings('4.9')
 
 
 def credentials():

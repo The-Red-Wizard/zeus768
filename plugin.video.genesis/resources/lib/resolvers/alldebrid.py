@@ -61,7 +61,7 @@ def adAuthorize():
         user_code = control.lang(30417) + '[COLOR skyblue]%s[/COLOR]' % pin
 
         progressDialog = control.progressDialog
-        progressDialog.create('AllDebrid', verification_url, user_code)
+        progressDialog.create('AllDebrid', verification_url + '\n' + user_code)
 
         # Poll for authorization
         for i in range(0, expires_in, 5):
@@ -102,7 +102,7 @@ def adAuthorize():
             pass
         
     except:
-        control.openSettings('3.15')
+        control.openSettings('4.7')
 
 
 def getUserInfo(api_key=None):
