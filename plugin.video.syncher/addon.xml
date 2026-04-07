@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.syncher" name="Syncher" version="2.0.0" provider-name="zeus768">
+<addon id="plugin.video.syncher" name="Syncher" version="2.0.1" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.0"/>
@@ -14,6 +14,9 @@
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <news>
+v2.0.1 (2026)
+- FIXED: Icon and fanart now display correctly in Kodi repo browser
+
 v2.0.0 (2026)
 - Initial release by zeus768
 - Trakt API powered browsing (Movies, TV Shows, Sports, Music)

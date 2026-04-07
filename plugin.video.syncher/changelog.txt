@@ -1,6 +1,9 @@
 Syncher Changelog
 ==================
 
+Version 2.0.1 (February 2026)
+- FIXED: Icon and fanart now display correctly in Kodi repo browser
+
 Version 2.0.0 (February 2026 - Full Rebuild by zeus768)
 - Complete rebuild from scratch
 - Trakt API powered browsing for Movies, TV Shows, Sports Highlights, Music

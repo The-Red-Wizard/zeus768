@@ -200,7 +200,7 @@ Available Addons:
     </extension>
 </addon>
 
-<addon id="plugin.video.syncher" name="Syncher" version="2.0.0" provider-name="zeus768">
+<addon id="plugin.video.syncher" name="Syncher" version="2.0.1" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.0"/>
