@@ -1,6 +1,27 @@
 Syncher Changelog
 ==================
 
+Version 3.4.0 (February 2026)
+- NEW: Podcasts section powered by iTunes Search API
+  * Top podcasts chart via Apple RSS
+  * Browse by 19 genres (Arts, Business, Comedy, Education, Fiction, etc.)
+  * Search podcasts by name
+  * Stream episodes directly via RSS feed parsing
+  * Episode metadata: dates, durations, artwork
+  * Direct audio playback of podcast episodes
+- NEW: Audiobooks section (LibriVox + Internet Archive)
+  * Popular audiobooks (sorted by downloads - Art of War, Alice in Wonderland, etc.)
+  * New arrivals from LibriVox
+  * Browse by 20 genres (Adventure, Biography, Crime, Fantasy, Horror, etc.)
+  * Search by title or author (dual-source: LibriVox + Internet Archive)
+  * Dedicated Internet Archive search (millions of free audiobooks)
+  * Chapter-by-chapter playback with duration display
+  * "Play All Chapters" for continuous listening
+  * Reader attribution on LibriVox chapters
+- Updated main menu: Movies, TV Shows, Sports, Music, Podcasts, Audiobooks
+- Updated search menu: includes podcast and audiobook search
+- AI features powered by Emergent Universal Key only (noted in changelog and addon)
+
 Version 3.3.0 (February 2026)
 - NEW: AI Daily Playlists powered by Emergent Universal Key
   * 14 rotating daily themes (Discovery, Chill Vibes, Throwback Classics, Workout Energy, Late Night Grooves, Feel Good Anthems, Indie Underground, Hip-Hop Essentials, Electronic Dreams, Acoustic Sessions, World Music Journey, Rock Revival, Jazz & Soul Cafe, Party Starters)

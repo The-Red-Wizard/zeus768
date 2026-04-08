@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Syncher v3.3.0 by zeus768
-Scene Release Streamer with Debrid, Trakt, Deezer Music, AI Playlists (Emergent), Radio
+Syncher v3.4.0 by zeus768
+Scene Release Streamer with Debrid, Trakt, Music (AI+Deezer+Radio), Podcasts, Audiobooks
 """
 
 import sys
@@ -165,11 +165,12 @@ def main_menu():
     add_dir('[COLOR gold]TV Shows[/COLOR]', 'tvmenu', image=control.addonIcon())
     add_dir('[COLOR gold]Sports Highlights[/COLOR]', 'sportsmenu', image=control.addonIcon())
     add_dir('[COLOR gold]Music[/COLOR]', 'musicmenu', image=control.addonIcon())
+    add_dir('[COLOR gold]Podcasts[/COLOR]', 'podcastmenu', image=control.addonIcon())
+    add_dir('[COLOR gold]Audiobooks[/COLOR]', 'audiobookmenu', image=control.addonIcon())
     add_dir('[COLOR skyblue]My Trakt[/COLOR]', 'traktmenu', image=control.addonIcon())
     add_dir('[COLOR skyblue]Search[/COLOR]', 'searchmenu', image=control.addonIcon())
     add_dir('[COLOR white]Settings[/COLOR]', 'settings', image=control.addonIcon(), is_folder=False)
 
-    # Info notice about debrid
     add_dir('[COLOR grey]INFO: Enable Debrid/TorBox/RapidRAR in Settings for best results[/COLOR]', 'settings', image=control.addonIcon(), is_folder=False)
 
     end_directory()
@@ -1124,6 +1125,325 @@ def play_radio(params):
     xbmcplugin.setResolvedUrl(HANDLE, True, li)
 
 # ============================================================
+# PODCASTS (Powered by iTunes Search API)
+# ============================================================
+
+def podcast_menu():
+    add_dir('[COLOR gold]Top Podcasts[/COLOR]', 'podcasttop', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Browse by Genre[/COLOR]', 'podcastgenres', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Search Podcasts[/COLOR]', 'podcastsearch', image=control.addonIcon())
+    end_directory()
+
+def podcast_top():
+    from resources.lib.modules import podcast_api
+    podcasts = podcast_api.get_top_podcasts()
+    _show_podcast_list(podcasts, from_top=True)
+
+def podcast_genres():
+    from resources.lib.modules import podcast_api
+    genres = podcast_api.get_genres()
+    for g in genres:
+        add_dir(g['name'], 'podcastbygenre', url=g['id'], image=control.addonIcon())
+    end_directory()
+
+def podcast_by_genre(params):
+    from resources.lib.modules import podcast_api
+    genre_id = params.get('url', '')
+    podcasts = podcast_api.get_top_by_genre(genre_id)
+    _show_podcast_list(podcasts)
+
+def podcast_search():
+    from resources.lib.modules import podcast_api
+    query = control.keyboard('', 'Search Podcasts')
+    if not query:
+        return
+    podcasts = podcast_api.search_podcasts(query)
+    _show_podcast_list(podcasts)
+
+def _show_podcast_list(podcasts, from_top=False):
+    """Display a list of podcasts"""
+    from resources.lib.modules import podcast_api
+    for p in podcasts:
+        label = p['name']
+        if p.get('artist'):
+            label += '  [COLOR grey]by %s[/COLOR]' % p['artist']
+        if p.get('episode_count'):
+            label += '  [COLOR grey](%s eps)[/COLOR]' % p['episode_count']
+
+        # For top podcasts, we need to look up feed URL
+        feed_url = p.get('feed_url', '')
+        podcast_id = p.get('id', '')
+
+        if from_top and not feed_url and podcast_id:
+            # Will lookup on click
+            add_dir(label, 'podcastlookup', url=podcast_id,
+                    image=p.get('image') or control.addonIcon())
+        elif feed_url:
+            add_dir(label, 'podcastepisodes', url=feed_url,
+                    image=p.get('image') or control.addonIcon())
+        else:
+            add_dir(label, 'podcastlookup', url=podcast_id,
+                    image=p.get('image') or control.addonIcon())
+    end_directory()
+
+def podcast_lookup(params):
+    """Lookup podcast by ID then show episodes"""
+    from resources.lib.modules import podcast_api
+    podcast_id = params.get('url', '')
+    podcast = podcast_api.lookup_podcast(podcast_id)
+    if not podcast or not podcast.get('feed_url'):
+        control.infoDialog('Could not find podcast feed')
+        return
+    _show_podcast_episodes(podcast['feed_url'], podcast.get('image', ''), podcast.get('name', ''))
+
+def podcast_episodes(params):
+    """Show episodes from a podcast RSS feed"""
+    feed_url = params.get('url', '')
+    _show_podcast_episodes(feed_url)
+
+def _show_podcast_episodes(feed_url, podcast_image='', podcast_name=''):
+    from resources.lib.modules import podcast_api
+    dp = control.progressDialog()
+    dp.create('Syncher', 'Loading episodes...')
+    episodes = podcast_api.get_episodes(feed_url)
+    dp.close()
+    if not episodes:
+        control.infoDialog('No episodes found')
+        return
+    for ep in episodes:
+        label = ep['title']
+        if ep.get('date'):
+            label += '  [COLOR grey](%s)[/COLOR]' % ep['date']
+        if ep.get('duration'):
+            label += '  [COLOR grey][%s][/COLOR]' % ep['duration']
+
+        li = xbmcgui.ListItem(label=label)
+        img = ep.get('image') or podcast_image or control.addonIcon()
+        li.setArt({'icon': img, 'thumb': img, 'fanart': control.addonFanart()})
+        li.setInfo('Music', {'title': ep['title'], 'comment': ep.get('description', '')[:500]})
+        li.setProperty('IsPlayable', 'true')
+        url_params = {'action': 'playpodcast', 'url': ep['url'], 'name': ep['title']}
+        xbmcplugin.addDirectoryItem(HANDLE, build_url(url_params), li, isFolder=False)
+
+    end_directory('songs')
+
+def play_podcast(params):
+    """Play a podcast episode"""
+    url = params.get('url', '')
+    name = params.get('name', 'Podcast')
+    if not url:
+        return
+    li = xbmcgui.ListItem(label=name, path=url)
+    li.setInfo('Music', {'title': name})
+    li.setProperty('IsPlayable', 'true')
+    xbmcplugin.setResolvedUrl(HANDLE, True, li)
+
+# ============================================================
+# AUDIOBOOKS (LibriVox + Internet Archive)
+# ============================================================
+
+def audiobook_menu():
+    add_dir('[COLOR gold]Popular Audiobooks[/COLOR]', 'audiobookpopular', image=control.addonIcon())
+    add_dir('[COLOR gold]New Arrivals[/COLOR]', 'audiobooknew', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Browse by Genre[/COLOR]', 'audiobookgenres', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Search by Title[/COLOR]', 'audiobooksearchtitle', image=control.addonIcon())
+    add_dir('[COLOR skyblue]Search by Author[/COLOR]', 'audiobooksearchauthor', image=control.addonIcon())
+    add_dir('[COLOR lime]Search Internet Archive[/COLOR]', 'audiobooksearcharchive', image=control.addonIcon())
+    end_directory()
+
+def audiobook_popular():
+    from resources.lib.modules import audiobook_api
+    # Search popular classics on Internet Archive, sorted by downloads
+    import urllib.parse
+    url = '%s?q=mediatype:(audio)+AND+collection:(librivoxaudio+OR+audio_bookspoetry)&fl[]=identifier,title,creator,description,downloads&rows=50&output=json&sort[]=downloads+desc' % audiobook_api.ARCHIVE_SEARCH
+    data = audiobook_api.client.request_json(url)
+    books = []
+    if data:
+        for d in data.get('response', {}).get('docs', []):
+            identifier = d.get('identifier', '')
+            if not identifier:
+                continue
+            books.append({
+                'id': identifier,
+                'title': d.get('title', ''),
+                'author': d.get('creator', ['Unknown'])[0] if isinstance(d.get('creator'), list) else d.get('creator', 'Unknown'),
+                'description': '',
+                'image': 'https://archive.org/services/img/%s' % identifier,
+                'downloads': d.get('downloads', 0),
+                'source': 'archive',
+            })
+    _show_audiobook_list(books)
+
+def audiobook_new():
+    from resources.lib.modules import audiobook_api
+    books = audiobook_api.get_recent_librivox()
+    _show_audiobook_list(books)
+
+def audiobook_genres():
+    from resources.lib.modules import audiobook_api
+    genres = audiobook_api.get_genres()
+    for g in genres:
+        add_dir(g, 'audiobookbygenre', url=g, image=control.addonIcon())
+    end_directory()
+
+def audiobook_by_genre(params):
+    from resources.lib.modules import audiobook_api
+    genre = params.get('url', '')
+    # Use Internet Archive for genre search since LibriVox genre is unreliable
+    books = audiobook_api.search_archive(genre, limit=30)
+    if not books:
+        books = audiobook_api.get_librivox_by_genre(genre)
+    _show_audiobook_list(books)
+
+def audiobook_search_title():
+    from resources.lib.modules import audiobook_api
+    query = control.keyboard('', 'Search Audiobook by Title')
+    if not query:
+        return
+    # Search both sources
+    books = audiobook_api.search_archive(query)
+    lv_books = audiobook_api.search_librivox(query)
+    # Merge, avoiding duplicates by title
+    seen = set(b['title'].lower() for b in books)
+    for b in lv_books:
+        if b['title'].lower() not in seen:
+            books.append(b)
+    _show_audiobook_list(books)
+
+def audiobook_search_author():
+    from resources.lib.modules import audiobook_api
+    query = control.keyboard('', 'Search Audiobook by Author')
+    if not query:
+        return
+    books = audiobook_api.search_archive(query)
+    lv_books = audiobook_api.search_librivox_author(query)
+    seen = set(b['title'].lower() for b in books)
+    for b in lv_books:
+        if b['title'].lower() not in seen:
+            books.append(b)
+    _show_audiobook_list(books)
+
+def audiobook_search_archive():
+    from resources.lib.modules import audiobook_api
+    query = control.keyboard('', 'Search Internet Archive Audiobooks')
+    if not query:
+        return
+    books = audiobook_api.search_archive(query, limit=50)
+    _show_audiobook_list(books)
+
+def _show_audiobook_list(books):
+    """Display a list of audiobooks"""
+    for b in books:
+        label = b['title']
+        if b.get('author'):
+            label += '  [COLOR grey]by %s[/COLOR]' % b['author']
+        if b.get('chapters'):
+            label += '  [COLOR grey](%s ch)[/COLOR]' % b['chapters']
+        elif b.get('downloads'):
+            label += '  [COLOR grey](%s downloads)[/COLOR]' % b['downloads']
+        if b.get('duration'):
+            label += '  [COLOR grey][%s][/COLOR]' % b['duration']
+
+        source = b.get('source', 'librivox')
+        if source == 'archive':
+            action = 'audiobookarchivechapters'
+            url_val = b['id']
+        else:
+            action = 'audiobooklvchapters'
+            url_val = b['id']
+
+        add_dir(label, action, url=url_val,
+                image=b.get('image') or control.addonIcon())
+    end_directory()
+
+def audiobook_lv_chapters(params):
+    """Show chapters for a LibriVox audiobook"""
+    from resources.lib.modules import audiobook_api
+    book_id = params.get('url', '')
+    dp = control.progressDialog()
+    dp.create('Syncher', 'Loading chapters...')
+    tracks = audiobook_api.get_librivox_tracks(book_id)
+    dp.close()
+    if not tracks:
+        control.infoDialog('No chapters found')
+        return
+    _show_audiobook_chapters(tracks)
+
+def audiobook_archive_chapters(params):
+    """Show chapters for an Internet Archive audiobook"""
+    from resources.lib.modules import audiobook_api
+    identifier = params.get('url', '')
+    dp = control.progressDialog()
+    dp.create('Syncher', 'Loading chapters...')
+    tracks = audiobook_api.get_archive_tracks(identifier)
+    dp.close()
+    if not tracks:
+        control.infoDialog('No audio files found')
+        return
+    _show_audiobook_chapters(tracks)
+
+def _show_audiobook_chapters(tracks):
+    """Display audiobook chapters/tracks"""
+    # Auto-play all
+    if len(tracks) > 1:
+        add_dir('[COLOR gold]>>> Play All Chapters <<<[/COLOR]', 'audiobookplayall',
+                url=json.dumps([t['url'] for t in tracks]), is_folder=False)
+
+    for i, t in enumerate(tracks):
+        label = t['title']
+        if t.get('duration'):
+            dur = t['duration']
+            if isinstance(dur, str) and ':' in dur:
+                label += '  [COLOR grey][%s][/COLOR]' % dur
+            else:
+                try:
+                    secs = float(dur)
+                    mins = int(secs) // 60
+                    s = int(secs) % 60
+                    label += '  [COLOR grey][%d:%02d][/COLOR]' % (mins, s)
+                except:
+                    pass
+        if t.get('reader'):
+            label += '  [COLOR grey](%s)[/COLOR]' % t['reader']
+
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': control.addonIcon(), 'fanart': control.addonFanart()})
+        li.setInfo('Music', {'title': t['title'], 'tracknumber': i + 1})
+        li.setProperty('IsPlayable', 'true')
+        url_params = {'action': 'playaudiobook', 'url': t['url'], 'name': t['title']}
+        xbmcplugin.addDirectoryItem(HANDLE, build_url(url_params), li, isFolder=False)
+
+    end_directory('songs')
+
+def play_audiobook(params):
+    """Play an audiobook chapter"""
+    url = params.get('url', '')
+    name = params.get('name', 'Audiobook')
+    if not url:
+        return
+    li = xbmcgui.ListItem(label=name, path=url)
+    li.setInfo('Music', {'title': name})
+    li.setProperty('IsPlayable', 'true')
+    xbmcplugin.setResolvedUrl(HANDLE, True, li)
+
+def audiobook_play_all(params):
+    """Play all chapters in sequence"""
+    url_data = params.get('url', '[]')
+    try:
+        urls = json.loads(url_data)
+    except:
+        return
+    if not urls:
+        return
+    kodi_pl = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+    kodi_pl.clear()
+    for i, url in enumerate(urls):
+        name = 'Chapter %d' % (i + 1)
+        li = xbmcgui.ListItem(label=name, path=url)
+        kodi_pl.add(url, li)
+    xbmc.Player().play(kodi_pl)
+
+# ============================================================
 # MUSIC SCENE SEARCH
 # ============================================================
 
@@ -1390,6 +1710,8 @@ def search_menu():
     add_dir('[COLOR skyblue]Search TV Shows[/COLOR]', 'searchtv')
     add_dir('[COLOR skyblue]Search Music (Deezer)[/COLOR]', 'searchtrack')
     add_dir('[COLOR skyblue]Search Music (Scene Sites)[/COLOR]', 'musicscenesearch')
+    add_dir('[COLOR skyblue]Search Podcasts[/COLOR]', 'podcastsearch')
+    add_dir('[COLOR skyblue]Search Audiobooks[/COLOR]', 'audiobooksearchtitle')
     end_directory()
 
 def search_movie():
@@ -1651,6 +1973,30 @@ def router():
     # Music - Playback
     elif action == 'musicautoplay': music_autoplay(params)
     elif action == 'playmusic': play_music(params)
+
+    # Podcasts
+    elif action == 'podcastmenu': podcast_menu()
+    elif action == 'podcasttop': podcast_top()
+    elif action == 'podcastgenres': podcast_genres()
+    elif action == 'podcastbygenre': podcast_by_genre(params)
+    elif action == 'podcastsearch': podcast_search()
+    elif action == 'podcastlookup': podcast_lookup(params)
+    elif action == 'podcastepisodes': podcast_episodes(params)
+    elif action == 'playpodcast': play_podcast(params)
+
+    # Audiobooks
+    elif action == 'audiobookmenu': audiobook_menu()
+    elif action == 'audiobookpopular': audiobook_popular()
+    elif action == 'audiobooknew': audiobook_new()
+    elif action == 'audiobookgenres': audiobook_genres()
+    elif action == 'audiobookbygenre': audiobook_by_genre(params)
+    elif action == 'audiobooksearchtitle': audiobook_search_title()
+    elif action == 'audiobooksearchauthor': audiobook_search_author()
+    elif action == 'audiobooksearcharchive': audiobook_search_archive()
+    elif action == 'audiobooklvchapters': audiobook_lv_chapters(params)
+    elif action == 'audiobookarchivechapters': audiobook_archive_chapters(params)
+    elif action == 'playaudiobook': play_audiobook(params)
+    elif action == 'audiobookplayall': audiobook_play_all(params)
 
     # Trakt
     elif action == 'traktlists': trakt_lists()

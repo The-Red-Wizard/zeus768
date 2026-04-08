@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.syncher" name="Syncher" version="3.3.0" provider-name="zeus768">
+<addon id="plugin.video.syncher" name="Syncher" version="3.4.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.0"/>
@@ -8,42 +8,40 @@
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Syncher - Scene Streamer with AI Music, Debrid, Trakt, Deezer, Radio</summary>
-        <description lang="en">Syncher v3.3.0 by zeus768 - Browse Movies, TV Shows, Sports Highlights and a massive Music section. AI Daily Playlists powered by Emergent Universal Key (like Spotify Daily Mix), Mood playlists, Decade playlists, Similar Artist AI mixes. Live Radio via Radio Browser API (20+ genres, 20 countries). Full Deezer integration for genres, artists, albums, charts, curated playlists, user playlists with shuffle/sort/export/import and autoplay. Scene release scrapers (RapidRAR, PSA, RapidMoviez, TFPDL, WatchSeriesHD, RLSbb, DDLValley, SceneSource) plus sports replay sites. Resolves through Real-Debrid, Premiumize, AllDebrid, TorBox. Trakt browsing, watchlists, scrobbling. TMDB metadata.</description>
-        <disclaimer lang="en">This addon does not host any content. A debrid service or RapidRAR.cr premium account is recommended. AI features require an Emergent Universal Key.</disclaimer>
+        <summary lang="en">Syncher - All-in-One: Movies, TV, Sports, Music (AI), Podcasts, Audiobooks, Radio</summary>
+        <description lang="en">Syncher v3.4.0 by zeus768 - The ultimate all-in-one Kodi addon. Movies and TV Shows via Trakt/TMDB with scene release scrapers. Sports Highlights from replay sites. Massive Music section: AI Daily Playlists powered by Emergent Universal Key (like Spotify daily mixes), mood/decade playlists, Deezer charts/genres/artists, user playlists with shuffle/sort/export. Live Radio (30,000+ stations via Radio Browser API). Podcasts via iTunes with RSS episode streaming. Audiobooks via LibriVox and Internet Archive with chapter-by-chapter playback. Resolves through Real-Debrid, Premiumize, AllDebrid, TorBox. AI features powered by Emergent Universal Key.</description>
+        <disclaimer lang="en">This addon does not host any content. A debrid service is recommended. AI features require an Emergent Universal Key.</disclaimer>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <news>
+v3.4.0 (2026)
+- NEW: Podcasts section (iTunes Search API)
+  * Top podcasts, browse by 19 genres
+  * Search podcasts by name
+  * Stream episodes directly via RSS feeds
+  * Episode metadata with dates and durations
+- NEW: Audiobooks section (LibriVox + Internet Archive)
+  * 50+ popular classic audiobooks
+  * New arrivals from LibriVox
+  * Browse by 20 genres
+  * Search by title or author
+  * Internet Archive search (millions of free audiobooks)
+  * Chapter-by-chapter playback with Play All
+  * Dual-source: LibriVox API + Internet Archive API
+- Updated main menu: Movies, TV, Sports, Music, Podcasts, Audiobooks
+- Updated search menu: includes podcast and audiobook search
+- AI features use Emergent Universal Key only
+
 v3.3.0 (2026)
-- NEW: AI Daily Playlists powered by Emergent Universal Key
-  * 14 rotating daily themes (Discovery, Chill, Throwback, Workout, etc.)
-  * Mood-based playlists (Happy, Sad, Chill, Party, Focus, Workout, etc.)
-  * Decade playlists (60s through 2020s best-of)
-  * "Similar To..." AI artist mix on any artist page
-  * All AI playlists cached daily for speed
-- NEW: Live Radio via Radio Browser API (30,000+ stations)
-  * Browse by genre (20 categories), country (20 countries)
-  * Top voted, most popular, trending stations
-  * Search radio stations
-- NEW: Enhanced playlists
-  * Shuffle play mode
-  * Sort by artist or title
-  * Export playlist as text
-  * Import playlist from text
-- AI powered by Emergent Universal Key (set in Settings)
+- AI Daily Playlists (14 themes, mood, decades, similar artist)
+- Live Radio via Radio Browser API
+- Enhanced playlists (shuffle, sort, export, import)
 
 v3.2.0 (2026)
-- Rich Music section with Deezer API integration
-- Music genres, artists, albums, top charts, curated playlists
-- User-created playlists with add/remove tracks
-- Auto-play mode for albums and playlists
-- Music scene site search
-
-v3.1.1 (2026)
-- Version bump and metadata updates
+- Deezer Music section (genres, artists, albums, charts, playlists)
 
 v2.0.0 (2026)
-- Initial release: Movies, TV, Sports, Debrid, Trakt, TMDB
+- Initial release: Movies, TV, Sports, Debrid, Trakt
         </news>
         <assets>
             <icon>icon.png</icon>
