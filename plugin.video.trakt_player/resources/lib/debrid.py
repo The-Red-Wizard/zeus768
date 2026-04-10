@@ -193,7 +193,24 @@ class RealDebrid:
         # Check if token needs refresh (10 min buffer)
         if self.expires and time.time() > self.expires - 600:
             xbmc.log('Real-Debrid: Token near expiry, refreshing...', xbmc.LOGINFO)
-            return self._refresh_token()
+            refreshed = self._refresh_token()
+            if not refreshed:
+                # Token refresh failed, but token might still work
+                # Try a quick API call to verify
+                xbmc.log('Real-Debrid: Refresh failed, testing current token...', xbmc.LOGINFO)
+                try:
+                    status, result = _get(
+                        f"{self.BASE_URL}/user",
+                        headers=self._auth_headers()
+                    )
+                    if status == 200:
+                        xbmc.log('Real-Debrid: Token still valid despite refresh failure', xbmc.LOGINFO)
+                        return True
+                except:
+                    pass
+                xbmc.log('Real-Debrid: Token expired and refresh failed', xbmc.LOGWARNING)
+                return False
+            return True
         
         xbmc.log('Real-Debrid: Authorization valid', xbmc.LOGDEBUG)
         return True
@@ -479,6 +496,52 @@ class RealDebrid:
         self.refresh_token = ''
         xbmcgui.Dialog().notification("Real-Debrid", "Account unlinked", xbmcgui.NOTIFICATION_INFO)
 
+    def account_info(self):
+        """Get Real-Debrid account info (username, type, expiry, points)"""
+        if not self.token:
+            return {}
+        try:
+            status, result = _get(
+                f"{self.BASE_URL}/user",
+                headers=self._auth_headers()
+            )
+            if status == 200 and isinstance(result, dict):
+                expiration = result.get('expiration', '')
+                days_left = 0
+                if expiration:
+                    try:
+                        from datetime import datetime
+                        exp_date = datetime.strptime(expiration, '%Y-%m-%dT%H:%M:%S.%fZ')
+                        delta = exp_date - datetime.utcnow()
+                        days_left = max(0, delta.days)
+                    except Exception:
+                        try:
+                            from datetime import datetime
+                            exp_date = datetime.strptime(expiration[:19], '%Y-%m-%dT%H:%M:%S')
+                            delta = exp_date - datetime.utcnow()
+                            days_left = max(0, delta.days)
+                        except:
+                            pass
+
+                return {
+                    'username': result.get('username', ''),
+                    'email': result.get('email', ''),
+                    'type': result.get('type', 'free'),
+                    'premium': result.get('type', '') == 'premium',
+                    'expiration': expiration,
+                    'days_left': days_left,
+                    'points': result.get('points', 0),
+                }
+            elif status == 401:
+                # Token invalid, try refresh
+                if self._refresh_token():
+                    return self.account_info()
+                return {'type': 'expired', 'premium': False, 'days_left': 0,
+                        'expiration': 'Token expired - re-authorize'}
+        except Exception as e:
+            xbmc.log(f'RD account_info error: {e}', xbmc.LOGERROR)
+        return {}
+
 
 class AllDebrid:
     """AllDebrid API integration with file-based token storage"""
@@ -684,6 +747,41 @@ class AllDebrid:
         self.token = ''
         xbmcgui.Dialog().notification("AllDebrid", "Account unlinked", xbmcgui.NOTIFICATION_INFO)
 
+    def account_info(self):
+        """Get AllDebrid account info"""
+        if not self.token:
+            return {}
+        try:
+            status, result = _get(
+                f"{self.BASE_URL}/user",
+                params={"agent": self.AGENT, "apikey": self.token}
+            )
+            if isinstance(result, dict) and result.get('status') == 'success':
+                data = result.get('data', {}).get('user', {})
+                premium_until = data.get('premiumUntil', 0)
+                days_left = 0
+                exp_str = 'Unknown'
+                if premium_until:
+                    try:
+                        from datetime import datetime
+                        exp_date = datetime.utcfromtimestamp(premium_until)
+                        delta = exp_date - datetime.utcnow()
+                        days_left = max(0, delta.days)
+                        exp_str = exp_date.strftime('%Y-%m-%d')
+                    except:
+                        pass
+                return {
+                    'username': data.get('username', ''),
+                    'email': data.get('email', ''),
+                    'type': 'premium' if data.get('isPremium') else 'free',
+                    'premium': bool(data.get('isPremium')),
+                    'expiration': exp_str,
+                    'days_left': days_left,
+                }
+        except Exception as e:
+            xbmc.log(f'AD account_info error: {e}', xbmc.LOGERROR)
+        return {}
+
 
 class Premiumize:
     """Premiumize API integration with file-based token storage"""
@@ -736,7 +834,7 @@ class Premiumize:
             
             status, result = _post(
                 f"{self.TOKEN_URL}",
-                data={"grant_type": "device_code", "client_id": self.CLIENT_ID}
+                data={"response_type": "device_code", "client_id": self.CLIENT_ID}
             )
             
             if not isinstance(result, dict) or not result.get('device_code'):
@@ -863,6 +961,44 @@ class Premiumize:
         self.token = ''
         xbmcgui.Dialog().notification("Premiumize", "Account unlinked", xbmcgui.NOTIFICATION_INFO)
 
+    def account_info(self):
+        """Get Premiumize account info"""
+        if not self.token:
+            return {}
+        try:
+            status, result = _get(
+                f"{self.BASE_URL}/account/info",
+                headers={"Authorization": f"Bearer {self.token}"}
+            )
+            if status == 200 and isinstance(result, dict) and result.get('status') == 'success':
+                premium_until = result.get('premium_until', 0)
+                days_left = 0
+                exp_str = 'Unknown'
+                if premium_until:
+                    try:
+                        from datetime import datetime
+                        exp_date = datetime.utcfromtimestamp(premium_until)
+                        delta = exp_date - datetime.utcnow()
+                        days_left = max(0, delta.days)
+                        exp_str = exp_date.strftime('%Y-%m-%d')
+                    except:
+                        pass
+                return {
+                    'username': str(result.get('customer_id', '')),
+                    'type': 'premium' if premium_until else 'free',
+                    'premium': bool(premium_until and days_left > 0),
+                    'expiration': exp_str,
+                    'days_left': days_left,
+                    'space_used': result.get('space_used', 0),
+                    'limit_used': result.get('limit_used', 0),
+                }
+            elif status == 401:
+                return {'type': 'expired', 'premium': False, 'days_left': 0,
+                        'expiration': 'Token expired - re-authorize'}
+        except Exception as e:
+            xbmc.log(f'PM account_info error: {e}', xbmc.LOGERROR)
+        return {}
+
 
 def get_debrid_services():
     """Get list of authorized debrid services in priority order"""
@@ -952,24 +1088,23 @@ def get_all_account_info():
     # Real-Debrid
     try:
         rd = RealDebrid()
-        if rd.is_authorized():
-            info = rd.account_info() if hasattr(rd, 'account_info') else {}
-            if isinstance(info, dict):
+        if rd.token:
+            info = rd.account_info()
+            if info:
                 accounts.append({
                     'name': 'Real-Debrid',
                     'configured': True,
                     'username': info.get('username', ''),
-                    'type': info.get('type', 'premium'),
-                    'premium': info.get('type', '') == 'premium',
+                    'email': info.get('email', ''),
+                    'type': info.get('type', 'unknown'),
+                    'premium': info.get('premium', False),
                     'expires': info.get('expiration', 'Unknown'),
                     'days_left': info.get('days_left', 0),
-                    'auto_renew': 'Unknown',
                     'points': info.get('points', 0),
                 })
             else:
-                accounts.append({'name': 'Real-Debrid', 'configured': True, 'premium': True,
-                                 'username': '', 'type': 'premium', 'expires': 'Unknown',
-                                 'days_left': 999, 'auto_renew': 'Unknown'})
+                accounts.append({'name': 'Real-Debrid', 'configured': True, 
+                                 'error': 'Could not fetch account info - try re-authorizing'})
         else:
             accounts.append({'name': 'Real-Debrid', 'configured': False})
     except Exception as e:
@@ -978,10 +1113,22 @@ def get_all_account_info():
     # AllDebrid
     try:
         ad = AllDebrid()
-        if ad.is_authorized():
-            accounts.append({'name': 'AllDebrid', 'configured': True, 'premium': True,
-                             'username': '', 'type': 'premium', 'expires': 'Unknown',
-                             'days_left': 999, 'auto_renew': 'Unknown'})
+        if ad.token:
+            info = ad.account_info()
+            if info:
+                accounts.append({
+                    'name': 'AllDebrid',
+                    'configured': True,
+                    'username': info.get('username', ''),
+                    'email': info.get('email', ''),
+                    'type': info.get('type', 'unknown'),
+                    'premium': info.get('premium', False),
+                    'expires': info.get('expiration', 'Unknown'),
+                    'days_left': info.get('days_left', 0),
+                })
+            else:
+                accounts.append({'name': 'AllDebrid', 'configured': True,
+                                 'error': 'Could not fetch account info - try re-authorizing'})
         else:
             accounts.append({'name': 'AllDebrid', 'configured': False})
     except Exception as e:
@@ -990,10 +1137,21 @@ def get_all_account_info():
     # Premiumize
     try:
         pm = Premiumize()
-        if pm.is_authorized():
-            accounts.append({'name': 'Premiumize', 'configured': True, 'premium': True,
-                             'username': '', 'type': 'premium', 'expires': 'Unknown',
-                             'days_left': 999, 'auto_renew': 'Unknown'})
+        if pm.token:
+            info = pm.account_info()
+            if info:
+                accounts.append({
+                    'name': 'Premiumize',
+                    'configured': True,
+                    'username': info.get('username', ''),
+                    'type': info.get('type', 'unknown'),
+                    'premium': info.get('premium', False),
+                    'expires': info.get('expiration', 'Unknown'),
+                    'days_left': info.get('days_left', 0),
+                })
+            else:
+                accounts.append({'name': 'Premiumize', 'configured': True,
+                                 'error': 'Could not fetch account info - try re-authorizing'})
         else:
             accounts.append({'name': 'Premiumize', 'configured': False})
     except Exception as e:

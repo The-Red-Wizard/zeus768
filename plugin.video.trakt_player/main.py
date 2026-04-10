@@ -203,11 +203,11 @@ def show_account_status():
             continue
 
         username = acct.get('username', '')
+        email = acct.get('email', '')
         acct_type = acct.get('type', 'unknown')
         premium = acct.get('premium', False)
         expires = acct.get('expires', 'Unknown')
         days_left = acct.get('days_left', 0)
-        auto_renew = acct.get('auto_renew', 'Unknown')
 
         if premium:
             if days_left <= 7:
@@ -224,12 +224,16 @@ def show_account_status():
             status = 'FREE/Expired'
 
         line = '[COLOR %s][B]%s[/B][/COLOR]' % (color, name)
-        line += '\n  User: %s' % username if username else ''
+        if username:
+            line += '\n  User: %s' % username
+        if email:
+            line += '\n  Email: %s' % email
         line += '\n  Status: [COLOR %s]%s (%s)[/COLOR]' % (color, status, acct_type)
         line += '\n  Expires: %s' % expires
         if premium and days_left > 0:
-            line += ' ([B]%d days left[/B])' % days_left
-        line += '\n  Auto-Renew: %s' % auto_renew
+            line += '  ([B][COLOR %s]%d days left[/COLOR][/B])' % (color, days_left)
+        elif not premium and acct_type != 'unknown':
+            line += '  [COLOR red](Account expired or free tier)[/COLOR]'
         if acct.get('points'):
             line += '\n  Fidelity Points: %d' % acct['points']
         line += '\n'
