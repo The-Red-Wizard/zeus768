@@ -1,14 +1,20 @@
 Trakt Player Changelog
 ======================
 
-Version 2.3.0 (April 2026 - Debrid Auth Fixes + Account Info)
+Version 2.3.0 (April 2026 - Debrid Auth Fixes + TorBox + LinkSnappy)
 - FIXED: Premiumize auth code not showing (was sending grant_type instead of response_type)
 - FIXED: Real-Debrid false "expired" errors (token refresh now falls back to testing current token)
-- ADDED: Real account info for Real-Debrid (username, email, expiry date, days left, fidelity points)
-- ADDED: Real account info for AllDebrid (username, email, premium status, expiry, days left)
-- ADDED: Real account info for Premiumize (customer ID, premium status, expiry, days left)
+- ADDED: TorBox debrid service with device code authorization
+  * Torrent cache checking, magnet resolving, web download links
+  * Account info with premium status and expiry
+- ADDED: LinkSnappy debrid service with username/password login
+  * Premium link generation for 30+ file hosts
+  * Account info with expiry and package type
+- ADDED: Real account info for all 5 debrid services (username, email, expiry date, days left)
+- ADDED: Real-Debrid shows fidelity points
 - ADDED: Color-coded expiry warnings on Account Status page (green/yellow/red)
-- IMPROVED: Account Status page now fetches live data from all debrid APIs
+- IMPROVED: Account Status page fetches live data from RD/PM/AD/TB/LS APIs
+- Updated settings with TorBox and LinkSnappy categories
 
 Version 2.2.0 (April 2026 - Feature Merge + Premiumize Fix)
 - FIXED: Premiumize device code auth (was hitting /api/token instead of /token)

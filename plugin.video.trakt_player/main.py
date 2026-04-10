@@ -383,3 +383,11 @@ if __name__ == '__main__':
         debrid.Premiumize().authorize()
     elif action == 'revoke_pm':
         debrid.Premiumize().revoke()
+    elif action == 'auth_tb':
+        debrid.TorBox().authorize()
+    elif action == 'revoke_tb':
+        debrid.TorBox().revoke()
+    elif action == 'auth_ls':
+        debrid.LinkSnappy().authorize()
+    elif action == 'revoke_ls':
+        debrid.LinkSnappy().revoke()

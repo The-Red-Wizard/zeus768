@@ -32,6 +32,8 @@ USER_AGENT = 'TraktPlayer Kodi Addon'
 RD_TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'rd_token.json')
 AD_TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'ad_token.json')
 PM_TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'pm_token.json')
+TB_TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'tb_token.json')
+LS_TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'ls_token.json')
 
 
 def _ensure_data_path():
@@ -1000,6 +1002,462 @@ class Premiumize:
         return {}
 
 
+class TorBox:
+    """TorBox debrid service - device code auth"""
+    BASE_URL = 'https://api.torbox.app/v1/api'
+    DEVICE_START = 'https://api.torbox.app/v1/api/user/auth/device/start'
+    DEVICE_TOKEN = 'https://api.torbox.app/v1/api/user/auth/device/token'
+
+    def __init__(self):
+        self.token = ''
+        self._load_token()
+
+    def _load_token(self):
+        addon = get_addon()
+        self.token = addon.getSetting('tb_api_key') or ''
+        if not self.token and os.path.exists(TB_TOKEN_FILE):
+            try:
+                with open(TB_TOKEN_FILE, 'r') as f:
+                    data = json.load(f)
+                    self.token = data.get('api_key', '')
+                    if self.token:
+                        addon.setSetting('tb_api_key', self.token)
+            except:
+                pass
+
+    def _save_token(self, api_key):
+        self.token = api_key
+        addon = get_addon()
+        addon.setSetting('tb_api_key', api_key)
+        addon.setSetting('tb_auth_done', 'true')
+        try:
+            os.makedirs(os.path.dirname(TB_TOKEN_FILE), exist_ok=True)
+            with open(TB_TOKEN_FILE, 'w') as f:
+                json.dump({'api_key': api_key}, f)
+        except:
+            pass
+
+    def _auth_headers(self):
+        return {'Authorization': f'Bearer {self.token}', 'User-Agent': 'TraktPlayer/2.3.0'}
+
+    def authorize(self):
+        """TorBox device code authorization"""
+        try:
+            xbmc.log('TorBox: Requesting device code...', xbmc.LOGINFO)
+
+            # Step 1: Get device code
+            status, result = _get(self.DEVICE_START)
+            if not isinstance(result, dict) or not result.get('success'):
+                xbmcgui.Dialog().ok('TorBox', 'Failed to get device code. Try again.')
+                return
+
+            data = result.get('data', {})
+            device_code = data.get('device_code', '')
+            user_code = data.get('code', '')
+            verify_url = data.get('friendly_verification_url', '') or data.get('verification_url', '')
+            interval = data.get('interval', 5)
+
+            if not device_code:
+                xbmcgui.Dialog().ok('TorBox', 'No device code received.')
+                return
+
+            # Step 2: Show code and poll
+            progress = xbmcgui.DialogProgress()
+            progress.create('TorBox Authorization',
+                            f'Go to: [COLOR skyblue]{verify_url}[/COLOR]\n'
+                            f'Enter code: [COLOR gold][B]{user_code}[/B][/COLOR]')
+
+            for i in range(120):
+                if progress.iscanceled():
+                    break
+
+                xbmc.sleep(interval * 1000)
+                pct = int((i / 120.0) * 100)
+                progress.update(pct)
+
+                try:
+                    poll_url = f'{self.DEVICE_TOKEN}?device_code={device_code}'
+                    poll_status, poll_result = _get(poll_url)
+                    if isinstance(poll_result, dict) and poll_result.get('success'):
+                        api_key = poll_result.get('data', {}).get('api_key', '') or poll_result.get('data', {}).get('access_token', '')
+                        if api_key:
+                            self._save_token(api_key)
+                            progress.close()
+                            xbmcgui.Dialog().notification('TorBox', 'Authorized!', xbmcgui.NOTIFICATION_INFO)
+                            return
+                except:
+                    pass
+
+            progress.close()
+            xbmcgui.Dialog().notification('TorBox', 'Auth timed out', xbmcgui.NOTIFICATION_WARNING)
+
+        except Exception as e:
+            xbmc.log(f'TorBox auth error: {e}', xbmc.LOGERROR)
+            xbmcgui.Dialog().notification('TorBox', f'Auth error: {e}', xbmcgui.NOTIFICATION_ERROR)
+
+    def is_authorized(self):
+        if not self.token:
+            return False
+        try:
+            status, result = _get(f'{self.BASE_URL}/user/me', headers=self._auth_headers())
+            if status == 200 and isinstance(result, dict) and result.get('success'):
+                return True
+        except:
+            pass
+        return False
+
+    def unrestrict_link(self, link):
+        """Create a web download and get the link"""
+        if not self.token:
+            return None
+        try:
+            status, result = _post(
+                f'{self.BASE_URL}/webdl/createwebdownload',
+                headers=self._auth_headers(),
+                data={'url': link}
+            )
+            if isinstance(result, dict) and result.get('success'):
+                dl_url = result.get('data', {}).get('download_url')
+                if dl_url:
+                    return dl_url
+                # If no direct URL, request download link
+                dl_id = result.get('data', {}).get('id')
+                if dl_id:
+                    xbmc.sleep(2000)
+                    s2, r2 = _get(
+                        f'{self.BASE_URL}/webdl/requestdl?token={self.token}&web_id={dl_id}',
+                        headers=self._auth_headers()
+                    )
+                    if isinstance(r2, dict) and r2.get('data'):
+                        return r2['data']
+        except Exception as e:
+            xbmc.log(f'TorBox unrestrict error: {e}', xbmc.LOGERROR)
+        return None
+
+    def add_magnet(self, magnet, check_cache_first=True):
+        """Add a magnet and get download link"""
+        if not self.token:
+            return None
+        try:
+            status, result = _post(
+                f'{self.BASE_URL}/torrents/createtorrent',
+                headers=self._auth_headers(),
+                data={'magnet': magnet}
+            )
+            if isinstance(result, dict) and result.get('success'):
+                torrent_id = result.get('data', {}).get('torrent_id')
+                if torrent_id:
+                    xbmc.sleep(3000)
+                    s2, r2 = _get(
+                        f'{self.BASE_URL}/torrents/requestdl?token={self.token}&torrent_id={torrent_id}&file_id=0',
+                        headers=self._auth_headers()
+                    )
+                    if isinstance(r2, dict) and r2.get('data'):
+                        return r2['data']
+        except Exception as e:
+            xbmc.log(f'TorBox magnet error: {e}', xbmc.LOGERROR)
+        return None
+
+    def check_cache(self, hashes):
+        """Check which hashes are cached on TorBox"""
+        if not self.token or not hashes:
+            return {}
+        try:
+            hash_str = ','.join(hashes[:100])
+            status, result = _get(
+                f'{self.BASE_URL}/torrents/checkcached?hash={hash_str}',
+                headers=self._auth_headers()
+            )
+            if isinstance(result, dict) and result.get('data'):
+                cached = {}
+                for item in result['data']:
+                    if isinstance(item, str):
+                        cached[item.lower()] = True
+                    elif isinstance(item, dict) and item.get('hash'):
+                        cached[item['hash'].lower()] = True
+                return cached
+        except Exception as e:
+            xbmc.log(f'TorBox cache check error: {e}', xbmc.LOGERROR)
+        return {}
+
+    def revoke(self):
+        if os.path.exists(TB_TOKEN_FILE):
+            try:
+                os.remove(TB_TOKEN_FILE)
+            except:
+                pass
+        addon = get_addon()
+        addon.setSetting('tb_api_key', '')
+        addon.setSetting('tb_auth_done', 'false')
+        self.token = ''
+        xbmcgui.Dialog().notification('TorBox', 'Account unlinked', xbmcgui.NOTIFICATION_INFO)
+
+    def account_info(self):
+        """Get TorBox account info"""
+        if not self.token:
+            return {}
+        try:
+            status, result = _get(f'{self.BASE_URL}/user/me', headers=self._auth_headers())
+            if status == 200 and isinstance(result, dict) and result.get('success'):
+                data = result.get('data', {})
+                premium_until = data.get('premium_expires_at', '') or data.get('plan_active_until', '')
+                days_left = 0
+                exp_str = 'Unknown'
+                if premium_until:
+                    try:
+                        from datetime import datetime
+                        exp_date = datetime.strptime(premium_until[:19], '%Y-%m-%dT%H:%M:%S')
+                        delta = exp_date - datetime.utcnow()
+                        days_left = max(0, delta.days)
+                        exp_str = exp_date.strftime('%Y-%m-%d')
+                    except:
+                        exp_str = str(premium_until)[:10]
+                plan = data.get('plan', 0)
+                return {
+                    'username': data.get('email', ''),
+                    'email': data.get('email', ''),
+                    'type': 'premium' if plan and plan > 0 else 'free',
+                    'premium': bool(plan and plan > 0),
+                    'expiration': exp_str,
+                    'days_left': days_left,
+                }
+            elif status in (401, 403):
+                return {'type': 'expired', 'premium': False, 'days_left': 0,
+                        'expiration': 'API key invalid - re-authorize'}
+        except Exception as e:
+            xbmc.log(f'TB account_info error: {e}', xbmc.LOGERROR)
+        return {}
+
+
+class LinkSnappy:
+    """LinkSnappy debrid service - API key auth"""
+    BASE_URL = 'https://linksnappy.com/api'
+
+    def __init__(self):
+        self.username = ''
+        self.password = ''
+        self.cookie = ''
+        self._load_credentials()
+
+    def _load_credentials(self):
+        addon = get_addon()
+        self.username = addon.getSetting('ls_username') or ''
+        self.password = addon.getSetting('ls_password') or ''
+        self.cookie = addon.getSetting('ls_cookie') or ''
+        if not self.cookie and os.path.exists(LS_TOKEN_FILE):
+            try:
+                with open(LS_TOKEN_FILE, 'r') as f:
+                    data = json.load(f)
+                    self.cookie = data.get('cookie', '')
+                    self.username = data.get('username', self.username)
+            except:
+                pass
+
+    def _save_credentials(self, cookie):
+        self.cookie = cookie
+        addon = get_addon()
+        addon.setSetting('ls_cookie', cookie)
+        addon.setSetting('ls_auth_done', 'true')
+        try:
+            os.makedirs(os.path.dirname(LS_TOKEN_FILE), exist_ok=True)
+            with open(LS_TOKEN_FILE, 'w') as f:
+                json.dump({'cookie': cookie, 'username': self.username}, f)
+        except:
+            pass
+
+    def authorize(self):
+        """LinkSnappy login auth"""
+        try:
+            dialog = xbmcgui.Dialog()
+            username = dialog.input('LinkSnappy Username')
+            if not username:
+                return
+            password = dialog.input('LinkSnappy Password', option=xbmcgui.ALPHANUM_HIDE_INPUT)
+            if not password:
+                return
+
+            xbmc.log('LinkSnappy: Logging in...', xbmc.LOGINFO)
+
+            import urllib.request
+            import urllib.parse
+            import http.cookiejar
+
+            cj = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+            data = urllib.parse.urlencode({
+                'username': username,
+                'password': password
+            }).encode()
+            req = urllib.request.Request(f'{self.BASE_URL}/AUTHENTICATE',
+                                         data=data,
+                                         headers={'User-Agent': 'TraktPlayer/2.3.0'})
+            resp = opener.open(req, timeout=15)
+            result = json.loads(resp.read().decode())
+
+            if result.get('status') == 'OK':
+                # Extract cookie string
+                cookies = '; '.join([f'{c.name}={c.value}' for c in cj])
+                self.username = username
+                self.password = password
+                addon = get_addon()
+                addon.setSetting('ls_username', username)
+                addon.setSetting('ls_password', password)
+                self._save_credentials(cookies)
+                dialog.notification('LinkSnappy', f'Logged in as {username}', xbmcgui.NOTIFICATION_INFO)
+            else:
+                error_msg = result.get('error', 'Login failed')
+                dialog.notification('LinkSnappy', error_msg, xbmcgui.NOTIFICATION_ERROR)
+                xbmc.log(f'LinkSnappy login error: {error_msg}', xbmc.LOGERROR)
+
+        except Exception as e:
+            xbmc.log(f'LinkSnappy auth error: {e}', xbmc.LOGERROR)
+            xbmcgui.Dialog().notification('LinkSnappy', f'Auth error: {e}', xbmcgui.NOTIFICATION_ERROR)
+
+    def is_authorized(self):
+        if self.username and self.password:
+            return True
+        if self.cookie:
+            return True
+        return False
+
+    def _login_headers(self):
+        headers = {'User-Agent': 'TraktPlayer/2.3.0'}
+        if self.cookie:
+            headers['Cookie'] = self.cookie
+        return headers
+
+    def unrestrict_link(self, link):
+        """Generate a premium download link"""
+        if not self.is_authorized():
+            return None
+        try:
+            import urllib.request
+            import urllib.parse
+
+            # Re-login if needed
+            if not self.cookie and self.username and self.password:
+                self._re_login()
+
+            data = urllib.parse.urlencode({
+                'genLinks': json.dumps([{'link': link}]),
+                'username': self.username,
+                'password': self.password,
+            }).encode()
+
+            req = urllib.request.Request(f'{self.BASE_URL}/linkgen',
+                                         data=data,
+                                         headers=self._login_headers())
+            resp = urllib.request.urlopen(req, timeout=30)
+            result = json.loads(resp.read().decode())
+
+            if result.get('status') == 'OK':
+                links = result.get('links', [])
+                if links:
+                    gen = links[0].get('generated', '')
+                    if gen:
+                        return gen
+            elif result.get('status') == 'ERROR':
+                xbmc.log(f'LinkSnappy linkgen error: {result.get("error", "")}', xbmc.LOGERROR)
+        except Exception as e:
+            xbmc.log(f'LinkSnappy unrestrict error: {e}', xbmc.LOGERROR)
+        return None
+
+    def _re_login(self):
+        """Re-authenticate to get fresh cookies"""
+        try:
+            import urllib.request
+            import urllib.parse
+            import http.cookiejar
+
+            cj = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+            data = urllib.parse.urlencode({
+                'username': self.username,
+                'password': self.password
+            }).encode()
+            req = urllib.request.Request(f'{self.BASE_URL}/AUTHENTICATE',
+                                         data=data,
+                                         headers={'User-Agent': 'TraktPlayer/2.3.0'})
+            resp = opener.open(req, timeout=15)
+            result = json.loads(resp.read().decode())
+            if result.get('status') == 'OK':
+                cookies = '; '.join([f'{c.name}={c.value}' for c in cj])
+                self._save_credentials(cookies)
+        except:
+            pass
+
+    def add_magnet(self, magnet, check_cache_first=True):
+        return self.unrestrict_link(magnet)
+
+    def check_cache(self, hashes):
+        return {}
+
+    def revoke(self):
+        if os.path.exists(LS_TOKEN_FILE):
+            try:
+                os.remove(LS_TOKEN_FILE)
+            except:
+                pass
+        addon = get_addon()
+        addon.setSetting('ls_username', '')
+        addon.setSetting('ls_password', '')
+        addon.setSetting('ls_cookie', '')
+        addon.setSetting('ls_auth_done', 'false')
+        self.username = ''
+        self.password = ''
+        self.cookie = ''
+        xbmcgui.Dialog().notification('LinkSnappy', 'Account unlinked', xbmcgui.NOTIFICATION_INFO)
+
+    def account_info(self):
+        """Get LinkSnappy account info"""
+        if not self.is_authorized():
+            return {}
+        try:
+            import urllib.request
+            import urllib.parse
+
+            if not self.cookie and self.username and self.password:
+                self._re_login()
+
+            data = urllib.parse.urlencode({
+                'username': self.username,
+                'password': self.password,
+            }).encode()
+            req = urllib.request.Request(f'{self.BASE_URL}/USERDETAILS',
+                                         data=data,
+                                         headers=self._login_headers())
+            resp = urllib.request.urlopen(req, timeout=15)
+            result = json.loads(resp.read().decode())
+
+            if result.get('status') == 'OK':
+                user_data = result.get('return', {})
+                expire = user_data.get('expire', '')
+                days_left = 0
+                exp_str = 'Unknown'
+                if expire:
+                    try:
+                        from datetime import datetime
+                        if str(expire).isdigit():
+                            exp_date = datetime.utcfromtimestamp(int(expire))
+                        else:
+                            exp_date = datetime.strptime(str(expire)[:19], '%Y-%m-%dT%H:%M:%S')
+                        delta = exp_date - datetime.utcnow()
+                        days_left = max(0, delta.days)
+                        exp_str = exp_date.strftime('%Y-%m-%d')
+                    except:
+                        exp_str = str(expire)
+                return {
+                    'username': self.username,
+                    'type': user_data.get('package', 'unknown'),
+                    'premium': bool(days_left > 0),
+                    'expiration': exp_str,
+                    'days_left': days_left,
+                }
+        except Exception as e:
+            xbmc.log(f'LS account_info error: {e}', xbmc.LOGERROR)
+        return {}
+
+
 def get_debrid_services():
     """Get list of authorized debrid services in priority order"""
     services = []
@@ -1018,6 +1476,16 @@ def get_debrid_services():
     if pm.is_authorized():
         services.append(('Premiumize', pm))
         xbmc.log('Debrid: Premiumize is authorized', xbmc.LOGINFO)
+    
+    tb = TorBox()
+    if tb.is_authorized():
+        services.append(('TorBox', tb))
+        xbmc.log('Debrid: TorBox is authorized', xbmc.LOGINFO)
+    
+    ls = LinkSnappy()
+    if ls.is_authorized():
+        services.append(('LinkSnappy', ls))
+        xbmc.log('Debrid: LinkSnappy is authorized', xbmc.LOGINFO)
     
     if not services:
         xbmc.log('Debrid: No debrid services authorized', xbmc.LOGWARNING)
@@ -1156,5 +1624,52 @@ def get_all_account_info():
             accounts.append({'name': 'Premiumize', 'configured': False})
     except Exception as e:
         accounts.append({'name': 'Premiumize', 'configured': True, 'error': str(e)})
+    
+    # TorBox
+    try:
+        tb = TorBox()
+        if tb.token:
+            info = tb.account_info()
+            if info:
+                accounts.append({
+                    'name': 'TorBox',
+                    'configured': True,
+                    'username': info.get('username', ''),
+                    'email': info.get('email', ''),
+                    'type': info.get('type', 'unknown'),
+                    'premium': info.get('premium', False),
+                    'expires': info.get('expiration', 'Unknown'),
+                    'days_left': info.get('days_left', 0),
+                })
+            else:
+                accounts.append({'name': 'TorBox', 'configured': True,
+                                 'error': 'Could not fetch account info - try re-authorizing'})
+        else:
+            accounts.append({'name': 'TorBox', 'configured': False})
+    except Exception as e:
+        accounts.append({'name': 'TorBox', 'configured': True, 'error': str(e)})
+    
+    # LinkSnappy
+    try:
+        ls = LinkSnappy()
+        if ls.is_authorized():
+            info = ls.account_info()
+            if info:
+                accounts.append({
+                    'name': 'LinkSnappy',
+                    'configured': True,
+                    'username': info.get('username', ''),
+                    'type': info.get('type', 'unknown'),
+                    'premium': info.get('premium', False),
+                    'expires': info.get('expiration', 'Unknown'),
+                    'days_left': info.get('days_left', 0),
+                })
+            else:
+                accounts.append({'name': 'LinkSnappy', 'configured': True,
+                                 'error': 'Could not fetch account info - try re-logging in'})
+        else:
+            accounts.append({'name': 'LinkSnappy', 'configured': False})
+    except Exception as e:
+        accounts.append({'name': 'LinkSnappy', 'configured': True, 'error': str(e)})
     
     return accounts

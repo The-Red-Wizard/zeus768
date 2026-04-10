@@ -39,6 +39,24 @@
         <setting id="revoke_pm" type="action" label="[COLOR red]Revoke Premiumize[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=revoke_pm)" enable="eq(-3,true)"/>
     </category>
     
+    <!-- TorBox -->
+    <category label="TorBox">
+        <setting id="tb_auth_done" type="bool" label="TorBox Authorized" default="false" enable="false"/>
+        <setting id="tb_api_key" type="text" label="API Key (auto-filled)" default="" enable="false"/>
+        <setting id="auth_tb" type="action" label="[COLOR yellow]Authorize TorBox (Device Code)[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=auth_tb)"/>
+        <setting id="revoke_tb" type="action" label="[COLOR red]Revoke TorBox[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=revoke_tb)" enable="eq(-3,true)"/>
+    </category>
+    
+    <!-- LinkSnappy -->
+    <category label="LinkSnappy">
+        <setting id="ls_auth_done" type="bool" label="LinkSnappy Authorized" default="false" enable="false"/>
+        <setting id="ls_username" type="text" label="Username" default="" enable="false"/>
+        <setting id="ls_password" type="text" label="Password" default="" visible="false"/>
+        <setting id="ls_cookie" type="text" label="Cookie" default="" visible="false"/>
+        <setting id="auth_ls" type="action" label="[COLOR yellow]Login to LinkSnappy[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=auth_ls)"/>
+        <setting id="revoke_ls" type="action" label="[COLOR red]Unlink LinkSnappy[/COLOR]" action="RunPlugin(plugin://plugin.video.trakt_player/?action=revoke_ls)" enable="eq(-5,true)"/>
+    </category>
+    
     <!-- Playback Settings -->
     <category label="Playback">
         <setting id="preferred_quality" type="select" label="Preferred Quality" default="1" values="4K/2160p|1080p|720p|480p"/>

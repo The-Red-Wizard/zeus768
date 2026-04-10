@@ -8,7 +8,7 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Superpowered Trakt Player - Click and Play with Debrid, AI Vibes, Discovery Feed</summary>
-        <description lang="en">Full Trakt and TMDB integration for Movies and TV Shows. Click-and-Play via Debrid services (Real-Debrid, AllDebrid, Premiumize). AI-powered discovery, trailer feed, and marathon mode.
+        <description lang="en">Trakt Player v2.3.0 - Click-and-Play via 5 Debrid services (Real-Debrid, AllDebrid, Premiumize, TorBox, LinkSnappy). Real account info with expiry tracking. AI Vibes, Discovery Feed, Trakt Scrobbling, Recommendations, Calendar, Friends, Stats, Custom Lists. Created by zeus768.
 
 Features:
 - Click-and-Play: Auto 1080p via debrid with cache-first priority
@@ -63,12 +63,12 @@ v1.0.8 - Initial Release
         <license>GPL-2.0-only</license>
         <news>
 v2.3.0 (2026)
-- FIXED: Premiumize auth code not showing (was sending grant_type instead of response_type)
-- FIXED: Real-Debrid false "expired" errors (token refresh now falls back to testing current token)
-- ADDED: Real account info for all debrid services (username, email, expiry date, days left)
-- ADDED: Real-Debrid shows fidelity points
-- ADDED: Color-coded expiry warnings (green/yellow/red based on days left)
-- IMPROVED: Account Status page now fetches live data from RD/PM/AD APIs
+- FIXED: Premiumize auth code not showing (response_type fix)
+- FIXED: Real-Debrid false "expired" errors (token refresh fallback)
+- ADDED: TorBox debrid (device code auth, cache check, magnet resolve)
+- ADDED: LinkSnappy debrid (login auth, 30+ file host link generation)
+- ADDED: Real account info for all 5 debrid services (RD/AD/PM/TB/LS)
+- Color-coded expiry warnings on Account Status page
 
 v2.2.0 (2026)
 - FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
