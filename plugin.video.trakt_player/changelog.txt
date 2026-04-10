@@ -1,6 +1,15 @@
 Trakt Player Changelog
 ======================
 
+Version 2.3.0 (April 2026 - Debrid Auth Fixes + Account Info)
+- FIXED: Premiumize auth code not showing (was sending grant_type instead of response_type)
+- FIXED: Real-Debrid false "expired" errors (token refresh now falls back to testing current token)
+- ADDED: Real account info for Real-Debrid (username, email, expiry date, days left, fidelity points)
+- ADDED: Real account info for AllDebrid (username, email, premium status, expiry, days left)
+- ADDED: Real account info for Premiumize (customer ID, premium status, expiry, days left)
+- ADDED: Color-coded expiry warnings on Account Status page (green/yellow/red)
+- IMPROVED: Account Status page now fetches live data from all debrid APIs
+
 Version 2.2.0 (April 2026 - Feature Merge + Premiumize Fix)
 - FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
 - MERGED: All custom features into zeus768's v2.1.6 fixed build
