@@ -166,7 +166,7 @@
                 <top>530</top>
                 <width>280</width>
                 <height>60</height>
-                <label>PLAY</label>
+                <label>$INFO[Window.Property(play_button_label)]</label>
                 <font>font14</font>
                 <textcolor>FF000000</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -186,7 +186,7 @@
                 <top>610</top>
                 <width>280</width>
                 <height>55</height>
-                <label>🎬  TRAILER</label>
+                <label>TRAILER</label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -206,7 +206,7 @@
                 <top>680</top>
                 <width>280</width>
                 <height>55</height>
-                <label>♥  FAVORITE</label>
+                <label>FAVORITE</label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>

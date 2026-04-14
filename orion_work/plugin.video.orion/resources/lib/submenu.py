@@ -163,7 +163,7 @@ class SubmenuDialog(xbmcgui.WindowXMLDialog):
         if year:
             meta_parts.append(str(year))
         if rating:
-            meta_parts.append(f"★ {rating:.1f}")
+            meta_parts.append(f"{rating:.1f}")
         if genres:
             meta_parts.append(genres)
         meta_string = '  •  '.join(meta_parts)

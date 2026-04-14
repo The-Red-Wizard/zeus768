@@ -144,22 +144,20 @@
                 <control type="image">
                     <left>10</left>
                     <top>10</top>
-                    <width>60</width>
-                    <height>30</height>
+                    <width>55</width>
+                    <height>28</height>
                     <texture colordiffuse="E0000000">white.png</texture>
-                    <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
                 <control type="label">
                     <left>10</left>
                     <top>10</top>
-                    <width>60</width>
-                    <height>30</height>
-                    <label>R: $INFO[ListItem.Property(rating)]</label>
-                    <font>font11</font>
+                    <width>55</width>
+                    <height>28</height>
+                    <label>$INFO[ListItem.Property(rating)]</label>
+                    <font>font10</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
-                    <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
                 <!-- Year badge (top-right) -->
                 <control type="image">
@@ -232,22 +230,20 @@
                 <control type="image">
                     <left>8</left>
                     <top>8</top>
-                    <width>60</width>
-                    <height>30</height>
+                    <width>55</width>
+                    <height>28</height>
                     <texture colordiffuse="E0000000">white.png</texture>
-                    <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
                 <control type="label">
                     <left>8</left>
                     <top>8</top>
-                    <width>60</width>
-                    <height>30</height>
-                    <label>R: $INFO[ListItem.Property(rating)]</label>
-                    <font>font11</font>
+                    <width>55</width>
+                    <height>28</height>
+                    <label>$INFO[ListItem.Property(rating)]</label>
+                    <font>font10</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
-                    <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
                 <!-- Year badge (top-right) -->
                 <control type="image">

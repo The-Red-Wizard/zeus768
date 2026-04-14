@@ -116,7 +116,7 @@ class DetailDialog(xbmcgui.WindowXMLDialog):
             if year:
                 meta_parts.append(year)
             if rating:
-                meta_parts.append(f"★ {rating:.1f}")
+                meta_parts.append(f"{rating:.1f}")
             if runtime:
                 meta_parts.append(runtime)
             if genres:
@@ -143,6 +143,12 @@ class DetailDialog(xbmcgui.WindowXMLDialog):
             self.item_data['title'] = title
             self.item_data['year'] = year
             
+            # Set play button label based on media type
+            if self.media_type == 'tv':
+                self.setProperty('play_button_label', 'SEASONS')
+            else:
+                self.setProperty('play_button_label', 'PLAY')
+            
             xbmc.log(f"[Orion] Detail loaded for: {title}", xbmc.LOGINFO)
             
         except Exception as e:
@@ -158,6 +164,12 @@ class DetailDialog(xbmcgui.WindowXMLDialog):
         self.setProperty('detail_backdrop', self.item_data.get('backdrop', ADDON_FANART))
         self.setProperty('detail_rating', self.item_data.get('rating', 'N/A'))
         self.setProperty('detail_votes', '0')
+        
+        # Set play button label based on media type
+        if self.media_type == 'tv':
+            self.setProperty('play_button_label', 'SEASONS')
+        else:
+            self.setProperty('play_button_label', 'PLAY')
         self.setProperty('detail_cast', 'Unknown')
         self.setProperty('detail_director', 'Unknown')
         self.setProperty('detail_type', 'TV SHOW' if self.media_type == 'tv' else 'MOVIE')

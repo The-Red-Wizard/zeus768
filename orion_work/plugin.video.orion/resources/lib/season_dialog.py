@@ -47,7 +47,7 @@ class SeasonDialog(xbmcgui.WindowXMLDialog):
         if self.show_data.get('year'):
             meta_parts.append(self.show_data['year'])
         if self.show_data.get('rating'):
-            meta_parts.append(f"★ {self.show_data['rating']:.1f}")
+            meta_parts.append(f"{self.show_data['rating']:.1f}")
         if len(self.seasons) > 0:
             meta_parts.append(f"{len(self.seasons)} Seasons")
         if self.show_data.get('genres'):

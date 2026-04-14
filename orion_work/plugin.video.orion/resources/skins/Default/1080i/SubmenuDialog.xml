@@ -183,49 +183,51 @@
             <left>60</left>
             <top>430</top>
             <width>1800</width>
-            <height>50</height>
+            <height>55</height>
             <orientation>horizontal</orientation>
             <onup>160</onup>
             <ondown>200</ondown>
             <onleft>110</onleft>
             <onright>110</onright>
             <scrolltime>200</scrolltime>
-            <itemlayout width="160" height="45">
+            <itemlayout width="180" height="50">
+                <!-- Tab background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>5</top>
+                    <width>170</width>
+                    <height>40</height>
+                    <texture colordiffuse="20FFFFFF">white.png</texture>
+                </control>
                 <control type="label">
-                    <left>0</left>
-                    <top>0</top>
-                    <width>150</width>
+                    <left>5</left>
+                    <top>5</top>
+                    <width>170</width>
                     <height>40</height>
                     <label>$INFO[ListItem.Label]</label>
-                    <font>font12</font>
-                    <textcolor>FF808080</textcolor>
+                    <font>font13</font>
+                    <textcolor>FFB0B0B0</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
                 </control>
             </itemlayout>
-            <focusedlayout width="160" height="45">
+            <focusedlayout width="180" height="50">
+                <!-- Tab focused background -->
                 <control type="image">
-                    <left>0</left>
-                    <top>0</top>
-                    <width>150</width>
+                    <left>5</left>
+                    <top>5</top>
+                    <width>170</width>
                     <height>40</height>
-                    <texture colordiffuse="30FFFFFF">white.png</texture>
-                </control>
-                <control type="image">
-                    <left>10</left>
-                    <top>38</top>
-                    <width>130</width>
-                    <height>3</height>
                     <texture colordiffuse="FF00D4FF">white.png</texture>
                 </control>
                 <control type="label">
-                    <left>0</left>
-                    <top>0</top>
-                    <width>150</width>
+                    <left>5</left>
+                    <top>5</top>
+                    <width>170</width>
                     <height>40</height>
                     <label>$INFO[ListItem.Label]</label>
-                    <font>font12</font>
-                    <textcolor>FFFFFFFF</textcolor>
+                    <font>font13</font>
+                    <textcolor>FF000000</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
                 </control>
