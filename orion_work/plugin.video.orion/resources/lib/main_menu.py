@@ -103,10 +103,12 @@ class MainMenuDialog(xbmcgui.WindowXMLDialog):
             
             for item in items[:10]:  # Limit to 10 items per row
                 li = xbmcgui.ListItem(label=item.get('title', ''))
+                backdrop = item.get('backdrop', ADDON_FANART)
+                poster = item.get('poster', ADDON_ICON)
                 li.setArt({
-                    'poster': item.get('poster', ADDON_ICON),
-                    'thumb': item.get('poster', ADDON_ICON),
-                    'fanart': item.get('backdrop', ADDON_FANART)
+                    'poster': poster,
+                    'thumb': backdrop if backdrop and backdrop != ADDON_FANART else poster,
+                    'fanart': backdrop
                 })
                 
                 rating = item.get('rating', 0)

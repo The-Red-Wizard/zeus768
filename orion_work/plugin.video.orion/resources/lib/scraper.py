@@ -264,7 +264,7 @@ def _search_torrentio(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'Seeds' in line.lower():
+                    if 'user' in line or 'Seeds' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))
@@ -350,7 +350,7 @@ def _search_mediafusion(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'seed' in line.lower():
+                    if 'user' in line or 'seed' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))
@@ -434,7 +434,7 @@ def _search_jackettio(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'seed' in line.lower():
+                    if 'user' in line or 'seed' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))
@@ -534,7 +534,7 @@ def _search_meteor(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'seed' in line.lower():
+                    if 'user' in line or 'seed' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))

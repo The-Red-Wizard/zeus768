@@ -123,11 +123,13 @@ class SubmenuDialog(xbmcgui.WindowXMLDialog):
             for item in items:
                 li = xbmcgui.ListItem(label=item.get('title', item.get('label', '')))
                 
-                # Set artwork
+                # Set artwork - use backdrop for thumb (landscape cards)
+                poster = item.get('poster', ADDON_ICON)
+                backdrop = item.get('backdrop', ADDON_FANART)
                 li.setArt({
-                    'poster': item.get('poster', ADDON_ICON),
-                    'thumb': item.get('poster', ADDON_ICON),
-                    'fanart': item.get('backdrop', ADDON_FANART)
+                    'poster': poster,
+                    'thumb': backdrop if backdrop and backdrop != ADDON_FANART else poster,
+                    'fanart': backdrop
                 })
                 
                 # Set properties
@@ -163,7 +165,7 @@ class SubmenuDialog(xbmcgui.WindowXMLDialog):
         if year:
             meta_parts.append(str(year))
         if rating:
-            meta_parts.append(f"★ {rating:.1f}")
+            meta_parts.append(f"* {rating:.1f}")
         if genres:
             meta_parts.append(genres)
         meta_string = '  •  '.join(meta_parts)

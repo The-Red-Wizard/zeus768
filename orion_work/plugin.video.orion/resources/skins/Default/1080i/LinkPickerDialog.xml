@@ -114,7 +114,7 @@
             <top>90</top>
             <width>380</width>
             <height>3</height>
-            <texture colordiffuse="FF6366F1">white.png</texture>
+            <texture colordiffuse="FF00D4FF">white.png</texture>
         </control>
         
         <!-- Poster image -->
@@ -181,7 +181,7 @@
             <top>90</top>
             <width>1470</width>
             <height>4</height>
-            <texture colordiffuse="FF8B5CF6">white.png</texture>
+            <texture colordiffuse="FF00D4FF">white.png</texture>
         </control>
         
         <!-- CHOOSE LINK: Title -->
@@ -437,7 +437,7 @@
                     <top>0</top>
                     <width>5</width>
                     <height>60</height>
-                    <texture colordiffuse="FF8B5CF6">white.png</texture>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
                 </control>
                 <!-- Active indicator -->
                 <control type="label">
@@ -560,9 +560,9 @@
             <width>12</width>
             <height>680</height>
             <texturesliderbackground colordiffuse="40404060">white.png</texturesliderbackground>
-            <texturesliderbar colordiffuse="FF8B5CF6">white.png</texturesliderbar>
+            <texturesliderbar colordiffuse="FF00D4FF">white.png</texturesliderbar>
             <texturesliderbarfocus colordiffuse="FF00D4FF">white.png</texturesliderbarfocus>
-            <textureslidernib colordiffuse="FF8B5CF6">white.png</textureslidernib>
+            <textureslidernib colordiffuse="FF00D4FF">white.png</textureslidernib>
             <textureslidernibfocus colordiffuse="FF00D4FF">white.png</textureslidernibfocus>
             <orientation>vertical</orientation>
         </control>
@@ -675,8 +675,8 @@
             <font>font14</font>
             <textcolor>FFFFFFFF</textcolor>
             <focusedcolor>FFFFFFFF</focusedcolor>
-            <texturefocus colordiffuse="FF6366F1">white.png</texturefocus>
-            <texturenofocus colordiffuse="FF8B5CF6">white.png</texturenofocus>
+            <texturefocus colordiffuse="FF00D4FF">white.png</texturefocus>
+            <texturenofocus colordiffuse="FF00D4FF">white.png</texturenofocus>
             <align>center</align>
             <aligny>center</aligny>
             <onup>9000</onup>

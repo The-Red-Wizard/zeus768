@@ -41,7 +41,7 @@
                 <top>0</top>
                 <width>1400</width>
                 <height>4</height>
-                <texture colordiffuse="FFE50914">white.png</texture>
+                <texture colordiffuse="FF00D4FF">white.png</texture>
             </control>
             
             <!-- Backdrop image (top area) -->
@@ -98,11 +98,11 @@
                 <top>20</top>
                 <width>50</width>
                 <height>50</height>
-                <label>✕</label>
+                <label>X</label>
                 <font>font16</font>
                 <textcolor>FF808080</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
-                <texturefocus colordiffuse="80E50914">white.png</texturefocus>
+                <texturefocus colordiffuse="8000D4FF">white.png</texturefocus>
                 <texturenofocus colordiffuse="40000000">white.png</texturenofocus>
                 <align>center</align>
                 <aligny>center</aligny>
@@ -171,7 +171,7 @@
                 <textcolor>FF000000</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
                 <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
-                <texturenofocus colordiffuse="FFE50914">white.png</texturenofocus>
+                <texturenofocus colordiffuse="FF00D4FF">white.png</texturenofocus>
                 <align>center</align>
                 <aligny>center</aligny>
                 <onup>810</onup>
@@ -384,7 +384,7 @@
                 <top>760</top>
                 <width>120</width>
                 <height>35</height>
-                <texture colordiffuse="40E50914">white.png</texture>
+                <texture colordiffuse="4000D4FF">white.png</texture>
             </control>
             <control type="label" id="850">
                 <left>50</left>

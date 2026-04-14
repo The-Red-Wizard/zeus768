@@ -116,7 +116,7 @@ class DetailDialog(xbmcgui.WindowXMLDialog):
             if year:
                 meta_parts.append(year)
             if rating:
-                meta_parts.append(f"★ {rating:.1f}")
+                meta_parts.append(f"* {rating:.1f}")
             if runtime:
                 meta_parts.append(runtime)
             if genres:

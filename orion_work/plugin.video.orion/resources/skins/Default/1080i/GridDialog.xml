@@ -34,7 +34,7 @@
             <top>0</top>
             <width>1920</width>
             <height>3</height>
-            <texture colordiffuse="FFE50914">white.png</texture>
+            <texture colordiffuse="FF00D4FF">white.png</texture>
         </control>
         
         <!-- Back button (top-left) -->
@@ -204,7 +204,7 @@
                     <top>0</top>
                     <width>306</width>
                     <height>176</height>
-                    <texture colordiffuse="FFE50914">white.png</texture>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
                 </control>
                 <!-- Inner card -->
                 <control type="image">
@@ -271,7 +271,7 @@
                     <top>138</top>
                     <width>294</width>
                     <height>32</height>
-                    <texture colordiffuse="E0E50914">white.png</texture>
+                    <texture colordiffuse="E000D4FF">white.png</texture>
                 </control>
                 <control type="label">
                     <left>14</left>

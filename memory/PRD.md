@@ -1,72 +1,87 @@
-# Genesis Kodi Addon PRD
+# Orion Kodi Addon - PRD
 
 ## Original Problem Statement
-Fix a Kodi addon (specto-master) and transform it into "Genesis" with:
-- New name: Genesis
-- Author: zeus768
-- Custom icon and fanart provided by user
-- Remove all references to previous author/addon name
-- Make scrapers torrent-based with cached torrents
-- Add 5 torrent scrapers
-- Add TorBox support
-- Debrid services (Real-Debrid, Premiumize, AllDebrid) via PIN system
-- Update Trakt API keys with user's credentials
+User wants to customize the Orion Kodi addon (plugin.video.orion v3.4.5):
+1. Make thumbnails bigger and stretched horizontally (landscape)
+2. Remove name banners from posters
+3. Change color scheme to cyan (#00D4FF)
+4. Add Netflix-style TV show season dropdown selector and episode grid thumbnails
+5. Netflix-style search skin
+6. Settings toggle to switch between Netflix skin and classic list view
 
-## User Personas
-- Kodi power users who want torrent-based streaming
-- Users with debrid service subscriptions
-- Users wanting Trakt integration for watchlists
+## Architecture
+```
+/app/orion_work/plugin.video.orion/
+  addon.xml (v3.6.0)
+  main.py (Main router - 3797 lines)
+  resources/
+    settings.xml (Addon settings with master skin toggle)
+    lib/
+      main_menu.py (Sidebar home screen dialog)
+      submenu.py (Netflix-style Movies/TV/Kids submenu)
+      detail.py (Movie/TV detail dialog)
+      grid.py (Paginated grid view)
+      link_picker.py (Source picker dialog)
+      search_results.py (Netflix-style search results)
+      season_dialog.py (Season selector)
+      episode_dialog.py (Episode grid)
+      tmdb.py (TMDB API)
+      scraper.py (Torrent scrapers)
+      debrid.py (Real-Debrid, Premiumize, AllDebrid, TorBox)
+      trakt.py (Trakt integration)
+      database.py (History, favorites, watch progress)
+      resolver.py (Link resolver)
+      qrcode_helper.py (QR code display)
+    skins/Default/1080i/
+      MainMenuDialog.xml (Home screen - landscape, cyan, no banners)
+      SubmenuDialog.xml (Movies/TV browse - landscape, cyan, no banners)
+      DetailDialog.xml (Movie/TV detail overlay)
+      GridDialog.xml (Paginated grid view - landscape, cyan)
+      SearchResultsDialog.xml (Search results grid - landscape, cyan)
+      LinkPickerDialog.xml (Source picker - cyan theme)
+      SeasonDialog.xml (Season selector)
+      EpisodeDialog.xml (Episode grid)
+  resources/icons/ (Category icons)
+```
 
-## Core Requirements (Static)
-1. Addon rebrand from Specto to Genesis
-2. Change author from mrknow/lambda to zeus768
-3. 5 torrent-based scrapers
-4. TorBox debrid support
-5. PIN-based authentication for all debrid services
-6. Trakt integration with user's API keys
+## What's Been Implemented (v3.6.0)
+- [x] Landscape horizontal thumbnails across ALL views (MainMenu, Submenu, Grid, Search, LinkPicker)
+- [x] Name banners removed from poster cards
+- [x] Full cyan (#00D4FF) color scheme throughout all XML skins
+- [x] All purple accents (FF6366F1, FF8B5CF6) replaced with cyan
+- [x] All emojis cleaned from Python and XML files
+- [x] Netflix-style search with fullscreen grid results (SearchResultsDialog + search_results.py)
+- [x] Master skin toggle in Settings > Appearance > "Enable Netflix-Style Skin"
+  - Controls: Main Menu, Submenus, Link Picker, Search
+  - When OFF: Falls back to classic Kodi list views
+- [x] Backdrop/thumb art used for landscape card images
+- [x] Core control IDs preserved (100, 200, 205, 210, 215, etc.)
+- [x] Netflix-style sidebar main menu (MainMenuDialog)
+- [x] Netflix-style submenu for Movies, TV Shows, Kids (SubmenuDialog)
+- [x] Detail dialog with Trailer/Play/Favorite (DetailDialog)
+- [x] Paginated grid view (GridDialog)
+- [x] Fullscreen link picker (LinkPickerDialog)
+- [x] Season/Episode dialog XMLs exist (SeasonDialog, EpisodeDialog)
 
-## What's Been Implemented (April 4, 2026)
-1. **Addon Rebrand Complete**
-   - Renamed from plugin.video.specto to plugin.video.genesis
-   - Updated all addon.xml files with new name, author (zeus768), version
-   - Replaced icon.png and fanart.jpg with user-provided images
-   - Updated all copyright headers and references
+## Prioritized Backlog
 
-2. **Trakt API Keys Updated**
-   - Client ID: 215436e27377a2e330cd8406ac1cd19de93eb956c3af50242ddf92c20e604f76
-   - Client Secret: 9cc86f0c0aa4fb8d38fa1fd9d5daecceb7d25700ca1319416543a06591746468
+### P0 - In Progress
+- [ ] User validation of v3.6.0 visual changes in Kodi
 
-3. **5 Torrent Scrapers Added**
-   - 1337x (Movies & TV Shows)
-   - TorrentGalaxy (Movies & TV Shows)
-   - YTS (Movies only)
-   - EZTV (TV Shows only)
-   - ThePirateBay (Movies & TV Shows)
+### P1 - Next
+- [ ] Safely integrate Season/Episode dialogs into TV show flow (hook into detail.py PLAY button for TV shows -> open SeasonDialog -> EpisodeDialog)
+- [ ] Episode progress bars (cyan) and "Continue Watching" indicators
+- [ ] Trakt sync for watch progress
+- [ ] "Up Next" auto-play for episodes
 
-4. **Debrid Services with PIN Authentication**
-   - Real-Debrid: Device code flow (OAuth)
-   - Premiumize: Device code flow
-   - AllDebrid: Device code flow (PIN)
-   - TorBox: API key input flow
+### P2 - Future
+- [ ] Resume Genesis addon work (on hold per user request)
 
-5. **Cached Torrent Support**
-   - Cache checking functions for all debrid services
-   - Direct download from cache when available
+## Key Safety Rules
+- NEVER use Unicode emojis in Python strings or XML labels
+- NEVER overwrite core control IDs in XML skins
+- Always test by zipping and uploading to GoFile for user to test in Kodi
+- Master skin toggle: `netflix_skin_enabled` setting controls all Netflix-style views
 
-6. **Old Scrapers Removed**
-   - All old streaming scrapers removed (28 scrapers)
-
-## Addon Files
-- Main addon: plugin.video.genesis.zip
-- Theme pack: script.genesis.media.zip
-
-## Backlog
-- P1: Test on actual Kodi installation
-- P2: Add more torrent scrapers if needed
-- P2: Add subtitle support for torrents
-- P3: Add custom filter options for torrent quality
-
-## Next Tasks
-1. User should test the addon on their Kodi installation
-2. Configure debrid service(s) in settings
-3. Authorize Trakt for watchlist sync
+## Delivery
+- GoFile upload: `zip -r plugin.video.orion-vX.X.zip plugin.video.orion && curl -F "file=@zip" https://store1.gofile.io/uploadFile`

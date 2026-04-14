@@ -63,7 +63,8 @@ def main_menu():
     debrid.check_expiry_alerts()
     
     # Check if custom menu is enabled
-    use_custom_menu = ADDON.getSetting('use_custom_menu') == 'true'
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
     
     if use_custom_menu:
         # First create a basic directory structure as the "home" base
@@ -325,7 +326,8 @@ def movies_menu():
     from resources.lib import tmdb
     
     # Check if Netflix-style submenu is enabled
-    use_netflix_submenu = ADDON.getSetting('use_netflix_submenu') == 'true'
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
     
     if use_netflix_submenu:
         _show_movies_netflix_style()
@@ -416,7 +418,8 @@ def tvshows_menu():
     from resources.lib import tmdb
     
     # Check if Netflix-style submenu is enabled
-    use_netflix_submenu = ADDON.getSetting('use_netflix_submenu') == 'true'
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
     
     if use_netflix_submenu:
         _show_tvshows_netflix_style()
@@ -829,12 +832,12 @@ def list_content(params):
         
         display_title = f"{title} ({year})" if year else title
         if rating:
-            display_title = f"{display_title} [COLOR yellow]★{rating:.1f}[/COLOR]"
+            display_title = f"{display_title} [COLOR yellow]*{rating:.1f}[/COLOR]"
         
         # Check if favorite
         is_fav = database.is_favorite(media_type, item_id)
         if is_fav:
-            display_title = f"[COLOR gold]★[/COLOR] {display_title}"
+            display_title = f"[COLOR gold]*[/COLOR] {display_title}"
         
         li = xbmcgui.ListItem(label=display_title)
         li.setArt({
@@ -961,7 +964,7 @@ def tv_episodes(params):
             
             display_name = f"S{season_num:02d}E{ep_num:02d} - {ep_name}"
             if rating:
-                display_name = f"{display_name} [COLOR yellow]★{rating:.1f}[/COLOR]"
+                display_name = f"{display_name} [COLOR yellow]*{rating:.1f}[/COLOR]"
             
             li = xbmcgui.ListItem(label=display_name)
             li.setArt({
@@ -998,6 +1001,14 @@ def tv_episodes(params):
 
 def search_menu():
     """Search sub-menu"""
+    # Check if Netflix-style search is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_search = netflix_skin and ADDON.getSetting('use_netflix_search') == 'true'
+    
+    if use_netflix_search:
+        _show_netflix_search()
+        return
+    
     items = [
         ("[B]Search Movies[/B]", {'action': 'search', 'type': 'movie'}, get_icon('search')),
         ("[B]Search TV Shows[/B]", {'action': 'search', 'type': 'tv'}, get_icon('search')),
@@ -1008,6 +1019,130 @@ def search_menu():
         add_directory_item(name, query, icon=icon)
     
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_netflix_search(media_type='multi'):
+    """Show Netflix-style fullscreen search"""
+    from resources.lib import tmdb, search_results, detail
+    
+    # Prompt user for search query
+    keyboard = xbmc.Keyboard('', 'Search Movies and TV Shows')
+    keyboard.doModal()
+    
+    if not keyboard.isConfirmed():
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    query = keyboard.getText().strip()
+    if not query:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    current_type = media_type
+    
+    while True:
+        # Fetch results
+        results = []
+        try:
+            if current_type == 'multi':
+                # Search both movies and TV
+                movie_data = tmdb.search_content('movie', query, 1)
+                tv_data = tmdb.search_content('tv', query, 1)
+                
+                all_items = []
+                for item in movie_data.get('results', [])[:10]:
+                    all_items.append(('movie', item))
+                for item in tv_data.get('results', [])[:10]:
+                    all_items.append(('tv', item))
+                
+                for mtype, item in all_items:
+                    title = item.get('title', '') if mtype == 'movie' else item.get('name', '')
+                    date_str = item.get('release_date', '') if mtype == 'movie' else item.get('first_air_date', '')
+                    year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+                    results.append({
+                        'id': item.get('id'),
+                        'title': title,
+                        'year': year,
+                        'rating': item.get('vote_average', 0),
+                        'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                        'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                        'media_type': mtype
+                    })
+            else:
+                data = tmdb.search_content(current_type, query, 1)
+                for item in data.get('results', [])[:20]:
+                    title = item.get('title', '') if current_type == 'movie' else item.get('name', '')
+                    date_str = item.get('release_date', '') if current_type == 'movie' else item.get('first_air_date', '')
+                    year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+                    results.append({
+                        'id': item.get('id'),
+                        'title': title,
+                        'year': year,
+                        'rating': item.get('vote_average', 0),
+                        'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                        'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                        'media_type': current_type
+                    })
+        except Exception as e:
+            log(f"Error searching: {e}", xbmc.LOGWARNING)
+        
+        # Show results dialog
+        action, selected_item, new_media_type = search_results.show_search_results(
+            results=results,
+            query=query,
+            media_type=current_type
+        )
+        
+        log(f"Search result: action={action}, item={selected_item}, filter={new_media_type}")
+        
+        if action == 'back' or action is None:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
+        
+        elif action == 'new_search':
+            # Prompt for new query
+            keyboard = xbmc.Keyboard(query, 'Search Movies and TV Shows')
+            keyboard.doModal()
+            if keyboard.isConfirmed():
+                new_query = keyboard.getText().strip()
+                if new_query:
+                    query = new_query
+                    current_type = 'multi'
+                    continue
+            # If cancelled, return to current results
+            continue
+        
+        elif action == 'filter' and new_media_type:
+            current_type = new_media_type
+            continue
+        
+        elif action == 'select_item' and selected_item:
+            item_media_type = selected_item.get('media_type', 'movie')
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            year = selected_item.get('year', '')
+            
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=item_media_type
+            )
+            
+            if detail_action == 'play':
+                if item_media_type == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            # If detail was closed, continue showing search results
+            continue
+        
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
 
 def do_search(params):
     """Perform search"""
@@ -1302,7 +1437,8 @@ def movie_sources(params):
         sources = scraper.sort_sources(sources, quality_filter)
         
         # Check if custom skin is enabled
-        use_custom_skin = ADDON.getSetting('use_custom_skin') == 'true'
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        use_custom_skin = netflix_skin and ADDON.getSetting('use_custom_skin') == 'true'
         
         if use_custom_skin:
             # Use the new fullscreen link picker
@@ -1343,7 +1479,8 @@ def episode_sources(params):
         sources = scraper.sort_sources(sources, quality_filter)
         
         # Check if custom skin is enabled
-        use_custom_skin = ADDON.getSetting('use_custom_skin') == 'true'
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        use_custom_skin = netflix_skin and ADDON.getSetting('use_custom_skin') == 'true'
         
         if use_custom_skin:
             # Use the new fullscreen link picker
@@ -1836,7 +1973,8 @@ def play_source(params):
 def kids_menu(params):
     """Kids Zone menu - family-friendly content - Netflix style or classic"""
     # Check if Netflix-style submenu is enabled
-    use_netflix_submenu = ADDON.getSetting('use_netflix_submenu') == 'true'
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
     
     if use_netflix_submenu:
         _show_kids_netflix_style()
@@ -2203,12 +2341,12 @@ def kids_list(params):
         
         display_title = f"{title} ({year})" if year else title
         if rating:
-            display_title = f"{display_title} [COLOR yellow]★{rating:.1f}[/COLOR]"
+            display_title = f"{display_title} [COLOR yellow]*{rating:.1f}[/COLOR]"
         
         # Check if favorite
         is_fav = database.is_favorite(media_type, item_id)
         if is_fav:
-            display_title = f"[COLOR gold]★[/COLOR] {display_title}"
+            display_title = f"[COLOR gold]*[/COLOR] {display_title}"
         
         li = xbmcgui.ListItem(label=display_title)
         li.setArt({
@@ -2411,7 +2549,7 @@ def _show_trakt_netflix_style(list_type='watchlist'):
             name = lst.get('name', 'Unknown')
             list_id = lst.get('ids', {}).get('slug', '')
             row2_items.append({
-                'label': f"📁 {name}",
+                'label': f"> {name}",
                 'action': 'custom_list',
                 'list_id': list_id,
                 'username': 'me'
@@ -2426,7 +2564,7 @@ def _show_trakt_netflix_style(list_type='watchlist'):
             username = user.get('username', 'unknown')
             list_id = lst.get('ids', {}).get('slug', '')
             row2_items.append({
-                'label': f"❤️ {name}",
+                'label': f"FAV {name}",
                 'action': 'liked_list',
                 'list_id': list_id,
                 'username': username
@@ -3102,17 +3240,17 @@ def account_status(params):
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'noop'}), li, isFolder=False)
     
     # Quick Status Popup button
-    li = xbmcgui.ListItem(label="[B][COLOR lime]📊 Quick Status Popup[/COLOR][/B]")
+    li = xbmcgui.ListItem(label="[B][COLOR lime]> Quick Status Popup[/COLOR][/B]")
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'quick_status_popup'}), li, isFolder=False)
     
     # Test All Connections button
-    li = xbmcgui.ListItem(label="[B][COLOR cyan]🔌 Test All Connections[/COLOR][/B]")
+    li = xbmcgui.ListItem(label="[B][COLOR cyan]> Test All Connections[/COLOR][/B]")
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'test_all_connections'}), li, isFolder=False)
     
     # Debug Info button
-    li = xbmcgui.ListItem(label="[B][COLOR orange]🔧 Debug Settings Info[/COLOR][/B]")
+    li = xbmcgui.ListItem(label="[B][COLOR orange]> Debug Settings Info[/COLOR][/B]")
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'debug_settings'}), li, isFolder=False)
     
@@ -3232,9 +3370,9 @@ def quick_status_popup(params):
         if token:
             any_authorized = True
             if enabled == 'true':
-                status = "[COLOR lime]✓ READY[/COLOR]"
+                status = "[COLOR lime]OK READY[/COLOR]"
             else:
-                status = "[COLOR yellow]⚠ Authorized but DISABLED[/COLOR]"
+                status = "[COLOR yellow]!! Authorized but DISABLED[/COLOR]"
             
             # Try to get account info
             service_map = {
@@ -3259,7 +3397,7 @@ def quick_status_popup(params):
             except:
                 pass
         else:
-            status = "[COLOR red]✗ Not Authorized[/COLOR]"
+            status = "[COLOR red]X Not Authorized[/COLOR]"
         
         lines.append(f"[B]{name}:[/B] {status}")
     
@@ -3314,11 +3452,11 @@ def test_all_connections(params):
                 else:
                     enable_status = "[COLOR yellow]Disabled[/COLOR]"
                 
-                results.append(f"[B]{name}:[/B] [COLOR lime]✓ Connected[/COLOR] - {username} ({status}) - {enable_status}")
+                results.append(f"[B]{name}:[/B] [COLOR lime]OK Connected[/COLOR] - {username} ({status}) - {enable_status}")
             else:
-                results.append(f"[B]{name}:[/B] [COLOR red]✗ API Error[/COLOR] - Token may be invalid")
+                results.append(f"[B]{name}:[/B] [COLOR red]X API Error[/COLOR] - Token may be invalid")
         except Exception as e:
-            results.append(f"[B]{name}:[/B] [COLOR red]✗ Error: {str(e)[:50]}[/COLOR]")
+            results.append(f"[B]{name}:[/B] [COLOR red]X Error: {str(e)[:50]}[/COLOR]")
     
     progress.close()
     
