@@ -220,3 +220,106 @@ def get_resume_point(item_type, item_id, season=None, episode=None):
             return item.get('position', 0)
     
     return 0
+
+
+# ============== TV SHOW PROGRESS ==============
+
+class Database:
+    """Database class for OOP-style access"""
+    
+    def __init__(self):
+        pass
+    
+    def get_show_progress(self, show_id):
+        """Get progress for all episodes of a TV show
+        
+        Returns dict like:
+        {
+            's1e1': {'progress': 45, 'watched': False},
+            's1e2': {'progress': 100, 'watched': True},
+            ...
+        }
+        """
+        history = get_history()
+        progress = {}
+        
+        # Find all episodes for this show
+        prefix = f"tv_{show_id}_"
+        for key, item in history.items():
+            if key.startswith(prefix):
+                season = item.get('season', 0)
+                episode = item.get('episode', 0)
+                ep_key = f"s{season}e{episode}"
+                
+                ep_progress = item.get('progress', 0)
+                is_watched = ep_progress >= 90  # Consider 90%+ as watched
+                
+                progress[ep_key] = {
+                    'progress': ep_progress,
+                    'watched': is_watched,
+                    'position': item.get('position', 0),
+                    'duration': item.get('duration', 0),
+                    'timestamp': item.get('timestamp', 0)
+                }
+        
+        return progress
+    
+    def get_episode_progress(self, show_id, season, episode):
+        """Get progress for a specific episode"""
+        history = get_history()
+        key = f"tv_{show_id}_{season}_{episode}"
+        
+        if key in history:
+            item = history[key]
+            return {
+                'progress': item.get('progress', 0),
+                'watched': item.get('progress', 0) >= 90,
+                'position': item.get('position', 0),
+                'duration': item.get('duration', 0)
+            }
+        
+        return {'progress': 0, 'watched': False, 'position': 0, 'duration': 0}
+    
+    def mark_episode_watched(self, show_id, show_title, season, episode, poster=None, backdrop=None):
+        """Mark an episode as watched (100% progress)"""
+        item = {
+            'id': show_id,
+            'type': 'tv',
+            'title': show_title,
+            'season': season,
+            'episode': episode,
+            'poster': poster or '',
+            'backdrop': backdrop or '',
+            'progress': 100,
+            'position': 0,
+            'duration': 0
+        }
+        add_to_history(item)
+    
+    def get_next_unwatched_episode(self, show_id):
+        """Get the next unwatched episode for a show"""
+        progress = self.get_show_progress(show_id)
+        
+        if not progress:
+            return (1, 1)  # Start from S1E1
+        
+        # Find the last watched episode
+        last_season = 0
+        last_episode = 0
+        
+        for ep_key, ep_data in progress.items():
+            if ep_data.get('watched') or ep_data.get('progress', 0) > 0:
+                # Parse episode key
+                import re
+                match = re.match(r's(\d+)e(\d+)', ep_key)
+                if match:
+                    s, e = int(match.group(1)), int(match.group(2))
+                    if s > last_season or (s == last_season and e > last_episode):
+                        last_season = s
+                        last_episode = e
+        
+        # Return next episode
+        if last_season > 0:
+            return (last_season, last_episode + 1)
+        
+        return (1, 1)
