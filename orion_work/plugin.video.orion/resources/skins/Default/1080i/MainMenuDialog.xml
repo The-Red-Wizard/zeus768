@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Orion v3.5.0 - Netflix-style Main Menu with BIGGER Thumbnails -->
-<!-- Color Theme: Deep dark (#0D0D15), Cyan accent (#00D4FF), Purple focus (#6366F1) -->
+<!-- Orion v3.5.3 - Netflix-style Main Menu - FIXED CONTROLS -->
 <window type="dialog">
     <defaultcontrol always="true">100</defaultcontrol>
     <zorder>1</zorder>
@@ -11,7 +10,7 @@
     </coordinates>
     
     <controls>
-        <!-- Main background - deep dark gradient -->
+        <!-- Main background -->
         <control type="image">
             <left>0</left>
             <top>0</top>
@@ -20,27 +19,27 @@
             <texture colordiffuse="FF0D0D15">white.png</texture>
         </control>
         
-        <!-- Backdrop image (dynamic) -->
+        <!-- Backdrop image -->
         <control type="image" id="9999">
             <left>200</left>
             <top>0</top>
             <width>1720</width>
-            <height>500</height>
+            <height>450</height>
             <aspectratio>scale</aspectratio>
-            <texture fallback="fanart.jpg">$INFO[Window.Property(backdrop)]</texture>
-            <colordiffuse>80FFFFFF</colordiffuse>
+            <texture>$INFO[Window.Property(backdrop)]</texture>
+            <colordiffuse>60FFFFFF</colordiffuse>
         </control>
         
-        <!-- Backdrop gradient overlay -->
+        <!-- Backdrop gradient -->
         <control type="image">
             <left>200</left>
-            <top>350</top>
+            <top>300</top>
             <width>1720</width>
             <height>200</height>
             <texture colordiffuse="FF0D0D15">white.png</texture>
         </control>
         
-        <!-- Left sidebar background -->
+        <!-- Left sidebar -->
         <control type="image">
             <left>0</left>
             <top>0</top>
@@ -49,7 +48,7 @@
             <texture colordiffuse="F0080810">white.png</texture>
         </control>
         
-        <!-- Sidebar right border -->
+        <!-- Sidebar border -->
         <control type="image">
             <left>198</left>
             <top>0</top>
@@ -58,17 +57,17 @@
             <texture colordiffuse="40404060">white.png</texture>
         </control>
         
-        <!-- Orion Icon in sidebar -->
-        <control type="image" id="1">
+        <!-- Orion Icon -->
+        <control type="image">
             <left>60</left>
             <top>30</top>
             <width>80</width>
             <height>80</height>
             <aspectratio>keep</aspectratio>
-            <texture fallback="icon.png">icon.png</texture>
+            <texture>icon.png</texture>
         </control>
         
-        <!-- ORION text under icon -->
+        <!-- ORION text -->
         <control type="label">
             <left>0</left>
             <top>115</top>
@@ -80,7 +79,7 @@
             <align>center</align>
         </control>
         
-        <!-- Sidebar navigation menu -->
+        <!-- Sidebar navigation - ID 100 -->
         <control type="list" id="100">
             <left>0</left>
             <top>170</top>
@@ -92,18 +91,10 @@
             <onright>200</onright>
             <scrolltime>200</scrolltime>
             <itemlayout width="200" height="60">
-                <control type="image">
+                <control type="label">
                     <left>20</left>
                     <top>15</top>
-                    <width>28</width>
-                    <height>28</height>
-                    <aspectratio>keep</aspectratio>
-                    <texture colordiffuse="FF808090">$INFO[ListItem.Property(icon_path)]</texture>
-                </control>
-                <control type="label">
-                    <left>58</left>
-                    <top>15</top>
-                    <width>130</width>
+                    <width>160</width>
                     <height>30</height>
                     <label>$INFO[ListItem.Label]</label>
                     <font>font12</font>
@@ -127,18 +118,10 @@
                     <height>50</height>
                     <texture colordiffuse="FF00D4FF">white.png</texture>
                 </control>
-                <control type="image">
+                <control type="label">
                     <left>20</left>
                     <top>15</top>
-                    <width>28</width>
-                    <height>28</height>
-                    <aspectratio>keep</aspectratio>
-                    <texture colordiffuse="FF00D4FF">$INFO[ListItem.Property(icon_path)]</texture>
-                </control>
-                <control type="label">
-                    <left>58</left>
-                    <top>15</top>
-                    <width>130</width>
+                    <width>160</width>
                     <height>30</height>
                     <label>$INFO[ListItem.Label]</label>
                     <font>font12</font>
@@ -149,7 +132,7 @@
             </focusedlayout>
         </control>
         
-        <!-- Settings button at bottom of sidebar -->
+        <!-- Settings button -->
         <control type="button" id="101">
             <left>10</left>
             <top>920</top>
@@ -162,290 +145,191 @@
             <texturefocus colordiffuse="40303060">white.png</texturefocus>
             <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
             <align>center</align>
-            <aligny>center</aligny>
             <onup>100</onup>
             <ondown>100</ondown>
             <onright>200</onright>
         </control>
         
-        <!-- Hero section - Continue Watching / Featured -->
-        <control type="group" id="150">
-            <left>230</left>
-            <top>80</top>
-            <width>800</width>
-            <height>350</height>
-            
-            <control type="label" id="151">
-                <left>0</left>
-                <top>0</top>
-                <width>400</width>
-                <height>30</height>
-                <label>$INFO[Window.Property(hero_title)]</label>
-                <font>font10</font>
-                <textcolor>FF808090</textcolor>
-            </control>
-            
-            <control type="label" id="152">
-                <left>0</left>
-                <top>40</top>
-                <width>600</width>
-                <height>50</height>
-                <label>$INFO[Window.Property(hero_main)]</label>
-                <font>font_MainMenu</font>
-                <textcolor>FFFFFFFF</textcolor>
-            </control>
-            
-            <control type="label" id="153">
-                <left>0</left>
-                <top>100</top>
-                <width>400</width>
-                <height>30</height>
-                <label>$INFO[Window.Property(hero_subtitle)]</label>
-                <font>font12</font>
-                <textcolor>FFB0B0C0</textcolor>
-            </control>
-            
-            <control type="button" id="154">
-                <left>0</left>
-                <top>150</top>
-                <width>120</width>
-                <height>45</height>
-                <label>PLAY</label>
-                <font>font12</font>
-                <textcolor>FF101020</textcolor>
-                <focusedcolor>FF000000</focusedcolor>
-                <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
-                <texturenofocus colordiffuse="FFE0E0E0">white.png</texturenofocus>
-                <align>center</align>
-                <aligny>center</aligny>
-                <onup>200</onup>
-                <ondown>200</ondown>
-                <onleft>100</onleft>
-                <onright>200</onright>
-            </control>
-            
-            <control type="label" id="155">
-                <left>250</left>
-                <top>280</top>
-                <width>550</width>
-                <height>40</height>
-                <label>$INFO[Window.Property(featured_title)]</label>
-                <font>font14</font>
-                <textcolor>FFFFFFFF</textcolor>
-                <align>right</align>
-            </control>
-        </control>
-        
-        <!-- Content rows section -->
-        <control type="group" id="300">
+        <!-- Row 1 Title -->
+        <control type="label" id="301">
             <left>230</left>
             <top>420</top>
+            <width>400</width>
+            <height>35</height>
+            <label>$INFO[Window.Property(row1_title)]</label>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+        
+        <!-- Row 1 content - ID 200 -->
+        <control type="list" id="200">
+            <left>230</left>
+            <top>460</top>
             <width>1650</width>
-            <height>650</height>
-            
-            <!-- Row 1 title -->
-            <control type="label" id="301">
-                <left>0</left>
-                <top>0</top>
-                <width>400</width>
-                <height>35</height>
-                <label>$INFO[Window.Property(row1_title)]</label>
-                <font>font13</font>
-                <textcolor>FFFFFFFF</textcolor>
-            </control>
-            
-            <!-- Row 1 content - BIGGER POSTERS: 204x284px (was 130x195px) -->
-            <control type="list" id="200">
-                <left>0</left>
-                <top>40</top>
-                <width>1650</width>
-                <height>310</height>
-                <orientation>horizontal</orientation>
-                <onup>154</onup>
-                <ondown>210</ondown>
-                <onleft>100</onleft>
-                <onright>200</onright>
-                <scrolltime>200</scrolltime>
-                <itemlayout width="220" height="300">
-                    <!-- Poster background -->
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>204</width>
-                        <height>284</height>
-                        <texture colordiffuse="40202040">white.png</texture>
-                    </control>
-                    <!-- Poster - BIGGER: 204x284px -->
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>204</width>
-                        <height>284</height>
-                        <aspectratio>scale</aspectratio>
-                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
-                    </control>
-                    <!-- Rating badge -->
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <texture colordiffuse="E0101020">white.png</texture>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                    <control type="label">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <label>R: $INFO[ListItem.Property(rating)]</label>
-                        <font>font10</font>
-                        <textcolor>FFFFCC00</textcolor>
-                        <align>center</align>
-                        <aligny>center</aligny>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                </itemlayout>
-                <focusedlayout width="220" height="300">
-                    <!-- Focus glow - Cyan accent -->
-                    <control type="image">
-                        <left>0</left>
-                        <top>0</top>
-                        <width>220</width>
-                        <height>300</height>
-                        <texture colordiffuse="FF00D4FF">white.png</texture>
-                    </control>
-                    <!-- Poster - BIGGER: 204x284px -->
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>204</width>
-                        <height>284</height>
-                        <aspectratio>scale</aspectratio>
-                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
-                    </control>
-                    <!-- Rating badge -->
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <texture colordiffuse="E0101020">white.png</texture>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                    <control type="label">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <label>R: $INFO[ListItem.Property(rating)]</label>
-                        <font>font10</font>
-                        <textcolor>FFFFCC00</textcolor>
-                        <align>center</align>
-                        <aligny>center</aligny>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                </focusedlayout>
-            </control>
-            
-            <!-- Row 2 title -->
-            <control type="label" id="311">
-                <left>0</left>
-                <top>360</top>
-                <width>400</width>
-                <height>35</height>
-                <label>$INFO[Window.Property(row2_title)]</label>
-                <font>font13</font>
-                <textcolor>FFFFFFFF</textcolor>
-            </control>
-            
-            <!-- Row 2 content - BIGGER POSTERS -->
-            <control type="list" id="210">
-                <left>0</left>
-                <top>400</top>
-                <width>1650</width>
-                <height>310</height>
-                <orientation>horizontal</orientation>
-                <onup>200</onup>
-                <ondown>210</ondown>
-                <onleft>100</onleft>
-                <onright>210</onright>
-                <scrolltime>200</scrolltime>
-                <itemlayout width="220" height="300">
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>204</width>
-                        <height>284</height>
-                        <texture colordiffuse="40202040">white.png</texture>
-                    </control>
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>204</width>
-                        <height>284</height>
-                        <aspectratio>scale</aspectratio>
-                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
-                    </control>
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <texture colordiffuse="E0101020">white.png</texture>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                    <control type="label">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <label>R: $INFO[ListItem.Property(rating)]</label>
-                        <font>font10</font>
-                        <textcolor>FFFFCC00</textcolor>
-                        <align>center</align>
-                        <aligny>center</aligny>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                </itemlayout>
-                <focusedlayout width="220" height="300">
-                    <control type="image">
-                        <left>0</left>
-                        <top>0</top>
-                        <width>220</width>
-                        <height>300</height>
-                        <texture colordiffuse="FF00D4FF">white.png</texture>
-                    </control>
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>204</width>
-                        <height>284</height>
-                        <aspectratio>scale</aspectratio>
-                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
-                    </control>
-                    <control type="image">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <texture colordiffuse="E0101020">white.png</texture>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                    <control type="label">
-                        <left>8</left>
-                        <top>8</top>
-                        <width>50</width>
-                        <height>26</height>
-                        <label>R: $INFO[ListItem.Property(rating)]</label>
-                        <font>font10</font>
-                        <textcolor>FFFFCC00</textcolor>
-                        <align>center</align>
-                        <aligny>center</aligny>
-                        <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
-                    </control>
-                </focusedlayout>
-            </control>
+            <height>300</height>
+            <orientation>horizontal</orientation>
+            <onup>100</onup>
+            <ondown>205</ondown>
+            <onleft>100</onleft>
+            <onright>200</onright>
+            <scrolltime>200</scrolltime>
+            <itemlayout width="220" height="290">
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>280</height>
+                    <texture colordiffuse="40202040">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>280</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </itemlayout>
+            <focusedlayout width="220" height="290">
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>220</width>
+                    <height>290</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>280</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </focusedlayout>
+        </control>
+        
+        <!-- Row 2 - ID 205 (required by Python) -->
+        <control type="list" id="205">
+            <left>230</left>
+            <top>460</top>
+            <width>1650</width>
+            <height>300</height>
+            <orientation>horizontal</orientation>
+            <visible>false</visible>
+            <onup>200</onup>
+            <ondown>210</ondown>
+            <onleft>100</onleft>
+            <onright>205</onright>
+            <itemlayout width="220" height="290">
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>280</height>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </itemlayout>
+            <focusedlayout width="220" height="290">
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>280</height>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </focusedlayout>
+        </control>
+        
+        <!-- Row 2 Title -->
+        <control type="label" id="311">
+            <left>230</left>
+            <top>770</top>
+            <width>400</width>
+            <height>35</height>
+            <label>$INFO[Window.Property(row2_title)]</label>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+        
+        <!-- Row 2 visible content - ID 210 -->
+        <control type="list" id="210">
+            <left>230</left>
+            <top>810</top>
+            <width>1650</width>
+            <height>260</height>
+            <orientation>horizontal</orientation>
+            <onup>200</onup>
+            <ondown>215</ondown>
+            <onleft>100</onleft>
+            <onright>210</onright>
+            <scrolltime>200</scrolltime>
+            <itemlayout width="220" height="250">
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>240</height>
+                    <texture colordiffuse="40202040">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>240</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </itemlayout>
+            <focusedlayout width="220" height="250">
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>220</width>
+                    <height>250</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                </control>
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>240</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </focusedlayout>
+        </control>
+        
+        <!-- Row 3 - ID 215 (required by Python) -->
+        <control type="list" id="215">
+            <left>230</left>
+            <top>810</top>
+            <width>1650</width>
+            <height>260</height>
+            <orientation>horizontal</orientation>
+            <visible>false</visible>
+            <onup>210</onup>
+            <ondown>100</ondown>
+            <onleft>100</onleft>
+            <onright>215</onright>
+            <itemlayout width="220" height="250">
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>240</height>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </itemlayout>
+            <focusedlayout width="220" height="250">
+                <control type="image">
+                    <left>8</left>
+                    <top>5</top>
+                    <width>204</width>
+                    <height>240</height>
+                    <texture>$INFO[ListItem.Art(poster)]</texture>
+                </control>
+            </focusedlayout>
         </control>
         
         <!-- Time display -->
