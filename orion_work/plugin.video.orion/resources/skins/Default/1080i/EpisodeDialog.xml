@@ -188,7 +188,7 @@
             <viewtype label="Episodes">panel</viewtype>
             <orientation>vertical</orientation>
             <scrolltime>200</scrolltime>
-            <!-- Episode card: 364x270 (thumbnail 364x205 + info) -->
+            <!-- Episode card: 364x275 (thumbnail 364x205 + info + progress) -->
             <itemlayout width="368" height="275">
                 <!-- Card background -->
                 <control type="image">
@@ -207,13 +207,35 @@
                     <aspectratio aligny="top">scale</aspectratio>
                     <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
                 </control>
-                <!-- Episode number badge (top-left) -->
+                <!-- CONTINUE WATCHING badge (top-left) - shown if has progress -->
+                <control type="image">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <texture colordiffuse="E000D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <label>▶ CONTINUE</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Episode number badge (top-left) - shown if NO progress -->
                 <control type="image">
                     <left>2</left>
                     <top>2</top>
                     <width>50</width>
                     <height>30</height>
                     <texture colordiffuse="E0000000">white.png</texture>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
                 <control type="label">
                     <left>2</left>
@@ -225,15 +247,37 @@
                     <textcolor>FF00D4FF</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
-                <!-- Runtime badge (top-right) -->
+                <!-- WATCHED checkmark badge (top-right) -->
+                <control type="image">
+                    <left>326</left>
+                    <top>2</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <texture colordiffuse="E000CC66">white.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <control type="label">
+                    <left>326</left>
+                    <top>2</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <label>✓</label>
+                    <font>font12</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- Runtime badge (top-right) - only if not watched -->
                 <control type="image">
                     <left>296</left>
                     <top>2</top>
                     <width>70</width>
                     <height>26</height>
                     <texture colordiffuse="80000000">white.png</texture>
-                    <visible>!String.IsEmpty(ListItem.Property(runtime))</visible>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
                 </control>
                 <control type="label">
                     <left>296</left>
@@ -245,7 +289,25 @@
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
-                    <visible>!String.IsEmpty(ListItem.Property(runtime))</visible>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- PROGRESS BAR background (bottom of thumbnail) -->
+                <control type="image">
+                    <left>2</left>
+                    <top>201</top>
+                    <width>364</width>
+                    <height>6</height>
+                    <texture colordiffuse="80000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))})</visible>
+                </control>
+                <!-- PROGRESS BAR fill (cyan) - width based on progress % -->
+                <control type="image">
+                    <left>2</left>
+                    <top>201</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>6</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
                 <!-- Episode title -->
                 <control type="label">
@@ -259,16 +321,28 @@
                     <align>left</align>
                     <aligny>center</aligny>
                 </control>
-                <!-- Air date -->
+                <!-- Air date + progress percentage -->
                 <control type="label">
                     <left>8</left>
                     <top>242</top>
-                    <width>348</width>
+                    <width>250</width>
                     <height>22</height>
                     <label>$INFO[ListItem.Property(air_date)]</label>
                     <font>font10</font>
                     <textcolor>FF707070</textcolor>
                     <align>left</align>
+                </control>
+                <!-- Progress percentage text -->
+                <control type="label">
+                    <left>260</left>
+                    <top>242</top>
+                    <width>100</width>
+                    <height>22</height>
+                    <label>$INFO[ListItem.Property(progress)]% watched</label>
+                    <font>font10</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>right</align>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
             </itemlayout>
             <focusedlayout width="368" height="275">
@@ -316,13 +390,35 @@
                     <align>center</align>
                     <aligny>center</aligny>
                 </control>
-                <!-- Episode number badge -->
+                <!-- CONTINUE WATCHING badge (top-left) - shown if has progress -->
+                <control type="image">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <label>▶ CONTINUE</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Episode number badge - only if NO progress -->
                 <control type="image">
                     <left>4</left>
                     <top>4</top>
                     <width>50</width>
                     <height>30</height>
                     <texture colordiffuse="E000D4FF">white.png</texture>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
                 <control type="label">
                     <left>4</left>
@@ -334,15 +430,37 @@
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
-                <!-- Runtime badge -->
+                <!-- WATCHED checkmark badge (top-right) -->
+                <control type="image">
+                    <left>324</left>
+                    <top>4</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <texture colordiffuse="FF00CC66">white.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <control type="label">
+                    <left>324</left>
+                    <top>4</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <label>✓</label>
+                    <font>font12</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- Runtime badge - only if not watched -->
                 <control type="image">
                     <left>294</left>
                     <top>4</top>
                     <width>70</width>
                     <height>26</height>
                     <texture colordiffuse="E0000000">white.png</texture>
-                    <visible>!String.IsEmpty(ListItem.Property(runtime))</visible>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
                 </control>
                 <control type="label">
                     <left>294</left>
@@ -354,7 +472,25 @@
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
-                    <visible>!String.IsEmpty(ListItem.Property(runtime))</visible>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- PROGRESS BAR background -->
+                <control type="image">
+                    <left>4</left>
+                    <top>199</top>
+                    <width>360</width>
+                    <height>8</height>
+                    <texture colordiffuse="80000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- PROGRESS BAR fill (bright cyan on focus) -->
+                <control type="image">
+                    <left>4</left>
+                    <top>199</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>8</height>
+                    <texture colordiffuse="FFFFFFFF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
                 <!-- Episode title - highlighted -->
                 <control type="label">
@@ -372,12 +508,24 @@
                 <control type="label">
                     <left>10</left>
                     <top>242</top>
-                    <width>344</width>
+                    <width>240</width>
                     <height>22</height>
                     <label>$INFO[ListItem.Property(air_date)]</label>
                     <font>font10</font>
                     <textcolor>FF00D4FF</textcolor>
                     <align>left</align>
+                </control>
+                <!-- Progress percentage text -->
+                <control type="label">
+                    <left>255</left>
+                    <top>242</top>
+                    <width>100</width>
+                    <height>22</height>
+                    <label>$INFO[ListItem.Property(progress)]% watched</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>right</align>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
             </focusedlayout>
         </control>

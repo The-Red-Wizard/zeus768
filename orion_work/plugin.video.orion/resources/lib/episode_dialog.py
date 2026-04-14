@@ -84,11 +84,18 @@ class EpisodeDialog(xbmcgui.WindowXMLDialog):
                 still = ep.get('still_path', '')
                 air_date = ep.get('air_date', '')
                 runtime = ep.get('runtime', 0)
+                progress = ep.get('progress', 0)  # Watch progress percentage (0-100)
+                watched = ep.get('watched', False)  # Fully watched flag
                 
                 # Format runtime
                 runtime_str = ''
                 if runtime:
                     runtime_str = f'{runtime}m'
+                
+                # Calculate progress bar width (max 360px for focused, 364px for unfocused)
+                progress_width = ''
+                if progress > 0:
+                    progress_width = str(int(360 * progress / 100))
                 
                 li = xbmcgui.ListItem(label=ep_name)
                 li.setArt({
@@ -100,6 +107,13 @@ class EpisodeDialog(xbmcgui.WindowXMLDialog):
                 li.setProperty('air_date', air_date)
                 li.setProperty('runtime', runtime_str)
                 li.setProperty('plot', ep.get('overview', ''))
+                
+                # Progress properties
+                if progress > 0:
+                    li.setProperty('progress', str(progress))
+                    li.setProperty('progress_width', progress_width)
+                if watched:
+                    li.setProperty('watched', 'true')
                 
                 episode_panel.addItem(li)
                 
