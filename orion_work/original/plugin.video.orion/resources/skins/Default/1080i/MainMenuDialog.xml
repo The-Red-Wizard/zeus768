@@ -102,7 +102,7 @@
                 <control type="label">
                     <left>58</left>
                     <top>15</top>
-                    <width>180</width>
+                    <width>130</width>
                     <height>30</height>
                     <label>$INFO[ListItem.Label]</label>
                     <font>font12</font>
@@ -140,7 +140,7 @@
                 <control type="label">
                     <left>58</left>
                     <top>15</top>
-                    <width>180</width>
+                    <width>130</width>
                     <height>30</height>
                     <label>$INFO[ListItem.Label]</label>
                     <font>font12</font>
@@ -278,16 +278,16 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <!-- Poster -->
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -325,8 +325,8 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -380,15 +380,15 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -423,8 +423,8 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -477,15 +477,15 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -520,8 +520,8 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -574,15 +574,15 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
@@ -617,8 +617,8 @@
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>180</width>
-                        <height>270</height>
+                        <width>130</width>
+                        <height>195</height>
                         <aspectratio>keep</aspectratio>
                         <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>

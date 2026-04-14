@@ -45,7 +45,7 @@
             <left>0</left>
             <top>450</top>
             <width>1920</width>
-            <height>300</height>
+            <height>250</height>
             <texture colordiffuse="FF0D0D15">white.png</texture>
         </control>
         
@@ -128,7 +128,7 @@
                 <top>260</top>
                 <width>180</width>
                 <height>50</height>
-                <label>WATCH NOW</label>
+                <label>▶  WATCH NOW</label>
                 <font>font13</font>
                 <textcolor>FF000000</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -148,7 +148,7 @@
                 <top>260</top>
                 <width>150</width>
                 <height>50</height>
-                <label>INFO</label>
+                <label>ⓘ  INFO</label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -248,16 +248,16 @@
                 <control type="image">
                     <left>8</left>
                     <top>8</top>
-                    <width>220</width>
-                    <height>300</height>
+                    <width>184</width>
+                    <height>250</height>
                     <texture colordiffuse="25FFFFFF">white.png</texture>
                 </control>
                 <!-- Poster image -->
                 <control type="image">
                     <left>8</left>
                     <top>8</top>
-                    <width>220</width>
-                    <height>300</height>
+                    <width>184</width>
+                    <height>250</height>
                     <aspectratio>scale</aspectratio>
                     <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                 </control>
@@ -275,7 +275,7 @@
                     <top>8</top>
                     <width>50</width>
                     <height>26</height>
-                    <label>$INFO[ListItem.Property(rating)]</label>
+                    <label>★ $INFO[ListItem.Property(rating)]</label>
                     <font>font10</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
@@ -317,8 +317,8 @@
                 <control type="image">
                     <left>8</left>
                     <top>8</top>
-                    <width>220</width>
-                    <height>300</height>
+                    <width>184</width>
+                    <height>250</height>
                     <aspectratio>scale</aspectratio>
                     <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                 </control>
@@ -326,7 +326,7 @@
                 <control type="image">
                     <left>8</left>
                     <top>208</top>
-                    <width>220</width>
+                    <width>184</width>
                     <height>50</height>
                     <texture colordiffuse="E0000000">white.png</texture>
                 </control>
@@ -355,7 +355,7 @@
                     <top>8</top>
                     <width>50</width>
                     <height>26</height>
-                    <label>$INFO[ListItem.Property(rating)]</label>
+                    <label>★ $INFO[ListItem.Property(rating)]</label>
                     <font>font10</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
@@ -485,7 +485,7 @@
             <top>10</top>
             <width>50</width>
             <height>35</height>
-            <label>BACK</label>
+            <label>←</label>
             <font>font14</font>
             <textcolor>FF808080</textcolor>
             <focusedcolor>FFFFFFFF</focusedcolor>
