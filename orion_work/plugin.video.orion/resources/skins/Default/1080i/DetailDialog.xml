@@ -166,7 +166,7 @@
                 <top>530</top>
                 <width>280</width>
                 <height>60</height>
-                <label>▶  PLAY</label>
+                <label>PLAY</label>
                 <font>font14</font>
                 <textcolor>FF000000</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -345,7 +345,7 @@
                     <top>0</top>
                     <width>30</width>
                     <height>50</height>
-                    <label>★</label>
+                    <label></label>
                     <font>font16</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>

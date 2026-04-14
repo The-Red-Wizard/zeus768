@@ -56,7 +56,7 @@
             <top>25</top>
             <width>50</width>
             <height>40</height>
-            <label>←</label>
+            <label>BACK</label>
             <font>font16</font>
             <textcolor>FF808080</textcolor>
             <focusedcolor>FFFFFFFF</focusedcolor>
@@ -125,7 +125,7 @@
                 <top>0</top>
                 <width>90</width>
                 <height>40</height>
-                <label>◀ Prev</label>
+                <label>Prev</label>
                 <font>font10</font>
                 <textcolor>FF808080</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
@@ -144,7 +144,7 @@
                 <top>0</top>
                 <width>90</width>
                 <height>40</height>
-                <label>Next ▶</label>
+                <label>Next ></label>
                 <font>font10</font>
                 <textcolor>FF808080</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
@@ -221,7 +221,7 @@
                     <top>2</top>
                     <width>120</width>
                     <height>28</height>
-                    <label>▶ CONTINUE</label>
+                    <label>CONTINUE</label>
                     <font>font10</font>
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
@@ -263,7 +263,7 @@
                     <top>2</top>
                     <width>40</width>
                     <height>30</height>
-                    <label>✓</label>
+                    <label>OK</label>
                     <font>font12</font>
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
@@ -384,7 +384,7 @@
                     <top>75</top>
                     <width>68</width>
                     <height>68</height>
-                    <label>▶</label>
+                    <label>></label>
                     <font>font20</font>
                     <textcolor>FF00D4FF</textcolor>
                     <align>center</align>
@@ -404,7 +404,7 @@
                     <top>4</top>
                     <width>120</width>
                     <height>28</height>
-                    <label>▶ CONTINUE</label>
+                    <label>CONTINUE</label>
                     <font>font10</font>
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
@@ -446,7 +446,7 @@
                     <top>4</top>
                     <width>40</width>
                     <height>30</height>
-                    <label>✓</label>
+                    <label>OK</label>
                     <font>font12</font>
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
@@ -563,7 +563,7 @@
                 <top>15</top>
                 <width>130</width>
                 <height>50</height>
-                <label>◀  PREV</label>
+                <label>PREV</label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -598,7 +598,7 @@
                 <top>15</top>
                 <width>130</width>
                 <height>50</height>
-                <label>NEXT  ▶</label>
+                <label>NEXT  ></label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>

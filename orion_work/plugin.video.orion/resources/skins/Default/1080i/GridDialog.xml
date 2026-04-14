@@ -45,7 +45,7 @@
             <top>25</top>
             <width>50</width>
             <height>40</height>
-            <label>←</label>
+            <label>BACK</label>
             <font>font16</font>
             <textcolor>FF808080</textcolor>
             <focusedcolor>FFFFFFFF</focusedcolor>
@@ -154,7 +154,7 @@
                     <top>10</top>
                     <width>60</width>
                     <height>30</height>
-                    <label>★ $INFO[ListItem.Property(rating)]</label>
+                    <label>R: $INFO[ListItem.Property(rating)]</label>
                     <font>font11</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
@@ -242,7 +242,7 @@
                     <top>8</top>
                     <width>60</width>
                     <height>30</height>
-                    <label>★ $INFO[ListItem.Property(rating)]</label>
+                    <label>R: $INFO[ListItem.Property(rating)]</label>
                     <font>font11</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
@@ -325,7 +325,7 @@
                 <top>15</top>
                 <width>130</width>
                 <height>50</height>
-                <label>◀  PREV</label>
+                <label>PREV</label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -360,7 +360,7 @@
                 <top>15</top>
                 <width>130</width>
                 <height>50</height>
-                <label>NEXT  ▶</label>
+                <label>NEXT  ></label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>

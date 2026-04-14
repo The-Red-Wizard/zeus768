@@ -298,7 +298,7 @@
                         <top>8</top>
                         <width>50</width>
                         <height>26</height>
-                        <label>★ $INFO[ListItem.Property(rating)]</label>
+                        <label>R: $INFO[ListItem.Property(rating)]</label>
                         <font>font10</font>
                         <textcolor>FFFFCC00</textcolor>
                         <align>center</align>
@@ -338,7 +338,7 @@
                         <top>8</top>
                         <width>50</width>
                         <height>26</height>
-                        <label>★ $INFO[ListItem.Property(rating)]</label>
+                        <label>R: $INFO[ListItem.Property(rating)]</label>
                         <font>font10</font>
                         <textcolor>FFFFCC00</textcolor>
                         <align>center</align>
@@ -400,7 +400,7 @@
                         <top>8</top>
                         <width>50</width>
                         <height>26</height>
-                        <label>★ $INFO[ListItem.Property(rating)]</label>
+                        <label>R: $INFO[ListItem.Property(rating)]</label>
                         <font>font10</font>
                         <textcolor>FFFFCC00</textcolor>
                         <align>center</align>
@@ -437,7 +437,7 @@
                         <top>8</top>
                         <width>50</width>
                         <height>26</height>
-                        <label>★ $INFO[ListItem.Property(rating)]</label>
+                        <label>R: $INFO[ListItem.Property(rating)]</label>
                         <font>font10</font>
                         <textcolor>FFFFCC00</textcolor>
                         <align>center</align>

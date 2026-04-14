@@ -126,7 +126,7 @@
                 <top>260</top>
                 <width>180</width>
                 <height>50</height>
-                <label>▶  WATCH NOW</label>
+                <label>WATCH NOW</label>
                 <font>font13</font>
                 <textcolor>FF000000</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -146,7 +146,7 @@
                 <top>260</top>
                 <width>150</width>
                 <height>50</height>
-                <label>ⓘ  INFO</label>
+                <label>INFO</label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
@@ -273,7 +273,7 @@
                     <top>10</top>
                     <width>55</width>
                     <height>28</height>
-                    <label>★ $INFO[ListItem.Property(rating)]</label>
+                    <label>R: $INFO[ListItem.Property(rating)]</label>
                     <font>font10</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
@@ -353,7 +353,7 @@
                     <top>10</top>
                     <width>55</width>
                     <height>28</height>
-                    <label>★ $INFO[ListItem.Property(rating)]</label>
+                    <label>R: $INFO[ListItem.Property(rating)]</label>
                     <font>font10</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
@@ -390,7 +390,7 @@
             <top>10</top>
             <width>50</width>
             <height>35</height>
-            <label>←</label>
+            <label>BACK</label>
             <font>font14</font>
             <textcolor>FF808080</textcolor>
             <focusedcolor>FFFFFFFF</focusedcolor>
