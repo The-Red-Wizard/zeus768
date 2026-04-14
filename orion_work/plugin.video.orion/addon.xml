@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.orion" name="Orion" version="3.5.0" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.resolveurl" version="5.0.0" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Orion Media Explorer</summary>
+        <description lang="en">Orion v3.5.0 - Complete media addon with Netflix-style interface for Movies, TV Shows, Kids Zone, and Trakt. NEW: Much BIGGER thumbnails throughout (56% larger main menu posters, 30% larger submenu posters, 25% larger grid cards). Netflix-style season selector and episode grid with BIG episode thumbnails (364x205px). Same UI for Kids Zone TV shows. Multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration, watch history, favorites, auto-play next episode.</description>
+        <news>[3.5.0] NEW: Much BIGGER thumbnails throughout all views! Main menu posters now 204x284px (56% larger), submenu posters 240x320px (30% larger), grid cards 348x200px (25% larger). NEW: Netflix-style Season Selector dialog for TV shows. NEW: Episode Grid with BIG 364x205px thumbnails. Kids Zone TV shows now use same season/episode UI. Consistent cyan color theme throughout.</news>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
