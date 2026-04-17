@@ -134,8 +134,8 @@ def show_season_dialog(show_data, seasons, callback=None):
     
     dialog = SeasonDialog(
         'SeasonDialog.xml',
-        skin_path,
-        'default',
+        ADDON_PATH,
+        'Default',
         '1080i',
         show_data=show_data,
         seasons=seasons,

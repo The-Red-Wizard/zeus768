@@ -160,7 +160,7 @@
             <!-- ACTION BUTTONS -->
             <!-- ======================= -->
             
-            <!-- Play / Search Sources Button -->
+            <!-- Play / Search Sources Button (for MOVIES) -->
             <control type="button" id="800">
                 <left>50</left>
                 <top>530</top>
@@ -178,6 +178,28 @@
                 <ondown>801</ondown>
                 <onleft>800</onleft>
                 <onright>800</onright>
+                <visible>String.IsEqual(Window.Property(detail_type),MOVIE)</visible>
+            </control>
+            
+            <!-- SEASONS Button (for TV SHOWS) -->
+            <control type="button" id="803">
+                <left>50</left>
+                <top>530</top>
+                <width>280</width>
+                <height>60</height>
+                <label>SEASONS</label>
+                <font>font14</font>
+                <textcolor>FF000000</textcolor>
+                <focusedcolor>FF000000</focusedcolor>
+                <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
+                <texturenofocus colordiffuse="FF00D4FF">white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <onup>810</onup>
+                <ondown>801</ondown>
+                <onleft>803</onleft>
+                <onright>803</onright>
+                <visible>String.IsEqual(Window.Property(detail_type),TV SHOW)</visible>
             </control>
             
             <!-- Trailer Button -->

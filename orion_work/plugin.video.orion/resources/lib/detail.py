@@ -23,6 +23,7 @@ ACTION_NAV_BACK = 92
 PLAY_BTN = 800
 TRAILER_BTN = 801
 FAVORITE_BTN = 802
+SEASONS_BTN = 803
 CLOSE_BTN = 810
 
 
@@ -45,6 +46,14 @@ class DetailDialog(xbmcgui.WindowXMLDialog):
         """Initialize the dialog with item details"""
         # Fetch full details from TMDB
         self._load_details()
+        # Set focus to correct button based on media type
+        try:
+            if self.media_type == 'tv':
+                self.setFocusId(SEASONS_BTN)
+            else:
+                self.setFocusId(PLAY_BTN)
+        except:
+            pass
     
     def _load_details(self):
         """Load full item details from TMDB"""
@@ -173,6 +182,10 @@ class DetailDialog(xbmcgui.WindowXMLDialog):
         
         elif controlId == PLAY_BTN:
             self.selected_action = 'play'
+            self.close()
+        
+        elif controlId == SEASONS_BTN:
+            self.selected_action = 'seasons'
             self.close()
         
         elif controlId == TRAILER_BTN:

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.orion" name="Orion" version="3.6.0" provider-name="zeus768">
+<addon id="plugin.video.orion" name="Orion" version="3.6.1" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.0.0" optional="true"/>
@@ -9,8 +9,8 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Orion Media Explorer</summary>
-        <description lang="en">Orion v3.6.0 - Complete media addon with Netflix-style interface. Landscape horizontal thumbnails, no name banners, cyan (#00D4FF) color scheme. Netflix-style search with fullscreen grid results. Master skin toggle in Settings to switch between Netflix skin and classic list view. Season selector and episode grid. Multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration.</description>
-        <news>[3.6.0] Landscape horizontal posters throughout all views, name banners removed, full cyan theme, Netflix-style search with grid results, master skin on/off toggle in Settings. [3.5.6] Previous iteration.</news>
+        <description lang="en">Orion v3.6.1 - Complete media addon with Netflix-style interface. BIG portrait poster cards in grid view, no name banners, cyan (#00D4FF) color scheme. Netflix-style season dropdown and episode grid for TV shows. SEASONS button on TV show detail. Netflix-style search. Master skin toggle in Settings. Multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration.</description>
+        <news>[3.6.1] BIG portrait poster grid cards, SEASONS button for TV shows with season dropdown and episode grid, improved scroll to page navigation. [3.6.0] Landscape thumbnails, Netflix search, skin toggle.</news>
         <platform>all</platform>
         <license>GPL-3.0</license>
         <assets>

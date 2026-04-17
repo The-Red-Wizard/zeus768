@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Netflix-style Full Grid View with Page Navigation -->
+<!-- Netflix-style Full Grid View - BIG Portrait Poster Cards, No Name Banners -->
 <window type="dialog">
     <defaultcontrol always="true">500</defaultcontrol>
     <zorder>1</zorder>
@@ -19,16 +19,7 @@
             <texture colordiffuse="FF0A0A12">white.png</texture>
         </control>
         
-        <!-- Subtle gradient overlay at top -->
-        <control type="image">
-            <left>0</left>
-            <top>0</top>
-            <width>1920</width>
-            <height>200</height>
-            <texture colordiffuse="80141420">white.png</texture>
-        </control>
-        
-        <!-- Netflix-style red accent line at top -->
+        <!-- Cyan accent line at top -->
         <control type="image">
             <left>0</left>
             <top>0</top>
@@ -40,11 +31,11 @@
         <!-- Back button (top-left) -->
         <control type="button" id="50">
             <left>40</left>
-            <top>25</top>
-            <width>50</width>
+            <top>15</top>
+            <width>80</width>
             <height>40</height>
             <label>BACK</label>
-            <font>font16</font>
+            <font>font12</font>
             <textcolor>FF808080</textcolor>
             <focusedcolor>FFFFFFFF</focusedcolor>
             <texturefocus colordiffuse="60FFFFFF">white.png</texturefocus>
@@ -57,8 +48,8 @@
         
         <!-- Page Title -->
         <control type="label" id="100">
-            <left>110</left>
-            <top>25</top>
+            <left>140</left>
+            <top>12</top>
             <width>800</width>
             <height>45</height>
             <label>$INFO[Window.Property(page_title)]</label>
@@ -67,10 +58,10 @@
             <shadowcolor>FF000000</shadowcolor>
         </control>
         
-        <!-- Page Subtitle / Category -->
+        <!-- Page Subtitle -->
         <control type="label" id="101">
-            <left>110</left>
-            <top>70</top>
+            <left>140</left>
+            <top>55</top>
             <width>600</width>
             <height>25</height>
             <label>$INFO[Window.Property(page_subtitle)]</label>
@@ -78,10 +69,10 @@
             <textcolor>FF909090</textcolor>
         </control>
         
-        <!-- Time display (top-right) -->
+        <!-- Time display -->
         <control type="label">
             <left>1750</left>
-            <top>30</top>
+            <top>18</top>
             <width>150</width>
             <height>30</height>
             <label>$INFO[System.Time]</label>
@@ -93,7 +84,7 @@
         <!-- Total items count -->
         <control type="label" id="102">
             <left>1550</left>
-            <top>70</top>
+            <top>55</top>
             <width>350</width>
             <height>25</height>
             <label>$INFO[Window.Property(total_items)] items</label>
@@ -103,13 +94,14 @@
         </control>
         
         <!-- ======================= -->
-        <!-- MAIN GRID - 6 columns x 5 rows = 30 items -->
+        <!-- MAIN GRID - BIG Portrait Poster Cards -->
+        <!-- 5 columns, poster ratio ~2:3, NO name banners -->
         <!-- ======================= -->
         <control type="panel" id="500">
             <left>40</left>
-            <top>110</top>
+            <top>90</top>
             <width>1840</width>
-            <height>880</height>
+            <height>900</height>
             <onup>50</onup>
             <ondown>600</ondown>
             <onleft>500</onleft>
@@ -117,40 +109,40 @@
             <viewtype label="Grid">panel</viewtype>
             <orientation>vertical</orientation>
             <scrolltime>200</scrolltime>
-            <itemlayout width="306" height="176">
-                <!-- Card container -->
+            <itemlayout width="368" height="450">
+                <!-- Card background -->
                 <control type="image">
-                    <left>8</left>
-                    <top>8</top>
-                    <width>290</width>
-                    <height>160</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>348</width>
+                    <height>430</height>
                     <texture colordiffuse="20FFFFFF">white.png</texture>
                 </control>
-                <!-- Poster image (landscape style for grid) -->
+                <!-- BIG Portrait Poster image -->
                 <control type="image">
-                    <left>8</left>
-                    <top>8</top>
-                    <width>290</width>
-                    <height>160</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>348</width>
+                    <height>430</height>
                     <aspectratio aligny="top">scale</aspectratio>
                     <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                 </control>
                 <!-- Rating badge (top-left) -->
                 <control type="image">
-                    <left>8</left>
-                    <top>8</top>
-                    <width>55</width>
-                    <height>26</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>60</width>
+                    <height>30</height>
                     <texture colordiffuse="E0000000">white.png</texture>
                     <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
                 <control type="label">
-                    <left>8</left>
-                    <top>8</top>
-                    <width>55</width>
-                    <height>26</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>60</width>
+                    <height>30</height>
                     <label>$INFO[ListItem.Property(rating)]</label>
-                    <font>font10</font>
+                    <font>font12</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
@@ -158,87 +150,68 @@
                 </control>
                 <!-- Year badge (top-right) -->
                 <control type="image">
-                    <left>238</left>
-                    <top>8</top>
-                    <width>60</width>
-                    <height>22</height>
+                    <left>288</left>
+                    <top>10</top>
+                    <width>70</width>
+                    <height>26</height>
                     <texture colordiffuse="80000000">white.png</texture>
                     <visible>!String.IsEmpty(ListItem.Property(year))</visible>
                 </control>
                 <control type="label">
-                    <left>238</left>
-                    <top>8</top>
-                    <width>60</width>
-                    <height>22</height>
+                    <left>288</left>
+                    <top>10</top>
+                    <width>70</width>
+                    <height>26</height>
                     <label>$INFO[ListItem.Property(year)]</label>
-                    <font>font10</font>
+                    <font>font12</font>
                     <textcolor>FFCCCCCC</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
                     <visible>!String.IsEmpty(ListItem.Property(year))</visible>
                 </control>
-                <!-- Title bar at bottom -->
-                <control type="image">
-                    <left>8</left>
-                    <top>138</top>
-                    <width>290</width>
-                    <height>30</height>
-                    <texture colordiffuse="C0000000">white.png</texture>
-                </control>
-                <control type="label">
-                    <left>14</left>
-                    <top>138</top>
-                    <width>278</width>
-                    <height>30</height>
-                    <label>$INFO[ListItem.Label]</label>
-                    <font>font10</font>
-                    <textcolor>FFCCCCCC</textcolor>
-                    <align>left</align>
-                    <aligny>center</aligny>
-                </control>
             </itemlayout>
-            <focusedlayout width="306" height="176">
-                <!-- Focus glow/border - Netflix red -->
+            <focusedlayout width="368" height="450">
+                <!-- Cyan focus border -->
                 <control type="image">
-                    <left>0</left>
-                    <top>0</top>
-                    <width>306</width>
-                    <height>176</height>
+                    <left>4</left>
+                    <top>4</top>
+                    <width>360</width>
+                    <height>442</height>
                     <texture colordiffuse="FF00D4FF">white.png</texture>
                 </control>
                 <!-- Inner card -->
                 <control type="image">
-                    <left>6</left>
-                    <top>6</top>
-                    <width>294</width>
-                    <height>164</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>348</width>
+                    <height>430</height>
                     <texture colordiffuse="FF1A1A24">white.png</texture>
                 </control>
-                <!-- Poster image -->
+                <!-- BIG Portrait Poster image -->
                 <control type="image">
-                    <left>6</left>
-                    <top>6</top>
-                    <width>294</width>
-                    <height>164</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>348</width>
+                    <height>430</height>
                     <aspectratio aligny="top">scale</aspectratio>
                     <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                 </control>
                 <!-- Rating badge (top-left) -->
                 <control type="image">
-                    <left>6</left>
-                    <top>6</top>
-                    <width>55</width>
-                    <height>26</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>60</width>
+                    <height>30</height>
                     <texture colordiffuse="E0000000">white.png</texture>
                     <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
                 <control type="label">
-                    <left>6</left>
-                    <top>6</top>
-                    <width>55</width>
-                    <height>26</height>
+                    <left>10</left>
+                    <top>10</top>
+                    <width>60</width>
+                    <height>30</height>
                     <label>$INFO[ListItem.Property(rating)]</label>
-                    <font>font10</font>
+                    <font>font12</font>
                     <textcolor>FFFFCC00</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
@@ -246,43 +219,24 @@
                 </control>
                 <!-- Year badge (top-right) -->
                 <control type="image">
-                    <left>240</left>
-                    <top>6</top>
-                    <width>60</width>
-                    <height>22</height>
+                    <left>288</left>
+                    <top>10</top>
+                    <width>70</width>
+                    <height>26</height>
                     <texture colordiffuse="80000000">white.png</texture>
                     <visible>!String.IsEmpty(ListItem.Property(year))</visible>
                 </control>
                 <control type="label">
-                    <left>240</left>
-                    <top>6</top>
-                    <width>60</width>
-                    <height>22</height>
+                    <left>288</left>
+                    <top>10</top>
+                    <width>70</width>
+                    <height>26</height>
                     <label>$INFO[ListItem.Property(year)]</label>
-                    <font>font10</font>
+                    <font>font12</font>
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
                     <visible>!String.IsEmpty(ListItem.Property(year))</visible>
-                </control>
-                <!-- Title bar at bottom - highlighted -->
-                <control type="image">
-                    <left>6</left>
-                    <top>138</top>
-                    <width>294</width>
-                    <height>32</height>
-                    <texture colordiffuse="E000D4FF">white.png</texture>
-                </control>
-                <control type="label">
-                    <left>14</left>
-                    <top>138</top>
-                    <width>282</width>
-                    <height>32</height>
-                    <label>$INFO[ListItem.Label]</label>
-                    <font>font12</font>
-                    <textcolor>FFFFFFFF</textcolor>
-                    <align>left</align>
-                    <aligny>center</aligny>
                 </control>
             </focusedlayout>
         </control>
@@ -325,7 +279,7 @@
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
                 <disabledcolor>FF404040</disabledcolor>
-                <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
+                <texturefocus colordiffuse="FF00D4FF">white.png</texturefocus>
                 <texturenofocus colordiffuse="40FFFFFF">white.png</texturenofocus>
                 <align>center</align>
                 <aligny>center</aligny>
@@ -355,12 +309,12 @@
                 <top>15</top>
                 <width>130</width>
                 <height>50</height>
-                <label>NEXT  ></label>
+                <label>NEXT ></label>
                 <font>font13</font>
                 <textcolor>FFFFFFFF</textcolor>
                 <focusedcolor>FF000000</focusedcolor>
                 <disabledcolor>FF404040</disabledcolor>
-                <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
+                <texturefocus colordiffuse="FF00D4FF">white.png</texturefocus>
                 <texturenofocus colordiffuse="40FFFFFF">white.png</texturenofocus>
                 <align>center</align>
                 <aligny>center</aligny>
@@ -371,7 +325,7 @@
                 <enable>!String.IsEqual(Window.Property(current_page),Window.Property(total_pages))</enable>
             </control>
             
-            <!-- Items on this page indicator (right side) -->
+            <!-- Items range indicator -->
             <control type="label">
                 <left>1500</left>
                 <top>25</top>

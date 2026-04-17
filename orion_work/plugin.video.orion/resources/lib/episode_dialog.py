@@ -189,8 +189,8 @@ def show_episode_dialog(show_data, episodes, season_number, total_seasons=1,
     
     dialog = EpisodeDialog(
         'EpisodeDialog.xml',
-        skin_path,
-        'default',
+        ADDON_PATH,
+        'Default',
         '1080i',
         show_data=show_data,
         episodes=episodes,

@@ -249,9 +249,14 @@ def show_custom_main_menu():
             # Call movie_sources to search for links
             movie_sources({'id': tmdb_id, 'title': title, 'year': year})
         else:
-            # For TV shows, navigate to seasons
-            url = build_url({'action': 'tv_seasons', 'id': tmdb_id, 'title': title})
-            xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+            # For TV shows, use Netflix-style season/episode picker
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(tmdb_id, title)
+                show_custom_main_menu()
+            else:
+                url = build_url({'action': 'tv_seasons', 'id': tmdb_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
     
     elif action == 'play_hero' and row1_items:
         hero_item = row1_items[0]
@@ -527,10 +532,17 @@ def _handle_submenu_result(action, selected_item, selected_category, media_type,
             # Call movie_sources directly to search for links
             movie_sources({'id': item_id, 'title': title, 'year': year})
         else:
-            # For TV shows, navigate to seasons then end directory
-            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
-            url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
-            xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+            # For TV shows, use Netflix-style season/episode picker
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                # Re-show current submenu after returning
+                if media_type == 'tv':
+                    _show_tvshows_netflix_style(current_category)
+            else:
+                xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
     
     elif action == 'watch' and selected_item:
         # User clicked Watch Now button - search for links
@@ -544,9 +556,15 @@ def _handle_submenu_result(action, selected_item, selected_category, media_type,
             # Call movie_sources directly to search for links
             movie_sources({'id': item_id, 'title': title, 'year': year})
         else:
-            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
-            url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
-            xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                if media_type == 'tv':
+                    _show_tvshows_netflix_style(current_category)
+            else:
+                xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
     
     elif action == 'info' and selected_item:
         # Show detail dialog with trailer and play buttons
@@ -568,6 +586,16 @@ def _handle_submenu_result(action, selected_item, selected_category, media_type,
                 xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
                 url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
                 xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+        elif detail_action == 'seasons':
+            # TV show - show Netflix-style season/episode picker
+            item_id = item_data.get('id')
+            title = item_data.get('title', '')
+            _show_netflix_season_episode_flow(item_id, title)
+            # After returning, re-show the menu
+            if media_type == 'movie':
+                _show_movies_netflix_style(current_category)
+            else:
+                _show_tvshows_netflix_style(current_category)
         else:
             # Re-show the Netflix menu
             if media_type == 'movie':
@@ -697,6 +725,11 @@ def _show_genre_grid_view(media_type, genre_id, genre_name):
                     xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
                     return
             
+            if detail_action == 'seasons':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                _show_netflix_season_episode_flow(item_id, title)
+            
             # If user closed detail dialog, continue showing grid
             continue
 
@@ -787,6 +820,11 @@ def _show_category_grid_view(media_type, category, category_name):
                     xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
                     return
             
+            if detail_action == 'seasons':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                _show_netflix_season_episode_flow(item_id, title)
+            
             continue
 
 
@@ -794,6 +832,116 @@ def _show_genre_netflix_style(media_type, genre_id, genre_name):
     """Show Netflix-style view for a specific genre - NOW OPENS GRID VIEW"""
     # Redirect to the new grid view with pagination
     _show_genre_grid_view(media_type, genre_id, genre_name)
+
+
+
+def _show_netflix_season_episode_flow(show_id, show_title):
+    """Show Netflix-style season selector then episode grid for a TV show.
+    Uses SeasonDialog -> EpisodeDialog -> episode_sources."""
+    from resources.lib import tmdb, season_dialog, episode_dialog
+    
+    if not show_id:
+        return
+    
+    try:
+        # Fetch show details
+        details = tmdb.get_tv_details(show_id)
+        seasons_data = details.get('seasons', [])
+        
+        if not seasons_data:
+            xbmcgui.Dialog().notification('Orion', 'No seasons found', ADDON_ICON)
+            return
+        
+        # Build show_data for dialogs
+        show_data = {
+            'title': details.get('name', show_title),
+            'backdrop': tmdb.get_backdrop_url(details.get('backdrop_path')) or ADDON_FANART,
+            'overview': details.get('overview', ''),
+            'year': (details.get('first_air_date') or '')[:4],
+            'rating': details.get('vote_average', 0),
+            'genres': ', '.join([g['name'] for g in details.get('genres', [])[:3]])
+        }
+        
+        # Build seasons list
+        seasons = []
+        for s in seasons_data:
+            seasons.append({
+                'season_number': s.get('season_number', 0),
+                'name': s.get('name', f"Season {s.get('season_number', 0)}"),
+                'poster': tmdb.get_poster_url(s.get('poster_path')) or ADDON_ICON,
+                'episode_count': s.get('episode_count', 0)
+            })
+        
+        total_seasons = len(seasons)
+        
+        # Season selection loop
+        while True:
+            selected_season = season_dialog.show_season_dialog(
+                show_data=show_data,
+                seasons=seasons
+            )
+            
+            if selected_season is None:
+                # User backed out
+                return
+            
+            log(f"Season selected: {selected_season}")
+            
+            # Fetch episodes for the selected season
+            try:
+                ep_data = tmdb.get_season_episodes(show_id, selected_season)
+                episode_list = ep_data.get('episodes', [])
+            except Exception as e:
+                log(f"Error fetching episodes: {e}", xbmc.LOGERROR)
+                xbmcgui.Dialog().notification('Orion', f'Error: {str(e)}', ADDON_ICON)
+                continue
+            
+            if not episode_list:
+                xbmcgui.Dialog().notification('Orion', 'No episodes found', ADDON_ICON)
+                continue
+            
+            # Prepare episodes for dialog
+            episodes_for_dialog = []
+            for ep in episode_list:
+                still = tmdb.get_backdrop_url(ep.get('still_path'))
+                episodes_for_dialog.append({
+                    'episode_number': ep.get('episode_number', 0),
+                    'name': ep.get('name', f"Episode {ep.get('episode_number', 0)}"),
+                    'still_path': still or ADDON_FANART,
+                    'air_date': ep.get('air_date', ''),
+                    'runtime': ep.get('runtime', 0),
+                    'overview': ep.get('overview', '')
+                })
+            
+            # Episode selection loop
+            while True:
+                result = episode_dialog.show_episode_dialog(
+                    show_data=show_data,
+                    episodes=episodes_for_dialog,
+                    season_number=selected_season,
+                    total_seasons=total_seasons
+                )
+                
+                if result is None:
+                    # User backed out - go back to season picker
+                    break
+                
+                ep_season, ep_number = result
+                log(f"Episode selected: S{ep_season}E{ep_number}")
+                
+                # Search for episode sources
+                episode_sources({
+                    'id': show_id,
+                    'title': show_title,
+                    'season': ep_season,
+                    'episode': ep_number
+                })
+                return  # Exit after starting playback
+    
+    except Exception as e:
+        log(f"Error in season/episode flow: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification('Orion', f'Error: {str(e)}', ADDON_ICON)
+
 
 
 def list_content(params):
@@ -1137,6 +1285,8 @@ def _show_netflix_search(media_type='multi'):
                     url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
                     xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
                     return
+            if detail_action == 'seasons':
+                _show_netflix_season_episode_flow(item_id, title)
             # If detail was closed, continue showing search results
             continue
         
@@ -2151,6 +2301,11 @@ def _handle_kids_submenu_result(action, selected_item, selected_category, curren
                 xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
                 url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
                 xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+        elif detail_action == 'seasons':
+            item_id = item_data.get('id')
+            title = item_data.get('title', '')
+            _show_netflix_season_episode_flow(item_id, title)
+            _show_kids_netflix_style(current_category)
         else:
             _show_kids_netflix_style(current_category)
     
@@ -2296,6 +2451,11 @@ def _show_kids_grid_view(category, category_name):
                     url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
                     xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
                     return
+            
+            if detail_action == 'seasons':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                _show_netflix_season_episode_flow(item_id, title)
             
             # If closed detail, continue showing grid
             continue
