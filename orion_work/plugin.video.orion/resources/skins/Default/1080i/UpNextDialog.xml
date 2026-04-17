@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Orion - Up Next Episode Overlay - Cyan Theme -->
+<window type="dialog">
+    <defaultcontrol always="true">5000</defaultcontrol>
+    <zorder>10</zorder>
+    <coordinates>
+        <system>1</system>
+        <left>0</left>
+        <top>0</top>
+    </coordinates>
+    
+    <controls>
+        <!-- Semi-transparent overlay at bottom -->
+        <control type="image">
+            <left>0</left>
+            <top>780</top>
+            <width>1920</width>
+            <height>300</height>
+            <texture colordiffuse="E0080810">white.png</texture>
+        </control>
+        
+        <!-- Cyan top accent line -->
+        <control type="image">
+            <left>0</left>
+            <top>780</top>
+            <width>1920</width>
+            <height>3</height>
+            <texture colordiffuse="FF00D4FF">white.png</texture>
+        </control>
+        
+        <!-- "UP NEXT" label -->
+        <control type="label">
+            <left>60</left>
+            <top>800</top>
+            <width>200</width>
+            <height>30</height>
+            <label>UP NEXT</label>
+            <font>font12</font>
+            <textcolor>FF00D4FF</textcolor>
+        </control>
+        
+        <!-- Countdown -->
+        <control type="label">
+            <left>1700</left>
+            <top>800</top>
+            <width>180</width>
+            <height>30</height>
+            <label>Playing in $INFO[Window.Property(countdown)]s</label>
+            <font>font12</font>
+            <textcolor>FF808090</textcolor>
+            <align>right</align>
+        </control>
+        
+        <!-- Episode thumbnail -->
+        <control type="image">
+            <left>60</left>
+            <top>845</top>
+            <width>280</width>
+            <height>160</height>
+            <aspectratio>scale</aspectratio>
+            <texture fallback="fanart.jpg">$INFO[Window.Property(next_still)]</texture>
+        </control>
+        
+        <!-- Show title -->
+        <control type="label">
+            <left>360</left>
+            <top>845</top>
+            <width>700</width>
+            <height>30</height>
+            <label>$INFO[Window.Property(show_title)]</label>
+            <font>font14</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+        
+        <!-- Episode info -->
+        <control type="label">
+            <left>360</left>
+            <top>885</top>
+            <width>700</width>
+            <height>25</height>
+            <label>S$INFO[Window.Property(next_season)] E$INFO[Window.Property(next_episode_num)] - $INFO[Window.Property(next_title)]</label>
+            <font>font12</font>
+            <textcolor>FFB0B0C0</textcolor>
+        </control>
+        
+        <!-- Play Next button -->
+        <control type="button" id="5000">
+            <left>360</left>
+            <top>935</top>
+            <width>180</width>
+            <height>55</height>
+            <label>PLAY NEXT</label>
+            <font>font13</font>
+            <textcolor>FF000000</textcolor>
+            <focusedcolor>FF000000</focusedcolor>
+            <texturefocus colordiffuse="FFFFFFFF">white.png</texturefocus>
+            <texturenofocus colordiffuse="FF00D4FF">white.png</texturenofocus>
+            <align>center</align>
+            <aligny>center</aligny>
+            <onright>5001</onright>
+        </control>
+        
+        <!-- Cancel button -->
+        <control type="button" id="5001">
+            <left>560</left>
+            <top>935</top>
+            <width>140</width>
+            <height>55</height>
+            <label>CANCEL</label>
+            <font>font12</font>
+            <textcolor>FFB0B0C0</textcolor>
+            <focusedcolor>FF000000</focusedcolor>
+            <texturefocus colordiffuse="FF00D4FF">white.png</texturefocus>
+            <texturenofocus colordiffuse="40FFFFFF">white.png</texturenofocus>
+            <align>center</align>
+            <aligny>center</aligny>
+            <onleft>5000</onleft>
+        </control>
+    </controls>
+</window>

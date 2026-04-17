@@ -117,6 +117,14 @@ class GridDialog(xbmcgui.WindowXMLDialog):
                 li.setProperty('plot', item.get('plot', item.get('overview', '')))
                 li.setProperty('genres', item.get('genres', ''))
                 
+                # Progress bar support
+                progress = item.get('progress', 0)
+                if progress and int(progress) > 0:
+                    li.setProperty('progress', str(progress))
+                    # Max width 348px for the grid poster card
+                    progress_width = str(int(348 * int(progress) / 100))
+                    li.setProperty('progress_width', progress_width)
+                
                 grid.addItem(li)
                 
             xbmc.log(f"[Orion] Grid populated with {len(items)} items for page {self.current_page}", xbmc.LOGINFO)

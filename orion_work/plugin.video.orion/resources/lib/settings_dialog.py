@@ -69,6 +69,7 @@ SETTINGS_CATEGORIES = [
         'items': [
             {'id': 'preferred_quality', 'label': 'Preferred Quality', 'desc': 'Default quality filter for sources', 'type': 'select', 'options': ['All', '4K', '1080p', '720p']},
             {'id': 'auto_play', 'label': 'Auto-Play Best Source', 'desc': 'Automatically play the best available source', 'type': 'bool'},
+            {'id': 'auto_next_episode', 'label': 'Up Next Auto-Play', 'desc': 'Show Up Next overlay and auto-play next episode', 'type': 'bool'},
             {'id': 'source_timeout', 'label': 'Source Timeout (seconds)', 'desc': 'Maximum time to search for sources', 'type': 'text'},
         ]
     },

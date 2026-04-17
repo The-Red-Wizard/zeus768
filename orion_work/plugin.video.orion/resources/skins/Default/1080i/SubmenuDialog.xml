@@ -209,6 +209,24 @@
                     <align>center</align>
                     <aligny>center</aligny>
                 </control>
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>190</width>
+                    <height>5</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>5</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
             </itemlayout>
             <focusedlayout width="180" height="50">
                 <control type="image">
@@ -229,6 +247,24 @@
                     <align>center</align>
                     <aligny>center</aligny>
                 </control>
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>190</width>
+                    <height>5</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>5</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
             </focusedlayout>
         </control>
         
@@ -248,7 +284,7 @@
             <left>60</left>
             <top>540</top>
             <width>1800</width>
-            <height>260</height>
+            <height>320</height>
             <orientation>horizontal</orientation>
             <onup>110</onup>
             <ondown>300</ondown>
@@ -256,21 +292,21 @@
             <onright>200</onright>
             <scrolltime>200</scrolltime>
             <pagecontrol>250</pagecontrol>
-            <itemlayout width="400" height="240">
+            <itemlayout width="200" height="300">
                 <!-- Card background -->
                 <control type="image">
                     <left>5</left>
                     <top>5</top>
-                    <width>390</width>
-                    <height>230</height>
+                    <width>190</width>
+                    <height>290</height>
                     <texture colordiffuse="25FFFFFF">white.png</texture>
                 </control>
                 <!-- Landscape poster -->
                 <control type="image">
                     <left>5</left>
                     <top>5</top>
-                    <width>390</width>
-                    <height>230</height>
+                    <width>190</width>
+                    <height>290</height>
                     <aspectratio>scale</aspectratio>
                     <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                 </control>
@@ -295,22 +331,40 @@
                     <aligny>center</aligny>
                     <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                 </control>
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>190</width>
+                    <height>5</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>5</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
             </itemlayout>
-            <focusedlayout width="400" height="240">
+            <focusedlayout width="200" height="300">
                 <!-- Cyan focus border -->
                 <control type="image">
                     <left>0</left>
                     <top>0</top>
-                    <width>400</width>
-                    <height>240</height>
+                    <width>200</width>
+                    <height>300</height>
                     <texture colordiffuse="FF00D4FF">white.png</texture>
                 </control>
                 <!-- Landscape poster -->
                 <control type="image">
                     <left>5</left>
                     <top>5</top>
-                    <width>390</width>
-                    <height>230</height>
+                    <width>190</width>
+                    <height>290</height>
                     <aspectratio>scale</aspectratio>
                     <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                 </control>
@@ -334,6 +388,24 @@
                     <align>center</align>
                     <aligny>center</aligny>
                     <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
+                </control>
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>190</width>
+                    <height>5</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>5</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
             </focusedlayout>
         </control>
@@ -341,7 +413,7 @@
         <!-- Row 2 Title (Genres) -->
         <control type="label" id="301">
             <left>60</left>
-            <top>810</top>
+            <top>870</top>
             <width>400</width>
             <height>30</height>
             <label>$INFO[Window.Property(row2_title)]</label>
@@ -353,7 +425,7 @@
         <!-- Row 2 - Genres/Categories -->
         <control type="list" id="300">
             <left>60</left>
-            <top>845</top>
+            <top>905</top>
             <width>1800</width>
             <height>200</height>
             <orientation>horizontal</orientation>
@@ -398,6 +470,24 @@
                     <align>center</align>
                     <aligny>center</aligny>
                 </control>
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>190</width>
+                    <height>5</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>5</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
             </itemlayout>
             <focusedlayout width="240" height="140">
                 <control type="image">
@@ -432,6 +522,24 @@
                     <textcolor>FFFFFFFF</textcolor>
                     <align>center</align>
                     <aligny>center</aligny>
+                </control>
+                <!-- Progress bar background -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>190</width>
+                    <height>5</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>5</left>
+                    <top>287</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>5</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
             </focusedlayout>
         </control>

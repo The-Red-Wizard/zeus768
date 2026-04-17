@@ -2336,16 +2336,14 @@ def play_source(params):
                     xbmc.sleep(100)
             
             # Setup auto-play next episode if enabled
-            if media_type == 'tv' and ADDON.getSetting('auto_next_episode') == 'true':
-                if season and episode:
-                    database.set_next_episode(
-                        tmdb_id,
-                        title.split(' S')[0] if ' S' in title else title,
-                        int(season),
-                        int(episode) + 1,
-                        poster,
-                        backdrop
-                    )
+            if media_type == 'tv' and season and episode:
+                _monitor_episode_playback(
+                    player, tmdb_id,
+                    title.split(' S')[0] if ' S' in title else title,
+                    int(season), int(episode),
+                    poster, backdrop,
+                    database
+                )
         else:
             log("Failed to resolve stream URL", xbmc.LOGERROR)
             xbmcgui.Dialog().notification('Orion', 'Failed to resolve link', ADDON_ICON)
@@ -2353,6 +2351,143 @@ def play_source(params):
         progress.close()
         log(f"Error resolving: {e}", xbmc.LOGERROR)
         xbmcgui.Dialog().notification('Orion', f'Error: {str(e)}', ADDON_ICON)
+
+
+
+def _monitor_episode_playback(player, tmdb_id, show_title, season, episode, poster, backdrop, database):
+    """Monitor episode playback and show Up Next dialog near the end"""
+    import threading
+    
+    def _monitor():
+        try:
+            from resources.lib import tmdb as tmdb_api, up_next
+            
+            # Initialize Trakt scrobbler if authorized
+            trakt_scrobbler = None
+            if ADDON.getSetting('trakt_token'):
+                try:
+                    from resources.lib.trakt import TraktAPI, TraktScrobbler
+                    trakt_api = TraktAPI()
+                    trakt_scrobbler = TraktScrobbler(trakt_api)
+                    trakt_scrobbler.start_watching('show', {'tmdb': tmdb_id}, 0)
+                    log("Trakt scrobble started")
+                except Exception as e:
+                    log(f"Trakt scrobble init error: {e}", xbmc.LOGWARNING)
+            
+            # Wait for playback to start
+            for _ in range(100):
+                if player.isPlaying():
+                    break
+                xbmc.sleep(100)
+            
+            if not player.isPlaying():
+                return
+            
+            # Wait for total time to be available
+            total_time = 0
+            for _ in range(30):
+                try:
+                    total_time = player.getTotalTime()
+                    if total_time > 0:
+                        break
+                except:
+                    pass
+                xbmc.sleep(500)
+            
+            if total_time <= 0:
+                return
+            
+            # Calculate when to show Up Next (90% through or 2 mins before end)
+            trigger_time = max(total_time * 0.90, total_time - 120)
+            
+            log(f"Up Next monitoring: total={total_time:.0f}s, trigger at {trigger_time:.0f}s")
+            
+            # Fetch next episode info
+            next_ep = episode + 1
+            next_episode_data = None
+            try:
+                ep_data = tmdb_api.get_season_episodes(tmdb_id, season)
+                episodes_list = ep_data.get('episodes', [])
+                for ep in episodes_list:
+                    if ep.get('episode_number') == next_ep:
+                        still = tmdb_api.get_backdrop_url(ep.get('still_path'))
+                        next_episode_data = {
+                            'name': ep.get('name', f'Episode {next_ep}'),
+                            'episode_number': next_ep,
+                            'season_number': season,
+                            'still_path': still or backdrop
+                        }
+                        break
+            except:
+                pass
+            
+            if not next_episode_data:
+                return
+            
+            # Monitor playback progress
+            up_next_shown = False
+            while player.isPlaying():
+                try:
+                    current_time = player.getTime()
+                    
+                    # Save progress to database
+                    progress_pct = int((current_time / total_time) * 100) if total_time > 0 else 0
+                    history_key = f"tv_{tmdb_id}_s{season}e{episode}"
+                    database.update_progress(history_key, current_time, total_time)
+                    
+                    # Update Trakt scrobble progress
+                    if trakt_scrobbler and progress_pct % 10 == 0:
+                        try:
+                            trakt_scrobbler.pause_watching(progress_pct)
+                            trakt_scrobbler.start_watching('show', {'tmdb': tmdb_id}, progress_pct)
+                        except:
+                            pass
+                    
+                    # Show Up Next dialog
+                    if current_time >= trigger_time and not up_next_shown:
+                        up_next_shown = True
+                        should_play = up_next.show_up_next(
+                            show_title=show_title,
+                            next_episode=next_episode_data,
+                            countdown=15
+                        )
+                        
+                        if should_play:
+                            # Wait for current episode to finish or user interaction
+                            xbmc.sleep(500)
+                            player.stop()
+                            xbmc.sleep(500)
+                            
+                            # Play next episode
+                            episode_sources({
+                                'id': tmdb_id,
+                                'title': show_title,
+                                'season': season,
+                                'episode': next_ep
+                            })
+                            return
+                except:
+                    break
+                
+                xbmc.sleep(2000)  # Check every 2 seconds
+            
+            # Playback ended naturally - save final progress and scrobble
+            try:
+                history_key = f"tv_{tmdb_id}_s{season}e{episode}"
+                database.update_progress(history_key, total_time, total_time)
+                if trakt_scrobbler:
+                    trakt_scrobbler.stop_watching(100)
+                    log("Trakt scrobble completed")
+            except:
+                pass
+                
+        except Exception as e:
+            xbmc.log(f"[Orion] Up Next monitor error: {e}", xbmc.LOGWARNING)
+    
+    thread = threading.Thread(target=_monitor)
+    thread.daemon = True
+    thread.start()
+
 
 # ============== KIDS ZONE ==============
 

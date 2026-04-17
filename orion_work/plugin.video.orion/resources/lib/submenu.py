@@ -147,6 +147,12 @@ class SubmenuDialog(xbmcgui.WindowXMLDialog):
                 li.setProperty('action', item.get('action', ''))
                 li.setProperty('genre_id', str(item.get('genre_id', '')))
                 
+                # Progress bar support (max width 190px for portrait tiles)
+                progress = item.get('progress', 0)
+                if progress and int(progress) > 0:
+                    li.setProperty('progress', str(progress))
+                    li.setProperty('progress_width', str(int(190 * int(progress) / 100)))
+                
                 row_list.addItem(li)
         except Exception as e:
             xbmc.log(f"[Orion] Error populating row {control_id}: {e}", xbmc.LOGWARNING)

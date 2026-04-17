@@ -169,6 +169,24 @@
                     <aligny>center</aligny>
                     <visible>!String.IsEmpty(ListItem.Property(year))</visible>
                 </control>
+                <!-- Progress bar background (bottom of poster) -->
+                <control type="image">
+                    <left>10</left>
+                    <top>432</top>
+                    <width>348</width>
+                    <height>6</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>10</left>
+                    <top>432</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>6</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
             </itemlayout>
             <focusedlayout width="368" height="450">
                 <!-- Cyan focus border -->
@@ -237,6 +255,24 @@
                     <align>center</align>
                     <aligny>center</aligny>
                     <visible>!String.IsEmpty(ListItem.Property(year))</visible>
+                </control>
+                <!-- Progress bar background (bottom of poster) -->
+                <control type="image">
+                    <left>10</left>
+                    <top>432</top>
+                    <width>348</width>
+                    <height>6</height>
+                    <texture colordiffuse="60000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Progress bar fill (cyan) -->
+                <control type="image">
+                    <left>10</left>
+                    <top>432</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>6</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                 </control>
             </focusedlayout>
         </control>
