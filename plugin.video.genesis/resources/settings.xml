@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <!-- Icon Theme Section -->
+    <category label="Appearance">
+        <setting type="lsep" label="Icon Theme Settings (via Genesis Skins)"/>
+        <setting id="use_genesis_skins" type="bool" label="Use Genesis Skins Icons" default="true"/>
+        <setting id="select_icon_theme" type="action" label="[COLOR yellow]Select Icon Theme[/COLOR]" action="RunScript(script.genesis.skins)" enable="eq(-1,true)"/>
+        <setting type="lsep" label="Themes: Classic, Futuristic, Anime, Water"/>
+        <setting type="lsep" label="Add your own themes in script.genesis.skins/resources/media/"/>
+    </category>
+    
+    <!-- Accounts Section -->
+    <category label="Accounts">
+        <setting id="tmdb_api_key" type="text" label="TMDB API Key" default=""/>
+        <setting id="tmdb_key_prompted" type="bool" label="" default="false" visible="false"/>
+        
+        <!-- OMDB API Key for multi-source ratings -->
+        <setting id="omdb_api_key" type="text" label="OMDB API Key (for ratings)" default=""/>
+        <setting type="lsep" label="Get free OMDB key at omdbapi.com"/>
+        
+        <!-- Trakt -->
+        <setting id="trakt_auth_done" type="bool" label="Trakt Authenticated" default="false" enable="false"/>
+        <setting id="trakt_access_token" type="text" label="" default="" visible="false"/>
+        <setting id="trakt_refresh_token" type="text" label="" default="" visible="false"/>
+        <setting id="trakt_expires" type="text" label="" default="0" visible="false"/>
+        <setting id="auth_trakt" type="action" label="[COLOR yellow]Authorize Trakt Account[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_trakt)"/>
+        <setting id="revoke_trakt" type="action" label="[COLOR red]Revoke Trakt Authorization[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_trakt)" enable="eq(-4,true)"/>
+    </category>
+    
+    <!-- Plex Server Section -->
+    <category label="Plex Server">
+        <setting type="lsep" label="Plex Media Server Integration"/>
+        <setting id="plex_enabled" type="bool" label="Plex Server Enabled" default="false" enable="false"/>
+        <setting id="plex_url" type="text" label="Server URL" default="http://192.168.1.100:32400"/>
+        <setting id="plex_token" type="text" label="Plex Token" default="" option="hidden"/>
+        <setting type="lsep" label="Get token from: plex.tv/claim or Settings > Privacy"/>
+        <setting id="plex_configure" type="action" label="[COLOR orange]Configure Plex Server[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=plex_configure)"/>
+        <setting id="plex_disable" type="action" label="[COLOR red]Disable Plex[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=plex_disable)" enable="eq(-5,true)"/>
+    </category>
+    
+    <!-- Emby Server Section -->
+    <category label="Emby Server">
+        <setting type="lsep" label="Emby Media Server Integration"/>
+        <setting id="emby_enabled" type="bool" label="Emby Server Enabled" default="false" enable="false"/>
+        <setting id="emby_url" type="text" label="Server URL" default="http://192.168.1.100:8096"/>
+        <setting id="emby_token" type="text" label="API Key" default="" option="hidden"/>
+        <setting id="emby_user_id" type="text" label="User ID" default="" visible="false"/>
+        <setting id="emby_username" type="text" label="Username" default="" enable="false"/>
+        <setting type="lsep" label="Get API Key: Dashboard > Advanced > Security"/>
+        <setting id="emby_configure" type="action" label="[COLOR purple]Configure Emby Server[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=emby_configure)"/>
+        <setting id="emby_disable" type="action" label="[COLOR red]Disable Emby[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=emby_disable)" enable="eq(-6,true)"/>
+    </category>
+    
+    <!-- Debrid Services Section -->
+    <category label="Debrid Services">
+        <!-- Real-Debrid -->
+        <setting id="rd_auth_done" type="bool" label="Real-Debrid Authenticated" default="false" enable="false"/>
+        <setting id="rd_access_token" type="text" label="" default="" visible="false"/>
+        <setting id="rd_refresh_token" type="text" label="" default="" visible="false"/>
+        <setting id="rd_client_id" type="text" label="" default="" visible="false"/>
+        <setting id="rd_client_secret" type="text" label="" default="" visible="false"/>
+        <setting id="rd_expires" type="text" label="" default="0" visible="false"/>
+        <setting id="auth_rd" type="action" label="[COLOR yellow]Authorize Real-Debrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_rd)"/>
+        <setting id="revoke_rd" type="action" label="[COLOR red]Revoke Real-Debrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_rd)" enable="eq(-6,true)"/>
+        
+        <!-- AllDebrid -->
+        <setting id="ad_auth_done" type="bool" label="AllDebrid Authenticated" default="false" enable="false"/>
+        <setting id="ad_api_key" type="text" label="" default="" visible="false"/>
+        <setting id="auth_ad" type="action" label="[COLOR yellow]Authorize AllDebrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_ad)"/>
+        <setting id="revoke_ad" type="action" label="[COLOR red]Revoke AllDebrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_ad)" enable="eq(-3,true)"/>
+        
+        <!-- Premiumize -->
+        <setting id="pm_auth_done" type="bool" label="Premiumize Authenticated" default="false" enable="false"/>
+        <setting id="pm_access_token" type="text" label="" default="" visible="false"/>
+        <setting id="auth_pm" type="action" label="[COLOR yellow]Authorize Premiumize[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_pm)"/>
+        <setting id="revoke_pm" type="action" label="[COLOR red]Revoke Premiumize[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_pm)" enable="eq(-3,true)"/>
+    </category>
+    
+    <!-- TorBox -->
+    <category label="TorBox">
+        <setting id="tb_auth_done" type="bool" label="TorBox Authorized" default="false" enable="false"/>
+        <setting id="tb_api_key" type="text" label="API Key (auto-filled)" default="" enable="false"/>
+        <setting id="auth_tb" type="action" label="[COLOR yellow]Authorize TorBox (Device Code)[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_tb)"/>
+        <setting id="revoke_tb" type="action" label="[COLOR red]Revoke TorBox[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_tb)" enable="eq(-3,true)"/>
+    </category>
+    
+    <!-- LinkSnappy -->
+    <category label="LinkSnappy">
+        <setting id="ls_auth_done" type="bool" label="LinkSnappy Authorized" default="false" enable="false"/>
+        <setting id="ls_username" type="text" label="Username" default="" enable="false"/>
+        <setting id="ls_password" type="text" label="Password" default="" visible="false"/>
+        <setting id="ls_cookie" type="text" label="Cookie" default="" visible="false"/>
+        <setting id="auth_ls" type="action" label="[COLOR yellow]Login to LinkSnappy[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_ls)"/>
+        <setting id="revoke_ls" type="action" label="[COLOR red]Unlink LinkSnappy[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_ls)" enable="eq(-5,true)"/>
+    </category>
+    
+    <!-- Playback Settings -->
+    <category label="Playback">
+        <setting id="preferred_quality" type="select" label="Preferred Quality" default="1" values="4K/2160p|1080p|720p|480p"/>
+        <setting id="quality_fallback" type="bool" label="Show Lower Quality as Fallback" default="true"/>
+        <setting type="lsep" label="Source Picker Settings"/>
+        <setting id="show_all_sources" type="bool" label="Show All Sources in Picker" default="true"/>
+        <setting id="cache_priority" type="bool" label="Prioritize Cached Sources" default="true"/>
+    </category>
+    
+    <!-- Scraper Settings -->
+    <category label="Scrapers">
+        <setting type="lsep" label="General Torrent Sites (10 Total)"/>
+        <setting id="enable_1337x" type="bool" label="Enable 1337x" default="true"/>
+        <setting id="enable_piratebay" type="bool" label="Enable The Pirate Bay" default="true"/>
+        <setting id="enable_yts" type="bool" label="Enable YTS (YIFY)" default="true"/>
+        <setting id="enable_eztv" type="bool" label="Enable EZTV" default="true"/>
+        <setting id="enable_limetorrents" type="bool" label="Enable LimeTorrents" default="true"/>
+        <setting id="enable_torrentgalaxy" type="bool" label="Enable TorrentGalaxy" default="true"/>
+        <setting id="enable_nyaa" type="bool" label="Enable Nyaa (Anime)" default="true"/>
+        <setting id="enable_magnetdl" type="bool" label="Enable Magnetdl" default="true"/>
+        <setting id="enable_solidtorrents" type="bool" label="Enable SolidTorrents" default="true"/>
+        <setting id="enable_bitsearch" type="bool" label="Enable BitSearch" default="true"/>
+        
+        <setting type="lsep" label="Anime Torrent Sites (7 Total)"/>
+        <setting id="enable_subsplease" type="bool" label="Enable SubsPlease (Daily Subs)" default="true"/>
+        <setting id="enable_animetosho" type="bool" label="Enable AnimeTosho (Ad-Free)" default="true"/>
+        <setting id="enable_tokyotosho" type="bool" label="Enable TokyoTosho" default="true"/>
+        <setting id="enable_anidex" type="bool" label="Enable AniDex (Multi-Lang)" default="true"/>
+        <setting id="enable_erairaws" type="bool" label="Enable Erai-Raws" default="true"/>
+        <setting id="enable_shanaproject" type="bool" label="Enable ShanaProject" default="true"/>
+        <setting id="enable_bakabt" type="bool" label="Enable BakaBT (Private)" default="false"/>
+    </category>
+</settings>

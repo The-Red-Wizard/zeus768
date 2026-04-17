@@ -26,6 +26,24 @@ The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers run
 
 ---
 
+### Genesis
+<img src="plugin.video.genesis/icon.png" width="80" align="left" style="margin-right:15px"/>
+
+**Stream Movies and TV Shows** | `plugin.video.genesis` | v1.5.2
+
+Complete media addon with multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox support. Live Channels with EPG. Cloud storage (Dropbox, GDrive, OneDrive). Plex and Emby integration. Trakt sync. Anime section with MAL integration.
+
+---
+
+### Genesis Skins
+<img src="script.genesis.skins/icon.png" width="80" align="left" style="margin-right:15px"/>
+
+**Theme Pack** | `script.genesis.skins` | v1.1.0
+
+Icon theme pack for Genesis. Includes Classic and Anime themes.
+
+---
+
 ### Trakt Player
 <img src="plugin.video.trakt_player/icon.png" width="120" align="left" style="margin-right:15px">
 

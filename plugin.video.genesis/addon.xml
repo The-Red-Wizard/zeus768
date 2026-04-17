@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.genesis" name="Genesis" version="1.5.2" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.genesis.skins" version="1.1.0"/>
+        <import addon="script.module.resolveurl" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Genesis - Cloud, Local Media, Free Links, Anime, Debrid, Plex &amp; Emby</summary>
+        <description lang="en">Genesis v1.5.0 - Cloud Browser, Local Scanner, Plex &amp; Emby Integration!
+
+NEW in v1.5.0 - PLEX &amp; EMBY SERVERS:
+- Plex Media Server Integration
+  - Browse your Plex libraries (Movies, TV Shows)
+  - On Deck (Continue Watching)
+  - Recently Added content
+  - Search Plex library
+  - Direct playback from Plex server
+- Emby Media Server Integration
+  - Browse your Emby libraries
+  - Continue Watching / Next Up
+  - Recently Added content
+  - Search Emby library
+  - Direct playback from Emby server
+- TMDb Artwork for Local Media
+  - Automatically fetches posters/fanart for local files
+  - Uses TMDb API for accurate artwork matching
+- Menu categories only visible when server is enabled
+- New themed icons for Plex and Emby
+
+Previous Features v1.4.0 - CLOUD &amp; LOCAL MEDIA:
+- Cloud Browser section (appears when debrid configured)
+  - View Downloaded files from all debrid services
+  - Monitor Currently Downloading items
+  - Browse Cached/History items
+  - Supports: Real-Debrid, AllDebrid, Premiumize, TorBox
+- Local Media Scanner
+  - Scan configured folders for movies and TV shows
+  - Auto-detects movie titles, years, quality
+  - Groups TV shows by series and season
+  - Configure folders in Tools menu
+- Free Links Integration
+  - Scrapes thechains24.com for free streaming links
+  - Integrated into Source Picker (★ symbol)
+  - Uses ResolveURL for link resolution
+  - Filter by "Free Links Only" in source picker
+
+Previous features:
+- Complete Anime Movies section with submenus
+- Complete Anime TV Shows section
+- Networks &amp; Studios browser
+- Manga section
+- 7 Anime Torrent Sites
+- Enhanced X-Ray with Multi-Source Ratings
+- Full Cast &amp; Crew info with profile images
+- Enhanced Source Picker with filters
+- Click-and-Play via 5 Debrid services
+- Scrapes 10+ torrent sites for sources
+- TMDB + OMDB metadata integration
+- Trakt scrobbling and lists support
+- Live Channels with EPG
+
+Created by zeus768.</description>
+        <disclaimer lang="en">This addon does not host any content.</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-only</license>
+        <news>
+v1.5.0 (2026)
+- NEW: Plex Media Server Integration
+  - Browse libraries, On Deck, Recently Added
+  - Search and direct playback
+- NEW: Emby Media Server Integration
+  - Browse libraries, Continue Watching, Next Up
+  - Search and direct playback
+- NEW: TMDb Artwork for Local Media
+  - Auto-fetches posters/fanart for local files
+- Menu categories only visible when enabled
+- New Plex and Emby icons for all themes
+
+v1.4.0 (2026)
+- NEW: Cloud Browser for debrid services
+- NEW: Local Media Scanner
+- NEW: Free Links Integration
+
+v1.3.1 (2026)
+- Renamed to Genesis
+- Added script.genesis.skins as dependency
+- Updated icon and fanart
+
+v1.3.0 (2026)
+- NEW: Full Anime &amp; Manga Category
+- NEW: 7 Anime Torrent Sites
+- NEW: Jikan API integration
+
+v1.2.0 (2026)
+- Enhanced X-Ray with Multi-Source Ratings
+- Enhanced Source Picker with filters
+
+v1.1.0 (2026)
+- Live Channels Section with EPG
+- Latest Releases (In Cinemas Now)
+- X-Ray Metadata
+
+v1.0.0 (2026)
+- Initial release
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
