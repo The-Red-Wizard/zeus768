@@ -123,12 +123,12 @@ class SubmenuDialog(xbmcgui.WindowXMLDialog):
             for item in items:
                 li = xbmcgui.ListItem(label=item.get('title', item.get('label', '')))
                 
-                # Set artwork - use backdrop for thumb (landscape cards)
+                # Set artwork - use poster for proper movie/show artwork with titles
                 poster = item.get('poster', ADDON_ICON)
                 backdrop = item.get('backdrop', ADDON_FANART)
                 li.setArt({
                     'poster': poster,
-                    'thumb': backdrop if backdrop and backdrop != ADDON_FANART else poster,
+                    'thumb': poster,
                     'fanart': backdrop
                 })
                 

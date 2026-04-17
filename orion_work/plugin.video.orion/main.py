@@ -516,8 +516,7 @@ def _handle_submenu_result(action, selected_item, selected_category, media_type,
     log(f"Submenu result: action={action}, item={selected_item}, category={selected_category}")
     
     if action == 'back' or action is None:
-        # User went back - end directory gracefully and return to previous
-        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        # User went back - just return, Kodi will handle going back to parent
         return
     
     elif action == 'select_item' and selected_item:

@@ -262,35 +262,35 @@
                 <textcolor>FFFFFFFF</textcolor>
             </control>
             
-            <!-- Row 1 content - LANDSCAPE horizontal list, NO name banners -->
+            <!-- Row 1 content - WIDER horizontal list with POSTER art, NO name banners -->
             <control type="list" id="200">
                 <left>0</left>
                 <top>40</top>
                 <width>780</width>
-                <height>200</height>
+                <height>250</height>
                 <orientation>horizontal</orientation>
                 <onup>154</onup>
                 <ondown>210</ondown>
                 <onleft>100</onleft>
                 <onright>205</onright>
                 <scrolltime>200</scrolltime>
-                <itemlayout width="290" height="170">
+                <itemlayout width="350" height="220">
                     <!-- Card background -->
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
-                    <!-- Landscape poster (thumb/backdrop art) -->
+                    <!-- Poster art (has movie title on it) -->
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <!-- Rating badge -->
                     <control type="image">
@@ -314,23 +314,23 @@
                         <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                     </control>
                 </itemlayout>
-                <focusedlayout width="290" height="170">
+                <focusedlayout width="350" height="220">
                     <!-- Cyan focus glow -->
                     <control type="image">
                         <left>0</left>
                         <top>0</top>
-                        <width>290</width>
-                        <height>170</height>
+                        <width>350</width>
+                        <height>220</height>
                         <texture colordiffuse="FF00D4FF">white.png</texture>
                     </control>
-                    <!-- Landscape poster -->
+                    <!-- Poster art -->
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <!-- Rating badge -->
                     <control type="image">
@@ -372,28 +372,28 @@
                 <left>830</left>
                 <top>40</top>
                 <width>780</width>
-                <height>200</height>
+                <height>250</height>
                 <orientation>horizontal</orientation>
                 <onup>154</onup>
                 <ondown>215</ondown>
                 <onleft>200</onleft>
                 <onright>205</onright>
                 <scrolltime>200</scrolltime>
-                <itemlayout width="290" height="170">
+                <itemlayout width="350" height="220">
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
@@ -416,21 +416,21 @@
                         <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                     </control>
                 </itemlayout>
-                <focusedlayout width="290" height="170">
+                <focusedlayout width="350" height="220">
                     <control type="image">
                         <left>0</left>
                         <top>0</top>
-                        <width>290</width>
-                        <height>170</height>
+                        <width>350</width>
+                        <height>220</height>
                         <texture colordiffuse="FF00D4FF">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
@@ -458,7 +458,7 @@
             <!-- Row 3 title -->
             <control type="label" id="311">
                 <left>0</left>
-                <top>250</top>
+                <top>300</top>
                 <width>400</width>
                 <height>35</height>
                 <label>$INFO[Window.Property(row3_title)]</label>
@@ -466,33 +466,33 @@
                 <textcolor>FFFFFFFF</textcolor>
             </control>
             
-            <!-- Row 3 content - LANDSCAPE, NO name banners -->
+            <!-- Row 3 content - POSTER art, wider tiles -->
             <control type="list" id="210">
                 <left>0</left>
-                <top>290</top>
+                <top>340</top>
                 <width>780</width>
-                <height>200</height>
+                <height>250</height>
                 <orientation>horizontal</orientation>
                 <onup>200</onup>
                 <ondown>210</ondown>
                 <onleft>100</onleft>
                 <onright>215</onright>
                 <scrolltime>200</scrolltime>
-                <itemlayout width="290" height="170">
+                <itemlayout width="350" height="220">
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
@@ -515,21 +515,21 @@
                         <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                     </control>
                 </itemlayout>
-                <focusedlayout width="290" height="170">
+                <focusedlayout width="350" height="220">
                     <control type="image">
                         <left>0</left>
                         <top>0</top>
-                        <width>290</width>
-                        <height>170</height>
+                        <width>350</width>
+                        <height>220</height>
                         <texture colordiffuse="FF00D4FF">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
@@ -557,7 +557,7 @@
             <!-- Row 4 title -->
             <control type="label" id="316">
                 <left>830</left>
-                <top>250</top>
+                <top>300</top>
                 <width>400</width>
                 <height>35</height>
                 <label>$INFO[Window.Property(row4_title)]</label>
@@ -565,33 +565,33 @@
                 <textcolor>FFFFFFFF</textcolor>
             </control>
             
-            <!-- Row 4 content - LANDSCAPE, NO name banners -->
+            <!-- Row 4 content - POSTER art, wider tiles -->
             <control type="list" id="215">
                 <left>830</left>
-                <top>290</top>
+                <top>340</top>
                 <width>780</width>
-                <height>200</height>
+                <height>250</height>
                 <orientation>horizontal</orientation>
                 <onup>205</onup>
                 <ondown>215</ondown>
                 <onleft>210</onleft>
                 <onright>215</onright>
                 <scrolltime>200</scrolltime>
-                <itemlayout width="290" height="170">
+                <itemlayout width="350" height="220">
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <texture colordiffuse="40202040">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
@@ -614,21 +614,21 @@
                         <visible>!String.IsEmpty(ListItem.Property(rating))</visible>
                     </control>
                 </itemlayout>
-                <focusedlayout width="290" height="170">
+                <focusedlayout width="350" height="220">
                     <control type="image">
                         <left>0</left>
                         <top>0</top>
-                        <width>290</width>
-                        <height>170</height>
+                        <width>350</width>
+                        <height>220</height>
                         <texture colordiffuse="FF00D4FF">white.png</texture>
                     </control>
                     <control type="image">
                         <left>5</left>
                         <top>5</top>
-                        <width>280</width>
-                        <height>160</height>
+                        <width>340</width>
+                        <height>210</height>
                         <aspectratio>scale</aspectratio>
-                        <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                        <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
                     </control>
                     <control type="image">
                         <left>5</left>

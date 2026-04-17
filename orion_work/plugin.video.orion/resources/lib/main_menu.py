@@ -107,7 +107,7 @@ class MainMenuDialog(xbmcgui.WindowXMLDialog):
                 poster = item.get('poster', ADDON_ICON)
                 li.setArt({
                     'poster': poster,
-                    'thumb': backdrop if backdrop and backdrop != ADDON_FANART else poster,
+                    'thumb': poster,
                     'fanart': backdrop
                 })
                 
