@@ -27,20 +27,24 @@ The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers run
 ---
 
 ### Genesis
-<img src="plugin.video.genesis/icon.png" width="80" align="left" style="margin-right:15px"/>
+<img src="plugin.video.genesis/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Stream Movies and TV Shows** | `plugin.video.genesis` | v1.5.2
+**Stream Movies and TV Shows** | `plugin.video.genesis` | v1.5.3
 
-Complete media addon with multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox support. Live Channels with EPG. Cloud storage (Dropbox, GDrive, OneDrive). Plex and Emby integration. Trakt sync. Anime section with MAL integration.
+Complete media addon with 10 torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox support. 24 Live Channels with TMDB-powered EPG. Cloud storage browsing (Dropbox, Google Drive, OneDrive). Plex and Emby server integration. Trakt sync with scrobbling, watchlists, calendar, recommendations, friends activity, and custom lists. Full anime section with MAL integration, seasonal anime, and manga browsing. Free links via ResolveURL. Source picker with quality/codec/HDR info and cached badge. Genesis Skins theme support.
+
+<br clear="both">
 
 ---
 
 ### Genesis Skins
-<img src="script.genesis.skins/icon.png" width="80" align="left" style="margin-right:15px"/>
+<img src="script.genesis.skins/icon.png" width="80" align="left" style="margin-right:15px">
 
 **Theme Pack** | `script.genesis.skins` | v1.1.0
 
-Icon theme pack for Genesis. Includes Classic and Anime themes.
+Icon theme pack for Genesis. Includes Classic (3D movie-poster style) and Anime themes with 160+ category icons.
+
+<br clear="both">
 
 ---
 
