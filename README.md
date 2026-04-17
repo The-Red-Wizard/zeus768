@@ -29,7 +29,7 @@ The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers run
 ### Trakt Player
 <img src="plugin.video.trakt_player/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Click and Play** | `plugin.video.trakt_player` | v2.1.3
+**Click and Play** | `plugin.video.trakt_player` | v2.4.2
 
 Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next, Continue Watching, Discovery Feed (trailer scroll with 6 modes), AI Vibe Marathons, Personalized Recommendations, My Calendar, Watch History, Friends Activity Feed, User Stats Dashboard, Custom Lists, Popular Community Lists, Cached Torrent Indicator, Rate on Trakt, and Debrid Account Status. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox.
 
@@ -40,9 +40,9 @@ Superpowered Trakt addon. Click any movie or episode and it plays instantly via 
 ### Orion
 <img src="plugin.video.orion/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Media Explorer** | `plugin.video.orion` | v3.2.5
+**Media Explorer** | `plugin.video.orion` | v3.4.5
 
-Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support. Trakt integration with scrobbling, watchlists and liked lists. ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.
+Complete media addon with Netflix-style UI, multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support. Trakt integration with scrobbling, watchlists and liked lists. ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.
 
 <br clear="both">
 
