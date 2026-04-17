@@ -1,0 +1,22 @@
+================================================================================
+  The Accountant Changelog
+  by zeus768
+================================================================================
+
+v3.9.6 (April 2026)
+================================================================================
+  * Added Buy Me a Beer - Ko-fi donation with QR code
+  * Updated for Zeus768 Repository v1.0.9
+
+v3.9.5 (February 2026)
+================================================================================
+  * Speed Optimizer
+  * Scheduled Auto-Clean
+  * RD/PM/AD/Trakt/TMDB Auth management
+  * IPTV Vault
+  * Favourites Vault
+  * USB Backup
+  * Repair Tools
+  * Cache and Package Cleaner
+  * Skin & Widget Backup
+  * Help & Instructions Manual

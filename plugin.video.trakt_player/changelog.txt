@@ -1,0 +1,99 @@
+Trakt Player Changelog
+======================
+
+Version 2.4.2 (April 2026 - 1337x Scraper + Cloud Browser)
+- NEW: 1337x Scraper
+  * Reliable torrent source with good seeds
+  * Multiple mirror support for redundancy (1337x.to, 1337x.st, x1337x.ws)
+  * Automatic fallback between mirrors
+  * Extracts seeds, quality, and file info
+- NEW: Debrid Cloud Browser
+  * Browse and play files directly from your debrid cloud storage
+  * Real-Debrid: View torrents, torrent files, download history
+  * Premiumize: Browse cloud files/folders, view active transfers
+  * Torbox: View torrents and their files
+  * AllDebrid: Browse magnets and their files
+  * Delete items from cloud via context menu (right-click)
+  * Direct playback without re-searching - instant streaming!
+- Added 1337x toggle in Scraper settings (enabled by default)
+
+Version 2.4.1 (April 2026 - Critical Playback Fix)
+- FIXED: Critical bug - added missing extract_hash() function in scrapers.py
+- Links now resolve and play correctly via debrid services
+- Hash extraction supports both hex (40-char) and base32 (32-char) magnet formats
+- This fixes the "AttributeError: module 'resources.lib.scrapers' has no attribute 'extract_hash'" error
+
+Version 2.4.0 (April 2026 - Notifications + Pre-Cache)
+- NEW: Episode Notifications
+  * Get alerts when new episodes air for shows in your Trakt calendar/watchlist
+  * Choose between individual or summary notification style
+  * Automatically checks hourly for new episodes
+- NEW: Pre-Cache Next Episode
+  * Automatically adds next episode to debrid cache at 75% playback
+  * Works with all debrid services (RD, AD, PM, Torbox, LinkSnappy)
+  * Optional notification when caching starts
+- Added background service for notifications and pre-cache monitoring
+- New settings categories for Notifications and Pre-Cache options
+
+Version 2.3.1 (April 2026 - Premiumize & Torbox Auth Fixes)
+- FIXED: Premiumize authorization - ported working OAuth flow from v2.1.8
+  * Uses working public client credentials
+  * Correct device code polling with countdown timer
+  * Better error handling for access_denied and authorization_pending
+- FIXED: Torbox authorization - ported working device code auth from v2.1.8
+  * Uses POST method for token polling (not GET)
+  * Proper user_code field handling
+  * Better progress dialog with countdown
+  * Improved error detection and handling
+
+Version 2.3.0 (April 2026 - Debrid Auth Fixes + TorBox + LinkSnappy)
+- FIXED: Real-Debrid false "expired" errors (token refresh now falls back to testing current token)
+- ADDED: TorBox debrid service with device code authorization
+  * Torrent cache checking, magnet resolving, web download links
+  * Account info with premium status and expiry
+- ADDED: LinkSnappy debrid service with username/password login
+  * Premium link generation for 30+ file hosts
+  * Account info with expiry and package type
+- ADDED: Real account info for all 5 debrid services (username, email, expiry date, days left)
+- ADDED: Real-Debrid shows fidelity points
+- ADDED: Color-coded expiry warnings on Account Status page (green/yellow/red)
+- IMPROVED: Account Status page fetches live data from RD/PM/AD/TB/LS APIs
+- Updated settings with TorBox and LinkSnappy categories
+
+Version 2.2.0 (April 2026 - Feature Merge + Premiumize Fix)
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- ADDED: AI Vibes - mood-based discovery with 12 presets + custom vibe input
+- ADDED: Discovery Feed - trending trailers, new releases, upcoming, shuffle, marathon mode
+- ADDED: Continue Watching from Trakt playback progress
+- ADDED: Recommended For You (personalized Trakt recommendations)
+- ADDED: Anticipated movies/shows
+- ADDED: My Calendar (upcoming episodes from your shows)
+- ADDED: My Custom Lists (create, browse, manage Trakt lists)
+- ADDED: Popular Community Lists browser
+- ADDED: Friends activity feed
+- ADDED: User Stats dashboard (watched/collected/ratings breakdown)
+- ADDED: Account Status (debrid expiry, premium status, Trakt auth check)
+- ADDED: Buy Me a Beer (Ko-fi QR code donation)
+- ADDED: Rate on Trakt from any item
+- ADDED: Add to Watchlist from any item
+- ADDED: Add to Custom List from any item
+
+Version 2.1.6 (April 2026 - Speed Optimizations)
+- FASTER: Trakt lists now load 3-5x faster with parallel TMDB image fetching
+- FASTER: Reduced items per page to 30 for quicker loading
+- FASTER: Added image caching to avoid re-fetching
+- FASTER: Reduced API timeouts for snappier response
+
+Version 2.1.5 (April 2026 - Major Fixes)
+- FIXED: Trakt and Debrid authorization now persists properly
+- FIXED: Uses file-based token storage (trakt_token.json, rd_token.json)
+- FIXED: Auto-play with proper quality fallback (1080p to 720p to 480p)
+- FIXED: Cached torrent detection and priority playback
+- ADDED: Unlimited scroll/pagination in all lists
+- ADDED: Addon icon and fanart in all subfolders
+
+Version 1.0.8 (March 2026 - Initial Release)
+- Trakt and Debrid authorization using native urllib
+- Click-and-Play via debrid services
+- Basic Trakt list browsing

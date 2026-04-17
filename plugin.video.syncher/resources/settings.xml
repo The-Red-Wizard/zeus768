@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="autoplay" type="bool" label="Auto-Play Best Source" default="false"/>
+        <setting id="host_select" type="enum" label="Source Select Mode" values="Directory|Dialog" default="0"/>
+        <setting id="fanart" type="bool" label="Show Fanart" default="true"/>
+        <setting id="timeout" type="slider" label="Scraper Timeout (seconds)" default="30" range="10,5,60"/>
+        <setting id="info_lang" type="labelenum" label="Metadata Language" values="en|de|fr|es|it|pt|nl|ru|ja|ko|zh" default="en"/>
+
+        <setting type="lsep" label="[COLOR gold]AI Music Playlists (Powered by Emergent)[/COLOR]" />
+        <setting id="emergent_key" type="text" label="Emergent Universal Key" default=""/>
+    </category>
+
+    <category label="Debrid Services">
+        <setting type="lsep" label="[COLOR gold]A Debrid service or RapidRAR premium is required for best results[/COLOR]" />
+
+        <setting type="lsep" label="[COLOR skyblue]Trakt[/COLOR]" />
+        <setting id="trakt.user" type="action" label="Authorize Trakt" option="close" action="RunPlugin(plugin://plugin.video.syncher/?action=authTrakt)" />
+        <setting id="trakt.token" type="text" option="hidden" visible="false" default="" />
+        <setting id="trakt.refresh" type="text" option="hidden" visible="false" default="" />
+
+        <setting type="lsep" label="[COLOR skyblue]Real-Debrid (Device Code Auth)[/COLOR]" />
+        <setting id="rd.enabled" type="bool" label="Enable Real-Debrid" default="false"/>
+        <setting id="rd_auth" label="Authorize Real-Debrid" type="action" action="RunPlugin(plugin://plugin.video.syncher/?action=rdAuth)" option="close"/>
+        <setting id="rd.token" visible="false" type="text" default=""/>
+        <setting id="rd.refresh" visible="false" type="text" default=""/>
+        <setting id="rd.client_id" visible="false" type="text" default=""/>
+        <setting id="rd.secret" visible="false" type="text" default=""/>
+        <setting id="rd.expiry" visible="false" type="text" default=""/>
+
+        <setting type="lsep" label="[COLOR skyblue]Premiumize (Device Code Auth)[/COLOR]" />
+        <setting id="pm.enabled" type="bool" label="Enable Premiumize" default="false"/>
+        <setting id="pm_auth" label="Authorize Premiumize" type="action" action="RunPlugin(plugin://plugin.video.syncher/?action=pmAuth)" option="close"/>
+        <setting id="pm.token" visible="false" type="text" default=""/>
+
+        <setting type="lsep" label="[COLOR skyblue]AllDebrid (Device Code Auth)[/COLOR]" />
+        <setting id="ad.enabled" type="bool" label="Enable AllDebrid" default="false"/>
+        <setting id="ad_auth" label="Authorize AllDebrid" type="action" action="RunPlugin(plugin://plugin.video.syncher/?action=adAuth)" option="close"/>
+        <setting id="ad.apikey" visible="false" type="text" default=""/>
+
+        <setting type="lsep" label="[COLOR skyblue]TorBox (API Key Auth)[/COLOR]" />
+        <setting id="tb.enabled" type="bool" label="Enable TorBox" default="false"/>
+        <setting id="tb_auth" label="Authorize TorBox" type="action" action="RunPlugin(plugin://plugin.video.syncher/?action=tbAuth)" option="close"/>
+        <setting id="tb.apikey" visible="false" type="text" default=""/>
+    </category>
+
+    <category label="RapidRAR / Warez Logins">
+        <setting type="lsep" label="[COLOR gold]RapidRAR.cr Premium Account[/COLOR]" />
+        <setting id="rapidrar.enabled" type="bool" label="Enable RapidRAR" default="false"/>
+        <setting id="rapidrar.user" type="text" label="RapidRAR Username" default=""/>
+        <setting id="rapidrar.pass" type="text" label="RapidRAR Password" option="hidden" default=""/>
+
+        <setting type="lsep" label="[COLOR gold]Warez Site Logins (Optional)[/COLOR]" />
+        <setting id="psa.user" type="text" label="PSA.wf Username" default=""/>
+        <setting id="psa.pass" type="text" label="PSA.wf Password" option="hidden" default=""/>
+        <setting id="rapidmoviez.user" type="text" label="RapidMoviez Username" default=""/>
+        <setting id="rapidmoviez.pass" type="text" label="RapidMoviez Password" option="hidden" default=""/>
+        <setting id="tfpdl.user" type="text" label="TFPDL Username" default=""/>
+        <setting id="tfpdl.pass" type="text" label="TFPDL Password" option="hidden" default=""/>
+        <setting id="watchseries.user" type="text" label="WatchSeriesHD Username" default=""/>
+        <setting id="watchseries.pass" type="text" label="WatchSeriesHD Password" option="hidden" default=""/>
+    </category>
+
+    <category label="Scrapers">
+        <setting type="lsep" label="[COLOR gold]Scene Release Scrapers[/COLOR]" />
+        <setting id="scraper.rapidrar" type="bool" label="RapidRAR.cr" default="true"/>
+        <setting id="scraper.psa" type="bool" label="PSA.wf" default="true"/>
+        <setting id="scraper.rapidmoviez" type="bool" label="RapidMoviez.me" default="true"/>
+        <setting id="scraper.tfpdl" type="bool" label="TFPDL.se" default="true"/>
+        <setting id="scraper.watchseries" type="bool" label="WatchSeriesHD.org" default="true"/>
+        <setting id="scraper.rlsbb" type="bool" label="RLSbb.to" default="true"/>
+        <setting id="scraper.ddlvalley" type="bool" label="DDLValley.me" default="true"/>
+        <setting id="scraper.scenesource" type="bool" label="SceneSource.me" default="true"/>
+
+        <setting type="lsep" label="[COLOR gold]Sports Replay Scrapers[/COLOR]" />
+        <setting id="scraper.sportvideo" type="bool" label="Sport-Video.org.ua" default="true"/>
+        <setting id="scraper.fullmatchshows" type="bool" label="FullMatchShows.com" default="true"/>
+        <setting id="scraper.footballorgin" type="bool" label="FootballOrgin.com" default="true"/>
+        <setting id="scraper.basketballvideo" type="bool" label="Basketball-Video.com" default="true"/>
+    </category>
+
+    <category label="Playback">
+        <setting id="quality.max" type="enum" label="Max Quality" values="4K|1080p|720p|SD" default="0"/>
+        <setting id="prefer.hoster" type="enum" label="Preferred Source Type" values="Any|Debrid|RapidRAR|Direct" default="0"/>
+        <setting id="auto_sd" type="bool" label="SD Only Mode" default="false"/>
+    </category>
+</settings>

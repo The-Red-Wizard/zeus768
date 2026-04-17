@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.0" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+        <import addon="script.module.urllib3" version="1.26.5"/>
+        <import addon="script.module.resolveurl" version="5.0.00"/>
+        <import addon="script.module.beautifulsoup4" version="4.9.3"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">The Golden Eagle of Entertainment</summary>
+        <description lang="en">Tinklepad v1.9.0 - Extended Scrapers Edition
+
+CUSTOM XML WINDOWS:
+- Beautiful golden-themed search progress window
+- WindowXML dialogs with threading/callbacks
+- Animated golden spinner/orb effect
+- Provider-by-provider progress bars
+- LINK HUB v3, ARCHIVE STREAM, PEER NETWORK, NEXUS DATABASE
+- Real-time source count updates
+
+SOURCE SELECTION:
+- Stunning golden-themed source list
+- Color-coded sources (FREE=green, DDL=gold, TORRENT=orange)
+- Quality badges: 4K=red, 1080p=green, 720p=blue
+- Poster and metadata display
+- Smooth scrolling list
+
+FALLBACK DIALOGS:
+- Automatic fallback to standard Kodi dialogs
+- Works on all Kodi versions/skins
+
+DEBRID SUPPORT:
+- Real-Debrid, AllDebrid, Premiumize
+- Magnet/Torrent cloud downloading
+
+By Zeus768</description>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <news>v1.9.0 - Extended Scrapers Edition:
+- NEW: EZTV.re for TV shows
+- NEW: RARBG mirrors/clones support
+- NEW: Nyaa.si for anime
+- NEW: LimeTorrents support
+- NEW: Torlock support
+- NEW: Comet (Stremio-style indexer)
+- NEW: CocoScrapers integration (optional)
+- NEW: GearsScrapers integration (optional)
+- External scraper packs auto-detected if installed
+- Toggle each scraper pack in settings
+
+v1.8.6 - Submenu Bug Fix:
+- FIX: Submenus now open correctly (Movies, TV Shows, etc)
+- FIX: Resolved UnboundLocalError in main.py
+- Removed redundant local import causing variable scope issue
+
+v1.8.5 - Custom Golden XML Theme:
+- NEW: WindowXML search dialog with golden theme
+- NEW: Animated golden spinner/orb animation
+- NEW: Provider progress bars (LINK HUB, ARCHIVE STREAM, etc)
+- NEW: Threading support for non-blocking UI updates
+- NEW: Beautiful source selection with poster display
+- Automatic fallback to standard dialogs if XML fails
+
+v1.8.4: Performance &amp; caching improvements
+v1.8.3: Animated loading effect
+v1.8.2: Custom XML window support
+v1.8.1: Stability fixes</news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+</addon>

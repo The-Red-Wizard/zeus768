@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tinklepad Source Selection - Golden Eagle Theme -->
+<!-- Beautiful scrollable source list with quality badges and provider info -->
+<window type="dialog" id="1200">
+    <defaultcontrol always="true">1000</defaultcontrol>
+    <zorder>1</zorder>
+    <animation effect="fade" time="400">WindowOpen</animation>
+    <animation effect="fade" time="300">WindowClose</animation>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx>
+        <posy>0</posy>
+    </coordinates>
+    <controls>
+        <!-- Full-screen Fanart Background -->
+        <control type="image" id="100">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture background="true">$INFO[Window.Property(fanart)]</texture>
+            <aspectratio>scale</aspectratio>
+            <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation>
+        </control>
+        
+        <!-- Dark Overlay for Readability -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="E0000000">common/black.png</texture>
+        </control>
+        
+        <!-- Subtle Golden Tint -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="0AFFD700">common/white.png</texture>
+        </control>
+        
+        <!-- Left Side Branding Panel -->
+        <control type="group">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>350</width>
+            <height>1080</height>
+            <animation effect="slide" start="-350,0" end="0,0" time="500" tween="cubic" easing="out">WindowOpen</animation>
+            
+            <!-- Dark Panel Background -->
+            <control type="image">
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>350</width>
+                <height>1080</height>
+                <texture colordiffuse="F0050505">common/black.png</texture>
+            </control>
+            
+            <!-- Gold Accent Line -->
+            <control type="image">
+                <posx>348</posx>
+                <posy>0</posy>
+                <width>2</width>
+                <height>1080</height>
+                <texture colordiffuse="FFFFD700">common/white.png</texture>
+            </control>
+            
+            <!-- Top Decorative Line -->
+            <control type="image">
+                <posx>40</posx>
+                <posy>50</posy>
+                <width>270</width>
+                <height>2</height>
+                <texture colordiffuse="88FFD700">common/white.png</texture>
+            </control>
+            
+            <!-- TINKLEPAD Branding -->
+            <control type="label">
+                <posx>20</posx>
+                <posy>70</posy>
+                <width>310</width>
+                <height>60</height>
+                <label>[B]TINKLEPAD[/B]</label>
+                <font>font37</font>
+                <textcolor>FFFFD700</textcolor>
+                <shadowcolor>88000000</shadowcolor>
+                <align>center</align>
+            </control>
+            
+            <control type="label">
+                <posx>20</posx>
+                <posy>130</posy>
+                <width>310</width>
+                <height>30</height>
+                <label>SELECT YOUR LINK</label>
+                <font>font12</font>
+                <textcolor>FFAAAAAA</textcolor>
+                <align>center</align>
+            </control>
+            
+            <!-- Separator -->
+            <control type="image">
+                <posx>40</posx>
+                <posy>175</posy>
+                <width>270</width>
+                <height>2</height>
+                <texture colordiffuse="55FFD700">common/white.png</texture>
+            </control>
+            
+            <!-- Poster Image -->
+            <control type="image" id="200">
+                <posx>50</posx>
+                <posy>200</posy>
+                <width>250</width>
+                <height>375</height>
+                <texture>$INFO[Window.Property(poster)]</texture>
+                <aspectratio>keep</aspectratio>
+                <bordertexture border="3" colordiffuse="FFFFD700">common/white.png</bordertexture>
+                <bordersize>3</bordersize>
+            </control>
+            
+            <!-- Source Stats Header -->
+            <control type="label">
+                <posx>20</posx>
+                <posy>600</posy>
+                <width>310</width>
+                <height>30</height>
+                <label>[B]SOURCES FOUND[/B]</label>
+                <font>font12</font>
+                <textcolor>FFFFD700</textcolor>
+                <align>center</align>
+            </control>
+            
+            <!-- Total Sources Big Number -->
+            <control type="label" id="201">
+                <posx>20</posx>
+                <posy>630</posy>
+                <width>310</width>
+                <height>60</height>
+                <label>$INFO[Window.Property(total_sources)]</label>
+                <font>font45</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <shadowcolor>88000000</shadowcolor>
+                <align>center</align>
+            </control>
+            
+            <!-- Quality Breakdown -->
+            <control type="label" id="202">
+                <posx>20</posx>
+                <posy>710</posy>
+                <width>310</width>
+                <height>25</height>
+                <label>$INFO[Window.Property(quality_4k)]</label>
+                <font>font12</font>
+                <textcolor>FFFF4444</textcolor>
+                <align>center</align>
+            </control>
+            
+            <control type="label" id="203">
+                <posx>20</posx>
+                <posy>738</posy>
+                <width>310</width>
+                <height>25</height>
+                <label>$INFO[Window.Property(quality_1080p)]</label>
+                <font>font12</font>
+                <textcolor>FF00FF00</textcolor>
+                <align>center</align>
+            </control>
+            
+            <control type="label" id="204">
+                <posx>20</posx>
+                <posy>766</posy>
+                <width>310</width>
+                <height>25</height>
+                <label>$INFO[Window.Property(quality_720p)]</label>
+                <font>font12</font>
+                <textcolor>FF4488FF</textcolor>
+                <align>center</align>
+            </control>
+            
+            <control type="label" id="205">
+                <posx>20</posx>
+                <posy>794</posy>
+                <width>310</width>
+                <height>25</height>
+                <label>$INFO[Window.Property(quality_sd)]</label>
+                <font>font12</font>
+                <textcolor>FFAAAAAA</textcolor>
+                <align>center</align>
+            </control>
+            
+            <!-- Debrid Status -->
+            <control type="label" id="206">
+                <posx>20</posx>
+                <posy>840</posy>
+                <width>310</width>
+                <height>60</height>
+                <label>$INFO[Window.Property(debrid_status)]</label>
+                <font>font10</font>
+                <textcolor>FF888888</textcolor>
+                <align>center</align>
+                <wrapmultiline>true</wrapmultiline>
+            </control>
+        </control>
+        
+        <!-- Main Content Area -->
+        <control type="group">
+            <posx>370</posx>
+            <posy>0</posy>
+            <animation effect="slide" start="100,0" end="0,0" time="500" delay="100" tween="cubic" easing="out">WindowOpen</animation>
+            <animation effect="fade" start="0" end="100" time="400" delay="100">WindowOpen</animation>
+            
+            <!-- Header: SELECT A LINK FOR -->
+            <control type="label">
+                <posx>0</posx>
+                <posy>35</posy>
+                <width>1510</width>
+                <height>40</height>
+                <label>[B]SELECT A LINK FOR:[/B]</label>
+                <font>font30</font>
+                <textcolor>FFFFD700</textcolor>
+                <shadowcolor>88000000</shadowcolor>
+                <align>center</align>
+            </control>
+            
+            <!-- Movie/Show Title -->
+            <control type="label" id="300">
+                <posx>0</posx>
+                <posy>80</posy>
+                <width>1510</width>
+                <height>50</height>
+                <label>$INFO[Window.Property(title)]</label>
+                <font>font37</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <shadowcolor>88000000</shadowcolor>
+                <align>center</align>
+            </control>
+            
+            <!-- Decorative Line -->
+            <control type="image">
+                <posx>100</posx>
+                <posy>140</posy>
+                <width>1310</width>
+                <height>2</height>
+                <texture colordiffuse="44FFD700">common/white.png</texture>
+            </control>
+            
+            <!-- Source List Container -->
+            <control type="group">
+                <posx>30</posx>
+                <posy>160</posy>
+                
+                <!-- List Background Panel -->
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>1480</width>
+                    <height>720</height>
+                    <texture colordiffuse="22000000">common/black.png</texture>
+                    <bordertexture border="2" colordiffuse="44FFD700">common/white.png</bordertexture>
+                </control>
+                
+                <!-- Source List -->
+                <control type="list" id="1000">
+                    <posx>10</posx>
+                    <posy>10</posy>
+                    <width>1440</width>
+                    <height>700</height>
+                    <orientation>vertical</orientation>
+                    <pagecontrol>1001</pagecontrol>
+                    <scrolltime>200</scrolltime>
+                    <ondown>501</ondown>
+                    
+                    <!-- Item Layout (not focused) -->
+                    <itemlayout height="88">
+                        <!-- Row Background -->
+                        <control type="image">
+                            <posx>0</posx>
+                            <posy>2</posy>
+                            <width>1420</width>
+                            <height>82</height>
+                            <texture colordiffuse="18FFFFFF">common/white.png</texture>
+                        </control>
+                        
+                        <!-- Provider Icon Box -->
+                        <control type="image">
+                            <posx>15</posx>
+                            <posy>16</posy>
+                            <width>50</width>
+                            <height>50</height>
+                            <texture colordiffuse="44FFD700">common/white.png</texture>
+                            <bordertexture border="1" colordiffuse="FFFFD700">common/white.png</bordertexture>
+                        </control>
+                        
+                        <!-- Provider Name -->
+                        <control type="label">
+                            <posx>80</posx>
+                            <posy>12</posy>
+                            <width>500</width>
+                            <height>35</height>
+                            <label>$INFO[ListItem.Label]</label>
+                            <font>font14</font>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <shadowcolor>88000000</shadowcolor>
+                            <align>left</align>
+                        </control>
+                        
+                        <!-- Source Type (FREE/DDL/TORRENT) -->
+                        <control type="label">
+                            <posx>80</posx>
+                            <posy>48</posy>
+                            <width>500</width>
+                            <height>25</height>
+                            <label>$INFO[ListItem.Property(source_type)]</label>
+                            <font>font10</font>
+                            <textcolor>FF888888</textcolor>
+                            <align>left</align>
+                        </control>
+                        
+                        <!-- Quality Badge Background -->
+                        <control type="image">
+                            <posx>920</posx>
+                            <posy>22</posy>
+                            <width>100</width>
+                            <height>38</height>
+                            <texture colordiffuse="$INFO[ListItem.Property(quality_color)]">common/white.png</texture>
+                            <bordertexture border="2" colordiffuse="FFFFD700">common/white.png</bordertexture>
+                        </control>
+                        
+                        <!-- Quality Text -->
+                        <control type="label">
+                            <posx>920</posx>
+                            <posy>22</posy>
+                            <width>100</width>
+                            <height>38</height>
+                            <label>$INFO[ListItem.Property(quality)]</label>
+                            <font>font13_title</font>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <shadowcolor>88000000</shadowcolor>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                        </control>
+                        
+                        <!-- File Size -->
+                        <control type="label">
+                            <posx>1040</posx>
+                            <posy>22</posy>
+                            <width>150</width>
+                            <height>38</height>
+                            <label>$INFO[ListItem.Property(size)]</label>
+                            <font>font13</font>
+                            <textcolor>FFAAAAAA</textcolor>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                        </control>
+                        
+                        <!-- Host Name -->
+                        <control type="label">
+                            <posx>1200</posx>
+                            <posy>22</posy>
+                            <width>180</width>
+                            <height>38</height>
+                            <label>$INFO[ListItem.Property(host)]</label>
+                            <font>font12</font>
+                            <textcolor>FF666666</textcolor>
+                            <align>right</align>
+                            <aligny>center</aligny>
+                        </control>
+                    </itemlayout>
+                    
+                    <!-- Focused Item Layout -->
+                    <focusedlayout height="88">
+                        <!-- Focused Row Background with Gold Border -->
+                        <control type="image">
+                            <posx>0</posx>
+                            <posy>2</posy>
+                            <width>1420</width>
+                            <height>82</height>
+                            <texture colordiffuse="44FFD700">common/white.png</texture>
+                            <bordertexture border="3" colordiffuse="FFFFD700">common/white.png</bordertexture>
+                        </control>
+                        
+                        <!-- Provider Icon Box (Focused) -->
+                        <control type="image">
+                            <posx>15</posx>
+                            <posy>16</posy>
+                            <width>50</width>
+                            <height>50</height>
+                            <texture colordiffuse="FFFFD700">common/white.png</texture>
+                        </control>
+                        
+                        <!-- Provider Name (Focused) -->
+                        <control type="label">
+                            <posx>80</posx>
+                            <posy>12</posy>
+                            <width>500</width>
+                            <height>35</height>
+                            <label>$INFO[ListItem.Label]</label>
+                            <font>font14</font>
+                            <textcolor>FFFFD700</textcolor>
+                            <shadowcolor>88000000</shadowcolor>
+                            <align>left</align>
+                        </control>
+                        
+                        <!-- Source Type (Focused) -->
+                        <control type="label">
+                            <posx>80</posx>
+                            <posy>48</posy>
+                            <width>500</width>
+                            <height>25</height>
+                            <label>$INFO[ListItem.Property(source_type)]</label>
+                            <font>font10</font>
+                            <textcolor>FFDDDDDD</textcolor>
+                            <align>left</align>
+                        </control>
+                        
+                        <!-- Quality Badge (Focused - Gold) -->
+                        <control type="image">
+                            <posx>920</posx>
+                            <posy>22</posy>
+                            <width>100</width>
+                            <height>38</height>
+                            <texture colordiffuse="FFFFD700">common/white.png</texture>
+                        </control>
+                        
+                        <!-- Quality Text (Focused) -->
+                        <control type="label">
+                            <posx>920</posx>
+                            <posy>22</posy>
+                            <width>100</width>
+                            <height>38</height>
+                            <label>$INFO[ListItem.Property(quality)]</label>
+                            <font>font13_title</font>
+                            <textcolor>FF000000</textcolor>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                        </control>
+                        
+                        <!-- File Size (Focused) -->
+                        <control type="label">
+                            <posx>1040</posx>
+                            <posy>22</posy>
+                            <width>150</width>
+                            <height>38</height>
+                            <label>$INFO[ListItem.Property(size)]</label>
+                            <font>font13</font>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                        </control>
+                        
+                        <!-- Host Name (Focused) -->
+                        <control type="label">
+                            <posx>1200</posx>
+                            <posy>22</posy>
+                            <width>180</width>
+                            <height>38</height>
+                            <label>$INFO[ListItem.Property(host)]</label>
+                            <font>font12</font>
+                            <textcolor>FFEEEEEE</textcolor>
+                            <align>right</align>
+                            <aligny>center</aligny>
+                        </control>
+                    </focusedlayout>
+                </control>
+                
+                <!-- Scrollbar -->
+                <control type="scrollbar" id="1001">
+                    <posx>1455</posx>
+                    <posy>15</posy>
+                    <width>12</width>
+                    <height>690</height>
+                    <orientation>vertical</orientation>
+                    <texturesliderbackground colordiffuse="22FFFFFF">common/white.png</texturesliderbackground>
+                    <texturesliderbar colordiffuse="FFFFD700">common/white.png</texturesliderbar>
+                </control>
+            </control>
+            
+            <!-- Bottom Cancel Button -->
+            <control type="group" id="500">
+                <posx>600</posx>
+                <posy>905</posy>
+                <animation effect="slide" start="0,100" end="0,0" time="400" delay="200" tween="cubic" easing="out">WindowOpen</animation>
+                
+                <!-- Cancel Button -->
+                <control type="button" id="501">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>300</width>
+                    <height>70</height>
+                    <label>[B]CANCEL[/B]</label>
+                    <font>font14</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <focusedcolor>FF000000</focusedcolor>
+                    <texturefocus colordiffuse="FFFFD700">common/white.png</texturefocus>
+                    <texturenofocus colordiffuse="33FFFFFF">common/white.png</texturenofocus>
+                    <align>center</align>
+                    <onup>1000</onup>
+                </control>
+            </control>
+        </control>
+        
+        <!-- Navigation Hints -->
+        <control type="label">
+            <posx>1680</posx>
+            <posy>1040</posy>
+            <width>220</width>
+            <height>25</height>
+            <label>SELECT to play | BACK to cancel</label>
+            <font>font10</font>
+            <textcolor>FF555555</textcolor>
+            <align>right</align>
+        </control>
+    </controls>
+</window>

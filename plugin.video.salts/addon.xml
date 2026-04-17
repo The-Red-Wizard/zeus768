@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.salts" version="2.8.0" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.resolveurl" version="5.1.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.9.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Stream All The Sources - 120+ scrapers, Stremio, Trakt, Debrid, Live Movie Channels</summary>
+        <description lang="en_GB">SALTS is a multi-source video addon with 120+ scrapers providing maximum coverage for movies and TV shows.
+
+=== FREE STREAMS (No Debrid Required) ===
+- VidSrc Network: VidSrc.xyz, VidSrc.cc, VidSrc.in, VidSrc.pm, VidSrc.nl, VidSrc.pro, VidSrc.me, VidSrc.to
+- Embed Services: 2Embed, Embed.su, AutoEmbed, MultiEmbed, VidLink, VidPlay, MoviesAPI, SmashyStream
+- Streaming Sites: FlixHQ, BFlix, HDToday, Soap2Day, LookMovie, FMovies, 123Movies, MoviesJoy, Putlocker
+- And 40+ more free streaming sources!
+
+=== STREMIO FREE ADDONS ===
+- Braflix, StreamingCommunity, TheMovieArchive, PublicDomainMovies
+- KnightCrawler, Jackettio, AIOStreams, Torrentio (Free Mode)
+- PlutoTV, Tubi, and more!
+
+=== TORRENT SITES ===
+- Primary: 1337x, YTS, EZTV, TorrentGalaxy, ThePirateBay, SolidTorrents
+- Secondary: LimeTorrents, Torrentz2, RARBG, Kickass, MagnetDL, iDope
+- Additional: BitSearch, TorLock, TorrentFunk, TorrentsCSV, and more!
+
+=== ANIME ===
+- Zoro, 9Anime, GogoAnime, AniWave, HiAnime, AnimePahe
+- Nyaa, SubsPlease, AnimeTosho, and more!
+
+=== ASIAN DRAMA ===
+- WatchAsian, KissAsian, DramaCool, ViewAsian, AsianLoad
+
+=== INTERNATIONAL ===
+- Russian: RuTracker, RuTor, NNM-Club
+- Chinese: DyTT, BTBTT
+- French: Torrent9, YggTorrent
+
+=== STREMIO DEBRID SCRAPERS ===
+- Torrentio, MediaFusion, Comet, CyberFlix, Annatar, PeerFlix, EasyNews+
+
+=== FEATURES ===
+- Live Movie Channels with EPG (35+ channels)
+- Episode Countdown Tracker
+- Network Browser (Netflix, HBO, BBC, etc.)
+- Returning Shows (New Seasons)
+- AI-Powered Natural Language Search
+- Trakt Integration with Scrobbling
+- Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox
+- Jackett/Prowlarr Integration
+- Pre-scrape on Hover
+- Source Caching
+
+Revived and massively expanded by zeus768 for Kodi 21 Omega and above.
+Original author: tknorris
+Thank you to Mister X and Zaxxon709</description>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <website>https://github.com/zeus768/plugin.video.salts</website>
+        <source>https://github.com/zeus768/plugin.video.salts</source>
+        <news>
+v2.8.0 (2026-01-15) - MASSIVE SCRAPER EXPANSION
+- Added: 75+ NEW SCRAPERS bringing total to 120+ sources!
+- Added: VidSrc Network (8 mirrors): xyz, cc, in, pm, nl, pro, me, to
+- Added: 2Embed variants, Embed.su, AutoEmbed, MultiEmbed, VidLink, VidPlay
+- Added: MoviesAPI, SmashyStream, NontonGo, RgShorts/RiveStream
+- Added: Stremio Free Addons: Braflix, StreamingCommunity, TheMovieArchive, PublicDomainMovies
+- Added: KnightCrawler, Jackettio, Orionoid, TPBPlus, AIOStreams, StremThru, MediaFlow
+- Added: Torrentio Free Mode, PlutoTV, Tubi integration
+- Added: 20+ Streaming Sites: FlixHQ, BFlix, HDToday, Soap2Day, LookMovie, FMovies, etc.
+- Added: Additional Torrents: BitSearch, TorLock, TorrentFunk, TorrentsCSV, YggTorrent, Torrent9
+- Added: 12+ Anime Sources: Zoro, 9Anime, GogoAnime, AniWave, HiAnime, AnimePahe, etc.
+- Added: Asian Drama: WatchAsian, KissAsian, DramaCool, ViewAsian, AsianLoad
+- Improved: Settings organized by category for easier management
+- Improved: Source discovery with parallel scraping support
+
+v2.7.2 (2026-01-12)
+- Added: Movie Schedules - View what's playing on all movie channels for the next 12 hours
+- Added: Force Refresh EPG button in Movie Channels menu
+- Added: Returning Shows - Browse TV shows with new seasons starting in next 30 days
+- Added: Network Browser - Browse TV shows by network (Netflix, HBO, BBC, Amazon, Disney+, Apple TV+, and 20+ more)
+- Added: Episode Countdown - Track your favorite shows and see days until next episode
+- Added: Context menu "Track Episode Countdown" on all TV shows
+- Added: TODAY/TOMORROW/X days countdown indicators
+- Improved: EPG now shows unique movies per channel based on genre
+
+v2.7.1 (2026-01-12)
+- Fixed: EPG now shows unique movies for each channel (no more duplicate listings)
+- Fixed: Each movie channel pulls from TMDB based on genre (Action, Comedy, Thriller, etc.)
+- Added: Channel logos/icons for all 35+ movie channels
+- Added: New Preferences settings category
+- Added: "Show International Premieres" setting - toggle Japanese, Chinese, Korean shows
+- Changed: Latest Show Premieres now defaults to English/American shows only
+- Added: Country indicators on international show premieres when enabled
+
+v2.7.0 (2026-01-10)
+- Added: Live Movie Channels with EPG support (35+ channels worldwide)
+- Added: EPG integration showing current and next programs
+- Added: Watch Live or Start from Beginning choice for channels
+- Added: New Episodes Today calendar (scroll back up to 7 days)
+- Added: Latest Show Premieres with infinite pagination (50 items/page, last 7 days)
+- Added: Smart movie stream finding when clicking on live channels
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

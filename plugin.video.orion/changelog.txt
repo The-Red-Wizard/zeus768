@@ -1,0 +1,44 @@
+================================================================================
+  Orion Changelog
+  by zeus768
+================================================================================
+v3.2.9 (April 2026)
+================================================================================
+* More debrid fixes
+================================================================================
+v3.2.8 (April 2026)
+================================================================================
+  * FIXED: Real-Debrid authorization issue - tokens now auto-refresh when expired
+  * Added Meteor scraper (Stremio addon for movies, TV & anime)
+  * Added Bitmagnet scraper (self-hosted torrent indexer with GraphQL API)
+  * Improved error handling for all debrid services
+  * Better token refresh mechanism for Real-Debrid OAuth
+
+v3.2.7 (April 2026)
+================================================================================
+  * Fixed debrid authorization bug - services now auto-enable after authorization
+  * Added Account Status menu showing login status, expiry dates, days remaining
+  * Added daily expiry alerts when account has 10 days or less remaining
+
+v3.2.4 (April 2026)
+================================================================================
+  * Compact Buy Me a Beer - single QR + Ko-fi dialog
+  * Updated for Zeus768 Repository v1.0.9
+
+v3.2.3 (February 2026)
+================================================================================
+  * Multi-scraper engine (Torrentio, MediaFusion, Jackettio, Orionoid)
+  * Real-Debrid, Premiumize, AllDebrid, TorBox support
+  * Trakt integration with scrobbling, watchlists, liked lists
+  * ResolveURL support
+  * Watch history, favorites, Kids Zone
+  * Auto-play next episode
+  * Buy Me a Beer donation support
+
+3.3.0 (2026-01-XX)
+- FIXED: Debrid link resolution using SALTS-style implementation
+- FIXED: Token expiry tracking with proactive refresh
+- FIXED: Better HTTP request handling with status codes
+- FIXED: Improved is_authorized() checks for all services
+- FIXED: Direct debrid service calls in resolver
+- IMPROVED: Error handling and logging throughout

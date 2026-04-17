@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting label="TMDB API Key" type="text" id="tmdb_api" default="f15af109700aab95d564acda15bdcd97"/>
+        <setting label="Enable Startup Video" type="bool" id="startup_video" default="true"/>
+        <setting label="Auto-play Best Source" type="bool" id="autoplay" default="false"/>
+        <setting label="Prefer Debrid Links" type="bool" id="prefer_debrid" default="true"/>
+        <setting label="Scraper Timeout" type="slider" id="timeout" default="15" range="5,1,30" option="int"/>
+        <setting type="bool" id="first_run_played" default="false" visible="false"/>
+    </category>
+    
+    <category label="Playback">
+        <setting label="[COLOR cyan]Nitroflare/Rapidgator Mode[/COLOR]" type="lsep"/>
+        <setting label="Download First Mode" type="select" id="download_first_mode" default="0" values="Ask Every Time|Always Download First|Always Stream Directly"/>
+        <setting label="Download Path (optional)" type="folder" id="download_path" default="" source="auto"/>
+        <setting label="[COLOR gray]Download-first ensures smooth playback for NF/RG links[/COLOR]" type="lsep"/>
+    </category>
+    
+    <category label="Real-Debrid">
+        <setting label="Enable Real-Debrid" type="bool" id="rd.enabled" default="false"/>
+        <setting label="[COLOR yellow]► Authorize Real-Debrid[/COLOR]" type="action" id="rd.authorize" action="RunPlugin(plugin://plugin.video.tinklepad/?action=rd_auth)"/>
+        <setting label="[COLOR green]Status[/COLOR]" type="lsep" id="rd.status"/>
+        <setting label="Username" type="text" id="rd.username" default="" enable="false"/>
+        <setting type="text" id="rd.token" default="" visible="false"/>
+        <setting type="text" id="rd.refresh" default="" visible="false"/>
+        <setting type="text" id="rd.expiry" default="" visible="false"/>
+        <setting type="text" id="rd.client_id" default="" visible="false"/>
+        <setting type="text" id="rd.secret" default="" visible="false"/>
+    </category>
+    
+    <category label="AllDebrid">
+        <setting label="Enable AllDebrid" type="bool" id="ad.enabled" default="false"/>
+        <setting label="[COLOR yellow]► Authorize AllDebrid[/COLOR]" type="action" id="ad.authorize" action="RunPlugin(plugin://plugin.video.tinklepad/?action=ad_auth)"/>
+        <setting label="[COLOR green]Status[/COLOR]" type="lsep" id="ad.status"/>
+        <setting label="Username" type="text" id="ad.username" default="" enable="false"/>
+        <setting type="text" id="ad.token" default="" visible="false"/>
+    </category>
+    
+    <category label="Premiumize">
+        <setting label="Enable Premiumize" type="bool" id="pm.enabled" default="false"/>
+        <setting label="[COLOR yellow]► Authorize Premiumize[/COLOR]" type="action" id="pm.authorize" action="RunPlugin(plugin://plugin.video.tinklepad/?action=pm_auth)"/>
+        <setting label="[COLOR green]Status[/COLOR]" type="lsep" id="pm.status"/>
+        <setting label="Username" type="text" id="pm.username" default="" enable="false"/>
+        <setting type="text" id="pm.token" default="" visible="false"/>
+    </category>
+    
+    <category label="External Scrapers">
+        <setting label="[COLOR gold]External Scraper Packs[/COLOR]" type="lsep"/>
+        <setting label="[COLOR gray]Install these separately, then enable here[/COLOR]" type="lsep"/>
+        <setting label="Enable CocoScrapers" type="bool" id="provider.cocoscrapers" default="true"/>
+        <setting label="Enable GearsScrapers" type="bool" id="provider.gearsscrapers" default="true"/>
+        <setting label="[COLOR cyan]Comet (Stremio-style indexer)[/COLOR]" type="lsep"/>
+        <setting label="Enable Comet" type="bool" id="provider.comet" default="true"/>
+    </category>
+    
+    <category label="DDL Providers">
+        <setting label="Tinklepad Provider (162.245.85.19)" type="bool" id="provider.tinklepad" default="true"/>
+        <setting label="1DDL.org" type="bool" id="provider.ddl1" default="true"/>
+        <setting label="DDLValley.me" type="bool" id="provider.ddlvalley" default="true"/>
+        <setting label="RlsBB.to" type="bool" id="provider.rlsbb" default="true"/>
+        <setting label="ScnSrc.me" type="bool" id="provider.scnsrc" default="true"/>
+        <setting label="RapidMoviez" type="bool" id="provider.rapidmoviez" default="true"/>
+    </category>
+    
+    <category label="Torrent Providers">
+        <setting label="[COLOR gold]Movie Torrents[/COLOR]" type="lsep"/>
+        <setting label="YTS.mx (Movies)" type="bool" id="provider.yts" default="true"/>
+        <setting label="RARBG (Mirrors)" type="bool" id="provider.rarbg" default="true"/>
+        <setting label="[COLOR gold]TV Show Torrents[/COLOR]" type="lsep"/>
+        <setting label="EZTV.re (TV Shows)" type="bool" id="provider.eztv" default="true"/>
+        <setting label="[COLOR gold]Anime Torrents[/COLOR]" type="lsep"/>
+        <setting label="Nyaa.si (Anime)" type="bool" id="provider.nyaa" default="true"/>
+        <setting label="[COLOR gold]General Torrents[/COLOR]" type="lsep"/>
+        <setting label="1337x.to" type="bool" id="provider.1337x" default="true"/>
+        <setting label="TorrentGalaxy" type="bool" id="provider.torrentgalaxy" default="true"/>
+        <setting label="The Pirate Bay" type="bool" id="provider.piratebay" default="true"/>
+        <setting label="LimeTorrents" type="bool" id="provider.limetorrents" default="true"/>
+        <setting label="Torlock" type="bool" id="provider.torlock" default="true"/>
+    </category>
+    
+    <category label="Free Streaming">
+        <setting label="VidSrc.to" type="bool" id="provider.vidsrc" default="true"/>
+        <setting label="VidSrc.me" type="bool" id="provider.vidsrcme" default="true"/>
+        <setting label="2Embed" type="bool" id="provider.2embed" default="true"/>
+        <setting label="SuperEmbed" type="bool" id="provider.superembed" default="true"/>
+        <setting label="LosMovies.mx" type="bool" id="provider.losmovies" default="true"/>
+        <setting label="JustStream" type="bool" id="provider.juststream" default="true"/>
+        <setting label="OpenloadMovies.ro" type="bool" id="provider.openloadmovies" default="true"/>
+    </category>
+</settings>

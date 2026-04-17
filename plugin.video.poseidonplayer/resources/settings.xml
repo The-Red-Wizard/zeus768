@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings version="2">
+    <section id="0">
+        <category id="credentials" label="Server Credentials">
+            <group id="1" label="Login Details">
+                <setting id="dns" type="string" label="Server URL (DNS)" default="">
+                    <level>0</level>
+                    <default></default>
+                    <control type="edit" format="string"/>
+                </setting>
+                <setting id="username" type="string" label="Username" default="">
+                    <level>0</level>
+                    <default></default>
+                    <control type="edit" format="string"/>
+                </setting>
+                <setting id="password" type="string" label="Password" default="">
+                    <level>0</level>
+                    <default></default>
+                    <control type="edit" format="string" option="hidden"/>
+                </setting>
+                <setting id="authenticated" type="boolean" label="Authenticated (internal)" visible="false" default="false">
+                    <level>3</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+            </group>
+        </category>
+        <category id="playback" label="Playback Settings">
+            <group id="4" label="Stream Format">
+                <setting id="stream_format" type="string" label="Stream Format" default="m3u8">
+                    <level>0</level>
+                    <default>m3u8</default>
+                    <constraints>
+                        <options>
+                            <option label="HLS (.m3u8) - Recommended for stability">m3u8</option>
+                            <option label="MPEG-TS (.ts) - Direct stream">ts</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string"/>
+                </setting>
+            </group>
+        </category>
+        <category id="epg" label="EPG Settings">
+            <group id="2" label="TV Guide">
+                <setting id="epg_hours" type="integer" label="EPG Hours to Display" default="3">
+                    <level>0</level>
+                    <default>3</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>12</maximum>
+                    </constraints>
+                    <control type="slider" format="integer"/>
+                </setting>
+                <setting id="catchup_days" type="integer" label="Catch-up Days" default="7">
+                    <level>0</level>
+                    <default>7</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>14</maximum>
+                    </constraints>
+                    <control type="slider" format="integer"/>
+                </setting>
+                <setting id="epg_refresh" type="integer" label="EPG Refresh (minutes)" default="30">
+                    <level>0</level>
+                    <default>30</default>
+                    <constraints>
+                        <minimum>5</minimum>
+                        <step>5</step>
+                        <maximum>120</maximum>
+                    </constraints>
+                    <control type="slider" format="integer"/>
+                </setting>
+            </group>
+        </category>
+        <category id="reminders" label="Reminders">
+            <group id="3" label="Reminder Settings">
+                <setting id="reminder_advance" type="integer" label="Reminder Advance Notice (minutes)" default="5">
+                    <level>0</level>
+                    <default>5</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>30</maximum>
+                    </constraints>
+                    <control type="slider" format="integer"/>
+                </setting>
+            </group>
+        </category>
+    </section>
+</settings>

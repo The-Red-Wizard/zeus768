@@ -1,0 +1,85 @@
+v1.9.0 (2026-04-12)
+====================
+- NEW: Added EZTV.re scraper for TV shows
+- NEW: Added RARBG mirrors/clones support
+- NEW: Added Nyaa.si scraper for anime content
+- NEW: Added LimeTorrents scraper
+- NEW: Added Torlock scraper
+- NEW: Added Comet scraper (Stremio-style torrent indexer)
+- NEW: CocoScrapers integration - auto-detects if script.module.cocoscrapers is installed
+- NEW: GearsScrapers integration - auto-detects if script.module.gearsscrapers is installed
+- External scraper packs work alongside built-in scrapers
+- Each scraper can be individually enabled/disabled in settings
+- New "External Scrapers" settings category
+- Improved torrent provider organization in settings
+
+v1.8.6 (2026-04-12)
+====================
+- FIX: Submenus now open correctly (Movies, TV Shows, Little Eagles, etc)
+- FIX: Resolved "UnboundLocalError: local variable 'tmdb' referenced before assignment"
+- Removed redundant local import in clear_cache that was causing variable scope conflict
+- All menu navigation now works properly
+
+v1.6.2 (2026-01-XX)
+====================
+- NEW: Movie/TV show synopsis displayed in search dialog
+- Shows title (year) and plot summary while searching for sources
+- Fetches metadata from TMDB for enhanced display
+- Real-time source count updates during search
+- Background progress option with fanart visibility
+
+v1.6.1 (2026-01-XX)
+====================
+- FIX: Hoster unavailable fallback for Nitroflare/Rapidgator
+- When Real-Debrid direct unrestrict fails with hoster_unavailable error,
+  the addon now automatically tries the remote download feature
+- Added progress dialog showing download status in RD cloud
+- Handles RD error codes 23, 24, 25 (hoster_unavailable, hoster_not_free, etc.)
+
+v1.1.0 (2026-01-XX)
+====================
+- MAJOR: Added Real-Debrid, AllDebrid, Premiumize support with proper OAuth/PIN authorization
+- MAJOR: Fixed debrid authorization persistence - tokens now stored correctly in Kodi settings
+- Added new DDL providers:
+  * Tinklepad Provider (http://162.245.85.19)
+  * 1DDL.org
+  * DDLValley.me
+- Added free streaming providers:
+  * JustStream (https://juststream.capital/films-en-stream)
+  * OpenloadMovies (https://www.openloadmovies.ro)
+- Added support for premium hosts via debrid:
+  * NitroFlare
+  * RapidGator
+  * ClicknUpload
+  * UsersDrive
+  * And many more
+- Enhanced TMDB metadata:
+  * Full cast and crew information
+  * Director and writer credits
+  * Runtime, ratings, vote counts
+  * Network information for TV shows
+  * Season and episode counts
+- Added Debrid Accounts menu for easy authorization management
+- Added provider enable/disable toggles
+- Added background service for automatic token refresh
+- Improved source selection dialog with color coding
+- Fixed fanart display issues
+- Various bug fixes and performance improvements
+
+v1.0.2
+======
+- Initial Exodus-style restoration
+- Basic TMDB integration
+- ResolveURL support
+- Golden Eagle themed interface
+
+v1.0.1
+======
+- Fixed label issues
+- Added actors section
+- Improved menu structure
+
+v1.0.0
+======
+- Initial release
+- Basic functionality
