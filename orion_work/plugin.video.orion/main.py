@@ -264,7 +264,12 @@ def show_custom_main_menu():
         movie_sources({'id': hero_item['id'], 'title': hero_item['title'], 'year': hero_item['year']})
     
     elif action == 'open_settings':
-        ADDON.openSettings()
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        if netflix_skin:
+            from resources.lib import settings_dialog
+            settings_dialog.show_settings()
+        else:
+            ADDON.openSettings()
         # Re-show the custom menu after settings close
         show_custom_main_menu()
     
@@ -1362,14 +1367,20 @@ def latest_episodes(params):
 # ============== HISTORY & FAVORITES ==============
 
 def continue_watching(params):
-    """Show continue watching list"""
+    """Show continue watching list - Netflix style or classic"""
     from resources.lib import database, tmdb
+    
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
     
     items = database.get_continue_watching()
     
     if not items:
         xbmcgui.Dialog().notification('Orion', 'No items in continue watching', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    if netflix_skin:
+        _show_continue_watching_netflix(items)
         return
     
     for item in items:
@@ -1405,7 +1416,6 @@ def continue_watching(params):
         li.setProperty('ResumeTime', str(item.get('position', 0)))
         li.setProperty('TotalTime', str(item.get('duration', 0)))
         
-        # Context menu
         context_items = [
             ('Remove from History', f'RunPlugin({build_url({"action": "remove_history", "key": item.get("key", "")})})')
         ]
@@ -1417,15 +1427,79 @@ def continue_watching(params):
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def _show_continue_watching_netflix(items):
+    """Show continue watching in Netflix grid"""
+    from resources.lib import grid
+    
+    grid_items = []
+    for item in items:
+        title = item.get('title', 'Unknown')
+        item_type = item.get('type', 'movie')
+        poster = item.get('poster') or ADDON_ICON
+        progress = item.get('progress', 0)
+        year = item.get('year', '')
+        
+        if item_type == 'tv':
+            season = item.get('season', 1)
+            episode = item.get('episode', 1)
+            display = f"{title} S{season:02d}E{episode:02d}"
+        else:
+            display = title
+        
+        grid_items.append({
+            'id': item.get('id'),
+            'title': display,
+            'year': str(year),
+            'rating': 0,
+            'poster': poster,
+            'backdrop': item.get('backdrop') or ADDON_FANART,
+            'plot': f'{progress}% watched',
+            'genres': '',
+            'media_type': item_type
+        })
+    
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title='Continue Watching',
+            page_subtitle=f'{len(grid_items)} items',
+            media_type='movie',
+            initial_items=grid_items,
+            total_pages=1,
+            total_results=len(grid_items)
+        )
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            item_type = selected_item.get('media_type', 'movie')
+            
+            if item_type == 'movie':
+                year = selected_item.get('year', '')
+                movie_sources({'id': item_id, 'title': title, 'year': year})
+                return
+            else:
+                _show_netflix_season_episode_flow(item_id, title.split(' S')[0])
+            continue
+
 def watch_history(params):
-    """Show full watch history"""
+    """Show full watch history - Netflix style or classic"""
     from resources.lib import database
+    
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
     
     items = database.get_history_list()
     
     if not items:
         xbmcgui.Dialog().notification('Orion', 'No watch history', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    if netflix_skin:
+        _show_history_netflix_style(items)
         return
     
     for item in items:
@@ -1474,23 +1548,101 @@ def watch_history(params):
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def _show_history_netflix_style(items):
+    """Show watch history in Netflix-style grid"""
+    from resources.lib import grid, detail
+    
+    grid_items = []
+    for item in items:
+        title = item.get('title', 'Unknown')
+        item_type = item.get('type', 'movie')
+        poster = item.get('poster') or ADDON_ICON
+        backdrop = item.get('backdrop') or ADDON_FANART
+        progress = item.get('progress', 0)
+        year = item.get('year', '')
+        
+        if item_type == 'tv':
+            season = item.get('season', 1)
+            episode = item.get('episode', 1)
+            display = f"{title} S{season:02d}E{episode:02d}"
+        else:
+            display = title
+        
+        grid_items.append({
+            'id': item.get('id'),
+            'title': display,
+            'year': str(year),
+            'rating': 0,
+            'poster': poster,
+            'backdrop': backdrop,
+            'plot': f'{progress}% watched' if progress > 0 else '',
+            'genres': '',
+            'media_type': item_type,
+            'original_item': item
+        })
+    
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title='Watch History',
+            page_subtitle=f'{len(grid_items)} items',
+            media_type='movie',
+            initial_items=grid_items,
+            total_pages=1,
+            total_results=len(grid_items)
+        )
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            item_media_type = selected_item.get('media_type', 'movie')
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            
+            if item_media_type == 'movie':
+                year = selected_item.get('year', '')
+                movie_sources({'id': item_id, 'title': title, 'year': year})
+                return
+            else:
+                netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+                if netflix_skin:
+                    _show_netflix_season_episode_flow(item_id, title.split(' S')[0])
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            continue
+
 def favorites_menu(params):
-    """Show favorites menu"""
+    """Show favorites menu - Netflix style or classic"""
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    
+    if netflix_skin:
+        _show_favorites_netflix_style(params)
+        return
+    
     add_directory_item("[B]Favorite Movies[/B]", {'action': 'favorites_list', 'type': 'movie'}, icon=get_icon('favorites'))
     add_directory_item("[B]Favorite TV Shows[/B]", {'action': 'favorites_list', 'type': 'tv'}, icon=get_icon('favorites'))
     
     xbmcplugin.endOfDirectory(HANDLE)
 
 def favorites_list(params):
-    """Show favorites list"""
+    """Show favorites list - Netflix style or classic"""
     from resources.lib import database, tmdb
     
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
     item_type = params.get('type', 'movie')
     items = database.get_favorites_list(item_type)
     
     if not items:
         xbmcgui.Dialog().notification('Orion', f'No favorite {item_type}s', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    if netflix_skin:
+        _show_favorites_grid(items, item_type)
         return
     
     for item in items:
@@ -1521,6 +1673,91 @@ def favorites_list(params):
     
     xbmcplugin.setContent(HANDLE, 'movies' if item_type == 'movie' else 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_favorites_netflix_style(params):
+    """Show favorites with Netflix-style tab picker then grid"""
+    from resources.lib import database
+    
+    # Ask which type
+    choice = xbmcgui.Dialog().select('Favorites', ['Favorite Movies', 'Favorite TV Shows'])
+    if choice < 0:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    item_type = 'movie' if choice == 0 else 'tv'
+    items = database.get_favorites_list(item_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification('Orion', f'No favorite {item_type}s', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    _show_favorites_grid(items, item_type)
+
+
+def _show_favorites_grid(items, item_type):
+    """Show favorites in Netflix grid"""
+    from resources.lib import grid, detail
+    
+    grid_items = []
+    for item in items:
+        title = item.get('title', 'Unknown')
+        year = item.get('year', '')
+        poster = item.get('poster') or ADDON_ICON
+        backdrop = item.get('backdrop') or ADDON_FANART
+        rating = item.get('rating', 0)
+        
+        grid_items.append({
+            'id': item.get('id'),
+            'title': title,
+            'year': str(year),
+            'rating': rating,
+            'poster': poster,
+            'backdrop': backdrop,
+            'plot': item.get('plot', ''),
+            'genres': item.get('genres', ''),
+            'media_type': item_type
+        })
+    
+    type_label = 'Movies' if item_type == 'movie' else 'TV Shows'
+    
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title=f'Favorite {type_label}',
+            page_subtitle=f'{len(grid_items)} items',
+            media_type=item_type,
+            initial_items=grid_items,
+            total_pages=1,
+            total_results=len(grid_items)
+        )
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            year = selected_item.get('year', '')
+            
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=item_type
+            )
+            
+            if detail_action == 'play':
+                if item_type == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            elif detail_action == 'seasons':
+                _show_netflix_season_episode_flow(item_id, title)
+            continue
 
 def add_favorite(params):
     """Add item to favorites"""
@@ -2559,7 +2796,8 @@ def kids_list(params):
 def trakt_menu():
     """Trakt integration menu - Netflix style or classic"""
     # Check if Netflix-style submenu is enabled
-    use_netflix_submenu = ADDON.getSetting('use_netflix_submenu') == 'true'
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
     
     if not ADDON.getSetting('trakt_token'):
         add_directory_item("[COLOR red]Trakt Not Authorized - Click to Authorize[/COLOR]", {'action': 'pair_trakt'}, False)
@@ -2761,7 +2999,6 @@ def _handle_trakt_submenu_result(action, selected_item, selected_category):
     log(f"Trakt submenu result: action={action}, item={selected_item}, category={selected_category}")
     
     if action == 'back' or action is None:
-        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
         return
     
     elif action == 'select_item' and selected_item:
@@ -2771,10 +3008,15 @@ def _handle_trakt_submenu_result(action, selected_item, selected_category):
         media_type = selected_item.get('media_type', 'movie')
         
         if media_type == 'movie':
-            url = build_url({'action': 'movie_sources', 'id': item_id, 'title': title, 'year': year})
+            movie_sources({'id': item_id, 'title': title, 'year': year})
         else:
-            url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
-        xbmc.executebuiltin(f'Container.Update({url})')
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                _show_trakt_netflix_style()
+            else:
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'Container.Update({url})')
     
     elif action == 'watch' and selected_item:
         item_id = selected_item.get('id', selected_item.get('tmdb_id'))
@@ -2783,10 +3025,15 @@ def _handle_trakt_submenu_result(action, selected_item, selected_category):
         media_type = selected_item.get('media_type', 'movie')
         
         if media_type == 'movie':
-            url = build_url({'action': 'movie_sources', 'id': item_id, 'title': title, 'year': year})
+            movie_sources({'id': item_id, 'title': title, 'year': year})
         else:
-            url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
-        xbmc.executebuiltin(f'Container.Update({url})')
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                _show_trakt_netflix_style()
+            else:
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'Container.Update({url})')
     
     elif action == 'select_genre' and selected_item:
         # User selected a list
@@ -3353,8 +3600,14 @@ def configure_bitmagnet():
                 xbmcgui.Dialog().ok('Bitmagnet', f'[COLOR yellow]URL saved but connection test failed.[/COLOR]\n\nError: {str(e)[:50]}\n\nPlease verify your Bitmagnet is running.')
 
 def open_settings():
-    """Open addon settings"""
-    ADDON.openSettings()
+    """Open addon settings - Netflix style or Kodi default"""
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    
+    if netflix_skin:
+        from resources.lib import settings_dialog
+        settings_dialog.show_settings()
+    else:
+        ADDON.openSettings()
 
 def clear_cache():
     """Clear addon cache"""
