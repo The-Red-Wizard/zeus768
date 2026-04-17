@@ -36,13 +36,13 @@ def _max_quality():
 def _set_scrobble_props(media_type, title, imdb_id='', season=0, episode=0, show_title='', tmdb_id=''):
     """Set window properties so the scrobble service knows what's playing."""
     win = xbmcgui.Window(10000)
-    win.setProperty('Test1.type', media_type)
-    win.setProperty('Test1.title', title)
-    win.setProperty('Test1.imdb', imdb_id)
-    win.setProperty('Test1.season', str(season))
-    win.setProperty('Test1.episode', str(episode))
-    win.setProperty('Test1.show_title', show_title)
-    win.setProperty('Test1.tmdb_id', str(tmdb_id) if tmdb_id else '')
+    win.setProperty('Genesis.type', media_type)
+    win.setProperty('Genesis.title', title)
+    win.setProperty('Genesis.imdb', imdb_id)
+    win.setProperty('Genesis.season', str(season))
+    win.setProperty('Genesis.episode', str(episode))
+    win.setProperty('Genesis.show_title', show_title)
+    win.setProperty('Genesis.tmdb_id', str(tmdb_id) if tmdb_id else '')
 
 
 def play(title, year='', imdb_id='', tmdb_id=''):
@@ -60,7 +60,7 @@ def play(title, year='', imdb_id='', tmdb_id=''):
     search_query = '%s %s' % (title, year) if year else title
 
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', 'Searching 10 torrent sites for %s...' % title)
+    progress.create('Genesis', 'Searching 10 torrent sites for %s...' % title)
 
     try:
         results = scrapers.search_all(search_query, max_q)
@@ -133,7 +133,7 @@ def play(title, year='', imdb_id='', tmdb_id=''):
         return
 
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', 'Resolving source via debrid...')
+    progress.create('Genesis', 'Resolving source via debrid...')
 
     url, svc_name = debrid.resolve_magnet(magnet)
     
@@ -186,13 +186,23 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
     search_title = '%s S%sE%s' % (title, str(season).zfill(2), str(episode).zfill(2))
 
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', 'Searching for %s...' % search_title)
+    progress.create('Genesis', 'Searching for %s...' % search_title)
 
     try:
         results = scrapers.search_all(search_title, max_q)
     except Exception as e:
         xbmc.log('Scraper error: %s' % str(e), xbmc.LOGERROR)
         results = []
+
+    # If no results with S01E01 format, try with season pack
+    if not results:
+        try:
+            season_query = '%s Season %s' % (title, str(season))
+            progress.update(50, 'No episode results. Trying season pack...')
+            results = scrapers.search_all(season_query, max_q)
+        except Exception as e:
+            xbmc.log('Season pack search error: %s' % str(e), xbmc.LOGERROR)
+            results = []
 
     if not results:
         progress.close()
@@ -234,7 +244,7 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
         return
 
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', 'Resolving source via debrid...')
+    progress.create('Genesis', 'Resolving source via debrid...')
 
     url, svc_name = debrid.resolve_magnet(magnet)
     

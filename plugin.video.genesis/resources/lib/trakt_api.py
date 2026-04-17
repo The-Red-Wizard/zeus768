@@ -24,7 +24,7 @@ ADDON_PATH = xbmcvfs.translatePath(f'special://home/addons/{ADDON_ID}/')
 
 # Use same client ID as trakt_auth
 CLIENT_ID = '215436e27377a2e330cd8406ac1cd19de93eb956c3af50242ddf92c20e604f76'
-USER_AGENT = 'Test1 Kodi Addon'
+USER_AGENT = 'Genesis Kodi Addon'
 
 # Pagination settings - reduced for faster loading
 ITEMS_PER_PAGE = 30
@@ -297,7 +297,7 @@ def show_episodes(tmdb_id, season_number, show_title):
         })
         li.setProperty('IsPlayable', 'true')
         
-        url = f"{sys.argv[0]}?action=play_episode&title={quote_plus(show_title)}&season={season_number}&episode={ep_num}"
+        url = f"{sys.argv[0]}?action=play_episode&title={quote_plus(show_title)}&season={season_number}&episode={ep_num}&tmdb_id={tmdb_id}"
         xbmcplugin.addDirectoryItem(handle, url, li, False)
     
     xbmcplugin.setContent(handle, 'episodes')

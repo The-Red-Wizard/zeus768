@@ -1,1 +1,1 @@
-# Test1 Kodi Addon Library
+# Genesis Kodi Addon Library

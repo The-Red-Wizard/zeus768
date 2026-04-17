@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Icon Helper for Test1 - Genesis Skins Integration
+Icon Helper for Genesis - Genesis Skins Integration
 Provides themed icons from script.genesis.skins addon
 """
 import os
@@ -24,7 +24,7 @@ def get_genesis_skins():
 
 
 def is_enabled():
-    """Check if Genesis Skins integration is enabled in Test1 settings"""
+    """Check if Genesis Skins integration is enabled in Genesis settings"""
     try:
         addon = xbmcaddon.Addon('plugin.video.genesis')
         return addon.getSetting('use_genesis_skins') == 'true'

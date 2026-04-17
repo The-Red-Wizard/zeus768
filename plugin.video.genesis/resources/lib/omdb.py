@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-OMDB API Module for Test1
+OMDB API Module for Genesis
 Provides multi-source ratings: IMDB, Rotten Tomatoes, Metacritic
 Also: Awards, Box Office, Plot details
 """
@@ -10,7 +10,7 @@ import xbmcaddon
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
-USER_AGENT = 'Test1 Kodi Addon'
+USER_AGENT = 'Genesis Kodi Addon'
 
 # Cache for OMDB data
 _omdb_cache = {}

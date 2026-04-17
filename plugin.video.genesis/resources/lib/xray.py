@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Enhanced X-Ray Metadata Module for Test1
+Enhanced X-Ray Metadata Module for Genesis
 Provides comprehensive movie/show information:
 - Cast & Crew with profile images
 - Multi-source ratings (IMDB, Rotten Tomatoes, Metacritic)
@@ -42,7 +42,7 @@ def _get_tmdb_api_key():
 def _http_get(url, timeout=10):
     """HTTP GET helper"""
     try:
-        req = Request(url, headers={'User-Agent': 'Test1 Kodi Addon'})
+        req = Request(url, headers={'User-Agent': 'Genesis Kodi Addon'})
         response = urlopen(req, timeout=timeout)
         return json.loads(response.read().decode('utf-8'))
     except Exception as e:

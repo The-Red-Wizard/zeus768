@@ -1,5 +1,5 @@
 """
-Trakt.tv API Authentication Module for Test1
+Trakt.tv API Authentication Module for Genesis
 Uses native urllib (no external requests module)
 """
 import json
@@ -24,7 +24,7 @@ ADDON_DATA_PATH = xbmcvfs.translatePath(f'special://profile/addon_data/{ADDON_ID
 CLIENT_ID = '215436e27377a2e330cd8406ac1cd19de93eb956c3af50242ddf92c20e604f76'
 CLIENT_SECRET = '9cc86f0c0aa4fb8d38fa1fd9d5daecceb7d25700ca1319416543a06591746468'
 API_URL = 'https://api.trakt.tv'
-USER_AGENT = 'Test1 Kodi Addon'
+USER_AGENT = 'Genesis Kodi Addon'
 
 TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'trakt_token.json')
 

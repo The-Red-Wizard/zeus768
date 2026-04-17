@@ -518,7 +518,7 @@ def play_anime(title, year='', mal_id='', media_type='movie'):
     search_query = f'{title} {year}' if year else title
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', f'Searching anime sites for {title}...')
+    progress.create('Genesis', f'Searching anime sites for {title}...')
     
     try:
         results = anime_scrapers.search_all_anime(search_query, '1080p')
@@ -567,7 +567,7 @@ def play_anime(title, year='', mal_id='', media_type='movie'):
         return
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', 'Resolving anime source via debrid...')
+    progress.create('Genesis', 'Resolving anime source via debrid...')
     
     url, svc_name = debrid.resolve_magnet(magnet)
     progress.close()
@@ -598,7 +598,7 @@ def play_anime_episode(title, episode, mal_id=''):
     search_query = f'{title} {ep_num}'
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', f'Searching for {title} Episode {episode}...')
+    progress.create('Genesis', f'Searching for {title} Episode {episode}...')
     
     try:
         results = anime_scrapers.search_all_anime(search_query, '1080p')
@@ -646,7 +646,7 @@ def play_anime_episode(title, episode, mal_id=''):
         return
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', 'Resolving source via debrid...')
+    progress.create('Genesis', 'Resolving source via debrid...')
     
     url, svc_name = debrid.resolve_magnet(magnet)
     progress.close()
@@ -670,7 +670,7 @@ def show_anime_torrent_site(site):
     addon_fanart = get_addon_fanart()
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', f'Loading {site} latest releases...')
+    progress.create('Genesis', f'Loading {site} latest releases...')
     
     results = []
     
@@ -761,7 +761,7 @@ def search_anime_torrents(query):
     addon_fanart = get_addon_fanart()
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', f'Searching anime sites for "{query}"...')
+    progress.create('Genesis', f'Searching anime sites for "{query}"...')
     
     try:
         results = anime_scrapers.search_all_anime(query, '1080p')
@@ -827,7 +827,7 @@ def play_anime_torrent(magnet, title):
         return
     
     progress = xbmcgui.DialogProgress()
-    progress.create('Test1', f'Resolving {title}...')
+    progress.create('Genesis', f'Resolving {title}...')
     
     url, svc_name = debrid.resolve_magnet(magnet)
     progress.close()

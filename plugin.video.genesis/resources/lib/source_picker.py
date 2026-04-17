@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Enhanced Source Picker Dialog for Test1
+Enhanced Source Picker Dialog for Genesis
 Features:
 - Provider | Size | Quality Type (REMUX/WebRip/BluRay) | Resolution | Seeds
 - Filterable by Quality, Type, or Provider

@@ -1,5 +1,5 @@
 """
-Torrent Scrapers Module for Test1
+Torrent Scrapers Module for Genesis
 10 Unique Torrent Sites (not Stremio/Torrentio)
 Uses native urllib (no external requests module)
 Updated with better error handling and multiple mirrors

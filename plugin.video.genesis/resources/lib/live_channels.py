@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Live Channels with EPG for Test1
+Live Channels with EPG for Genesis
 24 Movie Channels with simulated EPG programming
 Inspired by SALTS channel system
 """

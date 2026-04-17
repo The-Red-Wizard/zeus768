@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Anime & Manga API Module for Test1
+Anime & Manga API Module for Genesis
 Uses Jikan API (unofficial MyAnimeList) + TMDB for metadata
 """
 import json
@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 
 ADDON_ID = 'plugin.video.genesis'
 ADDON_PATH = xbmcvfs.translatePath(f'special://home/addons/{ADDON_ID}/')
-USER_AGENT = 'Test1 Kodi Addon'
+USER_AGENT = 'Genesis Kodi Addon'
 
 # Jikan API (free, no key required)
 JIKAN_BASE = 'https://api.jikan.moe/v4'

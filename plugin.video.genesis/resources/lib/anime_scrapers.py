@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Anime-Specific Torrent Scrapers for Test1
+Anime-Specific Torrent Scrapers for Genesis
 Sites: Nyaa, SubsPlease, AnimeTosho, TokyoTosho, AniDex, Erai-Raws
 """
 import json

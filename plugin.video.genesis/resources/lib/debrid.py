@@ -26,7 +26,7 @@ ADDON_PATH = xbmcvfs.translatePath(f'special://home/addons/{ADDON_ID}/')
 
 # Quality priorities (highest to lowest)
 QUALITY_ORDER = ['2160p', '1080p', '720p', '480p', '360p']
-USER_AGENT = 'Test1 Kodi Addon'
+USER_AGENT = 'Genesis Kodi Addon'
 
 # Token files
 RD_TOKEN_FILE = os.path.join(ADDON_DATA_PATH, 'rd_token.json')
@@ -550,7 +550,7 @@ class AllDebrid:
     
     BASE_URL = "https://api.alldebrid.com/v4"
     DEVICE_URL = "https://alldebrid.com/pin/"
-    AGENT = "Test1"
+    AGENT = "Genesis"
     
     def __init__(self):
         self._load_from_file()
@@ -1406,7 +1406,7 @@ class LinkSnappy:
             }).encode()
             req = urllib.request.Request(f'{self.BASE_URL}/AUTHENTICATE',
                                          data=data,
-                                         headers={'User-Agent': 'Test1/2.3.0'})
+                                         headers={'User-Agent': 'Genesis/2.3.0'})
             resp = opener.open(req, timeout=15)
             result = json.loads(resp.read().decode())
 
@@ -1437,7 +1437,7 @@ class LinkSnappy:
         return False
 
     def _login_headers(self):
-        headers = {'User-Agent': 'Test1/2.3.0'}
+        headers = {'User-Agent': 'Genesis/2.3.0'}
         if self.cookie:
             headers['Cookie'] = self.cookie
         return headers
@@ -1493,7 +1493,7 @@ class LinkSnappy:
             }).encode()
             req = urllib.request.Request(f'{self.BASE_URL}/AUTHENTICATE',
                                          data=data,
-                                         headers={'User-Agent': 'Test1/2.3.0'})
+                                         headers={'User-Agent': 'Genesis/2.3.0'})
             resp = opener.open(req, timeout=15)
             result = json.loads(resp.read().decode())
             if result.get('status') == 'OK':

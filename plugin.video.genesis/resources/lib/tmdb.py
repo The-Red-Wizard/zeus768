@@ -1,5 +1,5 @@
 """
-TMDB API Module for Test1
+TMDB API Module for Genesis
 Uses native urllib (no external requests module)
 """
 import json
@@ -16,7 +16,7 @@ from urllib.parse import quote_plus
 def get_addon():
     return xbmcaddon.Addon()
 
-USER_AGENT = 'Test1 Kodi Addon'
+USER_AGENT = 'Genesis Kodi Addon'
 
 # User's TMDB API key
 DEFAULT_TMDB_KEY = "f15af109700aab95d564acda15bdcd97"
