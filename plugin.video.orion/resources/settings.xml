@@ -85,6 +85,13 @@
         <setting id="debrid_priority" type="labelenum" label="Debrid Priority" values="Real-Debrid|Premiumize|AllDebrid|TorBox" default="0"/>
         <setting id="use_resolveurl" type="bool" label="Use ResolveURL for resolution" default="true"/>
     </category>
+    <category label="Appearance">
+        <setting id="netflix_skin_enabled" type="bool" label="Enable Netflix-Style Skin (disables classic list view)" default="true"/>
+        <setting id="use_custom_skin" type="bool" label="Use Fullscreen Link Picker (POV Style)" default="true" visible="eq(-1,true)"/>
+        <setting id="use_custom_menu" type="bool" label="Use Fullscreen Main Menu (Sidebar Style)" default="true" visible="eq(-2,true)"/>
+        <setting id="use_netflix_submenu" type="bool" label="Use Netflix-Style Submenus (Movies/TV/Trakt)" default="true" visible="eq(-3,true)"/>
+        <setting id="use_netflix_search" type="bool" label="Use Netflix-Style Search" default="true" visible="eq(-4,true)"/>
+    </category>
     <category label="History &amp; Favorites">
         <setting id="save_history" type="bool" label="Save Watch History" default="true"/>
         <setting id="history_limit" type="slider" label="History Limit" default="100" range="10,10,500"/>

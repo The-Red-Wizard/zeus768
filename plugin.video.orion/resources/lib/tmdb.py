@@ -158,3 +158,26 @@ def get_disney_style_movies(page=1):
         'sort_by': 'popularity.desc',
         'page': page
     })
+
+
+# Cache for genre mappings
+_genre_cache = {'movie': {}, 'tv': {}}
+
+
+def get_genre_names(media_type, genre_ids):
+    """Convert genre IDs to comma-separated genre names"""
+    global _genre_cache
+    
+    # Build cache if empty
+    if not _genre_cache.get(media_type):
+        genres = get_genres(media_type)
+        _genre_cache[media_type] = {g['id']: g['name'] for g in genres}
+    
+    # Convert IDs to names
+    names = []
+    for gid in genre_ids[:3]:  # Limit to 3 genres
+        name = _genre_cache[media_type].get(gid)
+        if name:
+            names.append(name)
+    
+    return ', '.join(names)

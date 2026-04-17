@@ -40,9 +40,9 @@ Superpowered Trakt addon. Click any movie or episode and it plays instantly via 
 ### Orion
 <img src="plugin.video.orion/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Media Explorer** | `plugin.video.orion` | v3.4.5
+**Media Explorer** | `plugin.video.orion` | v3.7.2
 
-Complete media addon with Netflix-style UI, multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support. Trakt integration with scrobbling, watchlists and liked lists. ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.
+Complete media addon with Netflix-style interface. Portrait poster carousels, BIG poster grid view, cyan (#00D4FF) theme throughout. Netflix-style search, History, Favorites, Continue Watching, and Settings panel. Season dropdown and episode grid for TV shows. Up Next auto-play with 15s countdown. Trakt scrobbling and watch progress sync. Master skin toggle to switch between Netflix and classic Kodi list view. Multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support.
 
 <br clear="both">
 

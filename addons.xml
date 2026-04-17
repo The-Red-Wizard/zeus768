@@ -19,7 +19,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.orion" name="Orion" version="3.2.9" provider-name="zeus768">
+<addon id="plugin.video.orion" name="Orion" version="3.7.2" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.0.0" optional="true"/>
@@ -29,8 +29,7 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Orion Media Explorer</summary>
-        <description lang="en">Orion v3.2.9 - Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Meteor, Bitmagnet, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox, Trakt integration with scrobbling, watchlists and liked lists, ResolveURL support, watch history, favorites, Kids Zone, account status with expiry alerts, and auto-play next episode.</description>
-        <news>[3.2.9] FIXED: Debrid link resolution using SALTS-style implementation. Token expiry tracking with proactive refresh. Better HTTP request handling. Improved is_authorized() checks for all debrid services.</news>
+        <description lang="en">Orion v3.7.2 - Complete media addon with Netflix-style interface. Portrait poster carousels, BIG poster grid, cyan theme, Netflix-style search, History, Favorites, Settings. Season dropdown and episode grid for TV shows. Up Next auto-play. Trakt scrobbling. Master skin toggle. Multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox.</description>
         <platform>all</platform>
         <license>GPL-3.0</license>
         <assets>

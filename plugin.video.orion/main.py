@@ -62,6 +62,20 @@ def main_menu():
     from resources.lib import debrid
     debrid.check_expiry_alerts()
     
+    # Check if custom menu is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
+    
+    if use_custom_menu:
+        # First create a basic directory structure as the "home" base
+        # This ensures back button has somewhere to go
+        _create_home_directory()
+        
+        # Then show the custom menu dialog on top
+        show_custom_main_menu()
+        return
+    
+    # Classic menu
     items = [
         ("[B]Movies[/B]", {'action': 'movies_menu'}, True, get_icon('movies'), "Browse movies by genre"),
         ("[B]TV Shows[/B]", {'action': 'tvshows_menu'}, True, get_icon('tvshows'), "Browse TV shows by genre"),
@@ -84,10 +98,259 @@ def main_menu():
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def _create_home_directory():
+    """Create a minimal home directory that serves as base for navigation.
+    This allows the back button to return here from sub-menus."""
+    # Add invisible home items - these create the directory structure
+    # but the custom dialog will be shown on top
+    items = [
+        ("Movies", {'action': 'movies_menu'}, True, get_icon('movies')),
+        ("TV Shows", {'action': 'tvshows_menu'}, True, get_icon('tvshows')),
+        ("Kids Zone", {'action': 'kids_menu'}, True, get_icon('kids')),
+        ("Search", {'action': 'search_menu'}, True, get_icon('search')),
+        ("Favorites", {'action': 'favorites_menu'}, True, get_icon('favorites')),
+        ("History", {'action': 'watch_history'}, True, get_icon('history')),
+        ("Trakt", {'action': 'trakt_menu'}, True, get_icon('trakt')),
+    ]
+    
+    for name, query, is_folder, icon in items:
+        add_directory_item(name, query, is_folder, icon=icon)
+    
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE, cacheToDisc=False)
+
+
+def show_custom_main_menu():
+    """Show the custom fullscreen main menu with sidebar navigation"""
+    from resources.lib import main_menu as menu_module, tmdb, database
+    
+    # Build sidebar menu items with icon paths
+    icons_path = os.path.join(ADDON_PATH, 'resources', 'icons')
+    menu_items = [
+        {'label': 'Home', 'action': 'refresh_menu', 'icon_path': os.path.join(icons_path, 'popular.png')},
+        {'label': 'Movies', 'action': 'movies_menu', 'icon_path': os.path.join(icons_path, 'movies.png')},
+        {'label': 'TV Shows', 'action': 'tvshows_menu', 'icon_path': os.path.join(icons_path, 'tvshows.png')},
+        {'label': 'Kids Zone', 'action': 'kids_menu', 'icon_path': os.path.join(icons_path, 'kids.png')},
+        {'label': 'Search', 'action': 'search_menu', 'icon_path': os.path.join(icons_path, 'search.png')},
+        {'label': 'Favorites', 'action': 'favorites_menu', 'icon_path': os.path.join(icons_path, 'favorites.png')},
+        {'label': 'History', 'action': 'watch_history', 'icon_path': os.path.join(icons_path, 'history.png')},
+        {'label': 'Trakt', 'action': 'trakt_menu', 'icon_path': os.path.join(icons_path, 'trakt.png')},
+    ]
+    
+    # Get content for rows
+    row1_items = []  # Trending Movies
+    row2_items = []  # New TV Shows
+    row3_items = []  # Popular
+    row4_items = []  # Continue Watching / Favorites
+    
+    try:
+        # Row 1: Trending/Popular Movies
+        movies_data = tmdb.get_category('movie', 'popular', 1)
+        for item in movies_data.get('results', [])[:10]:
+            row1_items.append({
+                'title': item.get('title', ''),
+                'poster': tmdb.get_poster_url(item.get('poster_path')),
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                'id': item.get('id'),
+                'media_type': 'movie',
+                'rating': item.get('vote_average', 0),
+                'year': (item.get('release_date') or '')[:4]
+            })
+        
+        # Row 2: Popular TV Shows
+        tv_data = tmdb.get_category('tv', 'popular', 1)
+        for item in tv_data.get('results', [])[:10]:
+            row2_items.append({
+                'title': item.get('name', ''),
+                'poster': tmdb.get_poster_url(item.get('poster_path')),
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                'id': item.get('id'),
+                'media_type': 'tv',
+                'rating': item.get('vote_average', 0),
+                'year': (item.get('first_air_date') or '')[:4]
+            })
+        
+        # Row 3: Now Playing / In Cinema
+        cinema_data = tmdb.get_category('movie', 'now_playing', 1)
+        for item in cinema_data.get('results', [])[:10]:
+            row3_items.append({
+                'title': item.get('title', ''),
+                'poster': tmdb.get_poster_url(item.get('poster_path')),
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                'id': item.get('id'),
+                'media_type': 'movie',
+                'rating': item.get('vote_average', 0),
+                'year': (item.get('release_date') or '')[:4]
+            })
+        
+        # Row 4: Top Rated
+        top_data = tmdb.get_category('movie', 'top_rated', 1)
+        for item in top_data.get('results', [])[:10]:
+            row4_items.append({
+                'title': item.get('title', ''),
+                'poster': tmdb.get_poster_url(item.get('poster_path')),
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                'id': item.get('id'),
+                'media_type': 'movie',
+                'rating': item.get('vote_average', 0),
+                'year': (item.get('release_date') or '')[:4]
+            })
+    except Exception as e:
+        log(f"Error loading menu content: {e}", xbmc.LOGWARNING)
+    
+    # Hero data - removed "Welcome" text as per user request
+    hero_data = {
+        'title': '',
+        'main': '',
+        'subtitle': '',
+        'backdrop': row1_items[0]['backdrop'] if row1_items else ADDON_FANART,
+        'featured': row1_items[0]['title'] if row1_items else ''
+    }
+    
+    row_titles = {
+        'row1': 'TRENDING MOVIES',
+        'row2': 'POPULAR TV SHOWS',
+        'row3': 'IN CINEMA',
+        'row4': 'TOP RATED'
+    }
+    
+    # Show the menu dialog
+    action, selected_item = menu_module.show_main_menu(
+        menu_items=menu_items,
+        row1_items=row1_items,
+        row2_items=row2_items,
+        row3_items=row3_items,
+        row4_items=row4_items,
+        hero_data=hero_data,
+        row_titles=row_titles
+    )
+    
+    log(f"Custom menu returned action: {action}, selected_item: {selected_item}")
+    
+    # Handle the result
+    # Use ActivateWindow/Container.Update for navigation to maintain history
+    
+    if action == 'exit' or action is None:
+        # User wants to exit - just return, the underlying directory is already shown
+        # User can press back again to exit addon
+        return
+    
+    elif action == 'open_item' and selected_item:
+        media_type = selected_item.get('media_type', 'movie')
+        tmdb_id = selected_item.get('id')
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        
+        log(f"Opening item from carousel: {title} (type: {media_type}, id: {tmdb_id})")
+        
+        # For movies - go directly to sources (search for links)
+        if media_type == 'movie':
+            # Call movie_sources to search for links
+            movie_sources({'id': tmdb_id, 'title': title, 'year': year})
+        else:
+            # For TV shows, use Netflix-style season/episode picker
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(tmdb_id, title)
+                show_custom_main_menu()
+            else:
+                url = build_url({'action': 'tv_seasons', 'id': tmdb_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+    
+    elif action == 'play_hero' and row1_items:
+        hero_item = row1_items[0]
+        # Call movie_sources directly to search for links
+        movie_sources({'id': hero_item['id'], 'title': hero_item['title'], 'year': hero_item['year']})
+    
+    elif action == 'open_settings':
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        if netflix_skin:
+            from resources.lib import settings_dialog
+            settings_dialog.show_settings()
+        else:
+            ADDON.openSettings()
+        # Re-show the custom menu after settings close
+        show_custom_main_menu()
+    
+    elif action == 'refresh_menu':
+        # Refresh - re-show the menu
+        show_custom_main_menu()
+    
+    elif action == 'movies_menu':
+        url = build_url({'action': 'movies_menu'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'tvshows_menu':
+        url = build_url({'action': 'tvshows_menu'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'kids_menu':
+        url = build_url({'action': 'kids_menu'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'search_menu':
+        url = build_url({'action': 'search_menu'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'favorites_menu':
+        url = build_url({'action': 'favorites_menu'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'watch_history':
+        url = build_url({'action': 'watch_history'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'trakt_menu':
+        url = build_url({'action': 'trakt_menu'})
+        xbmc.executebuiltin(f'Container.Update({url})')
+
+
+def route_action(action, params):
+    """Route an action to its handler function"""
+    # Functions that don't take parameters
+    no_params_actions = {
+        'movies_menu': movies_menu,
+        'tvshows_menu': tvshows_menu,
+        'search_menu': search_menu,
+        'trakt_menu': trakt_menu,
+        'account_status': account_status,
+    }
+    
+    # Functions that take parameters
+    params_actions = {
+        'kids_menu': kids_menu,
+        'favorites_menu': favorites_menu,
+        'watch_history': watch_history,
+        'continue_watching': continue_watching,
+    }
+    
+    if action in no_params_actions:
+        no_params_actions[action]()
+    elif action in params_actions:
+        params_actions[action](params if params else {})
+
+
 def movies_menu():
-    """Movies sub-menu with genres"""
+    """Movies sub-menu with genres - Netflix style or classic"""
     from resources.lib import tmdb
     
+    # Check if Netflix-style submenu is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
+    
+    if use_netflix_submenu:
+        _show_movies_netflix_style()
+        # After Netflix dialog closes, go back to main menu
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
+        if use_custom_menu:
+            show_custom_main_menu()
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    # Classic menu
     add_directory_item("[B]Popular Movies[/B]", {'action': 'list_content', 'type': 'movie', 'category': 'popular', 'page': 1}, icon=get_icon('popular'))
     add_directory_item("[B]Top Rated Movies[/B]", {'action': 'list_content', 'type': 'movie', 'category': 'top_rated', 'page': 1}, icon=get_icon('toprated'))
     add_directory_item("[B]Now Playing[/B]", {'action': 'list_content', 'type': 'movie', 'category': 'now_playing', 'page': 1}, icon=get_icon('nowplaying'))
@@ -104,10 +367,88 @@ def movies_menu():
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def _show_movies_netflix_style(category='popular'):
+    """Show Movies in Netflix-style submenu"""
+    from resources.lib import tmdb, submenu
+    
+    # Get popular movies for content row
+    row1_items = []
+    try:
+        movies_data = tmdb.get_category('movie', category, 1)
+        for item in movies_data.get('results', [])[:20]:
+            genres_list = item.get('genre_ids', [])
+            genre_names = tmdb.get_genre_names('movie', genres_list)
+            
+            row1_items.append({
+                'title': item.get('title', ''),
+                'poster': tmdb.get_poster_url(item.get('poster_path')),
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                'id': item.get('id'),
+                'media_type': 'movie',
+                'rating': item.get('vote_average', 0),
+                'year': (item.get('release_date') or '')[:4],
+                'plot': item.get('overview', ''),
+                'genres': genre_names
+            })
+    except Exception as e:
+        log(f"Error loading movies: {e}", xbmc.LOGWARNING)
+    
+    # Get genres for row 2
+    row2_items = []
+    try:
+        genres = tmdb.get_genres('movie')
+        for genre in genres:
+            row2_items.append({
+                'label': genre['name'],
+                'action': 'genre',
+                'genre_id': genre['id']
+            })
+    except:
+        pass
+    
+    # Category tabs
+    categories = [
+        {'label': 'Popular', 'action': 'popular', 'id': 'popular'},
+        {'label': 'Top Rated', 'action': 'top_rated', 'id': 'top_rated'},
+        {'label': 'Now Playing', 'action': 'now_playing', 'id': 'now_playing'},
+        {'label': 'Upcoming', 'action': 'upcoming', 'id': 'upcoming'},
+    ]
+    
+    # Show the Netflix-style dialog
+    action, selected_item, selected_category = submenu.show_submenu(
+        page_title='Movies',
+        page_subtitle='Browse all movies by genre and category',
+        row1_items=row1_items,
+        row2_items=row2_items,
+        categories=categories,
+        row1_title=category.replace('_', ' ').upper(),
+        row2_title='GENRES',
+        menu_type='movies'
+    )
+    
+    # Handle result - MUST end directory or navigate properly
+    _handle_submenu_result(action, selected_item, selected_category, 'movie', category)
+
 def tvshows_menu():
-    """TV Shows sub-menu with genres"""
+    """TV Shows sub-menu with genres - Netflix style or classic"""
     from resources.lib import tmdb
     
+    # Check if Netflix-style submenu is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
+    
+    if use_netflix_submenu:
+        _show_tvshows_netflix_style()
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
+        if use_custom_menu:
+            show_custom_main_menu()
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    # Classic menu
     add_directory_item("[B]Popular TV Shows[/B]", {'action': 'list_content', 'type': 'tv', 'category': 'popular', 'page': 1}, icon=get_icon('popular'))
     add_directory_item("[B]Top Rated TV Shows[/B]", {'action': 'list_content', 'type': 'tv', 'category': 'top_rated', 'page': 1}, icon=get_icon('toprated'))
     add_directory_item("[B]On The Air[/B]", {'action': 'list_content', 'type': 'tv', 'category': 'on_the_air', 'page': 1}, icon=get_icon('onair'))
@@ -123,6 +464,502 @@ def tvshows_menu():
     
     xbmcplugin.setContent(HANDLE, 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_tvshows_netflix_style(category='popular'):
+    """Show TV Shows in Netflix-style submenu"""
+    from resources.lib import tmdb, submenu
+    
+    # Get popular TV shows for content row
+    row1_items = []
+    try:
+        tv_data = tmdb.get_category('tv', category, 1)
+        for item in tv_data.get('results', [])[:20]:
+            genres_list = item.get('genre_ids', [])
+            genre_names = tmdb.get_genre_names('tv', genres_list)
+            
+            row1_items.append({
+                'title': item.get('name', ''),
+                'poster': tmdb.get_poster_url(item.get('poster_path')),
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                'id': item.get('id'),
+                'media_type': 'tv',
+                'rating': item.get('vote_average', 0),
+                'year': (item.get('first_air_date') or '')[:4],
+                'plot': item.get('overview', ''),
+                'genres': genre_names
+            })
+    except Exception as e:
+        log(f"Error loading TV shows: {e}", xbmc.LOGWARNING)
+    
+    # Get genres for row 2
+    row2_items = []
+    try:
+        genres = tmdb.get_genres('tv')
+        for genre in genres:
+            row2_items.append({
+                'label': genre['name'],
+                'action': 'genre',
+                'genre_id': genre['id']
+            })
+    except:
+        pass
+    
+    # Category tabs
+    categories = [
+        {'label': 'Popular', 'action': 'popular', 'id': 'popular'},
+        {'label': 'Top Rated', 'action': 'top_rated', 'id': 'top_rated'},
+        {'label': 'On The Air', 'action': 'on_the_air', 'id': 'on_the_air'},
+        {'label': 'Airing Today', 'action': 'airing_today', 'id': 'airing_today'},
+    ]
+    
+    # Show the Netflix-style dialog
+    action, selected_item, selected_category = submenu.show_submenu(
+        page_title='TV Shows',
+        page_subtitle='Browse all TV series by genre and category',
+        row1_items=row1_items,
+        row2_items=row2_items,
+        categories=categories,
+        row1_title=category.replace('_', ' ').upper(),
+        row2_title='GENRES',
+        menu_type='tvshows'
+    )
+    
+    # Handle result - MUST end directory or navigate properly
+    _handle_submenu_result(action, selected_item, selected_category, 'tv', category)
+
+
+def _handle_submenu_result(action, selected_item, selected_category, media_type, current_category='popular'):
+    """Handle the result from Netflix-style submenu"""
+    log(f"Submenu result: action={action}, item={selected_item}, category={selected_category}")
+    
+    if action == 'back' or action is None:
+        # User went back - just return, Kodi will handle going back to parent
+        return
+    
+    elif action == 'select_item' and selected_item:
+        # User selected a movie/show - go directly to sources (search for links)
+        item_id = selected_item.get('id')
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        
+        log(f"Submenu select_item: {title} ({year}), id={item_id}")
+        
+        if media_type == 'movie':
+            # Call movie_sources directly to search for links
+            movie_sources({'id': item_id, 'title': title, 'year': year})
+        else:
+            # For TV shows, use Netflix-style season/episode picker
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                # Re-show current submenu after returning
+                if media_type == 'tv':
+                    _show_tvshows_netflix_style(current_category)
+            else:
+                xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+    
+    elif action == 'watch' and selected_item:
+        # User clicked Watch Now button - search for links
+        item_id = selected_item.get('id', selected_item.get('tmdb_id'))
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        
+        log(f"Submenu watch: {title} ({year}), id={item_id}")
+        
+        if media_type == 'movie':
+            # Call movie_sources directly to search for links
+            movie_sources({'id': item_id, 'title': title, 'year': year})
+        else:
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                if media_type == 'tv':
+                    _show_tvshows_netflix_style(current_category)
+            else:
+                xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+    
+    elif action == 'info' and selected_item:
+        # Show detail dialog with trailer and play buttons
+        from resources.lib import detail
+        
+        detail_action, item_data = detail.show_detail(
+            item_data=selected_item,
+            media_type=media_type
+        )
+        
+        if detail_action == 'play':
+            item_id = item_data.get('id')
+            title = item_data.get('title', '')
+            year = item_data.get('year', '')
+            
+            if media_type == 'movie':
+                movie_sources({'id': item_id, 'title': title, 'year': year})
+            else:
+                xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+        elif detail_action == 'seasons':
+            # TV show - show Netflix-style season/episode picker
+            item_id = item_data.get('id')
+            title = item_data.get('title', '')
+            _show_netflix_season_episode_flow(item_id, title)
+            # After returning, re-show the menu
+            if media_type == 'movie':
+                _show_movies_netflix_style(current_category)
+            else:
+                _show_tvshows_netflix_style(current_category)
+        else:
+            # Re-show the Netflix menu
+            if media_type == 'movie':
+                _show_movies_netflix_style(current_category)
+            else:
+                _show_tvshows_netflix_style(current_category)
+    
+    elif action == 'select_genre' and selected_item:
+        # User selected a genre - show GRID view with pagination
+        genre_id = selected_item.get('genre_id')
+        genre_name = selected_item.get('title', 'Genre')
+        log(f"Submenu select_genre: {genre_name}, id={genre_id}")
+        
+        # Show the new Netflix-style GRID view for the selected genre
+        _show_genre_grid_view(media_type, genre_id, genre_name)
+        
+        # After returning from genre view, re-show the original menu
+        if media_type == 'movie':
+            _show_movies_netflix_style(current_category)
+        else:
+            _show_tvshows_netflix_style(current_category)
+    
+    elif action == 'category' and selected_category:
+        # User selected a category tab - show GRID view with pagination
+        category_action = selected_category.get('action', 'popular')
+        category_label = selected_category.get('label', category_action.replace('_', ' ').title())
+        log(f"Submenu category: {category_action}")
+        
+        # Show the new Netflix-style GRID view for the category
+        _show_category_grid_view(media_type, category_action, category_label)
+        
+        # After returning from grid view, re-show the original menu
+        if media_type == 'movie':
+            _show_movies_netflix_style(current_category)
+        else:
+            _show_tvshows_netflix_style(current_category)
+    
+    else:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
+def _show_genre_grid_view(media_type, genre_id, genre_name):
+    """Show Netflix-style GRID view for a specific genre with pagination"""
+    from resources.lib import tmdb, grid, detail
+    
+    log(f"Showing genre GRID view: {genre_name} (id={genre_id}) for {media_type}")
+    
+    page_type = 'Movies' if media_type == 'movie' else 'TV Shows'
+    
+    # Fetch first page
+    try:
+        genre_data = tmdb.get_by_genre(media_type, genre_id, 1)
+        total_pages = min(genre_data.get('total_pages', 1), 500)
+        total_results = genre_data.get('total_results', 0)
+        
+        # Process initial items
+        initial_items = []
+        for item in genre_data.get('results', []):
+            genres_list = item.get('genre_ids', [])
+            genre_names_str = tmdb.get_genre_names(media_type, genres_list)
+            
+            title = item.get('title', '') if media_type == 'movie' else item.get('name', '')
+            date_str = item.get('release_date', '') if media_type == 'movie' else item.get('first_air_date', '')
+            year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+            
+            initial_items.append({
+                'id': item.get('id'),
+                'title': title,
+                'year': year,
+                'rating': item.get('vote_average', 0),
+                'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                'plot': item.get('overview', ''),
+                'genres': genre_names_str,
+                'media_type': media_type
+            })
+    except Exception as e:
+        log(f"Error loading genre content: {e}", xbmc.LOGWARNING)
+        initial_items = []
+        total_pages = 1
+        total_results = 0
+    
+    # Create fetch function for pagination
+    def fetch_genre_page(page, genre_id=genre_id, media_type=media_type):
+        return tmdb.get_by_genre(media_type, genre_id, page)
+    
+    # Show the grid dialog with pagination
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title=f'{genre_name} {page_type}',
+            page_subtitle=f'Browse {genre_name.lower()} {page_type.lower()} • {total_results:,} titles',
+            media_type=media_type,
+            fetch_function=fetch_genre_page,
+            fetch_params={'genre_id': genre_id, 'media_type': media_type},
+            initial_items=initial_items,
+            total_pages=total_pages,
+            total_results=total_results
+        )
+        
+        log(f"Grid view result: action={action}, item={selected_item}")
+        
+        if action == 'back' or action is None:
+            # Just return - caller handles going back
+            return
+        
+        elif action == 'select_item' and selected_item:
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=selected_item.get('media_type', media_type)
+            )
+            
+            log(f"Detail dialog result: action={detail_action}")
+            
+            if detail_action == 'play':
+                # User wants to play - search for sources
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                year = item_data.get('year', '')
+                
+                if item_data.get('media_type', media_type) == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return  # Exit grid after playback starts
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            
+            if detail_action == 'seasons':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                _show_netflix_season_episode_flow(item_id, title)
+            
+            # If user closed detail dialog, continue showing grid
+            continue
+
+
+def _show_category_grid_view(media_type, category, category_name):
+    """Show Netflix-style GRID view for a category (Popular, Top Rated, etc.) with pagination"""
+    from resources.lib import tmdb, grid, detail
+    
+    log(f"Showing category GRID view: {category_name} for {media_type}")
+    
+    page_type = 'Movies' if media_type == 'movie' else 'TV Shows'
+    
+    # Fetch first page
+    try:
+        category_data = tmdb.get_category(media_type, category, 1)
+        total_pages = min(category_data.get('total_pages', 1), 500)
+        total_results = category_data.get('total_results', 0)
+        
+        # Process initial items
+        initial_items = []
+        for item in category_data.get('results', []):
+            genres_list = item.get('genre_ids', [])
+            genre_names_str = tmdb.get_genre_names(media_type, genres_list)
+            
+            title = item.get('title', '') if media_type == 'movie' else item.get('name', '')
+            date_str = item.get('release_date', '') if media_type == 'movie' else item.get('first_air_date', '')
+            year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+            
+            initial_items.append({
+                'id': item.get('id'),
+                'title': title,
+                'year': year,
+                'rating': item.get('vote_average', 0),
+                'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                'plot': item.get('overview', ''),
+                'genres': genre_names_str,
+                'media_type': media_type
+            })
+    except Exception as e:
+        log(f"Error loading category content: {e}", xbmc.LOGWARNING)
+        initial_items = []
+        total_pages = 1
+        total_results = 0
+    
+    # Create fetch function for pagination
+    def fetch_category_page(page, category=category, media_type=media_type):
+        return tmdb.get_category(media_type, category, page)
+    
+    # Show the grid dialog with pagination
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title=f'{category_name} {page_type}',
+            page_subtitle=f'Browse {category_name.lower()} {page_type.lower()} • {total_results:,} titles',
+            media_type=media_type,
+            fetch_function=fetch_category_page,
+            fetch_params={'category': category, 'media_type': media_type},
+            initial_items=initial_items,
+            total_pages=total_pages,
+            total_results=total_results
+        )
+        
+        log(f"Grid view result: action={action}, item={selected_item}")
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=selected_item.get('media_type', media_type)
+            )
+            
+            log(f"Detail dialog result: action={detail_action}")
+            
+            if detail_action == 'play':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                year = item_data.get('year', '')
+                
+                if item_data.get('media_type', media_type) == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            
+            if detail_action == 'seasons':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                _show_netflix_season_episode_flow(item_id, title)
+            
+            continue
+
+
+def _show_genre_netflix_style(media_type, genre_id, genre_name):
+    """Show Netflix-style view for a specific genre - NOW OPENS GRID VIEW"""
+    # Redirect to the new grid view with pagination
+    _show_genre_grid_view(media_type, genre_id, genre_name)
+
+
+
+def _show_netflix_season_episode_flow(show_id, show_title):
+    """Show Netflix-style season selector then episode grid for a TV show.
+    Uses SeasonDialog -> EpisodeDialog -> episode_sources."""
+    from resources.lib import tmdb, season_dialog, episode_dialog
+    
+    if not show_id:
+        return
+    
+    try:
+        # Fetch show details
+        details = tmdb.get_tv_details(show_id)
+        seasons_data = details.get('seasons', [])
+        
+        if not seasons_data:
+            xbmcgui.Dialog().notification('Orion', 'No seasons found', ADDON_ICON)
+            return
+        
+        # Build show_data for dialogs
+        show_data = {
+            'title': details.get('name', show_title),
+            'backdrop': tmdb.get_backdrop_url(details.get('backdrop_path')) or ADDON_FANART,
+            'overview': details.get('overview', ''),
+            'year': (details.get('first_air_date') or '')[:4],
+            'rating': details.get('vote_average', 0),
+            'genres': ', '.join([g['name'] for g in details.get('genres', [])[:3]])
+        }
+        
+        # Build seasons list
+        seasons = []
+        for s in seasons_data:
+            seasons.append({
+                'season_number': s.get('season_number', 0),
+                'name': s.get('name', f"Season {s.get('season_number', 0)}"),
+                'poster': tmdb.get_poster_url(s.get('poster_path')) or ADDON_ICON,
+                'episode_count': s.get('episode_count', 0)
+            })
+        
+        total_seasons = len(seasons)
+        
+        # Season selection loop
+        while True:
+            selected_season = season_dialog.show_season_dialog(
+                show_data=show_data,
+                seasons=seasons
+            )
+            
+            if selected_season is None:
+                # User backed out
+                return
+            
+            log(f"Season selected: {selected_season}")
+            
+            # Fetch episodes for the selected season
+            try:
+                ep_data = tmdb.get_season_episodes(show_id, selected_season)
+                episode_list = ep_data.get('episodes', [])
+            except Exception as e:
+                log(f"Error fetching episodes: {e}", xbmc.LOGERROR)
+                xbmcgui.Dialog().notification('Orion', f'Error: {str(e)}', ADDON_ICON)
+                continue
+            
+            if not episode_list:
+                xbmcgui.Dialog().notification('Orion', 'No episodes found', ADDON_ICON)
+                continue
+            
+            # Prepare episodes for dialog
+            episodes_for_dialog = []
+            for ep in episode_list:
+                still = tmdb.get_backdrop_url(ep.get('still_path'))
+                episodes_for_dialog.append({
+                    'episode_number': ep.get('episode_number', 0),
+                    'name': ep.get('name', f"Episode {ep.get('episode_number', 0)}"),
+                    'still_path': still or ADDON_FANART,
+                    'air_date': ep.get('air_date', ''),
+                    'runtime': ep.get('runtime', 0),
+                    'overview': ep.get('overview', '')
+                })
+            
+            # Episode selection loop
+            while True:
+                result = episode_dialog.show_episode_dialog(
+                    show_data=show_data,
+                    episodes=episodes_for_dialog,
+                    season_number=selected_season,
+                    total_seasons=total_seasons
+                )
+                
+                if result is None:
+                    # User backed out - go back to season picker
+                    break
+                
+                ep_season, ep_number = result
+                log(f"Episode selected: S{ep_season}E{ep_number}")
+                
+                # Search for episode sources
+                episode_sources({
+                    'id': show_id,
+                    'title': show_title,
+                    'season': ep_season,
+                    'episode': ep_number
+                })
+                return  # Exit after starting playback
+    
+    except Exception as e:
+        log(f"Error in season/episode flow: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification('Orion', f'Error: {str(e)}', ADDON_ICON)
+
+
 
 def list_content(params):
     """List movies or TV shows"""
@@ -160,12 +997,12 @@ def list_content(params):
         
         display_title = f"{title} ({year})" if year else title
         if rating:
-            display_title = f"{display_title} [COLOR yellow]★{rating:.1f}[/COLOR]"
+            display_title = f"{display_title} [COLOR yellow]*{rating:.1f}[/COLOR]"
         
         # Check if favorite
         is_fav = database.is_favorite(media_type, item_id)
         if is_fav:
-            display_title = f"[COLOR gold]★[/COLOR] {display_title}"
+            display_title = f"[COLOR gold]*[/COLOR] {display_title}"
         
         li = xbmcgui.ListItem(label=display_title)
         li.setArt({
@@ -213,36 +1050,52 @@ def tv_seasons(params):
     show_id = params.get('id')
     show_title = params.get('title', '')
     
-    details = tmdb.get_tv_details(show_id)
-    seasons = details.get('seasons', [])
+    if not show_id:
+        xbmcgui.Dialog().notification('Orion', 'No show ID provided', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
     
-    for season in seasons:
-        season_num = season.get('season_number', 0)
-        name = season.get('name', f'Season {season_num}')
-        episode_count = season.get('episode_count', 0)
-        poster = tmdb.get_poster_url(season.get('poster_path'))
+    try:
+        details = tmdb.get_tv_details(show_id)
+        seasons = details.get('seasons', [])
         
-        display_name = f"{name} ({episode_count} episodes)"
+        if not seasons:
+            xbmcgui.Dialog().notification('Orion', 'No seasons found', ADDON_ICON)
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
         
-        li = xbmcgui.ListItem(label=display_name)
-        li.setArt({
-            'icon': poster or ADDON_ICON,
-            'thumb': poster or ADDON_ICON,
-            'poster': poster or ADDON_ICON,
-            'fanart': ADDON_FANART
-        })
+        for season in seasons:
+            season_num = season.get('season_number', 0)
+            name = season.get('name', f'Season {season_num}')
+            episode_count = season.get('episode_count', 0)
+            poster = tmdb.get_poster_url(season.get('poster_path'))
+            
+            display_name = f"{name} ({episode_count} episodes)"
+            
+            li = xbmcgui.ListItem(label=display_name)
+            li.setArt({
+                'icon': poster or ADDON_ICON,
+                'thumb': poster or ADDON_ICON,
+                'poster': poster or ADDON_ICON,
+                'fanart': ADDON_FANART
+            })
+            
+            url = build_url({
+                'action': 'tv_episodes',
+                'id': show_id,
+                'title': show_title,
+                'season': season_num
+            })
+            
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
         
-        url = build_url({
-            'action': 'tv_episodes',
-            'id': show_id,
-            'title': show_title,
-            'season': season_num
-        })
+        xbmcplugin.setContent(HANDLE, 'seasons')
+        xbmcplugin.endOfDirectory(HANDLE)
         
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
-    
-    xbmcplugin.setContent(HANDLE, 'seasons')
-    xbmcplugin.endOfDirectory(HANDLE)
+    except Exception as e:
+        log(f"Error loading TV seasons: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification('Orion', f'Error loading seasons: {str(e)}', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
 def tv_episodes(params):
     """List TV show episodes"""
@@ -252,50 +1105,80 @@ def tv_episodes(params):
     show_title = params.get('title', '')
     season_num = int(params.get('season', 1))
     
-    episodes = tmdb.get_season_episodes(show_id, season_num)
+    if not show_id:
+        xbmcgui.Dialog().notification('Orion', 'No show ID provided', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
     
-    for ep in episodes.get('episodes', []):
-        ep_num = ep.get('episode_number', 0)
-        ep_name = ep.get('name', f'Episode {ep_num}')
-        still = tmdb.get_backdrop_url(ep.get('still_path'))
-        plot = ep.get('overview', '')
-        air_date = ep.get('air_date', '')
-        rating = ep.get('vote_average', 0)
+    try:
+        episodes = tmdb.get_season_episodes(show_id, season_num)
+        episode_list = episodes.get('episodes', [])
         
-        display_name = f"S{season_num:02d}E{ep_num:02d} - {ep_name}"
-        if rating:
-            display_name = f"{display_name} [COLOR yellow]★{rating:.1f}[/COLOR]"
+        if not episode_list:
+            xbmcgui.Dialog().notification('Orion', 'No episodes found', ADDON_ICON)
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
         
-        li = xbmcgui.ListItem(label=display_name)
-        li.setArt({
-            'icon': still or ADDON_ICON,
-            'thumb': still or ADDON_ICON,
-            'fanart': still or ADDON_FANART
-        })
-        li.setInfo('video', {
-            'title': ep_name,
-            'plot': plot,
-            'episode': ep_num,
-            'season': season_num,
-            'aired': air_date,
-            'mediatype': 'episode'
-        })
+        for ep in episode_list:
+            ep_num = ep.get('episode_number', 0)
+            ep_name = ep.get('name', f'Episode {ep_num}')
+            still = tmdb.get_backdrop_url(ep.get('still_path'))
+            plot = ep.get('overview', '')
+            air_date = ep.get('air_date', '')
+            rating = ep.get('vote_average', 0)
+            
+            display_name = f"S{season_num:02d}E{ep_num:02d} - {ep_name}"
+            if rating:
+                display_name = f"{display_name} [COLOR yellow]*{rating:.1f}[/COLOR]"
+            
+            li = xbmcgui.ListItem(label=display_name)
+            li.setArt({
+                'icon': still or ADDON_ICON,
+                'thumb': still or ADDON_ICON,
+                'fanart': still or ADDON_FANART
+            })
+            li.setInfo('video', {
+                'title': ep_name,
+                'plot': plot,
+                'episode': ep_num,
+                'season': season_num,
+                'aired': air_date,
+                'mediatype': 'episode'
+            })
+            
+            url = build_url({
+                'action': 'episode_sources',
+                'id': show_id,
+                'title': show_title,
+                'season': season_num,
+                'episode': ep_num
+            })
+            
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
         
-        url = build_url({
-            'action': 'episode_sources',
-            'id': show_id,
-            'title': show_title,
-            'season': season_num,
-            'episode': ep_num
-        })
+        xbmcplugin.setContent(HANDLE, 'episodes')
+        xbmcplugin.endOfDirectory(HANDLE)
         
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
-    
-    xbmcplugin.setContent(HANDLE, 'episodes')
-    xbmcplugin.endOfDirectory(HANDLE)
+    except Exception as e:
+        log(f"Error loading TV episodes: {e}", xbmc.LOGERROR)
+        xbmcgui.Dialog().notification('Orion', f'Error loading episodes: {str(e)}', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
 def search_menu():
     """Search sub-menu"""
+    # Check if Netflix-style search is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_search = netflix_skin and ADDON.getSetting('use_netflix_search') == 'true'
+    
+    if use_netflix_search:
+        _show_netflix_search()
+        use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
+        if use_custom_menu:
+            show_custom_main_menu()
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
     items = [
         ("[B]Search Movies[/B]", {'action': 'search', 'type': 'movie'}, get_icon('search')),
         ("[B]Search TV Shows[/B]", {'action': 'search', 'type': 'tv'}, get_icon('search')),
@@ -306,6 +1189,132 @@ def search_menu():
         add_directory_item(name, query, icon=icon)
     
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_netflix_search(media_type='multi'):
+    """Show Netflix-style fullscreen search"""
+    from resources.lib import tmdb, search_results, detail
+    
+    # Prompt user for search query
+    keyboard = xbmc.Keyboard('', 'Search Movies and TV Shows')
+    keyboard.doModal()
+    
+    if not keyboard.isConfirmed():
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    query = keyboard.getText().strip()
+    if not query:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    current_type = media_type
+    
+    while True:
+        # Fetch results
+        results = []
+        try:
+            if current_type == 'multi':
+                # Search both movies and TV
+                movie_data = tmdb.search_content('movie', query, 1)
+                tv_data = tmdb.search_content('tv', query, 1)
+                
+                all_items = []
+                for item in movie_data.get('results', [])[:10]:
+                    all_items.append(('movie', item))
+                for item in tv_data.get('results', [])[:10]:
+                    all_items.append(('tv', item))
+                
+                for mtype, item in all_items:
+                    title = item.get('title', '') if mtype == 'movie' else item.get('name', '')
+                    date_str = item.get('release_date', '') if mtype == 'movie' else item.get('first_air_date', '')
+                    year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+                    results.append({
+                        'id': item.get('id'),
+                        'title': title,
+                        'year': year,
+                        'rating': item.get('vote_average', 0),
+                        'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                        'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                        'media_type': mtype
+                    })
+            else:
+                data = tmdb.search_content(current_type, query, 1)
+                for item in data.get('results', [])[:20]:
+                    title = item.get('title', '') if current_type == 'movie' else item.get('name', '')
+                    date_str = item.get('release_date', '') if current_type == 'movie' else item.get('first_air_date', '')
+                    year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+                    results.append({
+                        'id': item.get('id'),
+                        'title': title,
+                        'year': year,
+                        'rating': item.get('vote_average', 0),
+                        'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                        'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                        'media_type': current_type
+                    })
+        except Exception as e:
+            log(f"Error searching: {e}", xbmc.LOGWARNING)
+        
+        # Show results dialog
+        action, selected_item, new_media_type = search_results.show_search_results(
+            results=results,
+            query=query,
+            media_type=current_type
+        )
+        
+        log(f"Search result: action={action}, item={selected_item}, filter={new_media_type}")
+        
+        if action == 'back' or action is None:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
+        
+        elif action == 'new_search':
+            # Prompt for new query
+            keyboard = xbmc.Keyboard(query, 'Search Movies and TV Shows')
+            keyboard.doModal()
+            if keyboard.isConfirmed():
+                new_query = keyboard.getText().strip()
+                if new_query:
+                    query = new_query
+                    current_type = 'multi'
+                    continue
+            # If cancelled, return to current results
+            continue
+        
+        elif action == 'filter' and new_media_type:
+            current_type = new_media_type
+            continue
+        
+        elif action == 'select_item' and selected_item:
+            item_media_type = selected_item.get('media_type', 'movie')
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            year = selected_item.get('year', '')
+            
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=item_media_type
+            )
+            
+            if detail_action == 'play':
+                if item_media_type == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            if detail_action == 'seasons':
+                _show_netflix_season_episode_flow(item_id, title)
+            # If detail was closed, continue showing search results
+            continue
+        
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            return
 
 def do_search(params):
     """Perform search"""
@@ -376,14 +1385,20 @@ def latest_episodes(params):
 # ============== HISTORY & FAVORITES ==============
 
 def continue_watching(params):
-    """Show continue watching list"""
+    """Show continue watching list - Netflix style or classic"""
     from resources.lib import database, tmdb
+    
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
     
     items = database.get_continue_watching()
     
     if not items:
         xbmcgui.Dialog().notification('Orion', 'No items in continue watching', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    if netflix_skin:
+        _show_continue_watching_netflix(items)
         return
     
     for item in items:
@@ -419,7 +1434,6 @@ def continue_watching(params):
         li.setProperty('ResumeTime', str(item.get('position', 0)))
         li.setProperty('TotalTime', str(item.get('duration', 0)))
         
-        # Context menu
         context_items = [
             ('Remove from History', f'RunPlugin({build_url({"action": "remove_history", "key": item.get("key", "")})})')
         ]
@@ -431,15 +1445,79 @@ def continue_watching(params):
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def _show_continue_watching_netflix(items):
+    """Show continue watching in Netflix grid"""
+    from resources.lib import grid
+    
+    grid_items = []
+    for item in items:
+        title = item.get('title', 'Unknown')
+        item_type = item.get('type', 'movie')
+        poster = item.get('poster') or ADDON_ICON
+        progress = item.get('progress', 0)
+        year = item.get('year', '')
+        
+        if item_type == 'tv':
+            season = item.get('season', 1)
+            episode = item.get('episode', 1)
+            display = f"{title} S{season:02d}E{episode:02d}"
+        else:
+            display = title
+        
+        grid_items.append({
+            'id': item.get('id'),
+            'title': display,
+            'year': str(year),
+            'rating': 0,
+            'poster': poster,
+            'backdrop': item.get('backdrop') or ADDON_FANART,
+            'plot': f'{progress}% watched',
+            'genres': '',
+            'media_type': item_type
+        })
+    
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title='Continue Watching',
+            page_subtitle=f'{len(grid_items)} items',
+            media_type='movie',
+            initial_items=grid_items,
+            total_pages=1,
+            total_results=len(grid_items)
+        )
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            item_type = selected_item.get('media_type', 'movie')
+            
+            if item_type == 'movie':
+                year = selected_item.get('year', '')
+                movie_sources({'id': item_id, 'title': title, 'year': year})
+                return
+            else:
+                _show_netflix_season_episode_flow(item_id, title.split(' S')[0])
+            continue
+
 def watch_history(params):
-    """Show full watch history"""
+    """Show full watch history - Netflix style or classic"""
     from resources.lib import database
+    
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
     
     items = database.get_history_list()
     
     if not items:
         xbmcgui.Dialog().notification('Orion', 'No watch history', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    if netflix_skin:
+        _show_history_netflix_style(items)
         return
     
     for item in items:
@@ -488,23 +1566,101 @@ def watch_history(params):
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def _show_history_netflix_style(items):
+    """Show watch history in Netflix-style grid"""
+    from resources.lib import grid, detail
+    
+    grid_items = []
+    for item in items:
+        title = item.get('title', 'Unknown')
+        item_type = item.get('type', 'movie')
+        poster = item.get('poster') or ADDON_ICON
+        backdrop = item.get('backdrop') or ADDON_FANART
+        progress = item.get('progress', 0)
+        year = item.get('year', '')
+        
+        if item_type == 'tv':
+            season = item.get('season', 1)
+            episode = item.get('episode', 1)
+            display = f"{title} S{season:02d}E{episode:02d}"
+        else:
+            display = title
+        
+        grid_items.append({
+            'id': item.get('id'),
+            'title': display,
+            'year': str(year),
+            'rating': 0,
+            'poster': poster,
+            'backdrop': backdrop,
+            'plot': f'{progress}% watched' if progress > 0 else '',
+            'genres': '',
+            'media_type': item_type,
+            'original_item': item
+        })
+    
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title='Watch History',
+            page_subtitle=f'{len(grid_items)} items',
+            media_type='movie',
+            initial_items=grid_items,
+            total_pages=1,
+            total_results=len(grid_items)
+        )
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            item_media_type = selected_item.get('media_type', 'movie')
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            
+            if item_media_type == 'movie':
+                year = selected_item.get('year', '')
+                movie_sources({'id': item_id, 'title': title, 'year': year})
+                return
+            else:
+                netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+                if netflix_skin:
+                    _show_netflix_season_episode_flow(item_id, title.split(' S')[0])
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            continue
+
 def favorites_menu(params):
-    """Show favorites menu"""
+    """Show favorites menu - Netflix style or classic"""
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    
+    if netflix_skin:
+        _show_favorites_netflix_style(params)
+        return
+    
     add_directory_item("[B]Favorite Movies[/B]", {'action': 'favorites_list', 'type': 'movie'}, icon=get_icon('favorites'))
     add_directory_item("[B]Favorite TV Shows[/B]", {'action': 'favorites_list', 'type': 'tv'}, icon=get_icon('favorites'))
     
     xbmcplugin.endOfDirectory(HANDLE)
 
 def favorites_list(params):
-    """Show favorites list"""
+    """Show favorites list - Netflix style or classic"""
     from resources.lib import database, tmdb
     
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
     item_type = params.get('type', 'movie')
     items = database.get_favorites_list(item_type)
     
     if not items:
         xbmcgui.Dialog().notification('Orion', f'No favorite {item_type}s', ADDON_ICON)
         xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    if netflix_skin:
+        _show_favorites_grid(items, item_type)
         return
     
     for item in items:
@@ -535,6 +1691,91 @@ def favorites_list(params):
     
     xbmcplugin.setContent(HANDLE, 'movies' if item_type == 'movie' else 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_favorites_netflix_style(params):
+    """Show favorites with Netflix-style tab picker then grid"""
+    from resources.lib import database
+    
+    # Ask which type
+    choice = xbmcgui.Dialog().select('Favorites', ['Favorite Movies', 'Favorite TV Shows'])
+    if choice < 0:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    item_type = 'movie' if choice == 0 else 'tv'
+    items = database.get_favorites_list(item_type)
+    
+    if not items:
+        xbmcgui.Dialog().notification('Orion', f'No favorite {item_type}s', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    _show_favorites_grid(items, item_type)
+
+
+def _show_favorites_grid(items, item_type):
+    """Show favorites in Netflix grid"""
+    from resources.lib import grid, detail
+    
+    grid_items = []
+    for item in items:
+        title = item.get('title', 'Unknown')
+        year = item.get('year', '')
+        poster = item.get('poster') or ADDON_ICON
+        backdrop = item.get('backdrop') or ADDON_FANART
+        rating = item.get('rating', 0)
+        
+        grid_items.append({
+            'id': item.get('id'),
+            'title': title,
+            'year': str(year),
+            'rating': rating,
+            'poster': poster,
+            'backdrop': backdrop,
+            'plot': item.get('plot', ''),
+            'genres': item.get('genres', ''),
+            'media_type': item_type
+        })
+    
+    type_label = 'Movies' if item_type == 'movie' else 'TV Shows'
+    
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title=f'Favorite {type_label}',
+            page_subtitle=f'{len(grid_items)} items',
+            media_type=item_type,
+            initial_items=grid_items,
+            total_pages=1,
+            total_results=len(grid_items)
+        )
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            item_id = selected_item.get('id')
+            title = selected_item.get('title', '')
+            year = selected_item.get('year', '')
+            
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=item_type
+            )
+            
+            if detail_action == 'play':
+                if item_type == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            elif detail_action == 'seasons':
+                _show_netflix_season_episode_flow(item_id, title)
+            continue
 
 def add_favorite(params):
     """Add item to favorites"""
@@ -576,7 +1817,7 @@ def remove_history(params):
 
 def movie_sources(params):
     """Get movie sources from scraper"""
-    from resources.lib import scraper
+    from resources.lib import scraper, tmdb as tmdb_api
     
     title = params.get('title', '')
     year = params.get('year', '')
@@ -599,7 +1840,16 @@ def movie_sources(params):
         sources = scraper.filter_sources_by_type(sources, source_filter)
         sources = scraper.sort_sources(sources, quality_filter)
         
-        show_sources(sources, title, tmdb_id, 'movie', params)
+        # Check if custom skin is enabled
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        use_custom_skin = netflix_skin and ADDON.getSetting('use_custom_skin') == 'true'
+        
+        if use_custom_skin:
+            # Use the new fullscreen link picker
+            show_sources_custom_skin(sources, title, year, tmdb_id, 'movie', params)
+        else:
+            # Use classic list view
+            show_sources(sources, title, tmdb_id, 'movie', params)
     except Exception as e:
         progress.close()
         log(f"Error getting sources: {e}", xbmc.LOGERROR)
@@ -608,7 +1858,7 @@ def movie_sources(params):
 
 def episode_sources(params):
     """Get episode sources from scraper"""
-    from resources.lib import scraper
+    from resources.lib import scraper, tmdb as tmdb_api
     
     title = params.get('title', '')
     season = int(params.get('season', 1))
@@ -632,7 +1882,17 @@ def episode_sources(params):
         sources = scraper.filter_sources_by_type(sources, source_filter)
         sources = scraper.sort_sources(sources, quality_filter)
         
-        show_sources(sources, f"{title} S{season:02d}E{episode:02d}", tmdb_id, 'tv', params)
+        # Check if custom skin is enabled
+        netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+        use_custom_skin = netflix_skin and ADDON.getSetting('use_custom_skin') == 'true'
+        
+        if use_custom_skin:
+            # Use the new fullscreen link picker
+            display_title = f"{title} S{season:02d}E{episode:02d}"
+            show_sources_custom_skin(sources, display_title, '', tmdb_id, 'tv', params)
+        else:
+            # Use classic list view
+            show_sources(sources, f"{title} S{season:02d}E{episode:02d}", tmdb_id, 'tv', params)
     except Exception as e:
         progress.close()
         log(f"Error getting sources: {e}", xbmc.LOGERROR)
@@ -784,6 +2044,132 @@ def show_sources(sources, title, tmdb_id=None, media_type='movie', original_para
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
 
+
+def show_sources_custom_skin(sources, title, year, tmdb_id, media_type, original_params):
+    """Display sources using the custom fullscreen link picker skin"""
+    from resources.lib import link_picker, debrid, tmdb as tmdb_api
+    import re
+    
+    # --- Batch cache check ---
+    hash_map = {}  # hash -> source index list
+    for idx, source in enumerate(sources):
+        magnet = source.get('magnet', '')
+        hash_match = re.search(r'btih:([a-fA-F0-9]{40})', magnet, re.IGNORECASE)
+        if hash_match:
+            h = hash_match.group(1).lower()
+            hash_map.setdefault(h, []).append(idx)
+    
+    cache_status = {}
+    if hash_map:
+        try:
+            cache_status = debrid.check_cache_batch(list(hash_map.keys()))
+        except Exception as e:
+            log(f"Cache check error: {e}", xbmc.LOGWARNING)
+    
+    # Tag sources with cached status
+    for h, indices in hash_map.items():
+        is_cached = cache_status.get(h, False)
+        for idx in indices:
+            sources[idx]['cached'] = is_cached
+    
+    # Sort: cached first, then by quality and seeds
+    quality_order = {'4K': 0, '2160p': 0, '1080p': 1, '720p': 2, 'SD': 3, '480p': 3, 'Unknown': 4}
+    sources.sort(key=lambda x: (
+        0 if x.get('cached') else 1,
+        quality_order.get(x.get('quality', 'Unknown'), 4),
+        -x.get('seeds', 0)
+    ))
+    
+    # Get media details for the skin
+    poster = ''
+    backdrop = ''
+    plot = ''
+    media_info = ''
+    
+    if tmdb_id:
+        try:
+            if media_type == 'movie':
+                details = tmdb_api.get_movie_details(tmdb_id)
+                year = (details.get('release_date') or '')[:4]
+                runtime = details.get('runtime', 0)
+                media_info = f"{runtime} min" if runtime else ""
+                genres = details.get('genres', [])
+                if genres:
+                    genre_names = ', '.join([g['name'] for g in genres[:2]])
+                    media_info = f"{media_info}, {genre_names}" if media_info else genre_names
+            else:
+                details = tmdb_api.get_tv_details(tmdb_id)
+                year = (details.get('first_air_date') or '')[:4]
+                episode_runtime = details.get('episode_run_time', [])
+                if episode_runtime:
+                    media_info = f"{episode_runtime[0]} min/ep"
+                genres = details.get('genres', [])
+                if genres:
+                    genre_names = ', '.join([g['name'] for g in genres[:2]])
+                    media_info = f"{media_info}, {genre_names}" if media_info else genre_names
+            
+            poster = tmdb_api.get_poster_url(details.get('poster_path')) or ADDON_ICON
+            backdrop = tmdb_api.get_backdrop_url(details.get('backdrop_path')) or ADDON_FANART
+            plot = details.get('overview', '')
+        except Exception as e:
+            log(f"Error getting media details: {e}", xbmc.LOGWARNING)
+    
+    # Prepare sources with additional display properties
+    for source in sources:
+        source_type = source.get('source_type', 'torrent')
+        source_name = source.get('source', 'Unknown')
+        
+        # Set source display name
+        if source_type == 'orionoid':
+            source['source'] = 'Orionoid'
+        elif source_type == 'torrentio':
+            source['source'] = 'Torrentio'
+        elif source_type == 'mediafusion':
+            source['source'] = 'MediaFusion'
+        elif source_type == 'jackettio':
+            source['source'] = 'Jackettio'
+        elif source_type == 'meteor':
+            source['source'] = 'Meteor'
+        elif source_type == 'bitmagnet':
+            source['source'] = 'Bitmagnet'
+        elif source_type == 'coco':
+            source['source'] = source_name
+        
+        # Format provider info
+        source['provider'] = source.get('provider', source_name)
+        source['subs'] = source.get('subs', '')
+    
+    # Show the custom link picker dialog
+    selected_source = link_picker.show_link_picker(
+        sources=sources,
+        title=title.split(' S')[0] if ' S' in title else title,  # Remove episode info for display
+        year=year or '',
+        poster=poster,
+        backdrop=backdrop,
+        plot=plot,
+        media_info=media_info,
+        tmdb_id=tmdb_id,
+        media_type=media_type,
+        original_params=original_params
+    )
+    
+    if selected_source:
+        # Play the selected source
+        play_params = {
+            'magnet': selected_source.get('magnet', ''),
+            'title': title,
+            'quality': selected_source.get('quality', ''),
+            'tmdb_id': tmdb_id,
+            'media_type': media_type,
+            'season': original_params.get('season', ''),
+            'episode': original_params.get('episode', '')
+        }
+        play_source(play_params)
+    else:
+        # User cancelled - end directory
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
 def filter_quality(params):
     """Show quality filter options"""
     title = params.get('title', '')
@@ -891,8 +2277,10 @@ def play_source(params):
     episode = params.get('episode', '')
     
     if not magnet:
-        xbmcgui.Dialog().notification('Orion', 'Invalid source', ADDON_ICON)
+        xbmcgui.Dialog().notification('Orion', 'Invalid source - no magnet link', ADDON_ICON)
         return
+    
+    log(f"play_source called with magnet: {magnet[:60]}...")
     
     progress = xbmcgui.DialogProgress()
     progress.create('Orion', 'Resolving link via debrid...')
@@ -902,6 +2290,8 @@ def play_source(params):
         progress.close()
         
         if stream_url:
+            log(f"Stream URL resolved: {stream_url[:80]}...")
+            
             # Get poster/backdrop for history
             poster = ''
             backdrop = ''
@@ -938,7 +2328,7 @@ def play_source(params):
             
             database.add_to_history(history_item)
             
-            # Play the stream
+            # Play the stream using xbmc.Player directly (works from dialogs)
             li = xbmcgui.ListItem(path=stream_url)
             li.setInfo('video', {'title': title})
             
@@ -950,35 +2340,191 @@ def play_source(params):
                 else:
                     resume_point = database.get_resume_point('movie', tmdb_id)
             
-            if resume_point > 0:
-                li.setProperty('StartOffset', str(resume_point))
+            # Use xbmc.Player for direct playback (works from custom dialogs)
+            player = xbmc.Player()
+            player.play(stream_url, li)
             
-            xbmcplugin.setResolvedUrl(HANDLE, True, li)
+            # If we have a resume point, seek to it after playback starts
+            if resume_point > 0:
+                # Wait for playback to start then seek
+                for _ in range(50):  # Wait up to 5 seconds
+                    if player.isPlaying():
+                        player.seekTime(resume_point)
+                        break
+                    xbmc.sleep(100)
             
             # Setup auto-play next episode if enabled
-            if media_type == 'tv' and ADDON.getSetting('auto_next_episode') == 'true':
-                if season and episode:
-                    database.set_next_episode(
-                        tmdb_id,
-                        title.split(' S')[0] if ' S' in title else title,
-                        int(season),
-                        int(episode) + 1,
-                        poster,
-                        backdrop
-                    )
+            if media_type == 'tv' and season and episode:
+                _monitor_episode_playback(
+                    player, tmdb_id,
+                    title.split(' S')[0] if ' S' in title else title,
+                    int(season), int(episode),
+                    poster, backdrop,
+                    database
+                )
         else:
+            log("Failed to resolve stream URL", xbmc.LOGERROR)
             xbmcgui.Dialog().notification('Orion', 'Failed to resolve link', ADDON_ICON)
-            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
     except Exception as e:
         progress.close()
         log(f"Error resolving: {e}", xbmc.LOGERROR)
         xbmcgui.Dialog().notification('Orion', f'Error: {str(e)}', ADDON_ICON)
-        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
+
+def _monitor_episode_playback(player, tmdb_id, show_title, season, episode, poster, backdrop, database):
+    """Monitor episode playback and show Up Next dialog near the end"""
+    import threading
+    
+    def _monitor():
+        try:
+            from resources.lib import tmdb as tmdb_api, up_next
+            
+            # Initialize Trakt scrobbler if authorized
+            trakt_scrobbler = None
+            if ADDON.getSetting('trakt_token'):
+                try:
+                    from resources.lib.trakt import TraktAPI, TraktScrobbler
+                    trakt_api = TraktAPI()
+                    trakt_scrobbler = TraktScrobbler(trakt_api)
+                    trakt_scrobbler.start_watching('show', {'tmdb': tmdb_id}, 0)
+                    log("Trakt scrobble started")
+                except Exception as e:
+                    log(f"Trakt scrobble init error: {e}", xbmc.LOGWARNING)
+            
+            # Wait for playback to start
+            for _ in range(100):
+                if player.isPlaying():
+                    break
+                xbmc.sleep(100)
+            
+            if not player.isPlaying():
+                return
+            
+            # Wait for total time to be available
+            total_time = 0
+            for _ in range(30):
+                try:
+                    total_time = player.getTotalTime()
+                    if total_time > 0:
+                        break
+                except:
+                    pass
+                xbmc.sleep(500)
+            
+            if total_time <= 0:
+                return
+            
+            # Calculate when to show Up Next (90% through or 2 mins before end)
+            trigger_time = max(total_time * 0.90, total_time - 120)
+            
+            log(f"Up Next monitoring: total={total_time:.0f}s, trigger at {trigger_time:.0f}s")
+            
+            # Fetch next episode info
+            next_ep = episode + 1
+            next_episode_data = None
+            try:
+                ep_data = tmdb_api.get_season_episodes(tmdb_id, season)
+                episodes_list = ep_data.get('episodes', [])
+                for ep in episodes_list:
+                    if ep.get('episode_number') == next_ep:
+                        still = tmdb_api.get_backdrop_url(ep.get('still_path'))
+                        next_episode_data = {
+                            'name': ep.get('name', f'Episode {next_ep}'),
+                            'episode_number': next_ep,
+                            'season_number': season,
+                            'still_path': still or backdrop
+                        }
+                        break
+            except:
+                pass
+            
+            if not next_episode_data:
+                return
+            
+            # Monitor playback progress
+            up_next_shown = False
+            while player.isPlaying():
+                try:
+                    current_time = player.getTime()
+                    
+                    # Save progress to database
+                    progress_pct = int((current_time / total_time) * 100) if total_time > 0 else 0
+                    history_key = f"tv_{tmdb_id}_s{season}e{episode}"
+                    database.update_progress(history_key, current_time, total_time)
+                    
+                    # Update Trakt scrobble progress
+                    if trakt_scrobbler and progress_pct % 10 == 0:
+                        try:
+                            trakt_scrobbler.pause_watching(progress_pct)
+                            trakt_scrobbler.start_watching('show', {'tmdb': tmdb_id}, progress_pct)
+                        except:
+                            pass
+                    
+                    # Show Up Next dialog
+                    if current_time >= trigger_time and not up_next_shown:
+                        up_next_shown = True
+                        should_play = up_next.show_up_next(
+                            show_title=show_title,
+                            next_episode=next_episode_data,
+                            countdown=15
+                        )
+                        
+                        if should_play:
+                            # Wait for current episode to finish or user interaction
+                            xbmc.sleep(500)
+                            player.stop()
+                            xbmc.sleep(500)
+                            
+                            # Play next episode
+                            episode_sources({
+                                'id': tmdb_id,
+                                'title': show_title,
+                                'season': season,
+                                'episode': next_ep
+                            })
+                            return
+                except:
+                    break
+                
+                xbmc.sleep(2000)  # Check every 2 seconds
+            
+            # Playback ended naturally - save final progress and scrobble
+            try:
+                history_key = f"tv_{tmdb_id}_s{season}e{episode}"
+                database.update_progress(history_key, total_time, total_time)
+                if trakt_scrobbler:
+                    trakt_scrobbler.stop_watching(100)
+                    log("Trakt scrobble completed")
+            except:
+                pass
+                
+        except Exception as e:
+            xbmc.log(f"[Orion] Up Next monitor error: {e}", xbmc.LOGWARNING)
+    
+    thread = threading.Thread(target=_monitor)
+    thread.daemon = True
+    thread.start()
+
 
 # ============== KIDS ZONE ==============
 
 def kids_menu(params):
-    """Kids Zone menu - family-friendly content"""
+    """Kids Zone menu - family-friendly content - Netflix style or classic"""
+    # Check if Netflix-style submenu is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
+    
+    if use_netflix_submenu:
+        _show_kids_netflix_style()
+        use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
+        if use_custom_menu:
+            show_custom_main_menu()
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    # Classic menu
     items = [
         ("[B][COLOR cyan]Animation Movies[/COLOR][/B]", {'action': 'kids_list', 'category': 'animation', 'page': 1}, get_icon('kids')),
         ("[B][COLOR lime]Family Movies[/COLOR][/B]", {'action': 'kids_list', 'category': 'family', 'page': 1}, get_icon('kids')),
@@ -992,6 +2538,321 @@ def kids_menu(params):
     
     xbmcplugin.setContent(HANDLE, 'videos')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_kids_netflix_style(category='animation'):
+    """Show Kids Zone in Netflix-style submenu"""
+    from resources.lib import tmdb, submenu
+    
+    # Get kids content for content row based on category
+    row1_items = []
+    try:
+        if category == 'animation':
+            kids_data = tmdb.get_animation_movies(1)
+            media_type = 'movie'
+        elif category == 'family':
+            kids_data = tmdb.get_family_movies(1)
+            media_type = 'movie'
+        elif category == 'kids_tv':
+            kids_data = tmdb.get_kids_tvshows(1)
+            media_type = 'tv'
+        elif category == 'disney':
+            kids_data = tmdb.get_disney_style_movies(1)
+            media_type = 'movie'
+        elif category == 'pg_movies':
+            kids_data = tmdb.get_kids_movies(1)
+            media_type = 'movie'
+        else:
+            kids_data = tmdb.get_kids_animation(1)
+            media_type = 'movie'
+        
+        for item in kids_data.get('results', [])[:20]:
+            genres_list = item.get('genre_ids', [])
+            genre_names = tmdb.get_genre_names(media_type, genres_list)
+            
+            if media_type == 'movie':
+                row1_items.append({
+                    'title': item.get('title', ''),
+                    'poster': tmdb.get_poster_url(item.get('poster_path')),
+                    'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                    'id': item.get('id'),
+                    'media_type': 'movie',
+                    'rating': item.get('vote_average', 0),
+                    'year': (item.get('release_date') or '')[:4],
+                    'plot': item.get('overview', ''),
+                    'genres': genre_names
+                })
+            else:
+                row1_items.append({
+                    'title': item.get('name', ''),
+                    'poster': tmdb.get_poster_url(item.get('poster_path')),
+                    'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')),
+                    'id': item.get('id'),
+                    'media_type': 'tv',
+                    'rating': item.get('vote_average', 0),
+                    'year': (item.get('first_air_date') or '')[:4],
+                    'plot': item.get('overview', ''),
+                    'genres': genre_names
+                })
+    except Exception as e:
+        log(f"Error loading kids content: {e}", xbmc.LOGWARNING)
+    
+    # Categories for row 2 (instead of genres)
+    row2_items = [
+        {'label': 'Animation Movies', 'action': 'kids_category', 'genre_id': 'animation'},
+        {'label': 'Family Movies', 'action': 'kids_category', 'genre_id': 'family'},
+        {'label': 'Kids TV Shows', 'action': 'kids_category', 'genre_id': 'kids_tv'},
+        {'label': 'Disney & Pixar', 'action': 'kids_category', 'genre_id': 'disney'},
+        {'label': 'G & PG Rated', 'action': 'kids_category', 'genre_id': 'pg_movies'},
+    ]
+    
+    # Category tabs
+    categories = [
+        {'label': 'Animation', 'action': 'animation', 'id': 'animation'},
+        {'label': 'Family', 'action': 'family', 'id': 'family'},
+        {'label': 'Kids TV', 'action': 'kids_tv', 'id': 'kids_tv'},
+        {'label': 'Disney Style', 'action': 'disney', 'id': 'disney'},
+        {'label': 'G & PG', 'action': 'pg_movies', 'id': 'pg_movies'},
+    ]
+    
+    category_titles = {
+        'animation': 'ANIMATION MOVIES',
+        'family': 'FAMILY MOVIES',
+        'kids_tv': 'KIDS TV SHOWS',
+        'disney': 'DISNEY & PIXAR STYLE',
+        'pg_movies': 'G & PG RATED'
+    }
+    
+    # Show the Netflix-style dialog
+    action, selected_item, selected_category = submenu.show_submenu(
+        page_title='Kids Zone',
+        page_subtitle='Family-friendly content for all ages',
+        row1_items=row1_items,
+        row2_items=row2_items,
+        categories=categories,
+        row1_title=category_titles.get(category, 'POPULAR'),
+        row2_title='CATEGORIES',
+        menu_type='kids'
+    )
+    
+    # Handle result
+    _handle_kids_submenu_result(action, selected_item, selected_category, category)
+
+
+def _handle_kids_submenu_result(action, selected_item, selected_category, current_category='animation'):
+    """Handle the result from Kids Netflix-style submenu"""
+    log(f"Kids submenu result: action={action}, item={selected_item}, category={selected_category}")
+    
+    if action == 'back' or action is None:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    elif action == 'select_item' and selected_item:
+        # User selected a movie/show
+        item_id = selected_item.get('id')
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        media_type = selected_item.get('media_type', 'movie')
+        
+        if media_type == 'movie':
+            movie_sources({'id': item_id, 'title': title, 'year': year})
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+            xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+    
+    elif action == 'watch' and selected_item:
+        item_id = selected_item.get('id', selected_item.get('tmdb_id'))
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        media_type = selected_item.get('media_type', 'movie')
+        
+        if media_type == 'movie':
+            movie_sources({'id': item_id, 'title': title, 'year': year})
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+            url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+            xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+    
+    elif action == 'info' and selected_item:
+        # Show detail dialog
+        from resources.lib import detail
+        media_type = selected_item.get('media_type', 'movie')
+        
+        detail_action, item_data = detail.show_detail(
+            item_data=selected_item,
+            media_type=media_type
+        )
+        
+        if detail_action == 'play':
+            item_id = item_data.get('id')
+            title = item_data.get('title', '')
+            year = item_data.get('year', '')
+            
+            if media_type == 'movie':
+                movie_sources({'id': item_id, 'title': title, 'year': year})
+            else:
+                xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+        elif detail_action == 'seasons':
+            item_id = item_data.get('id')
+            title = item_data.get('title', '')
+            _show_netflix_season_episode_flow(item_id, title)
+            _show_kids_netflix_style(current_category)
+        else:
+            _show_kids_netflix_style(current_category)
+    
+    elif action == 'select_genre' and selected_item:
+        # User selected a kids category - show GRID view
+        kids_category = selected_item.get('genre_id', 'animation')
+        category_name = selected_item.get('title', 'Kids')
+        log(f"Kids category selected: {category_name}, id={kids_category}")
+        
+        # Show the grid view for the selected kids category
+        _show_kids_grid_view(kids_category, category_name)
+        
+        # After returning, re-show the kids menu
+        _show_kids_netflix_style(current_category)
+    
+    elif action == 'category' and selected_category:
+        # User selected a category tab - show GRID view
+        category_action = selected_category.get('action', 'animation')
+        category_label = selected_category.get('label', 'Kids')
+        log(f"Kids category tab: {category_action}")
+        
+        # Show the grid view for the category
+        _show_kids_grid_view(category_action, category_label)
+        
+        # After returning, re-show kids menu
+        _show_kids_netflix_style(current_category)
+    
+    else:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
+def _show_kids_grid_view(category, category_name):
+    """Show Netflix-style GRID view for Kids categories with pagination"""
+    from resources.lib import tmdb, grid, detail
+    
+    log(f"Showing Kids GRID view: {category_name} (category={category})")
+    
+    # Determine media type based on category
+    if category == 'kids_tv':
+        media_type = 'tv'
+        page_type = 'TV Shows'
+    else:
+        media_type = 'movie'
+        page_type = 'Movies'
+    
+    # Fetch first page
+    try:
+        if category == 'animation':
+            kids_data = tmdb.get_animation_movies(1)
+        elif category == 'family':
+            kids_data = tmdb.get_family_movies(1)
+        elif category == 'kids_tv':
+            kids_data = tmdb.get_kids_tvshows(1)
+        elif category == 'disney':
+            kids_data = tmdb.get_disney_style_movies(1)
+        elif category == 'pg_movies':
+            kids_data = tmdb.get_kids_movies(1)
+        else:
+            kids_data = tmdb.get_kids_animation(1)
+        
+        total_pages = min(kids_data.get('total_pages', 1), 500)
+        total_results = kids_data.get('total_results', 0)
+        
+        # Process initial items
+        initial_items = []
+        for item in kids_data.get('results', []):
+            genres_list = item.get('genre_ids', [])
+            genre_names_str = tmdb.get_genre_names(media_type, genres_list)
+            
+            title = item.get('title', '') if media_type == 'movie' else item.get('name', '')
+            date_str = item.get('release_date', '') if media_type == 'movie' else item.get('first_air_date', '')
+            year = date_str[:4] if date_str and len(date_str) >= 4 else ''
+            
+            initial_items.append({
+                'id': item.get('id'),
+                'title': title,
+                'year': year,
+                'rating': item.get('vote_average', 0),
+                'poster': tmdb.get_poster_url(item.get('poster_path')) or ADDON_ICON,
+                'backdrop': tmdb.get_backdrop_url(item.get('backdrop_path')) or ADDON_FANART,
+                'plot': item.get('overview', ''),
+                'genres': genre_names_str,
+                'media_type': media_type
+            })
+    except Exception as e:
+        log(f"Error loading kids content: {e}", xbmc.LOGWARNING)
+        initial_items = []
+        total_pages = 1
+        total_results = 0
+    
+    # Create fetch function for pagination
+    def fetch_kids_page(page, category=category):
+        if category == 'animation':
+            return tmdb.get_animation_movies(page)
+        elif category == 'family':
+            return tmdb.get_family_movies(page)
+        elif category == 'kids_tv':
+            return tmdb.get_kids_tvshows(page)
+        elif category == 'disney':
+            return tmdb.get_disney_style_movies(page)
+        elif category == 'pg_movies':
+            return tmdb.get_kids_movies(page)
+        else:
+            return tmdb.get_kids_animation(page)
+    
+    # Show the grid dialog with pagination
+    while True:
+        action, selected_item = grid.show_grid(
+            page_title=f'Kids Zone: {category_name}',
+            page_subtitle=f'Family-friendly {page_type.lower()} • {total_results:,} titles',
+            media_type=media_type,
+            fetch_function=fetch_kids_page,
+            fetch_params={'category': category},
+            initial_items=initial_items,
+            total_pages=total_pages,
+            total_results=total_results
+        )
+        
+        log(f"Kids grid view result: action={action}, item={selected_item}")
+        
+        if action == 'back' or action is None:
+            return
+        
+        elif action == 'select_item' and selected_item:
+            # Show detail dialog
+            detail_action, item_data = detail.show_detail(
+                item_data=selected_item,
+                media_type=selected_item.get('media_type', media_type)
+            )
+            
+            log(f"Kids detail dialog result: action={detail_action}")
+            
+            if detail_action == 'play':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                year = item_data.get('year', '')
+                
+                if item_data.get('media_type', media_type) == 'movie':
+                    movie_sources({'id': item_id, 'title': title, 'year': year})
+                    return
+                else:
+                    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+                    url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                    xbmc.executebuiltin(f'ActivateWindow(Videos,{url},return)')
+                    return
+            
+            if detail_action == 'seasons':
+                item_id = item_data.get('id')
+                title = item_data.get('title', '')
+                _show_netflix_season_episode_flow(item_id, title)
+            
+            # If closed detail, continue showing grid
+            continue
 
 def kids_list(params):
     """List kids content with infinite scrolling"""
@@ -1034,12 +2895,12 @@ def kids_list(params):
         
         display_title = f"{title} ({year})" if year else title
         if rating:
-            display_title = f"{display_title} [COLOR yellow]★{rating:.1f}[/COLOR]"
+            display_title = f"{display_title} [COLOR yellow]*{rating:.1f}[/COLOR]"
         
         # Check if favorite
         is_fav = database.is_favorite(media_type, item_id)
         if is_fav:
-            display_title = f"[COLOR gold]★[/COLOR] {display_title}"
+            display_title = f"[COLOR gold]*[/COLOR] {display_title}"
         
         li = xbmcgui.ListItem(label=display_title)
         li.setArt({
@@ -1091,42 +2952,282 @@ def kids_list(params):
 # ============== TRAKT ==============
 
 def trakt_menu():
-    """Trakt integration menu"""
+    """Trakt integration menu - Netflix style or classic"""
+    # Check if Netflix-style submenu is enabled
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    use_netflix_submenu = netflix_skin and ADDON.getSetting('use_netflix_submenu') == 'true'
+    
     if not ADDON.getSetting('trakt_token'):
         add_directory_item("[COLOR red]Trakt Not Authorized - Click to Authorize[/COLOR]", {'action': 'pair_trakt'}, False)
-    else:
-        items = [
-            # Watchlists
-            ("[B][COLOR gold]My Watchlist - Movies[/COLOR][/B]", {'action': 'trakt_watchlist', 'type': 'movies', 'page': 1}),
-            ("[B][COLOR gold]My Watchlist - TV Shows[/COLOR][/B]", {'action': 'trakt_watchlist', 'type': 'shows', 'page': 1}),
-            # My Lists
-            ("[B][COLOR cyan]My Custom Lists[/COLOR][/B]", {'action': 'trakt_my_lists'}),
-            ("[B][COLOR magenta]My Liked Lists[/COLOR][/B]", {'action': 'trakt_liked_lists', 'page': 1}),
-            # Collection
-            ("[B][COLOR lime]My Collection - Movies[/COLOR][/B]", {'action': 'trakt_collection', 'type': 'movies'}),
-            ("[B][COLOR lime]My Collection - TV Shows[/COLOR][/B]", {'action': 'trakt_collection', 'type': 'shows'}),
-            # History
-            ("[B]Watched Movies[/B]", {'action': 'trakt_watched', 'type': 'movies'}),
-            ("[B]Watched TV Shows[/B]", {'action': 'trakt_watched', 'type': 'shows'}),
-            # Recommendations
-            ("[B][COLOR orange]Recommended Movies[/COLOR][/B]", {'action': 'trakt_recommendations', 'type': 'movies', 'page': 1}),
-            ("[B][COLOR orange]Recommended TV Shows[/COLOR][/B]", {'action': 'trakt_recommendations', 'type': 'shows', 'page': 1}),
-            # Trending & Popular
-            ("[B]Trending Movies[/B]", {'action': 'trakt_list', 'list': 'trending', 'type': 'movies'}),
-            ("[B]Trending TV Shows[/B]", {'action': 'trakt_list', 'list': 'trending', 'type': 'shows'}),
-            ("[B]Popular Movies[/B]", {'action': 'trakt_list', 'list': 'popular', 'type': 'movies'}),
-            ("[B]Popular TV Shows[/B]", {'action': 'trakt_list', 'list': 'popular', 'type': 'shows'}),
-            # Settings
-            ("[COLOR yellow]Re-authorize Trakt[/COLOR]", {'action': 'pair_trakt'}, False),
-        ]
-        
-        for item in items:
-            if len(item) == 3:
-                add_directory_item(item[0], item[1], item[2])
-            else:
-                add_directory_item(item[0], item[1])
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    if use_netflix_submenu:
+        _show_trakt_netflix_style()
+        use_custom_menu = netflix_skin and ADDON.getSetting('use_custom_menu') == 'true'
+        if use_custom_menu:
+            show_custom_main_menu()
+        else:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+    
+    # Classic menu
+    items = [
+        # Watchlists
+        ("[B][COLOR gold]My Watchlist - Movies[/COLOR][/B]", {'action': 'trakt_watchlist', 'type': 'movies', 'page': 1}),
+        ("[B][COLOR gold]My Watchlist - TV Shows[/COLOR][/B]", {'action': 'trakt_watchlist', 'type': 'shows', 'page': 1}),
+        # My Lists
+        ("[B][COLOR cyan]My Custom Lists[/COLOR][/B]", {'action': 'trakt_my_lists'}),
+        ("[B][COLOR magenta]My Liked Lists[/COLOR][/B]", {'action': 'trakt_liked_lists', 'page': 1}),
+        # Collection
+        ("[B][COLOR lime]My Collection - Movies[/COLOR][/B]", {'action': 'trakt_collection', 'type': 'movies'}),
+        ("[B][COLOR lime]My Collection - TV Shows[/COLOR][/B]", {'action': 'trakt_collection', 'type': 'shows'}),
+        # History
+        ("[B]Watched Movies[/B]", {'action': 'trakt_watched', 'type': 'movies'}),
+        ("[B]Watched TV Shows[/B]", {'action': 'trakt_watched', 'type': 'shows'}),
+        # Recommendations
+        ("[B][COLOR orange]Recommended Movies[/COLOR][/B]", {'action': 'trakt_recommendations', 'type': 'movies', 'page': 1}),
+        ("[B][COLOR orange]Recommended TV Shows[/COLOR][/B]", {'action': 'trakt_recommendations', 'type': 'shows', 'page': 1}),
+        # Trending & Popular
+        ("[B]Trending Movies[/B]", {'action': 'trakt_list', 'list': 'trending', 'type': 'movies'}),
+        ("[B]Trending TV Shows[/B]", {'action': 'trakt_list', 'list': 'trending', 'type': 'shows'}),
+        ("[B]Popular Movies[/B]", {'action': 'trakt_list', 'list': 'popular', 'type': 'movies'}),
+        ("[B]Popular TV Shows[/B]", {'action': 'trakt_list', 'list': 'popular', 'type': 'shows'}),
+        # Settings
+        ("[COLOR yellow]Re-authorize Trakt[/COLOR]", {'action': 'pair_trakt'}, False),
+    ]
+    
+    for item in items:
+        if len(item) == 3:
+            add_directory_item(item[0], item[1], item[2])
+        else:
+            add_directory_item(item[0], item[1])
     
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _show_trakt_netflix_style(list_type='watchlist'):
+    """Show Trakt in Netflix-style submenu"""
+    from resources.lib import trakt, tmdb, submenu
+    
+    trakt_api = trakt.TraktAPI()
+    
+    # Get watchlist items for content row
+    row1_items = []
+    try:
+        # Get both movies and shows from watchlist
+        movies = trakt_api.get_watchlist_movies(1)
+        shows = trakt_api.get_watchlist_shows(1)
+        
+        all_items = []
+        
+        # Process movies
+        for item in movies[:10]:
+            movie = item.get('movie', {})
+            tmdb_id = movie.get('ids', {}).get('tmdb')
+            title = movie.get('title', 'Unknown')
+            year = movie.get('year', '')
+            
+            # Get TMDB details for artwork
+            poster = ADDON_ICON
+            backdrop = ADDON_FANART
+            plot = ''
+            rating = 0
+            genres = ''
+            
+            if tmdb_id:
+                try:
+                    details = tmdb.get_movie_details(tmdb_id)
+                    poster = tmdb.get_poster_url(details.get('poster_path')) or ADDON_ICON
+                    backdrop = tmdb.get_backdrop_url(details.get('backdrop_path')) or ADDON_FANART
+                    plot = details.get('overview', '')
+                    rating = details.get('vote_average', 0)
+                    genres_list = details.get('genres', [])
+                    genres = ', '.join([g['name'] for g in genres_list[:2]])
+                except:
+                    pass
+            
+            all_items.append({
+                'title': title,
+                'poster': poster,
+                'backdrop': backdrop,
+                'id': tmdb_id,
+                'media_type': 'movie',
+                'rating': rating,
+                'year': str(year),
+                'plot': plot,
+                'genres': genres
+            })
+        
+        # Process shows
+        for item in shows[:10]:
+            show = item.get('show', {})
+            tmdb_id = show.get('ids', {}).get('tmdb')
+            title = show.get('title', 'Unknown')
+            year = show.get('year', '')
+            
+            poster = ADDON_ICON
+            backdrop = ADDON_FANART
+            plot = ''
+            rating = 0
+            genres = ''
+            
+            if tmdb_id:
+                try:
+                    details = tmdb.get_tv_details(tmdb_id)
+                    poster = tmdb.get_poster_url(details.get('poster_path')) or ADDON_ICON
+                    backdrop = tmdb.get_backdrop_url(details.get('backdrop_path')) or ADDON_FANART
+                    plot = details.get('overview', '')
+                    rating = details.get('vote_average', 0)
+                    genres_list = details.get('genres', [])
+                    genres = ', '.join([g['name'] for g in genres_list[:2]])
+                except:
+                    pass
+            
+            all_items.append({
+                'title': title,
+                'poster': poster,
+                'backdrop': backdrop,
+                'id': tmdb_id,
+                'media_type': 'tv',
+                'rating': rating,
+                'year': str(year),
+                'plot': plot,
+                'genres': genres
+            })
+        
+        row1_items = all_items[:20]
+    except Exception as e:
+        log(f"Error loading Trakt watchlist: {e}", xbmc.LOGWARNING)
+    
+    # Get liked lists and custom lists for row 2
+    row2_items = []
+    try:
+        # Add custom list links
+        custom_lists = trakt_api.get_user_lists()
+        for lst in custom_lists[:5]:
+            name = lst.get('name', 'Unknown')
+            list_id = lst.get('ids', {}).get('slug', '')
+            row2_items.append({
+                'label': f"> {name}",
+                'action': 'custom_list',
+                'list_id': list_id,
+                'username': 'me'
+            })
+        
+        # Add liked lists
+        liked_lists = trakt_api.get_liked_lists(1)
+        for item in liked_lists[:5]:
+            lst = item.get('list', {})
+            user = lst.get('user', {})
+            name = lst.get('name', 'Unknown')
+            username = user.get('username', 'unknown')
+            list_id = lst.get('ids', {}).get('slug', '')
+            row2_items.append({
+                'label': f"FAV {name}",
+                'action': 'liked_list',
+                'list_id': list_id,
+                'username': username
+            })
+    except:
+        pass
+    
+    # Category tabs
+    categories = [
+        {'label': 'Watchlist', 'action': 'watchlist', 'id': 'watchlist'},
+        {'label': 'Collection', 'action': 'collection', 'id': 'collection'},
+        {'label': 'Watched', 'action': 'watched', 'id': 'watched'},
+        {'label': 'Recommendations', 'action': 'recommendations', 'id': 'recommendations'},
+        {'label': 'Trending', 'action': 'trending', 'id': 'trending'},
+    ]
+    
+    # Show the Netflix-style dialog
+    action, selected_item, selected_category = submenu.show_submenu(
+        page_title='Trakt',
+        page_subtitle='Your personal library and recommendations',
+        row1_items=row1_items,
+        row2_items=row2_items,
+        categories=categories,
+        row1_title='MY WATCHLIST',
+        row2_title='MY LISTS',
+        menu_type='trakt'
+    )
+    
+    # Handle result
+    _handle_trakt_submenu_result(action, selected_item, selected_category)
+
+
+def _handle_trakt_submenu_result(action, selected_item, selected_category):
+    """Handle the result from Netflix-style Trakt submenu"""
+    log(f"Trakt submenu result: action={action}, item={selected_item}, category={selected_category}")
+    
+    if action == 'back' or action is None:
+        return
+    
+    elif action == 'select_item' and selected_item:
+        item_id = selected_item.get('id')
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        media_type = selected_item.get('media_type', 'movie')
+        
+        if media_type == 'movie':
+            movie_sources({'id': item_id, 'title': title, 'year': year})
+        else:
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                _show_trakt_netflix_style()
+            else:
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'watch' and selected_item:
+        item_id = selected_item.get('id', selected_item.get('tmdb_id'))
+        title = selected_item.get('title', '')
+        year = selected_item.get('year', '')
+        media_type = selected_item.get('media_type', 'movie')
+        
+        if media_type == 'movie':
+            movie_sources({'id': item_id, 'title': title, 'year': year})
+        else:
+            netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+            if netflix_skin:
+                _show_netflix_season_episode_flow(item_id, title)
+                _show_trakt_netflix_style()
+            else:
+                url = build_url({'action': 'tv_seasons', 'id': item_id, 'title': title})
+                xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'select_genre' and selected_item:
+        # User selected a list
+        list_action = selected_item.get('action', '')
+        list_id = selected_item.get('list_id', '')
+        username = selected_item.get('username', 'me')
+        
+        if list_action in ['custom_list', 'liked_list']:
+            url = build_url({'action': 'trakt_list_items', 'username': username, 'list_id': list_id})
+            xbmc.executebuiltin(f'Container.Update({url})')
+    
+    elif action == 'category' and selected_category:
+        category_action = selected_category.get('action', 'watchlist')
+        
+        if category_action == 'watchlist':
+            _show_trakt_netflix_style('watchlist')
+        elif category_action == 'collection':
+            url = build_url({'action': 'trakt_collection', 'type': 'movies'})
+            xbmc.executebuiltin(f'Container.Update({url})')
+        elif category_action == 'watched':
+            url = build_url({'action': 'trakt_watched', 'type': 'movies'})
+            xbmc.executebuiltin(f'Container.Update({url})')
+        elif category_action == 'recommendations':
+            url = build_url({'action': 'trakt_recommendations', 'type': 'movies', 'page': 1})
+            xbmc.executebuiltin(f'Container.Update({url})')
+        elif category_action == 'trending':
+            url = build_url({'action': 'trakt_list', 'list': 'trending', 'type': 'movies'})
+            xbmc.executebuiltin(f'Container.Update({url})')
+    
+    else:
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
 
 def trakt_watchlist(params):
     """Display Trakt watchlist with pagination"""
@@ -1662,8 +3763,14 @@ def configure_bitmagnet():
                 xbmcgui.Dialog().ok('Bitmagnet', f'[COLOR yellow]URL saved but connection test failed.[/COLOR]\n\nError: {str(e)[:50]}\n\nPlease verify your Bitmagnet is running.')
 
 def open_settings():
-    """Open addon settings"""
-    ADDON.openSettings()
+    """Open addon settings - Netflix style or Kodi default"""
+    netflix_skin = ADDON.getSetting('netflix_skin_enabled') == 'true'
+    
+    if netflix_skin:
+        from resources.lib import settings_dialog
+        settings_dialog.show_settings()
+    else:
+        ADDON.openSettings()
 
 def clear_cache():
     """Clear addon cache"""
@@ -1708,17 +3815,17 @@ def account_status(params):
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'noop'}), li, isFolder=False)
     
     # Quick Status Popup button
-    li = xbmcgui.ListItem(label="[B][COLOR lime]📊 Quick Status Popup[/COLOR][/B]")
+    li = xbmcgui.ListItem(label="[B][COLOR lime]> Quick Status Popup[/COLOR][/B]")
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'quick_status_popup'}), li, isFolder=False)
     
     # Test All Connections button
-    li = xbmcgui.ListItem(label="[B][COLOR cyan]🔌 Test All Connections[/COLOR][/B]")
+    li = xbmcgui.ListItem(label="[B][COLOR cyan]> Test All Connections[/COLOR][/B]")
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'test_all_connections'}), li, isFolder=False)
     
     # Debug Info button
-    li = xbmcgui.ListItem(label="[B][COLOR orange]🔧 Debug Settings Info[/COLOR][/B]")
+    li = xbmcgui.ListItem(label="[B][COLOR orange]> Debug Settings Info[/COLOR][/B]")
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
     xbmcplugin.addDirectoryItem(HANDLE, build_url({'action': 'debug_settings'}), li, isFolder=False)
     
@@ -1838,9 +3945,9 @@ def quick_status_popup(params):
         if token:
             any_authorized = True
             if enabled == 'true':
-                status = "[COLOR lime]✓ READY[/COLOR]"
+                status = "[COLOR lime]OK READY[/COLOR]"
             else:
-                status = "[COLOR yellow]⚠ Authorized but DISABLED[/COLOR]"
+                status = "[COLOR yellow]!! Authorized but DISABLED[/COLOR]"
             
             # Try to get account info
             service_map = {
@@ -1865,7 +3972,7 @@ def quick_status_popup(params):
             except:
                 pass
         else:
-            status = "[COLOR red]✗ Not Authorized[/COLOR]"
+            status = "[COLOR red]X Not Authorized[/COLOR]"
         
         lines.append(f"[B]{name}:[/B] {status}")
     
@@ -1920,11 +4027,11 @@ def test_all_connections(params):
                 else:
                     enable_status = "[COLOR yellow]Disabled[/COLOR]"
                 
-                results.append(f"[B]{name}:[/B] [COLOR lime]✓ Connected[/COLOR] - {username} ({status}) - {enable_status}")
+                results.append(f"[B]{name}:[/B] [COLOR lime]OK Connected[/COLOR] - {username} ({status}) - {enable_status}")
             else:
-                results.append(f"[B]{name}:[/B] [COLOR red]✗ API Error[/COLOR] - Token may be invalid")
+                results.append(f"[B]{name}:[/B] [COLOR red]X API Error[/COLOR] - Token may be invalid")
         except Exception as e:
-            results.append(f"[B]{name}:[/B] [COLOR red]✗ Error: {str(e)[:50]}[/COLOR]")
+            results.append(f"[B]{name}:[/B] [COLOR red]X Error: {str(e)[:50]}[/COLOR]")
     
     progress.close()
     

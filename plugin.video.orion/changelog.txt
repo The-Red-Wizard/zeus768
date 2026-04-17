@@ -2,30 +2,107 @@
   Orion Changelog
   by zeus768
 ================================================================================
-v3.2.9 (April 2026)
-================================================================================
-* More debrid fixes
-================================================================================
-v3.2.8 (April 2026)
-================================================================================
-  * FIXED: Real-Debrid authorization issue - tokens now auto-refresh when expired
-  * Added Meteor scraper (Stremio addon for movies, TV & anime)
-  * Added Bitmagnet scraper (self-hosted torrent indexer with GraphQL API)
-  * Improved error handling for all debrid services
-  * Better token refresh mechanism for Real-Debrid OAuth
 
-v3.2.7 (April 2026)
+v3.7.2 (April 2026)
 ================================================================================
-  * Fixed debrid authorization bug - services now auto-enable after authorization
-  * Added Account Status menu showing login status, expiry dates, days remaining
-  * Added daily expiry alerts when account has 10 days or less remaining
+  * FIXED: Poster art now fits properly inside grid tiles (keep aspect ratio)
+  * FIXED: Back navigation returns to Netflix main menu instead of Kodi default
+  * FIXED: Grid navigation - can now scroll down to NEXT/PREV page buttons
+  * Applied to all views: Movies, TV Shows, Kids, Trakt, Search
 
-v3.2.4 (April 2026)
+v3.7.1 (April 2026)
 ================================================================================
-  * Compact Buy Me a Beer - single QR + Ko-fi dialog
+  * NEW: Portrait poster carousel tiles on Main Menu and Submenus
+  * NEW: Cyan progress bars on all poster cards (Grid, MainMenu, Submenu, Episode)
+  * NEW: Up Next auto-play dialog for episodes (15s countdown, toggle in Settings)
+  * NEW: Trakt scrobble sync during episode playback
+  * Episode playback monitor with progress saving to history
+
+v3.7.0 (April 2026)
+================================================================================
+  * NEW: Netflix-style History view with poster grid
+  * NEW: Netflix-style Favorites view with Movies/TV picker
+  * NEW: Netflix-style Continue Watching grid
+  * NEW: Netflix-style Settings panel (sidebar categories, cyan theme)
+  * All views now use proper poster art
+  * Master skin toggle controls all Netflix-style views
+
+v3.6.2 (April 2026)
+================================================================================
+  * FIXED: Wider carousel tiles with proper TMDB poster art
+  * FIXED: SEASONS button now works (XML parsing bugs fixed)
+  * FIXED: Back navigation no longer falls to Kodi default list
+  * All carousels use poster images with movie/show titles baked in
+
+v3.6.1 (April 2026)
+================================================================================
+  * NEW: BIG portrait poster grid cards (348x430px)
+  * NEW: SEASONS button on TV show detail dialog
+  * Season/Episode flow wired into all entry points
+  * Grid scrolling reaches PREV/NEXT page buttons
+
+v3.6.0 (April 2026)
+================================================================================
+  * NEW: Netflix-style search with fullscreen grid results
+  * NEW: Master skin on/off toggle in Settings > Appearance
+  * Landscape horizontal thumbnails throughout all views
+  * Name banners removed from poster cards
+  * Full cyan (#00D4FF) color scheme throughout all skins
+  * All emojis cleaned from Python and XML files
+
+v3.4.5 (January 2026)
+================================================================================
+  * Kids Zone now has same Netflix-style layout as Movies and TV Shows
+  * Category tabs: Animation, Family, Kids TV, Disney Style, G and PG
+  * Grid view with Next/Prev page navigation
+  * Detail popup with Play, Trailer, Favorite buttons
+
+v3.4.4 (January 2026)
+================================================================================
+  * Netflix-style grid view for genres and categories
+  * Full page grid with 30 items, Next/Prev page navigation
+  * Detail popup with cast, director, trailer, play, favorite
+
+v3.4.2 (January 2026)
+================================================================================
+  * FIXED: Submenu category tabs now work properly
+  * FIXED: Carousel clicks now search for links
+  * FIXED: Genre selection stays in Netflix-style view
+
+v3.4.0 (January 2026)
+================================================================================
+  * NEW: Netflix-style skins for Movies, TV Shows, and Trakt submenus
+  * Horizontal poster carousels with smooth scrolling
+  * Hero info panel with backdrop banners
+  * Category filter tabs and genre selection
+
+v3.3.1 (January 2026)
+================================================================================
+  * NEW: Fullscreen POV-style link picker skin
+  * NEW: Fullscreen sidebar navigation main menu
+  * Removed emoji characters for Kodi compatibility
+  * Settings > Appearance to enable/disable custom skins
+
+v3.2.9 (January 2026)
+================================================================================
+  * FIXED: Debrid link resolution, token refresh, HTTP handling
+
+v3.2.8 (January 2026)
+================================================================================
+  * Added Meteor and Bitmagnet scrapers
+  * FIXED: Real-Debrid authorization - tokens auto-refresh
+
+v3.2.7 (December 2025)
+================================================================================
+  * Account Status menu with expiry alerts
+  * Fixed debrid authorization bug
+
+v3.2.4 (April 2025)
+================================================================================
+  * Compact Buy Me a Beer dialog
   * Updated for Zeus768 Repository v1.0.9
 
-v3.2.3 (February 2026)
+v3.2.3 (February 2025)
 ================================================================================
   * Multi-scraper engine (Torrentio, MediaFusion, Jackettio, Orionoid)
   * Real-Debrid, Premiumize, AllDebrid, TorBox support
@@ -34,11 +111,3 @@ v3.2.3 (February 2026)
   * Watch history, favorites, Kids Zone
   * Auto-play next episode
   * Buy Me a Beer donation support
-
-3.3.0 (2026-01-XX)
-- FIXED: Debrid link resolution using SALTS-style implementation
-- FIXED: Token expiry tracking with proactive refresh
-- FIXED: Better HTTP request handling with status codes
-- FIXED: Improved is_authorized() checks for all services
-- FIXED: Direct debrid service calls in resolver
-- IMPROVED: Error handling and logging throughout
