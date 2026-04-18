@@ -1,3 +1,43 @@
+v4.4.0 (2026-02-XX) - AUTH MATRIX + NETWORK SPEED TEST
+=======================================================
+NEW - AUTHORISATION VIEW:
+- New menu: Auth > Authorisation View (Matrix)
+- Matrix summary: one line per installed addon showing which
+  services (RD / PM / AD / TB / Trakt) are authorised, the
+  masked token value, the matching setting id, and whether the
+  value came from The Accountant's vault (SYNCED) or was set
+  externally by the user (external).
+- Account lookup: each service's vault token is resolved via
+  live API call to show the username / customer ID / VIP tier
+  / days-left for proof of authorisation.
+- Drill-down: pick a specific addon to see every service's
+  full status + setting id + masked value + resolved account.
+- Also reports IPTV provider count from iptv_vault.json.
+
+NEW - NETWORK SPEED TEST:
+- New menu: ONE-CLICK SPEED OPTIMIZER > NETWORK SPEED TEST
+- Choice of test size: 10 MB / 25 MB / 100 MB
+- Live progress with cancel support
+- Uses Cloudflare speed.cloudflare.com (Hetzner 100MB fallback)
+- Reports: download Mbps, TCP latency to 1.1.1.1, elapsed time,
+  friendly rating (4K-ready / 1080p / SD / poor)
+
+FIX - SPEED OPTIMIZER FREEZE:
+- Reworked speed_optimizer(): previous version could appear to
+  hang for minutes on Kodi installs with large thumbnail trees
+  because get_size() walked the whole tree twice (pre + post)
+- _fast_size() caps the walk at 5000 entries (approximate
+  but bounded)
+- Thumbnails pre-measure skipped; we only report how many
+  >30-day-old files were pruned
+- Cancel checks added between every stage so Back key works
+- Final dialog now reports freed MB + thumbnails pruned count
+
+NEW FILES:
+- resources/lib/auth_matrix.py   (matrix + drill-down renderer)
+- resources/lib/speed_test.py    (Cloudflare/Hetzner downloader)
+
+
 v4.3.0 (2026-02-XX) - VAULT QR TRANSFER
 ========================================
 NEW - ONE-SCAN DEVICE MIGRATION:

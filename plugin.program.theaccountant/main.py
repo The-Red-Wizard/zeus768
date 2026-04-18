@@ -75,62 +75,102 @@ def delete_folder_contents(folder_path, extensions=None):
 # ============================================
 # SPEED OPTIMIZER
 # ============================================
+def _fast_size(path, max_entries=5000):
+    """Size walk with a safety cap - prevents freezes on huge thumbnail trees."""
+    total = 0
+    n = 0
+    try:
+        if not os.path.isdir(path):
+            return 0
+        for dirpath, dirnames, filenames in os.walk(path):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                try:
+                    total += os.path.getsize(fp)
+                except Exception:
+                    pass
+                n += 1
+                if n >= max_entries:
+                    return total  # approximate
+    except Exception:
+        pass
+    return total
+
+
 def speed_optimizer():
-    """One-click speed optimization"""
+    """One-click cache/thumbnail/package cleanup.
+
+    Reworked in v4.4.0 - previous version could freeze on Kodi installs with
+    large thumbnail libraries because get_size() walked the full tree twice.
+    This version caps size walks and adds cancel handling.
+    """
     dialog = xbmcgui.Dialog()
     pDialog = xbmcgui.DialogProgress()
-    pDialog.create("The Accountant", "Analyzing system...")
-    
-    # Calculate sizes before cleanup
-    cache_size = get_size(KODI_TEMP)
-    thumb_size = get_size(KODI_THUMBNAILS)
-    pkg_size = get_size(KODI_PACKAGES)
-    total_before = cache_size + thumb_size + pkg_size
-    
-    pDialog.update(10, "Clearing temporary cache...")
+    pDialog.create("The Accountant", "Measuring cache (this may take a moment)...")
+
+    if pDialog.iscanceled():
+        pDialog.close(); return
+
+    cache_size = _fast_size(KODI_TEMP) / (1024 * 1024)
+    pkg_size = _fast_size(KODI_PACKAGES) / (1024 * 1024)
+    # Skip thumbnails pre-measure: it can be tens of GB; just report cleared count.
+    total_before = cache_size + pkg_size
+
+    if pDialog.iscanceled():
+        pDialog.close(); return
+    pDialog.update(10, f"Clearing temp cache ({cache_size:.1f} MB)...")
     delete_folder_contents(KODI_TEMP)
-    
-    pDialog.update(30, "Clearing packages...")
+
+    if pDialog.iscanceled():
+        pDialog.close(); return
+    pDialog.update(30, f"Clearing packages ({pkg_size:.1f} MB)...")
     delete_folder_contents(KODI_PACKAGES, ['.zip'])
-    
-    pDialog.update(50, "Optimizing thumbnails...")
-    # Clear old thumbnails (keeping recent ones)
+
+    if pDialog.iscanceled():
+        pDialog.close(); return
+    pDialog.update(50, "Pruning thumbnails (>30 days old)...")
+    thumb_count = 0
     try:
-        thumb_count = 0
+        cutoff = time.time() - 30 * 24 * 60 * 60
         for root, dirs, files in os.walk(KODI_THUMBNAILS):
+            if pDialog.iscanceled():
+                break
             for f in files:
                 fp = os.path.join(root, f)
                 try:
-                    if os.path.getmtime(fp) < (time.time() - 30*24*60*60):  # 30 days old
+                    if os.path.getmtime(fp) < cutoff:
                         os.remove(fp)
                         thumb_count += 1
-                except:
+                except Exception:
                     pass
-    except:
+    except Exception:
         pass
-    
-    pDialog.update(70, "Clearing addon cache...")
-    # Clear common addon caches
+
+    if pDialog.iscanceled():
+        pDialog.close(); return
+    pDialog.update(80, "Clearing addon cache...")
     addon_cache_paths = [
         os.path.join(KODI_ADDON_DATA, 'plugin.video.youtube', 'kodion', 'cache'),
         os.path.join(KODI_ADDON_DATA, 'plugin.video.themoviedb.helper', 'cache'),
         os.path.join(KODI_ADDON_DATA, 'script.extendedinfo', 'cache'),
     ]
     for cache_path in addon_cache_paths:
+        if pDialog.iscanceled():
+            break
         if os.path.exists(cache_path):
             delete_folder_contents(cache_path)
-    
-    pDialog.update(90, "Finalizing...")
-    
-    # Calculate savings
-    total_after = get_size(KODI_TEMP) + get_size(KODI_THUMBNAILS) + get_size(KODI_PACKAGES)
-    saved = total_before - total_after
-    
+
+    pDialog.update(95, "Finalizing...")
+    total_after = (_fast_size(KODI_TEMP) + _fast_size(KODI_PACKAGES)) / (1024 * 1024)
+    saved = max(0.0, total_before - total_after)
     pDialog.close()
-    
-    dialog.ok("Speed Optimizer Complete", 
-              f"Freed approximately {saved:.1f} MB",
-              "System optimized! Restart Kodi for best results.")
+
+    dialog.ok(
+        "Speed Optimizer Complete",
+        f"Freed: ~{saved:.1f} MB (temp + packages)",
+        f"Thumbnails pruned: {thumb_count} file(s) older than 30 days",
+        "Restart Kodi for full effect."
+    )
 
 # ============================================
 # AUTHENTICATION MANAGER
@@ -146,6 +186,7 @@ def auth_menu():
         ("TMDB API Key Setup", "auth_tmdb", "tmdb.png"),
         ("--- Account Info ---", "spacer", ""),
         ("View Account Cards", "account_cards", "auth.png"),
+        ("Authorisation View (Matrix)", "auth_view", "auth.png"),
         ("--- Sync ---", "spacer", ""),
         ("Preview Addon Scan", "preview_scan", "sync.png"),
         ("Sync All to Addons", "sync_all", "sync.png"),
@@ -319,6 +360,139 @@ def toggle_auto_sync():
         vault['last_auto_sync'] = int(time.time())
         save_vault(vault)
         notify('Auto-Sync', f'Synced {len(count)} addon(s)')
+
+
+def authorisation_view():
+    """Show which installed addon is authorised with which account.
+
+    Offers both: matrix summary (textviewer) and per-addon drill-down.
+    """
+    from resources.lib import auth_matrix, dynamic_sync, auth_manager
+    dialog = xbmcgui.Dialog()
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create('Authorisation', 'Scanning installed addons...')
+
+    # Reuse dynamic_sync's installed-addon detector (only addons with auth keys)
+    targets = dynamic_sync.scan_installed_addons()
+    addon_ids = [t['addon_id'] for t in targets]
+    # Also include addons that appear in the sync map but had no settings.xml match
+    # (edge case - gives the user complete visibility).
+    try:
+        for aid in auth_manager.load_sync_map().keys():
+            if aid not in addon_ids:
+                addon_ids.append(aid)
+    except Exception:
+        pass
+
+    pDialog.update(30, 'Reading settings from each addon...')
+    entries = auth_matrix.scan_addon_auth(addon_ids)
+
+    pDialog.update(70, 'Resolving account usernames...')
+    vault = load_vault()
+    accounts = auth_matrix.resolve_accounts(vault)
+
+    # IPTV providers (from iptv_vault.json)
+    iptv_names = []
+    try:
+        if os.path.isfile(IPTV_VAULT):
+            with open(IPTV_VAULT, 'r') as f:
+                iptv_names = list(json.load(f).keys())
+    except Exception:
+        pass
+
+    pDialog.close()
+
+    # Top-level choice: matrix / drill-down / back
+    while True:
+        choice = dialog.select('Authorisation View', [
+            'Matrix Summary (all addons)',
+            'Drill down into a specific addon',
+            'Re-scan now',
+            'Close'
+        ])
+        if choice < 0 or choice == 3:
+            return
+        if choice == 0:
+            txt = auth_matrix.render_matrix(entries, accounts, iptv_providers=iptv_names)
+            dialog.textviewer('Authorisation Matrix', txt)
+        elif choice == 1:
+            installed = [e for e in entries if e['installed']]
+            if not installed:
+                dialog.ok('No Addons', 'No installed addons with auth keys were detected.')
+                continue
+            labels = []
+            for e in installed:
+                any_set = sum(1 for s in e['services'].values() if s['status'] == 'set')
+                labels.append(f"{e['addon_id']}  ({any_set}/5 services)")
+            pick = dialog.select('Select Addon', labels)
+            if pick < 0:
+                continue
+            detail = auth_matrix.render_detail(installed[pick], accounts)
+            dialog.textviewer(installed[pick]['addon_id'], detail)
+        elif choice == 2:
+            pDialog = xbmcgui.DialogProgress()
+            pDialog.create('Authorisation', 'Re-scanning...')
+            targets = dynamic_sync.scan_installed_addons()
+            addon_ids = [t['addon_id'] for t in targets]
+            try:
+                for aid in auth_manager.load_sync_map().keys():
+                    if aid not in addon_ids:
+                        addon_ids.append(aid)
+            except Exception:
+                pass
+            entries = auth_matrix.scan_addon_auth(addon_ids)
+            accounts = auth_matrix.resolve_accounts(load_vault())
+            pDialog.close()
+            dialog.notification('Authorisation', 'Scan refreshed', ADDON_ICON, 2500)
+
+
+def network_speed_test():
+    dialog = xbmcgui.Dialog()
+
+    size_choice = dialog.select("Network Speed Test", [
+        "Quick (10 MB download)",
+        "Normal (25 MB download)",
+        "Thorough (100 MB download)",
+        "Cancel"
+    ])
+    if size_choice < 0 or size_choice == 3:
+        return
+
+    size_bytes = {0: 10, 1: 25, 2: 100}[size_choice] * 1024 * 1024
+
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Speed Test", "Pinging server...")
+
+    cancelled = {'v': False}
+
+    def _cb(read, total):
+        if cancelled['v']:
+            return
+        if pDialog.iscanceled():
+            cancelled['v'] = True
+            return
+        pct = int((read / total) * 100) if total else 0
+        mb = read / (1024 * 1024)
+        pDialog.update(pct, f"Downloading... {mb:.1f} / {total / (1024 * 1024):.0f} MB")
+
+    try:
+        from resources.lib import speed_test as st
+        result = st.run_speed_test(size_bytes=size_bytes, progress_cb=_cb)
+    except Exception as e:
+        pDialog.close()
+        dialog.ok("Speed Test Failed", f"{type(e).__name__}: {e}")
+        return
+
+    pDialog.close()
+
+    if cancelled['v']:
+        return
+    if result.get('error'):
+        dialog.ok("Speed Test Failed", result['error'])
+        return
+
+    from resources.lib import speed_test as st
+    dialog.textviewer("Network Speed Test", st.format_result(result))
 
 
 def vault_qr_menu():
@@ -1352,6 +1526,7 @@ def main_menu():
     """Main menu display"""
     items = [
         ("ONE-CLICK SPEED OPTIMIZER", "speed", "speed.png"),
+        ("NETWORK SPEED TEST", "speedtest", "speed.png"),
         ("SCHEDULED AUTO-CLEAN", "autoclean", "autoclean.png"),
         ("Pair RD / Trakt / Auth / PM / AD / TMDB", "auth", "auth.png"),
         ("VIEW ACCOUNT CARDS", "account_cards", "auth.png"),
@@ -1399,6 +1574,8 @@ if __name__ == '__main__':
         main_menu()
     elif action == 'speed':
         speed_optimizer()
+    elif action == 'speedtest':
+        network_speed_test()
     elif action == 'autoclean':
         auto_clean_settings()
     elif action == 'auth':
@@ -1427,6 +1604,8 @@ if __name__ == '__main__':
         vault_qr_menu()
     elif action == 'account_cards':
         show_account_cards()
+    elif action == 'auth_view':
+        authorisation_view()
     elif action == 'iptv':
         iptv_vault()
     elif action == 'favs':
