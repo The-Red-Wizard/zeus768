@@ -4,14 +4,46 @@
         <setting id="auto_play" type="bool" label="Autoplay (auto-select best source)" default="false"/>
         <setting id="source_timeout" type="slider" label="Source timeout (seconds)" default="30" range="10,5,120"/>
         <setting id="max_results" type="slider" label="Maximum results per scraper" default="50" range="10,10,100"/>
+        <setting id="premiere_international" type="bool" label="Show International Premieres" default="false"/>
     </category>
-    
-    <category label="Preferences">
-        <setting id="premiere_international" type="bool" label="Show International Premieres (Japanese, Chinese, Korean, etc.)" default="false"/>
+
+    <category label="Playback">
+        <setting id="filter_cam" type="bool" label="Filter CAM/TS quality" default="true"/>
+        <setting id="min_quality" type="labelenum" label="Minimum quality" values="Any|480p|720p|1080p|4K" default="Any"/>
+        <setting id="sort_by" type="labelenum" label="Sort sources by" values="Seeds|Quality|Size" default="Seeds"/>
+        <setting id="preferred_quality" type="labelenum" label="Preferred quality" values="2160p|1080p|720p|480p" default="1080p"/>
+        <setting id="next_episode_enabled" type="bool" label="Enable Up Next (auto next episode)" default="true"/>
+        <setting id="skip_intro_enabled" type="bool" label="Enable Skip Intro prompt" default="true"/>
+        <setting id="skip_intro_duration" type="slider" label="Skip Intro duration (seconds)" default="90" range="30,5,180" enable="eq(-1,true)"/>
     </category>
-    
-    <category label="Free Streams (No Debrid)">
+
+    <category label="Trakt">
+        <setting id="trakt_enabled" type="bool" label="Enable Trakt" default="false"/>
+        <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="trakt_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="trakt_expires" type="text" label="Expires" default="0" visible="false"/>
+    </category>
+
+    <category label="Debrid Services">
+        <setting type="lsep" label="Real-Debrid"/>
+        <setting id="realdebrid_enabled" type="bool" label="Enable Real-Debrid" default="false"/>
+        <setting id="realdebrid_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="realdebrid_refresh" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="realdebrid_expires" type="text" label="Expires" default="0" visible="false"/>
+        <setting type="lsep" label="Premiumize"/>
+        <setting id="premiumize_enabled" type="bool" label="Enable Premiumize" default="false"/>
+        <setting id="premiumize_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="AllDebrid"/>
+        <setting id="alldebrid_enabled" type="bool" label="Enable AllDebrid" default="false"/>
+        <setting id="alldebrid_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="TorBox"/>
+        <setting id="torbox_enabled" type="bool" label="Enable TorBox" default="false"/>
+        <setting id="torbox_token" type="text" label="API Key" default="" visible="false"/>
+    </category>
+
+    <category label="Free Streams">
         <setting id="freestream_enabled" type="bool" label="Enable Free Stream Aggregator" default="true"/>
+        <setting type="lsep" label="VidSrc Sources"/>
         <setting id="vidsrc_xyz_enabled" type="bool" label="VidSrc.xyz" default="true"/>
         <setting id="vidsrc_cc_enabled" type="bool" label="VidSrc.cc" default="true"/>
         <setting id="vidsrc_in_enabled" type="bool" label="VidSrc.in" default="true"/>
@@ -20,11 +52,13 @@
         <setting id="vidsrc_pro_enabled" type="bool" label="VidSrc.pro" default="true"/>
         <setting id="vidsrcme_enabled" type="bool" label="VidSrc.me" default="true"/>
         <setting id="vidsrcto_enabled" type="bool" label="VidSrc.to" default="true"/>
+        <setting type="lsep" label="Embed Sources"/>
         <setting id="2embed_enabled" type="bool" label="2Embed.cc" default="true"/>
         <setting id="2embed_org_enabled" type="bool" label="2Embed.org" default="true"/>
         <setting id="embedsu_enabled" type="bool" label="Embed.su" default="true"/>
         <setting id="autoembed_enabled" type="bool" label="AutoEmbed" default="true"/>
         <setting id="multiembed_enabled" type="bool" label="MultiEmbed" default="true"/>
+        <setting type="lsep" label="Other Free Sources"/>
         <setting id="vidlink_enabled" type="bool" label="VidLink" default="true"/>
         <setting id="vidplay_enabled" type="bool" label="VidPlay" default="true"/>
         <setting id="moviesapi_enabled" type="bool" label="MoviesAPI" default="true"/>
@@ -32,8 +66,9 @@
         <setting id="nontongo_enabled" type="bool" label="NontonGo" default="true"/>
         <setting id="rgshorts_enabled" type="bool" label="RgShorts/RiveStream" default="true"/>
     </category>
-    
-    <category label="Stremio Free Addons">
+
+    <category label="Stremio Addons">
+        <setting type="lsep" label="Stremio Free Addons"/>
         <setting id="braflix_enabled" type="bool" label="Braflix" default="true"/>
         <setting id="streamingcommunity_enabled" type="bool" label="StreamingCommunity" default="true"/>
         <setting id="themoviearchive_enabled" type="bool" label="TheMovieArchive" default="true"/>
@@ -55,8 +90,16 @@
         <setting id="tubi_stremio_enabled" type="bool" label="Tubi" default="true"/>
         <setting id="localtv_enabled" type="bool" label="LocalTV" default="false"/>
         <setting id="opensubs_enabled" type="bool" label="OpenSubtitles" default="false"/>
+        <setting type="lsep" label="Stremio Debrid Addons"/>
+        <setting id="torrentio_enabled" type="bool" label="Torrentio" default="true"/>
+        <setting id="mediafusion_enabled" type="bool" label="MediaFusion" default="true"/>
+        <setting id="comet_enabled" type="bool" label="Comet" default="true"/>
+        <setting id="cyberflix_enabled" type="bool" label="CyberFlix" default="true"/>
+        <setting id="annatar_enabled" type="bool" label="Annatar" default="true"/>
+        <setting id="peerflix_enabled" type="bool" label="PeerFlix" default="true"/>
+        <setting id="easynews_enabled" type="bool" label="EasyNews+" default="false"/>
     </category>
-    
+
     <category label="Streaming Sites">
         <setting id="flixhq_enabled" type="bool" label="FlixHQ" default="true"/>
         <setting id="bflix_enabled" type="bool" label="BFlix" default="true"/>
@@ -84,43 +127,16 @@
         <setting id="movie4k_enabled" type="bool" label="Movie4K" default="true"/>
         <setting id="solarmovie_enabled" type="bool" label="SolarMovie (Legacy)" default="true"/>
     </category>
-    
-    <category label="Source Cache">
-        <setting id="source_cache_enabled" type="bool" label="Enable source caching" default="true"/>
-        <setting id="source_cache_hours" type="slider" label="Source cache duration (hours)" default="2" range="1,1,12" enable="eq(-1,true)"/>
-        <setting id="preemptive_scrape" type="bool" label="Pre-emptive scrape next episode" default="true"/>
-    </category>
-    
-    <category label="Trakt">
-        <setting id="trakt_enabled" type="bool" label="Enable Trakt" default="false"/>
-        <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false"/>
-        <setting id="trakt_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
-        <setting id="trakt_expires" type="text" label="Expires" default="0" visible="false"/>
-    </category>
-    
-    <category label="Debrid Services">
-        <setting id="realdebrid_enabled" type="bool" label="Enable Real-Debrid" default="false"/>
-        <setting id="realdebrid_token" type="text" label="Access Token" default="" visible="false"/>
-        <setting id="realdebrid_refresh" type="text" label="Refresh Token" default="" visible="false"/>
-        <setting id="realdebrid_expires" type="text" label="Expires" default="0" visible="false"/>
-        <setting id="premiumize_enabled" type="bool" label="Enable Premiumize" default="false"/>
-        <setting id="premiumize_token" type="text" label="API Key" default="" visible="false"/>
-        <setting id="alldebrid_enabled" type="bool" label="Enable AllDebrid" default="false"/>
-        <setting id="alldebrid_token" type="text" label="API Key" default="" visible="false"/>
-        <setting id="torbox_enabled" type="bool" label="Enable TorBox" default="false"/>
-        <setting id="torbox_token" type="text" label="API Key" default="" visible="false"/>
-    </category>
-    
-    <category label="Primary Torrent Sites">
+
+    <category label="Torrent Sites">
+        <setting type="lsep" label="Primary"/>
         <setting id="1337x_enabled" type="bool" label="1337x" default="true"/>
         <setting id="yts_enabled" type="bool" label="YTS (Movies)" default="true"/>
         <setting id="eztv_enabled" type="bool" label="EZTV (TV)" default="true"/>
         <setting id="torrentgalaxy_enabled" type="bool" label="TorrentGalaxy" default="true"/>
         <setting id="thepiratebay_enabled" type="bool" label="ThePirateBay" default="true"/>
         <setting id="solidtorrents_enabled" type="bool" label="SolidTorrents" default="true"/>
-    </category>
-    
-    <category label="Secondary Torrent Sites">
+        <setting type="lsep" label="Secondary"/>
         <setting id="limetorrents_enabled" type="bool" label="LimeTorrents" default="true"/>
         <setting id="torrentz2_enabled" type="bool" label="Torrentz2" default="true"/>
         <setting id="rarbg_enabled" type="bool" label="RARBG" default="true"/>
@@ -129,9 +145,7 @@
         <setting id="glodls_enabled" type="bool" label="GLODLS" default="true"/>
         <setting id="idope_enabled" type="bool" label="iDope" default="true"/>
         <setting id="torrentdownload_enabled" type="bool" label="TorrentDownload" default="true"/>
-    </category>
-    
-    <category label="Additional Torrent Sites">
+        <setting type="lsep" label="Additional"/>
         <setting id="bitsearch_enabled" type="bool" label="BitSearch" default="true"/>
         <setting id="torrentdownloads2_enabled" type="bool" label="TorrentDownloads" default="true"/>
         <setting id="torlock_enabled" type="bool" label="TorLock" default="true"/>
@@ -142,16 +156,21 @@
         <setting id="solidtorrents2_enabled" type="bool" label="SolidTorrents2" default="true"/>
         <setting id="ethd_enabled" type="bool" label="EtHD" default="true"/>
         <setting id="skytorrent_enabled" type="bool" label="SkyTorrent" default="true"/>
-    </category>
-    
-    <category label="Meta Search">
+        <setting type="lsep" label="Meta Search"/>
         <setting id="btdigg_enabled" type="bool" label="BTDigg" default="true"/>
         <setting id="zooqle_enabled" type="bool" label="Zooqle" default="true"/>
         <setting id="torrentproject_enabled" type="bool" label="TorrentProject" default="true"/>
     </category>
-    
-    <category label="Anime Sources">
+
+    <category label="Anime">
+        <setting type="lsep" label="Anime Torrent Sites"/>
         <setting id="nyaa_enabled" type="bool" label="Nyaa" default="true"/>
+        <setting id="subsplease_enabled" type="bool" label="SubsPlease" default="true"/>
+        <setting id="tokyotosho_enabled" type="bool" label="TokyoTosho" default="true"/>
+        <setting id="animetosho_enabled" type="bool" label="AnimeTosho" default="true"/>
+        <setting id="anidex_enabled" type="bool" label="AniDex" default="true"/>
+        <setting id="acgtorrent_enabled" type="bool" label="AcgTorrent" default="true"/>
+        <setting type="lsep" label="Anime Streaming"/>
         <setting id="zoro_enabled" type="bool" label="Zoro.to" default="true"/>
         <setting id="9anime_enabled" type="bool" label="9Anime" default="true"/>
         <setting id="gogoanime_enabled" type="bool" label="GogoAnime" default="true"/>
@@ -164,75 +183,54 @@
         <setting id="allanime_enabled" type="bool" label="AllAnime" default="true"/>
         <setting id="animesuge_enabled" type="bool" label="AnimeSuge" default="true"/>
         <setting id="aniwatch_enabled" type="bool" label="Aniwatch" default="true"/>
+        <setting type="lsep" label="Anime Stremio"/>
         <setting id="anime_stremio_enabled" type="bool" label="Anime Stremio" default="true"/>
         <setting id="animetosho_stremio_enabled" type="bool" label="AnimeTosho Stremio" default="true"/>
-        <setting id="subsplease_enabled" type="bool" label="SubsPlease" default="true"/>
-        <setting id="tokyotosho_enabled" type="bool" label="TokyoTosho" default="true"/>
-        <setting id="animetosho_enabled" type="bool" label="AnimeTosho" default="true"/>
-        <setting id="anidex_enabled" type="bool" label="AniDex" default="true"/>
-        <setting id="acgtorrent_enabled" type="bool" label="AcgTorrent" default="true"/>
     </category>
-    
-    <category label="Asian Drama">
+
+    <category label="Regional">
+        <setting type="lsep" label="Asian Drama"/>
         <setting id="watchasian_enabled" type="bool" label="WatchAsian" default="true"/>
         <setting id="kissasian_enabled" type="bool" label="KissAsian" default="true"/>
         <setting id="dramacool_enabled" type="bool" label="DramaCool" default="true"/>
         <setting id="viewasian_enabled" type="bool" label="ViewAsian" default="true"/>
         <setting id="asianload_enabled" type="bool" label="AsianLoad" default="true"/>
-    </category>
-    
-    <category label="Russian Sources">
+        <setting type="lsep" label="Russian"/>
         <setting id="rutracker_enabled" type="bool" label="RuTracker" default="true"/>
         <setting id="rutor_enabled" type="bool" label="RuTor" default="true"/>
         <setting id="nnm-club_enabled" type="bool" label="NNM-Club" default="true"/>
-    </category>
-    
-    <category label="Chinese Sources">
+        <setting type="lsep" label="Chinese"/>
         <setting id="dytt_enabled" type="bool" label="DyTT" default="true"/>
         <setting id="btbtt_enabled" type="bool" label="BTBTT" default="true"/>
-    </category>
-    
-    <category label="French Sources">
+        <setting type="lsep" label="French"/>
         <setting id="torrent9_enabled" type="bool" label="Torrent9" default="true"/>
         <setting id="yggtorrent_enabled" type="bool" label="YggTorrent" default="true"/>
     </category>
-    
-    <category label="Stremio Debrid Addons">
-        <setting id="torrentio_enabled" type="bool" label="Torrentio" default="true"/>
-        <setting id="mediafusion_enabled" type="bool" label="MediaFusion" default="true"/>
-        <setting id="comet_enabled" type="bool" label="Comet" default="true"/>
-        <setting id="cyberflix_enabled" type="bool" label="CyberFlix" default="true"/>
-        <setting id="annatar_enabled" type="bool" label="Annatar" default="true"/>
-        <setting id="peerflix_enabled" type="bool" label="PeerFlix" default="true"/>
-        <setting id="easynews_enabled" type="bool" label="EasyNews+" default="false"/>
-    </category>
-    
+
     <category label="Aggregators">
+        <setting type="lsep" label="Jackett"/>
         <setting id="jackett_enabled" type="bool" label="Enable Jackett" default="false"/>
         <setting id="jackett_url" type="text" label="Jackett URL" default="http://localhost:9117" enable="eq(-1,true)"/>
         <setting id="jackett_api_key" type="text" label="Jackett API Key" default="" enable="eq(-2,true)"/>
+        <setting type="lsep" label="Prowlarr"/>
         <setting id="prowlarr_enabled" type="bool" label="Enable Prowlarr" default="false"/>
         <setting id="prowlarr_url" type="text" label="Prowlarr URL" default="http://localhost:9696" enable="eq(-1,true)"/>
         <setting id="prowlarr_api_key" type="text" label="Prowlarr API Key" default="" enable="eq(-2,true)"/>
+        <setting type="lsep" label="TorrentAPI"/>
         <setting id="torrentapi_enabled" type="bool" label="TorrentAPI" default="false"/>
     </category>
-    
-    <category label="Playback">
-        <setting id="filter_cam" type="bool" label="Filter CAM/TS quality" default="true"/>
-        <setting id="min_quality" type="labelenum" label="Minimum quality" values="Any|480p|720p|1080p|4K" default="Any"/>
-        <setting id="sort_by" type="labelenum" label="Sort sources by" values="Seeds|Quality|Size" default="Seeds"/>
-        <setting id="next_episode_enabled" type="bool" label="Enable Up Next (auto next episode)" default="true"/>
-        <setting id="skip_intro_enabled" type="bool" label="Enable Skip Intro prompt" default="true"/>
-        <setting id="skip_intro_duration" type="slider" label="Skip Intro duration (seconds)" default="90" range="30,5,180" enable="eq(-1,true)"/>
+
+    <category label="Cache">
+        <setting id="source_cache_enabled" type="bool" label="Enable source caching" default="true"/>
+        <setting id="source_cache_hours" type="slider" label="Source cache duration (hours)" default="2" range="1,1,12" enable="eq(-1,true)"/>
+        <setting id="preemptive_scrape" type="bool" label="Pre-emptive scrape next episode" default="true"/>
+        <setting id="cache_duration" type="slider" label="General cache duration (hours)" default="8" range="1,1,24"/>
     </category>
-    
+
     <category label="Advanced">
-        <setting id="cache_duration" type="slider" label="Cache duration (hours)" default="8" range="1,1,24"/>
         <setting id="debug_enabled" type="bool" label="Enable debug logging" default="false"/>
         <setting id="parallel_scrapers" type="slider" label="Max parallel scrapers" default="10" range="5,5,30"/>
-    </category>
-    
-    <category label="AI Search">
+        <setting type="lsep" label="AI Search"/>
         <setting id="ai_search_enabled" type="bool" label="Enable AI Search" default="true"/>
         <setting id="ai_api_key" type="text" label="OpenAI API Key" default="sk-emergent-4Ed53090b4b04F8606" option="hidden"/>
         <setting id="ai_model" type="labelenum" label="AI Model" values="gpt-4o-mini|gpt-4o|gpt-5.2" default="0"/>
