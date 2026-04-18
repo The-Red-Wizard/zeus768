@@ -2,6 +2,23 @@ SALTS - Stream All The Sources
 Changelog
 =========
 
+v2.8.1 (2026-04-17) - BONES SCRAPER + SETTINGS FIX
+====================================================
+NEW SCRAPER:
+- Added: Bones - Direct stream links provider (thechains24.com)
+  * Pre-resolved streaming links - no debrid required
+  * Automatic catalog sync with poster art and metadata
+  * Dual mirror support (Streamtape + LuluVid)
+  * Always enabled, highest priority for instant playback
+
+SETTINGS FIX:
+- Restructured settings.xml for TV remote/D-pad navigation
+- Reduced from 17 categories to 12 for less tabbing
+- Added visual section separators (lsep) within long categories
+- Consolidated: Torrent Sites, Regional, Stremio into single tabs
+- Moved Playback settings to category 2 for quick access
+- All setting IDs preserved - zero code changes needed
+
 v2.8.0 (2026-01-15) - MASSIVE SCRAPER EXPANSION - 120+ SOURCES!
 ================================================================
 NEW FREE STREAM SOURCES (No Debrid Required):

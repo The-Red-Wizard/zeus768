@@ -45,6 +45,7 @@ AGGREGATORS:
 """
 
 from .base_scraper import BaseScraper, TorrentScraper
+from .bones_scraper import BonesScraper
 
 # ==========================================================
 # CORE FREE STREAM SCRAPERS
@@ -246,6 +247,9 @@ from .torrentapi_scraper import TorrentAPIScraper
 # MASTER SCRAPER LIST - ORDER MATTERS (faster/better first)
 # ==========================================================
 ALL_SCRAPERS = [
+    # ========== BONES (Direct Stream Links) ==========
+    BonesScraper,
+    
     # ========== FREE STREAMS (No Debrid - Direct Play) ==========
     # Primary Free Stream Aggregator
     FreeStreamScraper,
@@ -453,6 +457,7 @@ def get_scraper_count():
 def get_scrapers_by_category():
     """Get scrapers organized by category"""
     return {
+        'bones': [BonesScraper],
         'free_streams': [
             FreeStreamScraper, VidSrcXYZScraper, VidSrcCCScraper, VidSrcInScraper,
             VidSrcPMScraper, VidSrcNLScraper, VidSrcProScraper, VidSrcMeScraper,
