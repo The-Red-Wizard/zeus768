@@ -136,22 +136,29 @@ def speed_optimizer():
 # AUTHENTICATION MANAGER
 # ============================================
 def auth_menu():
-    """Authentication sub-menu"""
+    """Authentication sub-menu with device code auth"""
     items = [
-        ("Real-Debrid Authorization", "auth_rd", "rd.png"),
-        ("Premiumize Authorization", "auth_pm", "pm.png"),
-        ("AllDebrid Authorization", "auth_ad", "ad.png"),
-        ("Trakt Authorization", "auth_trakt", "trakt.png"),
+        ("Real-Debrid (Device Code)", "auth_rd", "rd.png"),
+        ("Premiumize (API Key)", "auth_pm", "pm.png"),
+        ("AllDebrid (PIN Code)", "auth_ad", "ad.png"),
+        ("Trakt (Device Code)", "auth_trakt", "trakt.png"),
         ("TMDB API Key Setup", "auth_tmdb", "tmdb.png"),
+        ("--- Account Info ---", "spacer", ""),
+        ("View Account Cards", "account_cards", "auth.png"),
+        ("--- Sync ---", "spacer", ""),
         ("Sync All to Addons", "sync_all", "sync.png"),
         ("Back to Main Menu", "main", "restore.png")
     ]
     for label, act, icon in items:
         li = xbmcgui.ListItem(label=label)
-        art = get_art(icon)
-        li.setArt({'icon': art, 'thumb': art, 'fanart': ADDON_FANART})
-        url = f"{sys.argv[0]}?action={act}"
-        xbmcplugin.addDirectoryItem(HANDLE, url, li, True if act in ['main'] else False)
+        if act == "spacer":
+            li.setArt({'icon': ADDON_ICON, 'thumb': ADDON_ICON, 'fanart': ADDON_FANART})
+            xbmcplugin.addDirectoryItem(HANDLE, "", li, False)
+        else:
+            art = get_art(icon)
+            li.setArt({'icon': art, 'thumb': art, 'fanart': ADDON_FANART})
+            url = f"{sys.argv[0]}?action={act}"
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, True if act == 'main' else False)
     xbmcplugin.endOfDirectory(HANDLE)
 
 def load_vault():
@@ -181,140 +188,28 @@ def save_vault(vault):
         return False
 
 def auth_real_debrid():
-    """Real-Debrid authorization"""
-    dialog = xbmcgui.Dialog()
+    """Real-Debrid device code auth"""
+    from resources.lib.auth_manager import auth_rd_device_code
     vault = load_vault()
-    
-    current_token = vault.get('rd_token', 'Not Set')
-    display_token = current_token[:20] + '...' if len(current_token) > 20 else current_token
-    
-    choice = dialog.select("Real-Debrid", [
-        f"Current: {display_token}",
-        "Enter API Token Manually",
-        "Clear Real-Debrid Token",
-        "Help: How to get RD Token"
-    ])
-    
-    if choice == 1:
-        token = dialog.input("Enter Real-Debrid API Token")
-        if token:
-            vault['rd_token'] = token
-            if save_vault(vault):
-                notify("Real-Debrid", "Token Saved Successfully!")
-            else:
-                dialog.ok("Error", "Failed to save token")
-    elif choice == 2:
-        vault.pop('rd_token', None)
-        save_vault(vault)
-        notify("Real-Debrid", "Token Cleared")
-    elif choice == 3:
-        dialog.ok("Real-Debrid Help",
-                  "1. Go to real-debrid.com",
-                  "2. Login and go to API page",
-                  "3. Copy your API token")
+    auth_rd_device_code(vault, save_vault)
 
 def auth_premiumize():
-    """Premiumize authorization"""
-    dialog = xbmcgui.Dialog()
+    """Premiumize API key auth"""
+    from resources.lib.auth_manager import auth_pm_apikey
     vault = load_vault()
-    
-    current_token = vault.get('pm_token', 'Not Set')
-    display_token = current_token[:20] + '...' if len(current_token) > 20 else current_token
-    
-    choice = dialog.select("Premiumize", [
-        f"Current: {display_token}",
-        "Enter API Key Manually",
-        "Clear Premiumize Key",
-        "Help: How to get PM Key"
-    ])
-    
-    if choice == 1:
-        token = dialog.input("Enter Premiumize API Key")
-        if token:
-            vault['pm_token'] = token
-            if save_vault(vault):
-                notify("Premiumize", "Key Saved Successfully!")
-    elif choice == 2:
-        vault.pop('pm_token', None)
-        save_vault(vault)
-        notify("Premiumize", "Key Cleared")
-    elif choice == 3:
-        dialog.ok("Premiumize Help",
-                  "1. Go to premiumize.me",
-                  "2. Login and go to Account",
-                  "3. Copy your API Key")
+    auth_pm_apikey(vault, save_vault)
 
 def auth_alldebrid():
-    """AllDebrid authorization"""
-    dialog = xbmcgui.Dialog()
+    """AllDebrid PIN auth"""
+    from resources.lib.auth_manager import auth_ad_pin
     vault = load_vault()
-    
-    current_token = vault.get('ad_token', 'Not Set')
-    display_token = current_token[:20] + '...' if len(current_token) > 20 else current_token
-    
-    choice = dialog.select("AllDebrid", [
-        f"Current: {display_token}",
-        "Enter API Key Manually",
-        "Clear AllDebrid Key",
-        "Help: How to get AD Key"
-    ])
-    
-    if choice == 1:
-        token = dialog.input("Enter AllDebrid API Key")
-        if token:
-            vault['ad_token'] = token
-            if save_vault(vault):
-                notify("AllDebrid", "Key Saved Successfully!")
-    elif choice == 2:
-        vault.pop('ad_token', None)
-        save_vault(vault)
-        notify("AllDebrid", "Key Cleared")
-    elif choice == 3:
-        dialog.ok("AllDebrid Help",
-                  "1. Go to alldebrid.com",
-                  "2. Login and go to API Keys",
-                  "3. Generate and copy your key")
+    auth_ad_pin(vault, save_vault)
 
 def auth_trakt():
-    """Trakt authorization"""
-    dialog = xbmcgui.Dialog()
+    """Trakt device code auth"""
+    from resources.lib.auth_manager import auth_trakt_device
     vault = load_vault()
-    
-    current_token = vault.get('trakt_token', 'Not Set')
-    display_token = current_token[:20] + '...' if len(current_token) > 20 else current_token
-    
-    choice = dialog.select("Trakt", [
-        f"Current: {display_token}",
-        "Enter Client ID",
-        "Enter Client Secret", 
-        "Clear Trakt Auth",
-        "Help: How to setup Trakt"
-    ])
-    
-    if choice == 1:
-        token = dialog.input("Enter Trakt Client ID")
-        if token:
-            vault['trakt_client_id'] = token
-            if save_vault(vault):
-                notify("Trakt", "Client ID Saved!")
-    elif choice == 2:
-        token = dialog.input("Enter Trakt Client Secret")
-        if token:
-            vault['trakt_client_secret'] = token
-            vault['trakt_token'] = 'Configured'
-            if save_vault(vault):
-                notify("Trakt", "Client Secret Saved!")
-    elif choice == 3:
-        vault.pop('trakt_client_id', None)
-        vault.pop('trakt_client_secret', None)
-        vault.pop('trakt_token', None)
-        save_vault(vault)
-        notify("Trakt", "Auth Cleared")
-    elif choice == 4:
-        dialog.ok("Trakt Help",
-                  "1. Go to trakt.tv/oauth/applications",
-                  "2. Create a new application",
-                  "3. Copy Client ID and Secret")
+    auth_trakt_device(vault, save_vault)
 
 def auth_tmdb():
     """TMDB API setup"""
@@ -367,73 +262,110 @@ def sync_tmdb_helper():
         notify("Sync Failed", "TMDB Helper not installed")
 
 def sync_all_addons():
-    """Sync all credentials to supported addons"""
+    """Sync all credentials to ALL detected addons on device"""
+    from resources.lib.auth_manager import sync_to_all_addons
+    vault = load_vault()
+    sync_to_all_addons(vault)
+
+
+def show_account_cards():
+    """Show detailed account info for all services"""
+    from resources.lib import auth_manager
     vault = load_vault()
     dialog = xbmcgui.Dialog()
     pDialog = xbmcgui.DialogProgress()
-    pDialog.create("The Accountant", "Syncing credentials...")
-    
-    synced = []
-    failed = []
-    
-    # Common video addons to sync
-    addon_mappings = {
-        'plugin.video.fen': {
-            'rd': ('rd.token', 'rd_token'),
-            'pm': ('pm.token', 'pm_token'),
-            'ad': ('ad.token', 'ad_token'),
-            'trakt': ('trakt.client_id', 'trakt_client_id')
-        },
-        'plugin.video.ezra': {
-            'rd': ('rd.token', 'rd_token'),
-            'pm': ('pm.token', 'pm_token'),
-            'ad': ('ad.token', 'ad_token')
-        },
-        'plugin.video.coalition': {
-            'rd': ('realdebrid.token', 'rd_token'),
-            'pm': ('premiumize.token', 'pm_token')
-        },
-        'plugin.video.themoviedb.helper': {
-            'tmdb': ('tmdb_api_key', 'tmdb_api_key')
-        },
-        'plugin.video.seren': {
-            'rd': ('rd.auth', 'rd_token'),
-            'pm': ('premiumize.token', 'pm_token'),
-            'ad': ('alldebrid.apikey', 'ad_token')
-        },
-        'plugin.video.umbrella': {
-            'rd': ('realdebrid.token', 'rd_token'),
-            'pm': ('premiumize.token', 'pm_token'),
-            'ad': ('alldebrid.token', 'ad_token')
-        }
-    }
-    
-    total = len(addon_mappings)
-    current = 0
-    
-    for addon_id, settings_map in addon_mappings.items():
-        current += 1
-        pDialog.update(int((current/total)*100), f"Checking {addon_id}...")
-        
-        try:
-            target_addon = xbmcaddon.Addon(addon_id)
-            for service, (setting_name, vault_key) in settings_map.items():
-                value = vault.get(vault_key, '')
-                if value:
-                    target_addon.setSetting(setting_name, value)
-            synced.append(addon_id.split('.')[-1])
-        except:
-            failed.append(addon_id.split('.')[-1])
-    
+    pDialog.create('The Accountant', 'Fetching account details...')
+
+    lines = []
+
+    # Real-Debrid
+    pDialog.update(20, 'Checking Real-Debrid...')
+    rd_token = vault.get('rd_token', '')
+    if rd_token:
+        info = auth_manager.get_rd_account_info(rd_token)
+        if info:
+            lines.append('--- REAL-DEBRID ---')
+            lines.append(f"User: {info['username']}")
+            lines.append(f"Email: {info['email']}")
+            lines.append(f"Status: {info['status']}")
+            lines.append(f"Expires: {info['expiration']}")
+            lines.append(f"Days Left: {info['days_left']}")
+            lines.append(f"Fidelity Points: {info['fidelity']}")
+        else:
+            lines.append('--- REAL-DEBRID ---')
+            lines.append('Token saved but could not fetch info')
+    else:
+        lines.append('--- REAL-DEBRID ---')
+        lines.append('Not authorized')
+
+    lines.append('')
+
+    # Premiumize
+    pDialog.update(40, 'Checking Premiumize...')
+    pm_token = vault.get('pm_token', '')
+    if pm_token:
+        info = auth_manager.get_pm_account_info(pm_token)
+        if info:
+            lines.append('--- PREMIUMIZE ---')
+            lines.append(f"Customer ID: {info['customer_id']}")
+            lines.append(f"Status: {info['status']}")
+            lines.append(f"Expires: {info['expiration']}")
+            lines.append(f"Days Left: {info['days_left']}")
+            lines.append(f"Space Used: {info['space_used']}")
+        else:
+            lines.append('--- PREMIUMIZE ---')
+            lines.append('Key saved but could not fetch info')
+    else:
+        lines.append('--- PREMIUMIZE ---')
+        lines.append('Not authorized')
+
+    lines.append('')
+
+    # AllDebrid
+    pDialog.update(60, 'Checking AllDebrid...')
+    ad_token = vault.get('ad_token', '')
+    if ad_token:
+        info = auth_manager.get_ad_account_info(ad_token)
+        if info:
+            lines.append('--- ALLDEBRID ---')
+            lines.append(f"User: {info['username']}")
+            lines.append(f"Email: {info['email']}")
+            lines.append(f"Status: {info['status']}")
+            lines.append(f"Expires: {info['expiration']}")
+            lines.append(f"Days Left: {info['days_left']}")
+            lines.append(f"Fidelity Points: {info['fidelity']}")
+        else:
+            lines.append('--- ALLDEBRID ---')
+            lines.append('Key saved but could not fetch info')
+    else:
+        lines.append('--- ALLDEBRID ---')
+        lines.append('Not authorized')
+
+    lines.append('')
+
+    # Trakt
+    pDialog.update(80, 'Checking Trakt...')
+    trakt_token = vault.get('trakt_token', '')
+    if trakt_token:
+        info = auth_manager.get_trakt_account_info(trakt_token)
+        if info:
+            lines.append('--- TRAKT ---')
+            lines.append(f"User: {info['username']}")
+            lines.append(f"Status: {info['vip']}")
+            lines.append(f"Joined: {info['joined']}")
+            lines.append(f"Movies Watched: {info['movies_watched']}")
+            lines.append(f"Shows Watched: {info['shows_watched']}")
+            lines.append(f"Episodes Watched: {info['episodes_watched']}")
+            lines.append(f"Ratings Given: {info['ratings']}")
+        else:
+            lines.append('--- TRAKT ---')
+            lines.append('Token saved but could not fetch info')
+    else:
+        lines.append('--- TRAKT ---')
+        lines.append('Not authorized')
+
     pDialog.close()
-    
-    msg = ""
-    if synced:
-        msg += f"Synced: {', '.join(synced)}\n"
-    if failed:
-        msg += f"Not installed: {', '.join(failed)}"
-    
-    dialog.ok("Sync Complete", msg if msg else "No addons to sync")
+    dialog.textviewer('Account Cards', '\n'.join(lines))
 
 # ============================================
 # IPTV VAULT
@@ -1239,6 +1171,8 @@ if __name__ == '__main__':
         auth_tmdb()
     elif action == 'sync_all':
         sync_all_addons()
+    elif action == 'account_cards':
+        show_account_cards()
     elif action == 'iptv':
         iptv_vault()
     elif action == 'favs':

@@ -1,22 +1,32 @@
-================================================================================
-  The Accountant Changelog
-  by zeus768
-================================================================================
+v4.0.0 (2026-04-18) - DEVICE CODE AUTH + ACCOUNT CARDS
+=======================================================
+AUTH OVERHAUL:
+- Real-Debrid: Device code auth - code displayed on screen, no manual token entry
+- AllDebrid: PIN code auth - PIN displayed on screen
+- Trakt: Device code auth - code displayed on screen
+- Premiumize: API key entry (device code not supported by PM API)
+- All auth methods are TV remote / Android device friendly
 
-v3.9.6 (April 2026)
-================================================================================
-  * Added Buy Me a Beer - Ko-fi donation with QR code
-  * Updated for Zeus768 Repository v1.0.9
+ACCOUNT CARDS:
+- View Account Cards shows full details for all services
+- Real-Debrid: username, email, status, expiry, days left, fidelity points
+- Premiumize: customer ID, status, expiry, days left, space used
+- AllDebrid: username, email, status, expiry, days left, fidelity points
+- Trakt: username, VIP status, join date, movies/shows/episodes watched, ratings
 
-v3.9.5 (February 2026)
-================================================================================
-  * Speed Optimizer
-  * Scheduled Auto-Clean
-  * RD/PM/AD/Trakt/TMDB Auth management
-  * IPTV Vault
-  * Favourites Vault
-  * USB Backup
-  * Repair Tools
-  * Cache and Package Cleaner
-  * Skin & Widget Backup
-  * Help & Instructions Manual
+SYNC OVERHAUL:
+- Now detects and syncs to 15+ addons including:
+  Umbrella, SALTS, Fen, FenLight, FenlightAM, Seren, 
+  The Chain, The Chains, The Crew, Ezra, Coalition,
+  Trakt Player, Orion, Genesis, Tinklepad, Syncher,
+  TMDBHelper, ResolveURL
+- Sync pushes RD, PM, AD, and Trakt tokens to all detected addons
+
+SPEED OPTIMIZER:
+- Fixed to properly clear temp, packages, and old thumbnails
+- Shows MB freed after optimization
+
+v3.9.4 (2026-04-12)
+====================
+- Initial release with vault, IPTV, favourites, USB backup
+- Speed optimizer, auto-clean, repair tools
