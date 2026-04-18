@@ -1,3 +1,19 @@
+v4.0.3 (2026-04-18) - FULL ADDON COVERAGE + TORBOX
+====================================================
+SYNC EXPANDED TO 21 ADDONS:
+- All setting IDs verified from actual addon source code
+- Zeus768 addons: Genesis, Orion, SALTS, Tinklepad, Trakt Player,
+  Syncher, Poseidon Player
+- Third-party: Umbrella, Fen, FenLight, FenlightAM, Seren,
+  TheChain, TheChains, TheCrew, Ezra, Coalition, TMDBHelper
+- Critical: ResolveURL (syncs RD/PM/AD tokens + client_id/secret)
+- Full token sync: access token, refresh token, client_id, client_secret, expires
+
+NEW - TORBOX AUTH:
+- TorBox API key entry from torbox.app/settings
+- Key verified against TorBox API before saving
+- Syncs to Genesis, Orion, SALTS, Trakt Player
+
 v4.0.2 (2026-04-18) - REFRESH WIDGETS + ACCOUNT CARDS IN MAIN MENU
 ======================================================
 - NEW: Refresh Widgets button in main menu (refreshes all containers and skin)
