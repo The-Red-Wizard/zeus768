@@ -2,8 +2,15 @@ SALTS - Stream All The Sources
 Changelog
 =========
 
-v2.8.5 (2026-04-18) - BONES SCRAPER + CUSTOM RESOLVERS + SETTINGS FIX + RD AUTH FIX
-====================================================
+v2.8.6 (2026-04-18) - CRITICAL FIX
+====================================
+- FIXED: IndentationError in default.py that prevented SALTS from loading
+- FIXED: IndentationError in service.py that prevented background service
+- Restored proper 4-space Python indentation from last working codebase
+- Re-applied all v2.8.x features on clean base
+
+v2.8.5 (2026-04-18) - BONES SCRAPER + CUSTOM RESOLVERS + RD AUTH FIX
+=====================================================================
 NEW SCRAPER:
 - Added: Bones - Direct stream links provider
   * Pre-resolved streaming links - no debrid required
@@ -28,27 +35,6 @@ CLEANUP:
 - Removed all COLOR tags from menus
 - Removed all emoji characters from Python files
 - Clean plain text menus throughout
-====================================================
-NEW SCRAPER:
-- Added: Bones - Direct stream links provider
-  * Pre-resolved streaming links - no debrid required
-  * Automatic catalog sync with poster art and metadata
-  * Dual mirror support (Streamtape + LuluVid)
-  * Custom resolvers for Streamtape and LuluVid - no ResolveURL dependency
-  * HLS/m3u8 stream extraction with P.A.C.K.E.R JS unpacker
-  * Always enabled, highest priority for instant playback
-
-RD AUTH FIX:
-- Added missing realdebrid_client_id and realdebrid_client_secret to settings.xml
-- Fixes RD device code auth failing to save credentials
-
-SETTINGS FIX:
-- Restructured settings.xml for TV remote/D-pad navigation
-- Reduced from 17 categories to 12 for less tabbing
-- Added visual section separators (lsep) within long categories
-- Consolidated: Torrent Sites, Regional, Stremio into single tabs
-- Moved Playback settings to category 2 for quick access
-- All setting IDs preserved - zero code changes needed
 
 v2.8.0 (2026-01-15) - MASSIVE SCRAPER EXPANSION - 120+ SOURCES!
 ================================================================
