@@ -1,3 +1,12 @@
+v4.0.1 (2026-04-18) - EXPIRY WARNINGS
+======================================
+- NEW: Background service checks debrid accounts on Kodi startup
+- Warns when subscription has 7 days or less remaining
+- Critical alert when 2 days or less remaining
+- Shows EXPIRED notification if subscription has lapsed
+- Checks Real-Debrid, Premiumize, and AllDebrid
+- Re-checks every 12 hours while Kodi is running
+
 v4.0.0 (2026-04-18) - DEVICE CODE AUTH + ACCOUNT CARDS
 =======================================================
 AUTH OVERHAUL:
