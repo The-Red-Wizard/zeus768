@@ -210,7 +210,7 @@ def new_episodes_calendar(days_back=0):
     shows = data.get('results', [])
     
     # For each show, get the specific episode that aired
-    for show in shows[:50]: # Limit to 50 for performance
+    for show in shows[:50]:  # Limit to 50 for performance
         show_id = show.get('id')
         show_name = show.get('name', 'Unknown')
         poster = show.get('poster_path', '')
@@ -440,7 +440,7 @@ def returning_shows(page=1):
         return
     
     results = data.get('results', [])
-    total_pages = min(data.get('total_pages', 1), 10) # Limit to 10 pages
+    total_pages = min(data.get('total_pages', 1), 10)  # Limit to 10 pages
     
     # Add header
     li = xbmcgui.ListItem(f'━━━ Returning Shows (New Seasons) - Page {page}/{total_pages} ━━━')
@@ -457,7 +457,7 @@ def returning_shows(page=1):
             continue
         
         num_seasons = details.get('number_of_seasons', 1)
-        if num_seasons < 2: # Skip shows with only 1 season (new shows, not returning)
+        if num_seasons < 2:  # Skip shows with only 1 season (new shows, not returning)
             continue
         
         title = show.get('name', show.get('original_name', 'Unknown'))
@@ -1168,7 +1168,7 @@ def _fetch_epg_data():
         data = _tmdb_get('/discover/movie', params)
         movies = []
         if data and data.get('results'):
-            for m in data['results'][:20]: # Get top 20
+            for m in data['results'][:20]:  # Get top 20
                 movies.append({
                     'title': m.get('title', 'Unknown'),
                     'poster': f"{TMDB_IMG}/w500{m.get('poster_path', '')}" if m.get('poster_path') else '',
@@ -1196,7 +1196,7 @@ def _fetch_epg_data():
         ch_id = channel['id']
         ch_name = channel['name']
         genre_id = channel.get('genre_id')
-        offset = channel.get('offset', i) # Use offset or index for variety
+        offset = channel.get('offset', i)  # Use offset or index for variety
         
         # Get appropriate movie list
         if genre_id:
@@ -1204,14 +1204,14 @@ def _fetch_epg_data():
         elif 'Premiere' in ch_name or 'Premier' in ch_name:
             movies = now_playing_movies
         else:
-            movies = _get_tmdb_movies_by_genre(None) # All popular
+            movies = _get_tmdb_movies_by_genre(None)  # All popular
         
         if not movies:
             continue
         
         # Calculate unique index for this channel based on time and offset
         # Each channel gets different movies by using offset
-        hour_block = now.hour // 2 # 2-hour movie blocks
+        hour_block = now.hour // 2  # 2-hour movie blocks
         base_idx = (hour_block + offset) % len(movies)
         next_idx = (base_idx + 1) % len(movies)
         
@@ -1489,7 +1489,7 @@ def ai_search(media_filter='all'):
         # Label with AI reason
         label = f'{title} ({yr})'
         if reason:
-            label += f' {reason}'
+            label += f'  {reason}'
         
         li = xbmcgui.ListItem(label)
         li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
@@ -1547,7 +1547,7 @@ def tmdb_list(list_type, media_type='movie', page=1):
                 api_url = f'{base_url}/movie/now_playing?api_key={api_key}&page={page}'
             else:
                 api_url = f'{base_url}/movie/popular?api_key={api_key}&page={page}'
-        else: # tvshow
+        else:  # tvshow
             if list_type == 'popular':
                 api_url = f'{base_url}/tv/popular?api_key={api_key}&page={page}'
             elif list_type == 'trending':
@@ -1602,7 +1602,7 @@ def tmdb_list(list_type, media_type='movie', page=1):
             label = f'{title} ({year})' if year else title
             trakt_r = trakt_ratings.get(str(item.get('id', '')))
             if trakt_r:
-                label += f' Trakt: {trakt_r[0]}'
+                label += f'  Trakt: {trakt_r[0]}'
             
             li = xbmcgui.ListItem(label)
             li.setArt({
@@ -1731,7 +1731,7 @@ def search_tmdb(query, media_type='movie'):
             label = f'{title} ({year})' if year else title
             trakt_r_s = trakt_ratings_s.get(str(item.get('id', '')))
             if trakt_r_s:
-                label += f' Trakt: {trakt_r_s[0]}'
+                label += f'  Trakt: {trakt_r_s[0]}'
             
             li = xbmcgui.ListItem(label)
             li.setArt({
@@ -1801,7 +1801,7 @@ def tv_seasons(title, year='', tmdb_id=''):
             
             for season in seasons:
                 season_num = season.get('season_number', 0)
-                if season_num == 0: # Skip specials
+                if season_num == 0:  # Skip specials
                     continue
                     
                 name = season.get('name', f'Season {season_num}')
@@ -2089,7 +2089,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
             log_utils.log(f'Scraper {scraper_cls}: {e}', xbmc.LOGDEBUG)
             return str(scraper_cls), [], False
     
-    SCRAPER_TIMEOUT = 30 # seconds - abandon any scraper slower than this
+    SCRAPER_TIMEOUT = 30  # seconds - abandon any scraper slower than this
     futures = {}
     with ThreadPoolExecutor(max_workers=20) as executor:
         for scraper_cls in scrapers:
@@ -2186,7 +2186,7 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         mt = 'movie' if media_type == 'movie' else 'show'
         rating, votes = trakt.get_item_rating(mt, tmdb_id)
         if rating is not None:
-            trakt_rating_str = f' Trakt: {rating}/10 ({votes})'
+            trakt_rating_str = f'  Trakt: {rating}/10 ({votes})'
     except Exception:
         pass
     
@@ -2225,9 +2225,9 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
     for _s in all_sources:
         _q = _s.get('quality', 'SD')
         _qcounts[_q] = _qcounts.get(_q, 0) + 1
-    _qstr = ' '.join(f'{q}:{c}' for q in ['4K','2160p','1080p','HD','720p','480p','SD'] if (c := _qcounts.get(q)))
+    _qstr = '  '.join(f'{q}:{c}' for q in ['4K','2160p','1080p','HD','720p','480p','SD'] if (c := _qcounts.get(q)))
     
-    header = f'SALTS: {sources_found} sources | {cached_count} cached | {free_count} free [{_qstr}]{trakt_rating_str}'
+    header = f'SALTS: {sources_found} sources | {cached_count} cached | {free_count} free  [{_qstr}]{trakt_rating_str}'
     
     # Build display list with color-coded formatting
     display_list = []
@@ -2256,7 +2256,7 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         if size:
             parts.append(f'{size}')
         
-        display_list.append(' | '.join(parts))
+        display_list.append('  |  '.join(parts))
     
     selected = xbmcgui.Dialog().select(header, display_list)
     
@@ -2367,7 +2367,7 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
                         log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
                 except Exception as e:
                     log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
-                    stream_url = url # Fallback to raw URL
+                    stream_url = url  # Fallback to raw URL
     
     if not stream_url:
         xbmcgui.Dialog().notification(ADDON_NAME, 'Could not resolve source', ADDON_ICON)
@@ -3238,7 +3238,7 @@ def _show_trakt_items(items, media_type, key=None):
     
     Handles all Trakt response formats:
     - Trending: [{movie: {...}, watchers: N}, ...]
-    - Popular: [{title, year, ids, ...}, ...] (flat movie/show objects)
+    - Popular: [{title, year, ids, ...}, ...]  (flat movie/show objects)
     - Watchlist/Collection: [{movie: {...}, listed_at: ...}, ...]
     - Lists: [{type: 'movie', movie: {...}}, ...]
     """
@@ -4258,7 +4258,7 @@ def _channel_play_item(player, stream_url, label, art=None):
         timeout -= 1
     
     if not player.isPlaying():
-        return 'next' # Failed to start, skip to next
+        return 'next'  # Failed to start, skip to next
     
     user_stopped = _channel_wait_for_playback(player)
     xbmc.sleep(500)
