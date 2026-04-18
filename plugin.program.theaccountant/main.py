@@ -151,6 +151,7 @@ def auth_menu():
         ("Sync All to Addons", "sync_all", "sync.png"),
         ("Auto-Sync Settings", "auto_sync", "sync.png"),
         ("Sync Map Manager", "sync_map_mgr", "sync.png"),
+        ("Vault QR Transfer", "vault_qr", "usb.png"),
         ("Back to Main Menu", "main", "restore.png")
     ]
     for label, act, icon in items:
@@ -318,6 +319,129 @@ def toggle_auto_sync():
         vault['last_auto_sync'] = int(time.time())
         save_vault(vault)
         notify('Auto-Sync', f'Synced {len(count)} addon(s)')
+
+
+def vault_qr_menu():
+    """Vault QR Export / Import - migrate vault to another Kodi device."""
+    dialog = xbmcgui.Dialog()
+    choice = dialog.select('Vault QR Transfer', [
+        'Export vault (upload + show QR)',
+        'Import vault (from URL + passphrase)',
+        'How it works'
+    ])
+    if choice == 0:
+        vault_qr_export()
+    elif choice == 1:
+        vault_qr_import()
+    elif choice == 2:
+        dialog.ok(
+            'Vault QR Transfer',
+            'Moving to a new Kodi device? Export your vault here.',
+            '1. Choose a passphrase - you\'ll need it on the new device.',
+            '2. Vault is encrypted locally (HMAC-SHA256 + PBKDF2) and uploaded to Litterbox (72h retention).',
+            '3. A QR code is shown. Scan it with your phone to get the URL.',
+            '4. On the new Kodi device: Accountant > Auth > Vault QR Transfer > Import. Paste the URL and enter the same passphrase.'
+        )
+
+
+def vault_qr_export():
+    dialog = xbmcgui.Dialog()
+    vault = load_vault()
+    if not vault:
+        dialog.ok('Vault Empty', 'Nothing to export. Pair at least one service first.')
+        return
+    passphrase = dialog.input('Enter passphrase (remember this!)', type=xbmcgui.INPUT_ALPHANUM)
+    if not passphrase or len(passphrase) < 4:
+        dialog.ok('Cancelled', 'Passphrase must be at least 4 characters')
+        return
+    confirm = dialog.input('Confirm passphrase', type=xbmcgui.INPUT_ALPHANUM)
+    if confirm != passphrase:
+        dialog.ok('Mismatch', 'Passphrases do not match')
+        return
+
+    retention_idx = dialog.select('Retention (how long the URL stays live)', [
+        '1 hour', '12 hours', '24 hours', '72 hours (recommended)'
+    ])
+    retention = {0: '1h', 1: '12h', 2: '24h', 3: '72h'}.get(retention_idx, '72h')
+
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create('Vault QR Export', 'Encrypting vault...')
+    try:
+        from resources.lib import vault_transfer as vt
+        pDialog.update(30, 'Uploading encrypted blob...')
+        url = vt.export_vault(vault, passphrase, retention=retention)
+        pDialog.update(70, 'Generating QR code...')
+
+        # Download QR PNG to temp and show it
+        qr_img_url = vt.qr_image_url(url, size=500)
+        qr_file = os.path.join(KODI_TEMP, 'vault_qr.png')
+        try:
+            import ssl
+            ctx = ssl._create_unverified_context()
+            req = urllib.request.Request(qr_img_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
+                with open(qr_file, 'wb') as f:
+                    f.write(resp.read())
+        except Exception as e:
+            xbmc.log(f'[Accountant] QR fetch failed: {e}', xbmc.LOGWARNING)
+            qr_file = None
+
+        pDialog.close()
+
+        if qr_file and os.path.exists(qr_file):
+            xbmc.executebuiltin(f'ShowPicture({qr_file})')
+            xbmc.sleep(500)
+
+        dialog.ok(
+            'Vault Exported',
+            f'URL (retention {retention}):',
+            url,
+            'Scan the QR on your phone, or note the URL.',
+            'On the new device: Accountant > Auth > Vault QR Transfer > Import. Use the SAME passphrase.'
+        )
+    except Exception as e:
+        pDialog.close()
+        xbmc.log(f'[Accountant] Vault export failed: {e}', xbmc.LOGERROR)
+        dialog.ok('Export Failed', str(e))
+
+
+def vault_qr_import():
+    dialog = xbmcgui.Dialog()
+    url = dialog.input('Paste the Vault URL')
+    if not url or not url.strip().startswith('http'):
+        return
+    passphrase = dialog.input('Enter passphrase', type=xbmcgui.INPUT_ALPHANUM)
+    if not passphrase:
+        return
+
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create('Vault QR Import', 'Downloading + decrypting...')
+    try:
+        from resources.lib import vault_transfer as vt
+        new_vault = vt.import_vault(url.strip(), passphrase)
+        pDialog.close()
+    except Exception as e:
+        pDialog.close()
+        dialog.ok('Import Failed', str(e))
+        return
+
+    if not isinstance(new_vault, dict):
+        dialog.ok('Import Failed', 'Decrypted data is not a valid vault')
+        return
+
+    keys = sorted(new_vault.keys())
+    if not dialog.yesno(
+        'Confirm Import',
+        f'Restored vault has {len(keys)} keys:',
+        ', '.join(keys[:10]) + ('...' if len(keys) > 10 else ''),
+        'This will OVERWRITE your current vault. Continue?'
+    ):
+        return
+
+    if save_vault(new_vault):
+        dialog.ok('Imported', f'Vault restored with {len(keys)} keys.', 'Run "Sync All to Addons" next.')
+    else:
+        dialog.ok('Save Failed', 'Could not persist vault to disk')
 
 
 def sync_map_manager():
@@ -1299,6 +1423,8 @@ if __name__ == '__main__':
         toggle_auto_sync()
     elif action == 'sync_map_mgr':
         sync_map_manager()
+    elif action == 'vault_qr':
+        vault_qr_menu()
     elif action == 'account_cards':
         show_account_cards()
     elif action == 'iptv':

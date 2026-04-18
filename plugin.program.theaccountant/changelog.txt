@@ -1,3 +1,27 @@
+v4.3.0 (2026-02-XX) - VAULT QR TRANSFER
+========================================
+NEW - ONE-SCAN DEVICE MIGRATION:
+- Export: compress + encrypt your vault locally, upload the
+  encrypted blob to Litterbox (1h / 12h / 24h / 72h retention),
+  show a QR code pointing to the download URL.
+- Import on new Kodi device: scan the QR with your phone, paste
+  the URL into Accountant, enter the passphrase - done.
+- Crypto: PBKDF2-SHA256 key derivation (120k iterations) +
+  HMAC-SHA256 counter-mode stream cipher + authentication tag.
+  Uses only Python stdlib - no external deps required.
+- Wrong passphrase or tampered payload is detected and rejected
+  before any data is touched.
+
+NEW FILE:
+- resources/lib/vault_transfer.py
+
+NEW MENU ITEM:
+- Auth > Vault QR Transfer
+    - Export vault (upload + show QR)
+    - Import vault (from URL + passphrase)
+    - How it works
+
+
 v4.2.0 (2026-02-XX) - AUTO-SYNC + EDITABLE SYNC MAP
 ====================================================
 NEW - DAILY AUTO-SYNC ON STARTUP:
