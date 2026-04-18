@@ -101,18 +101,22 @@ class BonesScraper(BaseScraper):
         _bones_cache_time = time.time()
         return movies
 
-    def search(self, video_type, title, year, season='', episode=''):
-        if video_type != 'movie':
+    def search(self, query, media_type='movie', **kwargs):
+        """Search Bones catalog. Called by framework as search(query, media_type, tmdb_id=, title=, year=, season=, episode=)"""
+        if media_type not in ('movie', 'movies'):
             return []
 
+        title = kwargs.get('title', query)
+        year = kwargs.get('year', '')
+
         catalog = self._fetch_catalog()
-        query = title.lower().strip()
-        query_no_year = re.sub(r'\s*\(?\d{4}\)?\s*$', '', query).strip()
+        search_term = title.lower().strip() if title else query.lower().strip()
+        search_term = re.sub(r'\s*\(?\d{4}\)?\s*$', '', search_term).strip()
 
         results = []
         for movie in catalog:
             mtitle = movie['title'].lower()
-            if query_no_year in mtitle or mtitle in query_no_year:
+            if search_term in mtitle or mtitle in search_term:
                 quality = '720p'
                 url_lower = movie['stream_url'].lower()
                 if '1080p' in url_lower:

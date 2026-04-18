@@ -194,11 +194,20 @@ class RealDebrid:
  CLIENT_ID = 'X245A4XAIBGVM'
  
  def __init__(self):
- self.token = ADDON.getSetting('realdebrid_token')
- self.refresh_token = ADDON.getSetting('realdebrid_refresh')
- self.client_id = ADDON.getSetting('realdebrid_client_id') or self.CLIENT_ID
- self.client_secret = ADDON.getSetting('realdebrid_client_secret') or ''
- self.expires = float(ADDON.getSetting('realdebrid_expires') or 0)
+ self.token = ADDON.getSetting('realdebrid_token') or ''
+ self.refresh_token = ADDON.getSetting('realdebrid_refresh') or ''
+ try:
+  self.client_id = ADDON.getSetting('realdebrid_client_id') or self.CLIENT_ID
+ except:
+  self.client_id = self.CLIENT_ID
+ try:
+  self.client_secret = ADDON.getSetting('realdebrid_client_secret') or ''
+ except:
+  self.client_secret = ''
+ try:
+  self.expires = float(ADDON.getSetting('realdebrid_expires') or 0)
+ except:
+  self.expires = 0
  
  def _auth_headers(self):
  return {'Authorization': f'Bearer {self.token}'}
