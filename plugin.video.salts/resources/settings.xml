@@ -29,6 +29,8 @@
         <setting id="realdebrid_enabled" type="bool" label="Enable Real-Debrid" default="false"/>
         <setting id="realdebrid_token" type="text" label="Access Token" default="" visible="false"/>
         <setting id="realdebrid_refresh" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="realdebrid_client_id" type="text" label="Client ID" default="" visible="false"/>
+        <setting id="realdebrid_client_secret" type="text" label="Client Secret" default="" visible="false"/>
         <setting id="realdebrid_expires" type="text" label="Expires" default="0" visible="false"/>
         <setting type="lsep" label="Premiumize"/>
         <setting id="premiumize_enabled" type="bool" label="Enable Premiumize" default="false"/>

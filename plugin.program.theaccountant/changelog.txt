@@ -1,3 +1,9 @@
+v4.0.2 (2026-04-18) - REFRESH WIDGETS + ACCOUNT CARDS IN MAIN MENU
+======================================================
+- NEW: Refresh Widgets button in main menu (refreshes all containers and skin)
+- NEW: View Account Cards button in main menu for quick access
+- Moved account cards and refresh to top-level menu
+
 v4.0.1 (2026-04-18) - EXPIRY WARNINGS
 ======================================
 - NEW: Background service checks debrid accounts on Kodi startup

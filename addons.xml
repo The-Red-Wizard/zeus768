@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
 
-<addon id="plugin.program.theaccountant" name="The Accountant" version="4.0.1" provider-name="zeus768">
+<addon id="plugin.program.theaccountant" name="The Accountant" version="4.0.2" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -39,7 +39,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.8.4" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.8.5" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>

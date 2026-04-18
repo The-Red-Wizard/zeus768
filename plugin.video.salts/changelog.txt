@@ -2,7 +2,7 @@ SALTS - Stream All The Sources
 Changelog
 =========
 
-v2.8.4 (2026-04-18) - BONES SCRAPER + CUSTOM RESOLVERS + SETTINGS FIX
+v2.8.5 (2026-04-18) - BONES SCRAPER + CUSTOM RESOLVERS + SETTINGS FIX + RD AUTH FIX
 ====================================================
 NEW SCRAPER:
 - Added: Bones - Direct stream links provider
@@ -12,6 +12,10 @@ NEW SCRAPER:
   * Automatic catalog sync with poster art and metadata
   * Dual mirror support (Streamtape + LuluVid)
   * Always enabled, highest priority for instant playback
+
+RD AUTH FIX:
+- Added missing realdebrid_client_id and realdebrid_client_secret to settings.xml
+- Fixes RD device code auth failing to save credentials
 
 SETTINGS FIX:
 - Restructured settings.xml for TV remote/D-pad navigation
@@ -33,6 +37,10 @@ NEW SCRAPER:
   * Custom resolvers for Streamtape and LuluVid - no ResolveURL dependency
   * HLS/m3u8 stream extraction with P.A.C.K.E.R JS unpacker
   * Always enabled, highest priority for instant playback
+
+RD AUTH FIX:
+- Added missing realdebrid_client_id and realdebrid_client_secret to settings.xml
+- Fixes RD device code auth failing to save credentials
 
 SETTINGS FIX:
 - Restructured settings.xml for TV remote/D-pad navigation

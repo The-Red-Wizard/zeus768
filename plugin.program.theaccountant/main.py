@@ -1106,12 +1106,31 @@ def check_auto_clean_on_startup():
 # ============================================
 # MAIN MENU
 # ============================================
+
+def refresh_widgets():
+    """Force refresh all Kodi widgets and containers"""
+    try:
+        xbmc.executebuiltin('UpdateLibrary(video)')
+        xbmc.sleep(500)
+        xbmc.executebuiltin('UpdateLibrary(music)')
+        xbmc.sleep(500)
+        xbmc.executebuiltin('Container.Refresh')
+        xbmc.sleep(500)
+        xbmc.executebuiltin('ReloadSkin()')
+        notify("Widgets Refreshed", "All widgets and containers updated")
+    except Exception as e:
+        xbmc.log(f'[Accountant] Widget refresh error: {e}', xbmc.LOGERROR)
+        notify("Error", f"Refresh failed: {e}")
+
+
 def main_menu():
     """Main menu display"""
     items = [
         ("ONE-CLICK SPEED OPTIMIZER", "speed", "speed.png"),
         ("SCHEDULED AUTO-CLEAN", "autoclean", "autoclean.png"),
         ("Pair RD / Trakt / Auth / PM / AD / TMDB", "auth", "auth.png"),
+        ("VIEW ACCOUNT CARDS", "account_cards", "auth.png"),
+        ("REFRESH WIDGETS", "refresh_widgets", "refresh.png"),
         ("IPTV Login Vault", "iptv", "iptv.png"),
         ("Favourites Vault", "favs", "favs.png"),
         ("USB BACKUP TOOL", "usb", "usb.png"),
@@ -1210,5 +1229,9 @@ if __name__ == '__main__':
             xbmc.executebuiltin('Action(Back)')
         except:
             pass
+    elif action == 'refresh_widgets':
+        refresh_widgets()
+    elif action == 'account_cards':
+        show_account_cards()
     elif action == 'main':
         main_menu()
