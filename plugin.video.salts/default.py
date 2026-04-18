@@ -2343,17 +2343,30 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
  stream_url = url
  log_utils.log(f'Direct stream URL: {stream_url}', xbmc.LOGINFO)
  else:
- try:
- import resolveurl
- progress = xbmcgui.DialogProgress()
- progress.create('SALTS', 'Resolving link...')
- stream_url = resolveurl.resolve(url)
- progress.close()
- if stream_url:
- log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
- except Exception as e:
- log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
- stream_url = url # Fallback to raw URL
+ # Try Bones custom resolver (Streamtape, LuluVid) before ResolveURL
+ if any(host in url.lower() for host in ['streamtape.com', 'luluvid.com', 'luluvdo.com']):
+  try:
+   from scrapers.bones_resolver import resolve as bones_resolve
+   progress = xbmcgui.DialogProgress()
+   progress.create('SALTS', 'Resolving Bones link...')
+   stream_url = bones_resolve(url)
+   progress.close()
+   if stream_url:
+    log_utils.log(f'Resolved via Bones resolver: {stream_url}', xbmc.LOGINFO)
+  except Exception as e:
+   log_utils.log(f'Bones resolver error: {e}', xbmc.LOGWARNING)
+ if not stream_url:
+  try:
+   import resolveurl
+   progress = xbmcgui.DialogProgress()
+   progress.create('SALTS', 'Resolving link...')
+   stream_url = resolveurl.resolve(url)
+   progress.close()
+   if stream_url:
+    log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
+  except Exception as e:
+   log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
+   stream_url = url # Fallback to raw URL
  
  if not stream_url:
  xbmcgui.Dialog().notification(ADDON_NAME, 'Could not resolve source', ADDON_ICON)

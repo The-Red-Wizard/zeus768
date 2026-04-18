@@ -2,13 +2,15 @@ SALTS - Stream All The Sources
 Changelog
 =========
 
-v2.8.1 (2026-04-17) - BONES SCRAPER + SETTINGS FIX
+v2.8.4 (2026-04-17) - BONES SCRAPER + CUSTOM RESOLVERS + SETTINGS FIX
 ====================================================
 NEW SCRAPER:
 - Added: Bones - Direct stream links provider
   * Pre-resolved streaming links - no debrid required
   * Automatic catalog sync with poster art and metadata
   * Dual mirror support (Streamtape + LuluVid)
+  * Custom resolvers for Streamtape and LuluVid - no ResolveURL dependency
+  * HLS/m3u8 stream extraction with P.A.C.K.E.R JS unpacker
   * Always enabled, highest priority for instant playback
 
 SETTINGS FIX:
