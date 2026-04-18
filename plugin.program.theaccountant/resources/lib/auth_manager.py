@@ -2,8 +2,8 @@
 The Accountant - Debrid & Trakt Device Code Auth + Account Info
 All auth uses on-screen codes for TV remote friendly operation.
 """
-import xbmc, xbmcgui, xbmcaddon
-import json, time
+import xbmc, xbmcgui, xbmcaddon, xbmcvfs
+import json, time, os, shutil
 
 try:
     import requests
@@ -362,8 +362,14 @@ def get_trakt_account_info(token):
         return None
 
 
-# Addon sync mappings - comprehensive list of known Kodi addons
-ADDON_SYNC_MAP = {
+# Addon sync mappings - comprehensive list of known Kodi addons.
+#
+# This dict is the LEGACY/FALLBACK source. At runtime we prefer the JSON file
+# at special://profile/addon_data/plugin.program.theaccountant/sync_map.json
+# (copied from resources/data/sync_map.json on first run). Users can edit the
+# JSON to add custom addons without touching Python. Use load_sync_map() to
+# get the active mapping.
+_LEGACY_SYNC_MAP = {
     # ===== ZEUS768 REPO ADDONS =====
     'plugin.video.genesis': {
         'rd': [('rd_access_token', 'rd_token'), ('rd_refresh_token', 'rd_refresh')],
@@ -550,23 +556,96 @@ ADDON_SYNC_MAP = {
 }
 
 
-def sync_to_all_addons(vault):
+# ------------------------------------------------------------------
+# Sync map loader - prefers user-editable JSON, falls back to legacy dict.
+# ------------------------------------------------------------------
+_PROFILE_DIR = xbmcvfs.translatePath('special://profile/addon_data/plugin.program.theaccountant/')
+_USER_SYNC_MAP = os.path.join(_PROFILE_DIR, 'sync_map.json')
+_BUNDLED_SYNC_MAP = os.path.join(
+    xbmcvfs.translatePath(ADDON.getAddonInfo('path')),
+    'resources', 'data', 'sync_map.json'
+)
+
+
+def _ensure_user_sync_map():
+    """Copy the bundled sync_map.json to the user profile if missing."""
+    try:
+        if not os.path.isfile(_USER_SYNC_MAP) and os.path.isfile(_BUNDLED_SYNC_MAP):
+            os.makedirs(_PROFILE_DIR, exist_ok=True)
+            shutil.copy2(_BUNDLED_SYNC_MAP, _USER_SYNC_MAP)
+    except Exception as e:
+        xbmc.log(f'[Accountant] ensure_user_sync_map failed: {e}', xbmc.LOGDEBUG)
+
+
+def load_sync_map():
+    """Return the active addon->settings mapping.
+
+    Priority:
+      1. User-editable JSON at special://profile/.../sync_map.json
+      2. Bundled JSON at resources/data/sync_map.json
+      3. Legacy Python dict (safety net)
+    """
+    _ensure_user_sync_map()
+    for path in (_USER_SYNC_MAP, _BUNDLED_SYNC_MAP):
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            addons = data.get('addons', data) if isinstance(data, dict) else {}
+            if addons:
+                return addons
+        except Exception as e:
+            xbmc.log(f'[Accountant] sync_map load failed ({path}): {e}', xbmc.LOGWARNING)
+    return _LEGACY_SYNC_MAP
+
+
+def reset_user_sync_map():
+    """Overwrite the user sync_map.json with the bundled defaults."""
+    try:
+        os.makedirs(_PROFILE_DIR, exist_ok=True)
+        shutil.copy2(_BUNDLED_SYNC_MAP, _USER_SYNC_MAP)
+        return True
+    except Exception as e:
+        xbmc.log(f'[Accountant] reset_user_sync_map failed: {e}', xbmc.LOGERROR)
+        return False
+
+
+def get_user_sync_map_path():
+    """Expose the user-editable JSON path for UI / external editors."""
+    _ensure_user_sync_map()
+    return _USER_SYNC_MAP
+
+
+# Backwards compatibility: keep a module-level ADDON_SYNC_MAP attribute that
+# reflects the current on-disk JSON so existing callers keep working.
+ADDON_SYNC_MAP = load_sync_map()
+
+
+def sync_to_all_addons(vault, silent=False):
     """Sync vault credentials to all detected addons.
 
     Two-phase sync:
-      1. Hardcoded ADDON_SYNC_MAP (exact keys for known addons)
+      1. Map-driven sync (JSON or legacy dict, exact keys per addon)
       2. Dynamic scan of all installed addons (pattern-matched keys)
+
+    If silent=True no progress dialog or final popup is shown (used by the
+    background service's daily auto-sync).
     """
-    dialog = xbmcgui.DialogProgress()
-    dialog.create('The Accountant', 'Detecting installed addons...')
+    sync_map = load_sync_map()
+    dialog = None
+    if not silent:
+        dialog = xbmcgui.DialogProgress()
+        dialog.create('The Accountant', 'Detecting installed addons...')
 
     synced = []
     not_installed = []
-    total = len(ADDON_SYNC_MAP)
+    total = max(1, len(sync_map))
 
-    # Phase 1: hardcoded map
-    for i, (addon_id, mapping) in enumerate(ADDON_SYNC_MAP.items()):
-        dialog.update(int((i / total) * 50), f'Syncing {addon_id}...')
+    # Phase 1: map-driven
+    for i, (addon_id, mapping) in enumerate(sync_map.items()):
+        if dialog is not None:
+            dialog.update(int((i / total) * 50), f'Syncing {addon_id}...')
         try:
             target = xbmcaddon.Addon(addon_id)
             addon_synced = False
@@ -578,24 +657,30 @@ def sync_to_all_addons(vault):
                         addon_synced = True
             if addon_synced:
                 synced.append(addon_id.split('.')[-1])
-        except:
+        except Exception:
             not_installed.append(addon_id.split('.')[-1])
 
-    # Phase 2: dynamic scanner - catches addons we don't have hardcoded
-    dialog.update(50, 'Scanning remaining installed addons...')
+    # Phase 2: dynamic scanner - catches addons we don't have in the map
+    if dialog is not None:
+        dialog.update(50, 'Scanning remaining installed addons...')
     extra_synced = []
     try:
         from resources.lib.dynamic_sync import sync_dynamic
         extra_ids, _details = sync_dynamic(
             vault,
             progress_dialog=dialog,
-            skip_addon_ids=set(ADDON_SYNC_MAP.keys())
+            skip_addon_ids=set(sync_map.keys())
         )
         extra_synced = [a.split('.')[-1] for a in extra_ids]
     except Exception as e:
         xbmc.log(f'[Accountant] Dynamic scan failed: {e}', xbmc.LOGERROR)
 
-    dialog.close()
+    if dialog is not None:
+        dialog.close()
+
+    if silent:
+        xbmc.log(f'[Accountant] Silent sync done. Known={len(synced)} Dynamic={len(extra_synced)}', xbmc.LOGINFO)
+        return synced + extra_synced
 
     msg = ''
     if synced:

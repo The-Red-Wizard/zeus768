@@ -1,3 +1,38 @@
+v4.2.0 (2026-02-XX) - AUTO-SYNC + EDITABLE SYNC MAP
+====================================================
+NEW - DAILY AUTO-SYNC ON STARTUP:
+- Background service now runs a silent credential sync once
+  every 24 hours, on top of the existing expiry checks
+- Silently pushes vault creds to every installed addon
+  (map-driven + dynamic scanner) with no dialogs
+- Shows a single compact notification when done
+- New "Auto-Sync Settings" menu (under Auth):
+    - Enable / Disable daily auto-sync
+    - Run auto-sync now
+    - See last sync timestamp
+- Controlled by vault flag 'auto_sync_enabled' (default on)
+- Honors 'last_auto_sync' throttle stored in vault
+
+NEW - USER-EDITABLE SYNC MAP:
+- ADDON_SYNC_MAP is now stored as JSON
+- Default bundled at: resources/data/sync_map.json
+- User copy at: special://profile/addon_data/
+                  plugin.program.theaccountant/sync_map.json
+- Auto-copied on first run, never overwritten unless user resets
+- New "Sync Map Manager" menu (under Auth):
+    - View current mappings
+    - Reload after external edit (no Kodi restart needed)
+    - Reset to bundled defaults
+    - Help dialog with supported service/vault keys
+- Python ADDON_SYNC_MAP is kept as a legacy fallback only
+
+REFACTORING:
+- auth_manager.sync_to_all_addons() now takes silent=True for
+  background use (suppresses progress dialogs and popups)
+- service.py refactored: unified loop tick (1h) with internal
+  throttling, shared vault load/save helpers
+
+
 v4.1.0 (2026-02-XX) - DYNAMIC ADDON SCANNER + CHAINS SUPPORT
 =============================================================
 NEW - DYNAMIC AUTH SCANNER (Zero-hardcode future-proofing):

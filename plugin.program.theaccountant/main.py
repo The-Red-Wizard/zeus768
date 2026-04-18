@@ -149,6 +149,8 @@ def auth_menu():
         ("--- Sync ---", "spacer", ""),
         ("Preview Addon Scan", "preview_scan", "sync.png"),
         ("Sync All to Addons", "sync_all", "sync.png"),
+        ("Auto-Sync Settings", "auto_sync", "sync.png"),
+        ("Sync Map Manager", "sync_map_mgr", "sync.png"),
         ("Back to Main Menu", "main", "restore.png")
     ]
     for label, act, icon in items:
@@ -284,6 +286,87 @@ def preview_scan_addons():
     except Exception as e:
         summary = f'Scan failed: {e}'
     xbmcgui.Dialog().textviewer('Addon Scan Preview', summary)
+
+
+def toggle_auto_sync():
+    """Enable/disable daily silent auto-sync (runs via background service)."""
+    vault = load_vault()
+    dialog = xbmcgui.Dialog()
+    current = str(vault.get('auto_sync_enabled', 'true')).lower() not in ('0', 'false', 'no', 'off')
+    last = vault.get('last_auto_sync', 0)
+    last_str = time.strftime('%Y-%m-%d %H:%M', time.localtime(last)) if last else 'Never'
+
+    choice = dialog.select('Auto-Sync on Startup', [
+        f'Current: {"ENABLED" if current else "DISABLED"}',
+        f'Last auto-sync: {last_str}',
+        '---',
+        'Enable daily auto-sync',
+        'Disable auto-sync',
+        'Run auto-sync now'
+    ])
+    if choice == 3:
+        vault['auto_sync_enabled'] = 'true'
+        save_vault(vault)
+        notify('Auto-Sync', 'Enabled - runs once per day on startup')
+    elif choice == 4:
+        vault['auto_sync_enabled'] = 'false'
+        save_vault(vault)
+        notify('Auto-Sync', 'Disabled')
+    elif choice == 5:
+        from resources.lib.auth_manager import sync_to_all_addons
+        count = sync_to_all_addons(vault, silent=True)
+        vault['last_auto_sync'] = int(time.time())
+        save_vault(vault)
+        notify('Auto-Sync', f'Synced {len(count)} addon(s)')
+
+
+def sync_map_manager():
+    """Manage the user-editable sync map JSON."""
+    from resources.lib import auth_manager
+    dialog = xbmcgui.Dialog()
+    path = auth_manager.get_user_sync_map_path()
+    try:
+        data = auth_manager.load_sync_map()
+        count = len(data)
+    except Exception:
+        count = 0
+
+    choice = dialog.select('Sync Map Manager', [
+        f'Active mappings: {count} addon(s)',
+        f'File: {path}',
+        '---',
+        'View Sync Map',
+        'Reload Sync Map (after editing)',
+        'Reset to Defaults',
+        'How to edit (help)'
+    ])
+    if choice == 3:
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            dialog.textviewer('Sync Map (read-only preview)', content)
+        except Exception as e:
+            dialog.ok('Error', f'Could not read sync map: {e}')
+    elif choice == 4:
+        new_map = auth_manager.load_sync_map()
+        auth_manager.ADDON_SYNC_MAP = new_map
+        notify('Sync Map', f'Reloaded - {len(new_map)} addon(s)')
+    elif choice == 5:
+        if dialog.yesno('Reset Sync Map', 'Overwrite your sync_map.json with bundled defaults?\n\nAny custom addons you added will be lost.'):
+            if auth_manager.reset_user_sync_map():
+                auth_manager.ADDON_SYNC_MAP = auth_manager.load_sync_map()
+                notify('Sync Map', 'Reset to defaults')
+            else:
+                dialog.ok('Error', 'Reset failed - see kodi.log')
+    elif choice == 6:
+        dialog.ok(
+            'How to Edit Sync Map',
+            f'File location:\n{path}',
+            'Structure: {"addons": {"plugin.video.foo": {"rd": [["target_setting_id", "vault_key"]], ...}}}',
+            'Supported services: rd, pm, ad, tb, trakt, tmdb',
+            'Vault keys: rd_token, rd_refresh, rd_client_id, rd_client_secret, rd_expires, pm_token, ad_token, tb_token, trakt_token, trakt_refresh, trakt_expires, tmdb_api_key',
+            'After saving, use "Reload Sync Map" to apply without restarting Kodi.'
+        )
 
 
 def show_account_cards():
@@ -1212,6 +1295,10 @@ if __name__ == '__main__':
         sync_all_addons()
     elif action == 'preview_scan':
         preview_scan_addons()
+    elif action == 'auto_sync':
+        toggle_auto_sync()
+    elif action == 'sync_map_mgr':
+        sync_map_manager()
     elif action == 'account_cards':
         show_account_cards()
     elif action == 'iptv':
