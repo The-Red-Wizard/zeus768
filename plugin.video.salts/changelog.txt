@@ -5,7 +5,7 @@ Changelog
 v2.8.1 (2026-04-17) - BONES SCRAPER + SETTINGS FIX
 ====================================================
 NEW SCRAPER:
-- Added: Bones - Direct stream links provider (thechains24.com)
+- Added: Bones - Direct stream links provider
   * Pre-resolved streaming links - no debrid required
   * Automatic catalog sync with poster art and metadata
   * Dual mirror support (Streamtape + LuluVid)

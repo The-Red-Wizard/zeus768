@@ -1,6 +1,5 @@
 """
-Bones Scraper - Direct stream links from thechains24.com
-Provider: Bones
+Bones Scraper - Direct stream links provider
 """
 import re
 import xbmc
