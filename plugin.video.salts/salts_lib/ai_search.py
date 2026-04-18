@@ -33,76 +33,76 @@ Example response:
 
 
 def ai_search(query, media_filter='all'):
-    """Send natural language query to OpenAI via Emergent proxy, return list of recommendations.
-    
-    Args:
-        query: Natural language search query
-        media_filter: 'all', 'movie', or 'tv'
-        
-    Returns:
-        list of dicts with title, year, type, reason
-    """
-    api_key = ADDON.getSetting('ai_api_key')
-    if not api_key:
-        return []
-    
-    model_idx = int(ADDON.getSetting('ai_model') or 0)
-    model = AI_MODELS[model_idx] if model_idx < len(AI_MODELS) else 'gpt-4o-mini'
-    
-    # Add media filter to query
-    user_msg = query
-    if media_filter == 'movie':
-        user_msg += '\n\nOnly recommend movies, no TV shows.'
-    elif media_filter == 'tv':
-        user_msg += '\n\nOnly recommend TV shows, no movies.'
-    
-    payload = {
-        'model': model,
-        'messages': [
-            {'role': 'system', 'content': SYSTEM_PROMPT},
-            {'role': 'user', 'content': user_msg}
-        ],
-        'temperature': 0.7,
-        'max_tokens': 2000
-    }
-    
-    try:
-        data = json.dumps(payload).encode('utf-8')
-        req = Request(
-            API_ENDPOINT,
-            data=data,
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {api_key}',
-                'User-Agent': 'SALTS/2.4'
-            },
-            method='POST'
-        )
-        
-        with urlopen(req, context=SSL_CTX, timeout=30) as resp:
-            result = json.loads(resp.read().decode('utf-8'))
-        
-        content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
-        
-        # Parse JSON from response (handle markdown fences)
-        content = content.strip()
-        if content.startswith('```'):
-            content = content.split('\n', 1)[-1].rsplit('```', 1)[0]
-        
-        recommendations = json.loads(content)
-        
-        if isinstance(recommendations, list):
-            return recommendations
-        
-        return []
-        
-    except HTTPError as e:
-        error_body = e.read().decode('utf-8', errors='replace')
-        xbmc.log(f'AI Search HTTP error {e.code}: {error_body[:200]}', xbmc.LOGERROR)
-        return []
-    except json.JSONDecodeError as e:
-        xbmc.log(f'AI Search JSON parse error: {e}', xbmc.LOGERROR)
-        return []
-    except Exception as e:
-        xbmc.log(f'AI Search error: {e}', xbmc.LOGERROR)
-        return []
+ """Send natural language query to OpenAI via Emergent proxy, return list of recommendations.
+ 
+ Args:
+ query: Natural language search query
+ media_filter: 'all', 'movie', or 'tv'
+ 
+ Returns:
+ list of dicts with title, year, type, reason
+ """
+ api_key = ADDON.getSetting('ai_api_key')
+ if not api_key:
+ return []
+ 
+ model_idx = int(ADDON.getSetting('ai_model') or 0)
+ model = AI_MODELS[model_idx] if model_idx < len(AI_MODELS) else 'gpt-4o-mini'
+ 
+ # Add media filter to query
+ user_msg = query
+ if media_filter == 'movie':
+ user_msg += '\n\nOnly recommend movies, no TV shows.'
+ elif media_filter == 'tv':
+ user_msg += '\n\nOnly recommend TV shows, no movies.'
+ 
+ payload = {
+ 'model': model,
+ 'messages': [
+ {'role': 'system', 'content': SYSTEM_PROMPT},
+ {'role': 'user', 'content': user_msg}
+ ],
+ 'temperature': 0.7,
+ 'max_tokens': 2000
+ }
+ 
+ try:
+ data = json.dumps(payload).encode('utf-8')
+ req = Request(
+ API_ENDPOINT,
+ data=data,
+ headers={
+ 'Content-Type': 'application/json',
+ 'Authorization': f'Bearer {api_key}',
+ 'User-Agent': 'SALTS/2.4'
+ },
+ method='POST'
+ )
+ 
+ with urlopen(req, context=SSL_CTX, timeout=30) as resp:
+ result = json.loads(resp.read().decode('utf-8'))
+ 
+ content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+ 
+ # Parse JSON from response (handle markdown fences)
+ content = content.strip()
+ if content.startswith('```'):
+ content = content.split('\n', 1)[-1].rsplit('```', 1)[0]
+ 
+ recommendations = json.loads(content)
+ 
+ if isinstance(recommendations, list):
+ return recommendations
+ 
+ return []
+ 
+ except HTTPError as e:
+ error_body = e.read().decode('utf-8', errors='replace')
+ xbmc.log(f'AI Search HTTP error {e.code}: {error_body[:200]}', xbmc.LOGERROR)
+ return []
+ except json.JSONDecodeError as e:
+ xbmc.log(f'AI Search JSON parse error: {e}', xbmc.LOGERROR)
+ return []
+ except Exception as e:
+ xbmc.log(f'AI Search error: {e}', xbmc.LOGERROR)
+ return []
