@@ -2,6 +2,15 @@ SALTS - Stream All The Sources
 Changelog
 =========
 
+v2.8.7 (2026-04-18) - BONES FIX + RD SETTINGS HARDENED
+========================================================
+- FIXED: BonesScraper.search() signature mismatch with framework
+  * Was receiving wrong positional args, now uses (query, media_type, **kwargs)
+  * Bones results will now appear in source list when searching
+- FIXED: Real-Debrid settings hardened with try/except fallbacks
+  * realdebrid_client_id, client_secret, expires all have safe defaults
+  * No more crashes on fresh installs missing these settings
+
 v2.8.6 (2026-04-18) - CRITICAL FIX
 ====================================
 - FIXED: IndentationError in default.py that prevented SALTS from loading
