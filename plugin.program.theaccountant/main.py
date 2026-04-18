@@ -141,6 +141,7 @@ def auth_menu():
         ("Real-Debrid (Device Code)", "auth_rd", "rd.png"),
         ("Premiumize (API Key)", "auth_pm", "pm.png"),
         ("AllDebrid (PIN Code)", "auth_ad", "ad.png"),
+        ("TorBox (API Key)", "auth_tb", "rd.png"),
         ("Trakt (Device Code)", "auth_trakt", "trakt.png"),
         ("TMDB API Key Setup", "auth_tmdb", "tmdb.png"),
         ("--- Account Info ---", "spacer", ""),
@@ -210,6 +211,12 @@ def auth_trakt():
     from resources.lib.auth_manager import auth_trakt_device
     vault = load_vault()
     auth_trakt_device(vault, save_vault)
+
+def auth_torbox():
+    """TorBox API key auth"""
+    from resources.lib.auth_manager import auth_tb_apikey
+    vault = load_vault()
+    auth_tb_apikey(vault, save_vault)
 
 def auth_tmdb():
     """TMDB API setup"""
@@ -1186,6 +1193,8 @@ if __name__ == '__main__':
         auth_alldebrid()
     elif action == 'auth_trakt':
         auth_trakt()
+    elif action == 'auth_tb':
+        auth_torbox()
     elif action == 'auth_tmdb':
         auth_tmdb()
     elif action == 'sync_all':

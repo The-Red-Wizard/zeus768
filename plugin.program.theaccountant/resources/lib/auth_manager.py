@@ -183,6 +183,27 @@ def auth_ad_pin(vault, save_fn):
         return False
 
 
+
+def auth_tb_apikey(vault, save_fn):
+    """TorBox API key auth"""
+    api_key = xbmcgui.Dialog().input('Enter TorBox API Key\n(Get from torbox.app/settings)', type=xbmcgui.INPUT_ALPHANUM)
+    if not api_key:
+        return False
+    try:
+        resp = requests.get('https://api.torbox.app/v1/api/user/me', headers={'Authorization': f'Bearer {api_key}'}, timeout=10)
+        data = resp.json()
+        if data.get('success'):
+            vault['tb_token'] = api_key
+            save_fn(vault)
+            xbmcgui.Dialog().notification('The Accountant', 'TorBox Authorized!', xbmcgui.NOTIFICATION_INFO, 3000)
+            return True
+        else:
+            xbmcgui.Dialog().ok('Failed', f"Invalid key: {data.get('detail', 'Unknown error')}")
+    except Exception as e:
+        xbmcgui.Dialog().notification('The Accountant', f'TB Error: {e}', xbmcgui.NOTIFICATION_ERROR)
+    return False
+
+
 def auth_trakt_device(vault, save_fn):
     """Trakt device code auth - shows code on screen"""
     try:
@@ -343,41 +364,91 @@ def get_trakt_account_info(token):
 
 # Addon sync mappings - comprehensive list of known Kodi addons
 ADDON_SYNC_MAP = {
-    'plugin.video.umbrella': {
+    # ===== ZEUS768 REPO ADDONS =====
+    'plugin.video.genesis': {
+        'rd': [('rd_access_token', 'rd_token'), ('rd_refresh_token', 'rd_refresh')],
+        'pm': [('pm_access_token', 'pm_token')],
+        'ad': [('ad_api_key', 'ad_token')],
+        'tb': [('tb_api_key', 'tb_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh'), ('trakt_expires', 'trakt_expires')]
+    },
+    'plugin.video.orion': {
+        'rd': [('rd_token', 'rd_token'), ('rd_refresh', 'rd_refresh')],
+        'pm': [('pm_token', 'pm_token')],
+        'ad': [('ad_token', 'ad_token')],
+        'tb': [('tb_token', 'tb_token')],
+        'trakt': [('trakt_token', 'trakt_token'), ('trakt_refresh', 'trakt_refresh')]
+    },
+    'plugin.video.salts': {
+        'rd': [('realdebrid_token', 'rd_token'), ('realdebrid_refresh', 'rd_refresh'),
+               ('realdebrid_client_id', 'rd_client_id'), ('realdebrid_client_secret', 'rd_client_secret'),
+               ('realdebrid_expires', 'rd_expires')],
+        'pm': [('premiumize_token', 'pm_token')],
+        'ad': [('alldebrid_token', 'ad_token')],
+        'tb': [('torbox_token', 'tb_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh')]
+    },
+    'plugin.video.tinklepad': {
+        'rd': [('rd.token', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('pm.token', 'pm_token')],
+        'ad': [('ad.token', 'ad_token')]
+    },
+    'plugin.video.trakt_player': {
+        'rd': [('rd_access_token', 'rd_token'), ('rd_refresh_token', 'rd_refresh'),
+               ('rd_client_id', 'rd_client_id'), ('rd_client_secret', 'rd_client_secret'),
+               ('rd_expires', 'rd_expires')],
+        'pm': [('pm_access_token', 'pm_token')],
+        'ad': [('ad_api_key', 'ad_token')],
+        'tb': [('tb_api_key', 'tb_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh'),
+                  ('trakt_expires', 'trakt_expires')]
+    },
+    'plugin.video.syncher': {
         'rd': [('realdebrid.token', 'rd_token')],
         'pm': [('premiumize.token', 'pm_token')],
         'ad': [('alldebrid.token', 'ad_token')],
-        'trakt': [('trakt.access_token', 'trakt_token'), ('trakt.refresh_token', 'trakt_refresh')]
+        'trakt': [('trakt.token', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
-    'plugin.video.salts': {
-        'rd': [('realdebrid_token', 'rd_token')],
-        'pm': [('premiumize_token', 'pm_token')],
-        'ad': [('alldebrid_token', 'ad_token')],
-        'trakt': [('trakt_access_token', 'trakt_token')]
+    'plugin.video.poseidonplayer': {
+        'rd': [('rd_token', 'rd_token')],
+        'trakt': [('trakt_token', 'trakt_token')]
+    },
+    # ===== POPULAR THIRD-PARTY ADDONS =====
+    'plugin.video.umbrella': {
+        'rd': [('realdebrid.token', 'rd_token'), ('realdebrid.client_id', 'rd_client_id'),
+               ('realdebrid.secret', 'rd_client_secret'), ('realdebrid.refresh', 'rd_refresh')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt.token', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
     'plugin.video.fen': {
-        'rd': [('rd.token', 'rd_token')],
+        'rd': [('rd.token', 'rd_token'), ('rd.client_id', 'rd_client_id'),
+               ('rd.secret', 'rd_client_secret'), ('rd.refresh', 'rd_refresh')],
         'pm': [('pm.token', 'pm_token')],
         'ad': [('ad.token', 'ad_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
+        'trakt': [('trakt.token', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
     'plugin.video.fenlight': {
-        'rd': [('rd.token', 'rd_token')],
+        'rd': [('rd.token', 'rd_token'), ('rd.client_id', 'rd_client_id'),
+               ('rd.secret', 'rd_client_secret'), ('rd.refresh', 'rd_refresh')],
         'pm': [('pm.token', 'pm_token')],
         'ad': [('ad.token', 'ad_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
+        'trakt': [('trakt.token', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
     'plugin.video.fenlightam': {
-        'rd': [('rd.token', 'rd_token')],
+        'rd': [('rd.token', 'rd_token'), ('rd.client_id', 'rd_client_id'),
+               ('rd.secret', 'rd_client_secret'), ('rd.refresh', 'rd_refresh')],
         'pm': [('pm.token', 'pm_token')],
         'ad': [('ad.token', 'ad_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
+        'trakt': [('trakt.token', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
     'plugin.video.seren': {
-        'rd': [('rd.auth', 'rd_token'), ('rd.client_id', 'rd_client_id')],
+        'rd': [('rd.auth', 'rd_token'), ('rd.client_id', 'rd_client_id'),
+               ('rd.secret', 'rd_client_secret'), ('rd.refresh', 'rd_refresh')],
         'pm': [('premiumize.token', 'pm_token')],
         'ad': [('alldebrid.apikey', 'ad_token')],
-        'trakt': [('trakt.auth', 'trakt_token')]
+        'trakt': [('trakt.auth', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
     'plugin.video.thechain': {
         'rd': [('rd.token', 'rd_token'), ('realdebrid.token', 'rd_token')],
@@ -406,38 +477,13 @@ ADDON_SYNC_MAP = {
         'rd': [('realdebrid.token', 'rd_token')],
         'pm': [('premiumize.token', 'pm_token')]
     },
-    'plugin.video.trakt_player': {
-        'rd': [('realdebrid.token', 'rd_token')],
-        'pm': [('premiumize.token', 'pm_token')],
-        'ad': [('alldebrid.token', 'ad_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
-    },
-    'plugin.video.orion': {
-        'rd': [('realdebrid_token', 'rd_token')],
-        'pm': [('premiumize_token', 'pm_token')],
-        'ad': [('alldebrid_token', 'ad_token')],
-        'trakt': [('trakt_token', 'trakt_token')]
-    },
-    'plugin.video.genesis': {
-        'rd': [('realdebrid_token', 'rd_token')],
-        'pm': [('premiumize_token', 'pm_token')],
-        'ad': [('alldebrid_token', 'ad_token')],
-        'trakt': [('trakt_client_id', 'trakt_client_id'), ('trakt_client_secret', 'trakt_client_secret')]
-    },
-    'plugin.video.tinklepad': {
-        'rd': [('rd.token', 'rd_token')],
-        'pm': [('pm.token', 'pm_token')],
-        'ad': [('ad.token', 'ad_token')]
-    },
-    'plugin.video.syncher': {
-        'rd': [('realdebrid.token', 'rd_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
-    },
     'plugin.video.themoviedb.helper': {
         'tmdb': [('tmdb_api_key', 'tmdb_api_key')]
     },
+    # ===== RESOLVEURL (Critical for all addons) =====
     'script.module.resolveurl': {
-        'rd': [('RealDebridResolver_token', 'rd_token'), ('RealDebridResolver_client_id', 'rd_client_id')],
+        'rd': [('RealDebridResolver_token', 'rd_token'), ('RealDebridResolver_client_id', 'rd_client_id'),
+               ('RealDebridResolver_client_secret', 'rd_client_secret'), ('RealDebridResolver_refresh', 'rd_refresh')],
         'pm': [('PremiumizeMeResolver_token', 'pm_token')],
         'ad': [('AlldebridResolver_token', 'ad_token')]
     },
