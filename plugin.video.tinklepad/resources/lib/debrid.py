@@ -674,79 +674,52 @@ class DebridManager:
         return is_auth
     
     def pm_authorize(self):
-        """OAuth device code flow for Premiumize"""
+        """API key authorization for Premiumize - user enters their API key from premiumize.me/account"""
         try:
             xbmc.log('[Tinklepad] PM: Starting authorization...', xbmc.LOGINFO)
             
-            # Step 1: Get device code
-            response = requests.post(
-                'https://www.premiumize.me/token',
-                data={'grant_type': 'device_code', 'client_id': 'Tinklepad'},
-                timeout=15
+            # Ask user for API key
+            dialog = xbmcgui.Dialog()
+            api_key = dialog.input(
+                'Premiumize API Key',
+                defaultt='',
+                type=xbmcgui.INPUT_ALPHANUM
+            )
+            
+            if not api_key or len(api_key) < 5:
+                dialog.notification('Tinklepad', 'No API key entered', xbmcgui.NOTIFICATION_WARNING, 3000)
+                return False
+            
+            # Verify the key works
+            progress = xbmcgui.DialogProgress()
+            progress.create('Tinklepad', 'Verifying Premiumize API key...')
+            
+            response = requests.get(
+                f'{PM_BASE}/account/info',
+                params={'apikey': api_key},
+                timeout=10
             )
             data = response.json()
+            progress.close()
             
-            if 'device_code' not in data:
-                raise Exception('Failed to get device code')
-            
-            device_code = data['device_code']
-            user_code = data['user_code']
-            verification_uri = data['verification_uri']
-            interval = data.get('interval', 5)
-            expires_in = data.get('expires_in', 600)
-            
-            # Show user the code
-            dialog = xbmcgui.DialogProgress()
-            dialog.create(
-                'Premiumize Authorization',
-                f'Go to: [COLOR gold]{verification_uri}[/COLOR]\n\nEnter code: [COLOR gold]{user_code}[/COLOR]\n\nWaiting for authorization...'
-            )
-            
-            # Step 2: Poll for authorization
-            start_time = time.time()
-            while time.time() - start_time < expires_in:
-                if dialog.iscanceled():
-                    dialog.close()
-                    return False
+            if data.get('status') == 'success':
+                # Save token
+                self.set_token('pm.token', api_key)
                 
-                xbmc.sleep(interval * 1000)
+                customer_id = str(data.get('customer_id', 'Unknown'))
+                self.set_token('pm.username', customer_id)
                 
-                try:
-                    token_response = requests.post(
-                        'https://www.premiumize.me/token',
-                        data={
-                            'grant_type': 'device_code',
-                            'client_id': 'Tinklepad',
-                            'code': device_code
-                        },
-                        timeout=15
-                    )
-                    token_data = token_response.json()
-                    
-                    if 'access_token' in token_data:
-                        access_token = token_data['access_token']
-                        
-                        # Save token to file
-                        self.set_token('pm.token', access_token)
-                        
-                        # Get username
-                        username = self._pm_get_username(access_token)
-                        if username:
-                            self.set_token('pm.username', username)
-                        
-                        dialog.close()
-                        xbmcgui.Dialog().notification('Tinklepad', 'Premiumize Authorized!', xbmcgui.NOTIFICATION_INFO, 3000)
-                        xbmc.log('[Tinklepad] PM: Authorization successful!', xbmc.LOGINFO)
-                        return True
-                        
-                except Exception as e:
-                    xbmc.log(f'[Tinklepad] PM poll error: {e}', xbmc.LOGDEBUG)
-                    continue
-            
-            dialog.close()
-            xbmcgui.Dialog().notification('Tinklepad', 'Authorization timed out', xbmcgui.NOTIFICATION_ERROR, 3000)
-            return False
-            
+                premium_until = data.get('premium_until', 0)
+                
+                xbmcgui.Dialog().notification('Tinklepad', f'Premiumize Authorized! (ID: {customer_id})', xbmcgui.NOTIFICATION_INFO, 3000)
+                xbmc.log(f'[Tinklepad] PM: Authorization successful! Customer: {customer_id}', xbmc.LOGINFO)
+                return True
+            else:
+                msg = data.get('message', 'Invalid API key')
+                xbmcgui.Dialog().ok('Tinklepad', f'Premiumize authorization failed:\n{msg}\n\nGet your API key from premiumize.me/account')
+                xbmc.log(f'[Tinklepad] PM: Auth failed: {msg}', xbmc.LOGWARNING)
+                return False
+                
         except Exception as e:
             xbmc.log(f'[Tinklepad] PM auth error: {e}', xbmc.LOGERROR)
             xbmcgui.Dialog().notification('Tinklepad', f'Auth failed: {e}', xbmcgui.NOTIFICATION_ERROR, 3000)

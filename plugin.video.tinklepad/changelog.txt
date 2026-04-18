@@ -1,3 +1,10 @@
+v1.9.1 (2026-04-18)
+====================
+- FIXED: Premiumize authorization - replaced broken device code flow with API key method
+- Users now enter their API key directly from premiumize.me/account
+- Key is verified against Premiumize API before saving
+- Removed dependency on invalid OAuth client_id
+
 v1.9.0 (2026-04-12)
 ====================
 - NEW: Added EZTV.re scraper for TV shows
