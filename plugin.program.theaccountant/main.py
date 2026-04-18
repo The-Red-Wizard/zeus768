@@ -147,6 +147,7 @@ def auth_menu():
         ("--- Account Info ---", "spacer", ""),
         ("View Account Cards", "account_cards", "auth.png"),
         ("--- Sync ---", "spacer", ""),
+        ("Preview Addon Scan", "preview_scan", "sync.png"),
         ("Sync All to Addons", "sync_all", "sync.png"),
         ("Back to Main Menu", "main", "restore.png")
     ]
@@ -273,6 +274,16 @@ def sync_all_addons():
     from resources.lib.auth_manager import sync_to_all_addons
     vault = load_vault()
     sync_to_all_addons(vault)
+
+
+def preview_scan_addons():
+    """Preview dynamic scan results - show which addons and keys would be synced."""
+    try:
+        from resources.lib.dynamic_sync import preview_scan
+        summary = preview_scan()
+    except Exception as e:
+        summary = f'Scan failed: {e}'
+    xbmcgui.Dialog().textviewer('Addon Scan Preview', summary)
 
 
 def show_account_cards():
@@ -1199,6 +1210,8 @@ if __name__ == '__main__':
         auth_tmdb()
     elif action == 'sync_all':
         sync_all_addons()
+    elif action == 'preview_scan':
+        preview_scan_addons()
     elif action == 'account_cards':
         show_account_cards()
     elif action == 'iptv':

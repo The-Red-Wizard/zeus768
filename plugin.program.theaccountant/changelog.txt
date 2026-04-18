@@ -1,3 +1,32 @@
+v4.1.0 (2026-02-XX) - DYNAMIC ADDON SCANNER + CHAINS SUPPORT
+=============================================================
+NEW - DYNAMIC AUTH SCANNER (Zero-hardcode future-proofing):
+- Scans every installed addon in special://home/addons/
+- Parses each resources/settings.xml for auth-related setting IDs
+- Regex-matches common patterns (rd.token, realdebrid.auth,
+  premiumize.apikey, alldebrid.token, torbox.apikey,
+  trakt.access_token, tmdb.api_key, etc.)
+- Auto-pushes vault credentials into any matched setting
+- No code update required when the user installs a new addon
+- New "Preview Addon Scan" menu item shows exactly what will
+  sync before committing (setting_id -> vault_key mapping)
+
+CHAINS REPO FULL SUPPORT:
+- Added plugin.video.thechains (v5.4.0 verified keys):
+    rd.auth, rd.refresh, rd.client_id, rd.secret, rd.expiry,
+    premiumize.token, alldebrid.token,
+    trakt_access_token, trakt_refresh_token, trakt_expires_at,
+    trakt_client_id, trakt_client_secret
+- Added Chains Live (plugin.video.chainslive)
+- Added Absolution, Homelander, Genocide, Ghost, Ghost TV,
+  Gears, Zoro, PremiumizeMeTV (same Chains repo family)
+
+TWO-PHASE SYNC:
+- Phase 1: hardcoded ADDON_SYNC_MAP (exact keys, fastest)
+- Phase 2: dynamic scanner picks up anything not in the map
+- "Sync All" result dialog now reports both groups separately
+
+
 v4.0.3 (2026-04-18) - FULL ADDON COVERAGE + TORBOX
 ====================================================
 SYNC EXPANDED TO 21 ADDONS:

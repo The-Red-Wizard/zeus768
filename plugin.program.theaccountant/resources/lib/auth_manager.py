@@ -450,17 +450,77 @@ ADDON_SYNC_MAP = {
         'ad': [('alldebrid.apikey', 'ad_token')],
         'trakt': [('trakt.auth', 'trakt_token'), ('trakt.refresh', 'trakt_refresh')]
     },
-    'plugin.video.thechain': {
-        'rd': [('rd.token', 'rd_token'), ('realdebrid.token', 'rd_token')],
-        'pm': [('pm.token', 'pm_token'), ('premiumize.token', 'pm_token')],
-        'ad': [('ad.token', 'ad_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
-    },
+    # ===== CHAINS REPO ADDONS (unhingedthemes) =====
+    # Exact keys verified against plugin.video.thechains v5.4.0 settings.xml
     'plugin.video.thechains': {
-        'rd': [('rd.token', 'rd_token'), ('realdebrid.token', 'rd_token')],
-        'pm': [('pm.token', 'pm_token'), ('premiumize.token', 'pm_token')],
-        'ad': [('ad.token', 'ad_token')],
-        'trakt': [('trakt.token', 'trakt_token')]
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret'),
+               ('rd.expiry', 'rd_expires')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh'),
+                  ('trakt_expires_at', 'trakt_expires'),
+                  ('trakt_client_id', 'trakt_client_id'), ('trakt_client_secret', 'trakt_client_secret')]
+    },
+    'plugin.video.chainslive': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret'),
+               ('rd.expiry', 'rd_expires')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh'),
+                  ('trakt_expires_at', 'trakt_expires')]
+    },
+    # Other addons from the Chains repo that share the same auth layout
+    'plugin.video.absolution': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh')]
+    },
+    'plugin.video.homelander': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh')]
+    },
+    'plugin.video.genocide': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh')]
+    },
+    'plugin.video.ghost': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh')]
+    },
+    'plugin.video.ghosttv': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')]
+    },
+    'plugin.video.gears': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')]
+    },
+    'plugin.video.zoro': {
+        'rd': [('rd.auth', 'rd_token'), ('rd.refresh', 'rd_refresh'),
+               ('rd.client_id', 'rd_client_id'), ('rd.secret', 'rd_client_secret')],
+        'pm': [('premiumize.token', 'pm_token')],
+        'ad': [('alldebrid.token', 'ad_token')],
+        'trakt': [('trakt_access_token', 'trakt_token'), ('trakt_refresh_token', 'trakt_refresh')]
+    },
+    'plugin.video.premiumizemetv': {
+        'pm': [('premiumize.apikey', 'pm_token'), ('premiumize.token', 'pm_token')]
     },
     'plugin.video.thecrew': {
         'rd': [('rd.auth', 'rd_token'), ('realdebrid.token', 'rd_token')],
@@ -491,7 +551,12 @@ ADDON_SYNC_MAP = {
 
 
 def sync_to_all_addons(vault):
-    """Sync vault credentials to all detected addons"""
+    """Sync vault credentials to all detected addons.
+
+    Two-phase sync:
+      1. Hardcoded ADDON_SYNC_MAP (exact keys for known addons)
+      2. Dynamic scan of all installed addons (pattern-matched keys)
+    """
     dialog = xbmcgui.DialogProgress()
     dialog.create('The Accountant', 'Detecting installed addons...')
 
@@ -499,8 +564,9 @@ def sync_to_all_addons(vault):
     not_installed = []
     total = len(ADDON_SYNC_MAP)
 
+    # Phase 1: hardcoded map
     for i, (addon_id, mapping) in enumerate(ADDON_SYNC_MAP.items()):
-        dialog.update(int((i / total) * 100), f'Syncing {addon_id}...')
+        dialog.update(int((i / total) * 50), f'Syncing {addon_id}...')
         try:
             target = xbmcaddon.Addon(addon_id)
             addon_synced = False
@@ -515,12 +581,28 @@ def sync_to_all_addons(vault):
         except:
             not_installed.append(addon_id.split('.')[-1])
 
+    # Phase 2: dynamic scanner - catches addons we don't have hardcoded
+    dialog.update(50, 'Scanning remaining installed addons...')
+    extra_synced = []
+    try:
+        from resources.lib.dynamic_sync import sync_dynamic
+        extra_ids, _details = sync_dynamic(
+            vault,
+            progress_dialog=dialog,
+            skip_addon_ids=set(ADDON_SYNC_MAP.keys())
+        )
+        extra_synced = [a.split('.')[-1] for a in extra_ids]
+    except Exception as e:
+        xbmc.log(f'[Accountant] Dynamic scan failed: {e}', xbmc.LOGERROR)
+
     dialog.close()
 
     msg = ''
     if synced:
-        msg += f'Synced to: {", ".join(synced)}\n\n'
+        msg += f'Synced (known): {", ".join(synced)}\n\n'
+    if extra_synced:
+        msg += f'Auto-detected: {", ".join(extra_synced)}\n\n'
     if not_installed:
         msg += f'Not installed: {", ".join(not_installed[:10])}'
     xbmcgui.Dialog().ok('Sync Complete', msg or 'No addons found')
-    return synced
+    return synced + extra_synced
