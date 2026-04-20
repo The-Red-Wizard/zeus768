@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
 
-<addon id="plugin.program.theaccountant" name="The Accountant" version="4.4.0" provider-name="zeus768">
+<addon id="plugin.program.theaccountant" name="The Accountant" version="4.7.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -11,7 +11,7 @@
     <extension point="xbmc.service" library="service.py" start="login"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">The Accountant: Master Pro Suite</summary>
-        <description lang="en">v4.4.0: Authorisation Matrix (see which addon is authorised with which account), Network Speed Test (Cloudflare, with Mbps + latency), fixed Speed Optimizer freeze on large libraries. Plus v4.3 Vault QR Transfer, auto-sync, editable sync_map.json, dynamic addon scanner, Chains repo support, device-code auth.</description>
+        <description lang="en">v4.7.0: Trakt card now flexes your taste - adds TOTAL WATCH TIME (auto formatted to hours or days) plus your TOP GENRE tallied from all watched shows (weighted by play count). v4.6.9: Richer Account Cards with days left, expiry, fidelity, Trakt stats + lists, TMDB live key validation. v4.6.8: Fixed View Account Cards crash after RD auth and stopped 'Install addon?' prompts during sync. v4.6.7: Speed Test - gauge redrawn as a proper speedometer. v4.6.6: Full-screen Account Cards and Speed Test. Previous features: Save My Build, Log Uploader, device code auth, syncs to 18+ addons.</description>
         <platform>all</platform>
         <assets>
             <icon>icon.png</icon>
@@ -456,7 +456,7 @@ v1.8.1: Stability fixes</news>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.3" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.4" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>

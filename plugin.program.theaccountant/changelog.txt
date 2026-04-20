@@ -1,146 +1,319 @@
-v4.4.0 (2026-02-XX) - AUTH MATRIX + NETWORK SPEED TEST
-=======================================================
-NEW - AUTHORISATION VIEW:
-- New menu: Auth > Authorisation View (Matrix)
-- Matrix summary: one line per installed addon showing which
-  services (RD / PM / AD / TB / Trakt) are authorised, the
-  masked token value, the matching setting id, and whether the
-  value came from The Accountant's vault (SYNCED) or was set
-  externally by the user (external).
-- Account lookup: each service's vault token is resolved via
-  live API call to show the username / customer ID / VIP tier
-  / days-left for proof of authorisation.
-- Drill-down: pick a specific addon to see every service's
-  full status + setting id + masked value + resolved account.
-- Also reports IPTV provider count from iptv_vault.json.
-
-NEW - NETWORK SPEED TEST:
-- New menu: ONE-CLICK SPEED OPTIMIZER > NETWORK SPEED TEST
-- Choice of test size: 10 MB / 25 MB / 100 MB
-- Live progress with cancel support
-- Uses Cloudflare speed.cloudflare.com (Hetzner 100MB fallback)
-- Reports: download Mbps, TCP latency to 1.1.1.1, elapsed time,
-  friendly rating (4K-ready / 1080p / SD / poor)
-
-FIX - SPEED OPTIMIZER FREEZE:
-- Reworked speed_optimizer(): previous version could appear to
-  hang for minutes on Kodi installs with large thumbnail trees
-  because get_size() walked the whole tree twice (pre + post)
-- _fast_size() caps the walk at 5000 entries (approximate
-  but bounded)
-- Thumbnails pre-measure skipped; we only report how many
-  >30-day-old files were pruned
-- Cancel checks added between every stage so Back key works
-- Final dialog now reports freed MB + thumbnails pruned count
-
-NEW FILES:
-- resources/lib/auth_matrix.py   (matrix + drill-down renderer)
-- resources/lib/speed_test.py    (Cloudflare/Hetzner downloader)
+v4.7.0
+- Trakt card now flexes your taste:
+  * TOTAL WATCH TIME - pulled from the
+    /users/<user>/stats endpoint
+    (movies.minutes + episodes.minutes).
+    Auto formatted: shows "Xh watched" for
+    anything under a day, switches to
+    "X.Xd watched" for longer totals.
+  * TOP GENRE - tallied from
+    /users/<user>/watched/shows?extended=full.
+    Every genre on every watched show is
+    counted, weighted by the show's play count,
+    so your most-binged genre wins. Shown
+    title-cased (e.g. "Science Fiction").
+- Both values appear in the status line of the
+  Trakt card, alongside VIP/Standard, username
+  and joined date.
+- Purely additive - existing detail row
+  (watched / collected / watchlist / lists) is
+  unchanged.
 
 
-v4.3.0 (2026-02-XX) - VAULT QR TRANSFER
+v4.6.9
+- Account Cards are now information-rich (second
+  detail line under each service):
+  * Real-Debrid: status + days left + expiry date,
+    with username and fidelity points underneath.
+  * Premiumize: status + days left + expiry date,
+    with customer id and storage used underneath.
+  * AllDebrid: status + days left + expiry date,
+    with username and fidelity points underneath.
+  * Trakt: VIP/Standard + username + joined date,
+    with a stats strip showing movies watched,
+    shows watched, episodes watched, collected
+    movies, collected shows, watchlist totals and
+    personal lists count.
+  * TMDB: the key is now VALIDATED live against
+    api.themoviedb.org/3/configuration. Card shows
+    either "API Key Valid" (green) or "Invalid Key"
+    (red), plus TMDB API version and a recent-
+    changes counter as a liveness check.
+- Trakt stats code was extended to call
+  /sync/watchlist/movies, /sync/watchlist/shows and
+  /users/<user>/lists for the new counts.
+- New helper: auth_manager.get_tmdb_info(api_key).
+
+
+v4.6.8
+- FIX: "View Account Cards" crashed with
+  AttributeError: module 'resources.lib.auth_manager'
+  has no attribute 'get_rd_account_info'
+  when Real-Debrid was authorized. The function body
+  existed but its `def get_rd_account_info(token):`
+  line had been dropped in 4.6.7 so Python never
+  exposed it. Restored the definition - RD now
+  appears correctly on the Account Cards window.
+- FIX: "Sync All to Addons" (Auto / Per-service /
+  TMDB Helper sync / IPTV export) no longer causes
+  Kodi to pop the "Install addon?" / dependency
+  prompt for addons that aren't part of the user's
+  setup. The code now pre-checks with
+  System.HasAddon(<id>) and silently skips any
+  addon that isn't already installed, instead of
+  blindly calling xbmcaddon.Addon(id) which on
+  Kodi 20/21 (Omega) can trigger the installer UI.
+- Result: syncing debrid / Trakt / TMDB / IPTV
+  credentials only writes to addons you already
+  have, exactly as intended.
+
+
+v4.6.7
+- Speed Test FIX: overlapping text + non-moving needle
+- Layout:
+  * Gauge is now a proper speedometer: the arc opens downward
+    with 0 at the lower-left and max at the lower-right, sweeping
+    across the TOP. This frees the area under the gauge center
+    for the readouts so nothing overlaps.
+  * Status line, separator, LATENCY/DOWNLOAD/UPLOAD stats row
+    and the START NEW TEST button are now spaced out vertically
+    with ~40 px gaps between them.
+  * Removed the redundant "Press ENTER / BACK" hint line; the
+    button label itself now says "START NEW TEST (press ENTER)"
+    and BACK always closes.
+- Needle:
+  * Gauge max lowered from 1000 to 500 Mbps (covers the vast
+    majority of home connections) so the needle sweeps a much
+    more visible angle for typical speeds (e.g. 100 Mbps moves
+    the needle 54 degrees instead of 27).
+  * Needle segments are now created ONCE and repositioned on
+    every update via setPosition() instead of being deleted and
+    recreated every frame. This removes flicker and ensures
+    the needle keeps up with the download loop.
+  * UI updates during the download loop are throttled to ~15
+    fps so the needle animates smoothly without pegging CPU.
+- Download test now requests a 100 MB stream from Cloudflare
+  (was 10 MB) for a more accurate measurement on fast lines.
+- Upload test uses a 2 MB payload (was 500 KB).
+- Numeric speed readout uses one decimal below 100 Mbps and
+  integer above, so slow connections still show movement.
+
+
+
+v4.6.6
+- UI: Account Cards and Speed Test windows are now FULL-SCREEN.
+  Previously the panel only covered ~57% of the screen width and
+  the contents felt squished, especially the speedometer gauge
+  and the cramped service rows.
+- Account Cards:
+  * Panel expanded to 1840x1000 on the 1920x1080 canvas (leaves
+    only a thin margin for the cyan border to breathe).
+  * Header font upgraded to font45, row titles to font30, row
+    statuses to font24_title.
+  * Row height raised from 85 to 120 px and row width from 660
+    to 1100 px; service icon grown to 110x90.
+  * Addon icon on the right grown from 300 to 500 px.
+  * Close button re-centered and enlarged (font24_title).
+- Speed Test:
+  * Panel expanded to 1840x1000.
+  * Gauge radius grown from 180 to 320; needle length from 130
+    to 260; 30 color segments instead of 20.
+  * Center speed readout moved to below-needle with font45
+    number and font24_title "Mbps" suffix.
+  * Latency / Download / Upload stats now use font30 values,
+    spread evenly across the full panel width.
+  * START NEW TEST button widened to 420 px and re-centered
+    at the bottom of the panel.
+- Coordinates remain based on a 1920x1080 canvas and scale
+  automatically to the Kodi window size, so this works at any
+  resolution.
+
+
+
+v4.6.5
+- FIX: Account Cards window and Speed Test speedometer were
+  rendering on a fully transparent background because the
+  ControlImage objects used an empty texture path with only
+  colorDiffuse. Kodi's ControlImage needs an actual texture
+  for colorDiffuse to tint - with no texture, nothing is
+  drawn and the fanart/skin shows straight through, making
+  the UI very hard to read.
+- Added resources/media/white.png (a 4x4 solid-white PNG)
+  and used it as the base texture for every background,
+  panel, row, border, gauge segment and needle segment in
+  both account_cards_window.py and speed_test_window.py.
+- Account Cards rows are now a solid dark-blue
+  (FF13304f) instead of a 30% white wash, so the red
+  "Not authorized" / green "Authorized" status text is
+  fully legible over it.
+- No functional changes; purely a visual readability fix.
+
+
+
+v4.6.2
+- FIX: Build Wizard Creator menu crashed with
+  "NameError: name 'build_wizard_menu' is not defined"
+- The wizard creator functions were declared AFTER the
+  router block, so Python had not yet bound them when the
+  router dispatched the 'wizard_creator' action.
+- Moved the entire Build Wizard Creator section (build_wizard_menu
+  and all bwc_* helpers) ABOVE the `if __name__ == '__main__':`
+  router so the names exist before dispatch.
+- No behavioural changes to the wizard itself.
+
+
+v4.5.1
+- Save My Build: added Creator + Note banner prompts
+  * Stored in build_manifest.json (structured)
+  * Plus readable build_info.txt inside the zip
+  * Creator name remembered for next build
+  * Completion dialog now shows creator
+
+v4.5.0
+- NEW: Save My Build - package your Kodi build (addons + userdata) into a portable .zip
+  * Quick mode (addons + userdata) or Custom mode (pick sections)
+  * Save to default folder or browse any location on device
+  * Auto-skips cache/thumbnails/packages for a clean build
+  * Includes build_manifest.json with metadata
+- Themed build icon added
+
+v4.4.1 (2026-01-XX) - TWISTED NUTZ REPO SUPPORT
+================================================
+NEW ADDONS SUPPORTED:
+- Added Twisted Nutz repo addons to sync authorization list:
+  - plugin.video.twisted (Twisted)
+  - plugin.video.blueballs (Blueballs)  
+  - plugin.video.twistedtv (Twisted 247 TV)
+- Syncs Real-Debrid (token, refresh, client_id, secret)
+- Syncs Premiumize (token)
+- Syncs AllDebrid (token)
+- Syncs Trakt (token, refresh, expires_at)
+
+Now supports 18+ addons for credential sync!
+
+v4.4.0 (2026-01-XX) - LOG UPLOADER & CHANGELOG NOTIFICATION
+============================================================
+NEW FEATURES:
+- NEW: Log Uploader with fullscreen log viewer
+  - View current kodi.log with syntax highlighting
+  - View previous kodi.old.log
+  - Upload logs to dpaste.com (no API key needed)
+  - Upload logs to paste.kodi.tv
+  - Error/Warning/Debug lines highlighted in colors
+  - Log file info and statistics
+- NEW: Changelog notification on addon updates
+  - Shows "What's New" dialog on first launch after update
+  - Dialog must be dismissed by user to continue
+  - Formatted changelog with color highlighting
+  - Only shows once per version update
+- NEW: log.png icon matching neon cyan theme
+
+MENU CHANGES:
+- Added "LOG UPLOADER" to Maintenance Tools section
+- New neon cyan log icon with document and magnifying glass
+
+v4.3.0 (2026-04-18) - ADDON SYNC SELECTION
+==========================================
+NEW FEATURES:
+- Added ability to check/uncheck addons when syncing credentials
+- Multi-select dialog shows all installed compatible addons
+- Remember preferences per service (RD, PM, AD, TB, Trakt, TMDB)
+- Three sync modes:
+  1. Sync All (Auto) - sync to all installed addons
+  2. Select Addons Per Service - choose which addons per service
+  3. Manage Preferences - view/reset saved addon selections
+- Preferences saved to vault and persist across sessions
+
+IMPROVEMENTS:
+- Added friendly addon names in sync dialogs
+- Better sync feedback with notifications
+- Organized addon list by popularity/importance
+
+v4.2.1 (2026-04-18) - SERVICE ICONS UPDATE
+==========================================
+- All service icons now match neon theme with clear labels
+- RD icon: Cloud download symbol + "RD" + "REAL-DEBRID" label
+- PM icon: Premium star + "PM" + "PREMIUMIZE" label  
+- AD icon: Lightning bolt + "AD" + "ALLDEBRID" label
+- TB icon: 3D box + "TB" + "TORBOX" label
+- TRAKT icon: Checklist + "TRAKT" + "TRACK IT" label
+- TMDB icon: Film strip + "TMDB" + "MOVIE DATABASE" label
+- New users can now easily identify each service
+
+v4.2.0 (2026-04-18) - NEON ICON REBRAND
 ========================================
-NEW - ONE-SCAN DEVICE MIGRATION:
-- Export: compress + encrypt your vault locally, upload the
-  encrypted blob to Litterbox (1h / 12h / 24h / 72h retention),
-  show a QR code pointing to the download URL.
-- Import on new Kodi device: scan the QR with your phone, paste
-  the URL into Accountant, enter the passphrase - done.
-- Crypto: PBKDF2-SHA256 key derivation (120k iterations) +
-  HMAC-SHA256 counter-mode stream cipher + authentication tag.
-  Uses only Python stdlib - no external deps required.
-- Wrong passphrase or tampered payload is detected and rejected
-  before any data is touched.
+NEW:
+- Complete icon rebrand with clean neon electric blue style
+- 19 menu icons redesigned with consistent modern aesthetic
+- Transparent backgrounds for all new icons
+- Neon glow effect on all UI icons
+- Icons rebranded: speed, speedtest, autoclean, auth, sync, 
+  iptv, favs, usb, restore, repair, clean, packages, help,
+  refresh, backup, cloud, export, quit, skin_backup
 
-NEW FILE:
-- resources/lib/vault_transfer.py
+PRESERVED:
+- Brand service icons kept original: Real-Debrid (rd.png), 
+  Premiumize (pm.png), AllDebrid (ad.png), Trakt (trakt.png), 
+  TMDB (tmdb.png)
 
-NEW MENU ITEM:
-- Auth > Vault QR Transfer
-    - Export vault (upload + show QR)
-    - Import vault (from URL + passphrase)
-    - How it works
+v4.1.0
+- Version bump (icon pack refresh pending in next session).
+v4.0.9
+- Added The Gears addon (plugin.video.gears, Chains repo) to the authorised addon sync list.
+- Syncs Real-Debrid (token/refresh/client_id/secret), Premiumize, AllDebrid, TorBox and Trakt (token/refresh/expires) using The Gears' real setting keys (gears.rd.*, gears.pm.*, gears.ad.*, gears.tb.*, gears.trakt.*).
+v4.0.8
+- Trakt pairing: switched to salts-style (zeus768) client credentials and User-Agent — fixes HTTP 403 on /oauth/device/code.
+- Trakt pairing: /oauth/device/code and /oauth/device/token now use raw urllib like plugin.video.salts.
+- New: background service silently refreshes the Trakt access token via /oauth/token + refresh_token when within 7 days of expiry.
+- New: if the silent refresh fails, a 15-second auto-close Yes/No dialog is shown with options 'Re-pair now' or 'Ignore'.
+- Fix: service.py now reads/writes the same vault file (special://userdata/the_accountant_vault.json) as main.py so refreshed tokens persist.
+v4.0.6 (2026-04-18) - TRAKT AUTH FIXED
+=======================================
+- FIXED: Trakt 403 error - updated to working API credentials
+- Simplified Trakt auth - just click and pair, no extra steps
+- Users can now authorize Trakt directly with device code
+- Shows code on screen, visit trakt.tv/activate to pair
+- Syncs Trakt token to all compatible addons
 
+v4.0.5 (2026-04-18) - TRAKT 403 FIX
+=====================================
+- FIXED: Trakt 403 Forbidden error
+- NEW: Option to enter your own Trakt API credentials
+- Added help guide for creating Trakt app at trakt.tv/oauth/applications
+- Better error messages for Trakt auth failures
+- Trakt auth now shows 3 options:
+  1. Authorize with Device Code
+  2. Enter Custom Trakt API Credentials  
+  3. How to Create Trakt App (Help)
 
-v4.2.0 (2026-02-XX) - AUTO-SYNC + EDITABLE SYNC MAP
-====================================================
-NEW - DAILY AUTO-SYNC ON STARTUP:
-- Background service now runs a silent credential sync once
-  every 24 hours, on top of the existing expiry checks
-- Silently pushes vault creds to every installed addon
-  (map-driven + dynamic scanner) with no dialogs
-- Shows a single compact notification when done
-- New "Auto-Sync Settings" menu (under Auth):
-    - Enable / Disable daily auto-sync
-    - Run auto-sync now
-    - See last sync timestamp
-- Controlled by vault flag 'auto_sync_enabled' (default on)
-- Honors 'last_auto_sync' throttle stored in vault
+v4.0.4 (2026-04-18) - INTERNET SPEED TESTER + KODI 21 FIXES
+============================================================
+NEW FEATURES:
+- NEW: Internet Speed Tester with dedicated menu category
+  - Full Speed Test (Download + Upload + Ping)
+  - Quick Download Test Only
+  - Quick Upload Test Only
+  - Ping Test (Google, Cloudflare, Amazon)
+  - View Last Test Results (keeps history of 10 tests)
+  - Speed Test Settings (test data size configuration)
+- NEW: Custom speedtest.png icon matching addon theme
+- Reorganized main menu with logical categories:
+  - Network & Connectivity
+  - Account Management
+  - Backup & Restore
+  - Maintenance Tools
+  - Help & Info
 
-NEW - USER-EDITABLE SYNC MAP:
-- ADDON_SYNC_MAP is now stored as JSON
-- Default bundled at: resources/data/sync_map.json
-- User copy at: special://profile/addon_data/
-                  plugin.program.theaccountant/sync_map.json
-- Auto-copied on first run, never overwritten unless user resets
-- New "Sync Map Manager" menu (under Auth):
-    - View current mappings
-    - Reload after external edit (no Kodi restart needed)
-    - Reset to bundled defaults
-    - Help dialog with supported service/vault keys
-- Python ADDON_SYNC_MAP is kept as a legacy fallback only
-
-REFACTORING:
-- auth_manager.sync_to_all_addons() now takes silent=True for
-  background use (suppresses progress dialogs and popups)
-- service.py refactored: unified loop tick (1h) with internal
-  throttling, shared vault load/save helpers
-
-
-v4.1.0 (2026-02-XX) - DYNAMIC ADDON SCANNER + CHAINS SUPPORT
-=============================================================
-NEW - DYNAMIC AUTH SCANNER (Zero-hardcode future-proofing):
-- Scans every installed addon in special://home/addons/
-- Parses each resources/settings.xml for auth-related setting IDs
-- Regex-matches common patterns (rd.token, realdebrid.auth,
-  premiumize.apikey, alldebrid.token, torbox.apikey,
-  trakt.access_token, tmdb.api_key, etc.)
-- Auto-pushes vault credentials into any matched setting
-- No code update required when the user installs a new addon
-- New "Preview Addon Scan" menu item shows exactly what will
-  sync before committing (setting_id -> vault_key mapping)
-
-CHAINS REPO FULL SUPPORT:
-- Added plugin.video.thechains (v5.4.0 verified keys):
-    rd.auth, rd.refresh, rd.client_id, rd.secret, rd.expiry,
-    premiumize.token, alldebrid.token,
-    trakt_access_token, trakt_refresh_token, trakt_expires_at,
-    trakt_client_id, trakt_client_secret
-- Added Chains Live (plugin.video.chainslive)
-- Added Absolution, Homelander, Genocide, Ghost, Ghost TV,
-  Gears, Zoro, PremiumizeMeTV (same Chains repo family)
-
-TWO-PHASE SYNC:
-- Phase 1: hardcoded ADDON_SYNC_MAP (exact keys, fastest)
-- Phase 2: dynamic scanner picks up anything not in the map
-- "Sync All" result dialog now reports both groups separately
-
-
-v4.0.3 (2026-04-18) - FULL ADDON COVERAGE + TORBOX
-====================================================
-SYNC EXPANDED TO 21 ADDONS:
-- All setting IDs verified from actual addon source code
-- Zeus768 addons: Genesis, Orion, SALTS, Tinklepad, Trakt Player,
-  Syncher, Poseidon Player
-- Third-party: Umbrella, Fen, FenLight, FenlightAM, Seren,
-  TheChain, TheChains, TheCrew, Ezra, Coalition, TMDBHelper
-- Critical: ResolveURL (syncs RD/PM/AD tokens + client_id/secret)
-- Full token sync: access token, refresh token, client_id, client_secret, expires
-
-NEW - TORBOX AUTH:
-- TorBox API key entry from torbox.app/settings
-- Key verified against TorBox API before saving
-- Syncs to Genesis, Orion, SALTS, Trakt Player
+BUG FIXES:
+- FIXED: Speed Optimizer TypeError on Kodi 21+ (Omega)
+  - dialog.ok() now uses 2 arguments instead of 3-4
+- FIXED: Help Menu TypeError on Kodi 21+
+- FIXED: All dialog.ok() and dialog.yesno() calls updated for Kodi 21 compatibility
+- FIXED: Trakt device code auth improvements:
+  - Better progress display with countdown timer
+  - Highlighted user code with color
+  - Proper error handling for all Trakt API responses (400, 404, 409, 410, 418, 429)
+  - More informative error messages
 
 v4.0.2 (2026-04-18) - REFRESH WIDGETS + ACCOUNT CARDS IN MAIN MENU
 ======================================================

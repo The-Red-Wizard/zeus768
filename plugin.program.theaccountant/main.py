@@ -75,102 +75,61 @@ def delete_folder_contents(folder_path, extensions=None):
 # ============================================
 # SPEED OPTIMIZER
 # ============================================
-def _fast_size(path, max_entries=5000):
-    """Size walk with a safety cap - prevents freezes on huge thumbnail trees."""
-    total = 0
-    n = 0
-    try:
-        if not os.path.isdir(path):
-            return 0
-        for dirpath, dirnames, filenames in os.walk(path):
-            for f in filenames:
-                fp = os.path.join(dirpath, f)
-                try:
-                    total += os.path.getsize(fp)
-                except Exception:
-                    pass
-                n += 1
-                if n >= max_entries:
-                    return total  # approximate
-    except Exception:
-        pass
-    return total
-
-
 def speed_optimizer():
-    """One-click cache/thumbnail/package cleanup.
-
-    Reworked in v4.4.0 - previous version could freeze on Kodi installs with
-    large thumbnail libraries because get_size() walked the full tree twice.
-    This version caps size walks and adds cancel handling.
-    """
+    """One-click speed optimization"""
     dialog = xbmcgui.Dialog()
     pDialog = xbmcgui.DialogProgress()
-    pDialog.create("The Accountant", "Measuring cache (this may take a moment)...")
-
-    if pDialog.iscanceled():
-        pDialog.close(); return
-
-    cache_size = _fast_size(KODI_TEMP) / (1024 * 1024)
-    pkg_size = _fast_size(KODI_PACKAGES) / (1024 * 1024)
-    # Skip thumbnails pre-measure: it can be tens of GB; just report cleared count.
-    total_before = cache_size + pkg_size
-
-    if pDialog.iscanceled():
-        pDialog.close(); return
-    pDialog.update(10, f"Clearing temp cache ({cache_size:.1f} MB)...")
+    pDialog.create("The Accountant", "Analyzing system...")
+    
+    # Calculate sizes before cleanup
+    cache_size = get_size(KODI_TEMP)
+    thumb_size = get_size(KODI_THUMBNAILS)
+    pkg_size = get_size(KODI_PACKAGES)
+    total_before = cache_size + thumb_size + pkg_size
+    
+    pDialog.update(10, "Clearing temporary cache...")
     delete_folder_contents(KODI_TEMP)
-
-    if pDialog.iscanceled():
-        pDialog.close(); return
-    pDialog.update(30, f"Clearing packages ({pkg_size:.1f} MB)...")
+    
+    pDialog.update(30, "Clearing packages...")
     delete_folder_contents(KODI_PACKAGES, ['.zip'])
-
-    if pDialog.iscanceled():
-        pDialog.close(); return
-    pDialog.update(50, "Pruning thumbnails (>30 days old)...")
-    thumb_count = 0
+    
+    pDialog.update(50, "Optimizing thumbnails...")
+    # Clear old thumbnails (keeping recent ones)
     try:
-        cutoff = time.time() - 30 * 24 * 60 * 60
+        thumb_count = 0
         for root, dirs, files in os.walk(KODI_THUMBNAILS):
-            if pDialog.iscanceled():
-                break
             for f in files:
                 fp = os.path.join(root, f)
                 try:
-                    if os.path.getmtime(fp) < cutoff:
+                    if os.path.getmtime(fp) < (time.time() - 30*24*60*60):  # 30 days old
                         os.remove(fp)
                         thumb_count += 1
-                except Exception:
+                except:
                     pass
-    except Exception:
+    except:
         pass
-
-    if pDialog.iscanceled():
-        pDialog.close(); return
-    pDialog.update(80, "Clearing addon cache...")
+    
+    pDialog.update(70, "Clearing addon cache...")
+    # Clear common addon caches
     addon_cache_paths = [
         os.path.join(KODI_ADDON_DATA, 'plugin.video.youtube', 'kodion', 'cache'),
         os.path.join(KODI_ADDON_DATA, 'plugin.video.themoviedb.helper', 'cache'),
         os.path.join(KODI_ADDON_DATA, 'script.extendedinfo', 'cache'),
     ]
     for cache_path in addon_cache_paths:
-        if pDialog.iscanceled():
-            break
         if os.path.exists(cache_path):
             delete_folder_contents(cache_path)
-
-    pDialog.update(95, "Finalizing...")
-    total_after = (_fast_size(KODI_TEMP) + _fast_size(KODI_PACKAGES)) / (1024 * 1024)
-    saved = max(0.0, total_before - total_after)
+    
+    pDialog.update(90, "Finalizing...")
+    
+    # Calculate savings
+    total_after = get_size(KODI_TEMP) + get_size(KODI_THUMBNAILS) + get_size(KODI_PACKAGES)
+    saved = total_before - total_after
+    
     pDialog.close()
-
-    dialog.ok(
-        "Speed Optimizer Complete",
-        f"Freed: ~{saved:.1f} MB (temp + packages)",
-        f"Thumbnails pruned: {thumb_count} file(s) older than 30 days",
-        "Restart Kodi for full effect."
-    )
+    
+    dialog.ok("Speed Optimizer Complete", 
+              f"Freed approximately {saved:.1f} MB\nSystem optimized! Restart Kodi for best results.")
 
 # ============================================
 # AUTHENTICATION MANAGER
@@ -186,13 +145,8 @@ def auth_menu():
         ("TMDB API Key Setup", "auth_tmdb", "tmdb.png"),
         ("--- Account Info ---", "spacer", ""),
         ("View Account Cards", "account_cards", "auth.png"),
-        ("Authorisation View (Matrix)", "auth_view", "auth.png"),
         ("--- Sync ---", "spacer", ""),
-        ("Preview Addon Scan", "preview_scan", "sync.png"),
         ("Sync All to Addons", "sync_all", "sync.png"),
-        ("Auto-Sync Settings", "auto_sync", "sync.png"),
-        ("Sync Map Manager", "sync_map_mgr", "sync.png"),
-        ("Vault QR Transfer", "vault_qr", "usb.png"),
         ("Back to Main Menu", "main", "restore.png")
     ]
     for label, act, icon in items:
@@ -293,12 +247,15 @@ def auth_tmdb():
         sync_tmdb_helper()
     elif choice == 4:
         dialog.ok("TMDB Help",
-                  "1. Go to themoviedb.org",
-                  "2. Create account, go to Settings > API",
-                  "3. Request API key and copy v3 auth")
+                  "1. Go to themoviedb.org\n2. Create account, go to Settings > API\n3. Request API key and copy v3 auth")
 
 def sync_tmdb_helper():
     """Sync TMDB to TMDBHelper addon"""
+    # Skip silently if TMDB Helper isn't installed - don't let Kodi
+    # pop an 'Install addon?' dialog during bulk sync flows.
+    if not xbmc.getCondVisibility('System.HasAddon(plugin.video.themoviedb.helper)'):
+        notify("Sync Failed", "TMDB Helper not installed")
+        return
     try:
         tmdb_addon = xbmcaddon.Addon('plugin.video.themoviedb.helper')
         vault = load_vault()
@@ -317,454 +274,70 @@ def sync_all_addons():
     """Sync all credentials to ALL detected addons on device"""
     from resources.lib.auth_manager import sync_to_all_addons
     vault = load_vault()
-    sync_to_all_addons(vault)
-
-
-def preview_scan_addons():
-    """Preview dynamic scan results - show which addons and keys would be synced."""
-    try:
-        from resources.lib.dynamic_sync import preview_scan
-        summary = preview_scan()
-    except Exception as e:
-        summary = f'Scan failed: {e}'
-    xbmcgui.Dialog().textviewer('Addon Scan Preview', summary)
-
-
-def toggle_auto_sync():
-    """Enable/disable daily silent auto-sync (runs via background service)."""
-    vault = load_vault()
-    dialog = xbmcgui.Dialog()
-    current = str(vault.get('auto_sync_enabled', 'true')).lower() not in ('0', 'false', 'no', 'off')
-    last = vault.get('last_auto_sync', 0)
-    last_str = time.strftime('%Y-%m-%d %H:%M', time.localtime(last)) if last else 'Never'
-
-    choice = dialog.select('Auto-Sync on Startup', [
-        f'Current: {"ENABLED" if current else "DISABLED"}',
-        f'Last auto-sync: {last_str}',
-        '---',
-        'Enable daily auto-sync',
-        'Disable auto-sync',
-        'Run auto-sync now'
-    ])
-    if choice == 3:
-        vault['auto_sync_enabled'] = 'true'
-        save_vault(vault)
-        notify('Auto-Sync', 'Enabled - runs once per day on startup')
-    elif choice == 4:
-        vault['auto_sync_enabled'] = 'false'
-        save_vault(vault)
-        notify('Auto-Sync', 'Disabled')
-    elif choice == 5:
-        from resources.lib.auth_manager import sync_to_all_addons
-        count = sync_to_all_addons(vault, silent=True)
-        vault['last_auto_sync'] = int(time.time())
-        save_vault(vault)
-        notify('Auto-Sync', f'Synced {len(count)} addon(s)')
-
-
-def authorisation_view():
-    """Show which installed addon is authorised with which account.
-
-    Offers both: matrix summary (textviewer) and per-addon drill-down.
-    """
-    from resources.lib import auth_matrix, dynamic_sync, auth_manager
-    dialog = xbmcgui.Dialog()
-    pDialog = xbmcgui.DialogProgress()
-    pDialog.create('Authorisation', 'Scanning installed addons...')
-
-    # Reuse dynamic_sync's installed-addon detector (only addons with auth keys)
-    targets = dynamic_sync.scan_installed_addons()
-    addon_ids = [t['addon_id'] for t in targets]
-    # Also include addons that appear in the sync map but had no settings.xml match
-    # (edge case - gives the user complete visibility).
-    try:
-        for aid in auth_manager.load_sync_map().keys():
-            if aid not in addon_ids:
-                addon_ids.append(aid)
-    except Exception:
-        pass
-
-    pDialog.update(30, 'Reading settings from each addon...')
-    entries = auth_matrix.scan_addon_auth(addon_ids)
-
-    pDialog.update(70, 'Resolving account usernames...')
-    vault = load_vault()
-    accounts = auth_matrix.resolve_accounts(vault)
-
-    # IPTV providers (from iptv_vault.json)
-    iptv_names = []
-    try:
-        if os.path.isfile(IPTV_VAULT):
-            with open(IPTV_VAULT, 'r') as f:
-                iptv_names = list(json.load(f).keys())
-    except Exception:
-        pass
-
-    pDialog.close()
-
-    # Top-level choice: matrix / drill-down / back
-    while True:
-        choice = dialog.select('Authorisation View', [
-            'Matrix Summary (all addons)',
-            'Drill down into a specific addon',
-            'Re-scan now',
-            'Close'
-        ])
-        if choice < 0 or choice == 3:
-            return
-        if choice == 0:
-            txt = auth_matrix.render_matrix(entries, accounts, iptv_providers=iptv_names)
-            dialog.textviewer('Authorisation Matrix', txt)
-        elif choice == 1:
-            installed = [e for e in entries if e['installed']]
-            if not installed:
-                dialog.ok('No Addons', 'No installed addons with auth keys were detected.')
-                continue
-            labels = []
-            for e in installed:
-                any_set = sum(1 for s in e['services'].values() if s['status'] == 'set')
-                labels.append(f"{e['addon_id']}  ({any_set}/5 services)")
-            pick = dialog.select('Select Addon', labels)
-            if pick < 0:
-                continue
-            detail = auth_matrix.render_detail(installed[pick], accounts)
-            dialog.textviewer(installed[pick]['addon_id'], detail)
-        elif choice == 2:
-            pDialog = xbmcgui.DialogProgress()
-            pDialog.create('Authorisation', 'Re-scanning...')
-            targets = dynamic_sync.scan_installed_addons()
-            addon_ids = [t['addon_id'] for t in targets]
-            try:
-                for aid in auth_manager.load_sync_map().keys():
-                    if aid not in addon_ids:
-                        addon_ids.append(aid)
-            except Exception:
-                pass
-            entries = auth_matrix.scan_addon_auth(addon_ids)
-            accounts = auth_matrix.resolve_accounts(load_vault())
-            pDialog.close()
-            dialog.notification('Authorisation', 'Scan refreshed', ADDON_ICON, 2500)
-
-
-def network_speed_test():
-    dialog = xbmcgui.Dialog()
-
-    size_choice = dialog.select("Network Speed Test", [
-        "Quick (10 MB download)",
-        "Normal (25 MB download)",
-        "Thorough (100 MB download)",
-        "Cancel"
-    ])
-    if size_choice < 0 or size_choice == 3:
-        return
-
-    size_bytes = {0: 10, 1: 25, 2: 100}[size_choice] * 1024 * 1024
-
-    pDialog = xbmcgui.DialogProgress()
-    pDialog.create("Speed Test", "Pinging server...")
-
-    cancelled = {'v': False}
-
-    def _cb(read, total):
-        if cancelled['v']:
-            return
-        if pDialog.iscanceled():
-            cancelled['v'] = True
-            return
-        pct = int((read / total) * 100) if total else 0
-        mb = read / (1024 * 1024)
-        pDialog.update(pct, f"Downloading... {mb:.1f} / {total / (1024 * 1024):.0f} MB")
-
-    try:
-        from resources.lib import speed_test as st
-        result = st.run_speed_test(size_bytes=size_bytes, progress_cb=_cb)
-    except Exception as e:
-        pDialog.close()
-        dialog.ok("Speed Test Failed", f"{type(e).__name__}: {e}")
-        return
-
-    pDialog.close()
-
-    if cancelled['v']:
-        return
-    if result.get('error'):
-        dialog.ok("Speed Test Failed", result['error'])
-        return
-
-    from resources.lib import speed_test as st
-    dialog.textviewer("Network Speed Test", st.format_result(result))
-
-
-def vault_qr_menu():
-    """Vault QR Export / Import - migrate vault to another Kodi device."""
-    dialog = xbmcgui.Dialog()
-    choice = dialog.select('Vault QR Transfer', [
-        'Export vault (upload + show QR)',
-        'Import vault (from URL + passphrase)',
-        'How it works'
-    ])
-    if choice == 0:
-        vault_qr_export()
-    elif choice == 1:
-        vault_qr_import()
-    elif choice == 2:
-        dialog.ok(
-            'Vault QR Transfer',
-            'Moving to a new Kodi device? Export your vault here.',
-            '1. Choose a passphrase - you\'ll need it on the new device.',
-            '2. Vault is encrypted locally (HMAC-SHA256 + PBKDF2) and uploaded to Litterbox (72h retention).',
-            '3. A QR code is shown. Scan it with your phone to get the URL.',
-            '4. On the new Kodi device: Accountant > Auth > Vault QR Transfer > Import. Paste the URL and enter the same passphrase.'
-        )
-
-
-def vault_qr_export():
-    dialog = xbmcgui.Dialog()
-    vault = load_vault()
-    if not vault:
-        dialog.ok('Vault Empty', 'Nothing to export. Pair at least one service first.')
-        return
-    passphrase = dialog.input('Enter passphrase (remember this!)', type=xbmcgui.INPUT_ALPHANUM)
-    if not passphrase or len(passphrase) < 4:
-        dialog.ok('Cancelled', 'Passphrase must be at least 4 characters')
-        return
-    confirm = dialog.input('Confirm passphrase', type=xbmcgui.INPUT_ALPHANUM)
-    if confirm != passphrase:
-        dialog.ok('Mismatch', 'Passphrases do not match')
-        return
-
-    retention_idx = dialog.select('Retention (how long the URL stays live)', [
-        '1 hour', '12 hours', '24 hours', '72 hours (recommended)'
-    ])
-    retention = {0: '1h', 1: '12h', 2: '24h', 3: '72h'}.get(retention_idx, '72h')
-
-    pDialog = xbmcgui.DialogProgress()
-    pDialog.create('Vault QR Export', 'Encrypting vault...')
-    try:
-        from resources.lib import vault_transfer as vt
-        pDialog.update(30, 'Uploading encrypted blob...')
-        url = vt.export_vault(vault, passphrase, retention=retention)
-        pDialog.update(70, 'Generating QR code...')
-
-        # Download QR PNG to temp and show it
-        qr_img_url = vt.qr_image_url(url, size=500)
-        qr_file = os.path.join(KODI_TEMP, 'vault_qr.png')
-        try:
-            import ssl
-            ctx = ssl._create_unverified_context()
-            req = urllib.request.Request(qr_img_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, context=ctx, timeout=15) as resp:
-                with open(qr_file, 'wb') as f:
-                    f.write(resp.read())
-        except Exception as e:
-            xbmc.log(f'[Accountant] QR fetch failed: {e}', xbmc.LOGWARNING)
-            qr_file = None
-
-        pDialog.close()
-
-        if qr_file and os.path.exists(qr_file):
-            xbmc.executebuiltin(f'ShowPicture({qr_file})')
-            xbmc.sleep(500)
-
-        dialog.ok(
-            'Vault Exported',
-            f'URL (retention {retention}):',
-            url,
-            'Scan the QR on your phone, or note the URL.',
-            'On the new device: Accountant > Auth > Vault QR Transfer > Import. Use the SAME passphrase.'
-        )
-    except Exception as e:
-        pDialog.close()
-        xbmc.log(f'[Accountant] Vault export failed: {e}', xbmc.LOGERROR)
-        dialog.ok('Export Failed', str(e))
-
-
-def vault_qr_import():
-    dialog = xbmcgui.Dialog()
-    url = dialog.input('Paste the Vault URL')
-    if not url or not url.strip().startswith('http'):
-        return
-    passphrase = dialog.input('Enter passphrase', type=xbmcgui.INPUT_ALPHANUM)
-    if not passphrase:
-        return
-
-    pDialog = xbmcgui.DialogProgress()
-    pDialog.create('Vault QR Import', 'Downloading + decrypting...')
-    try:
-        from resources.lib import vault_transfer as vt
-        new_vault = vt.import_vault(url.strip(), passphrase)
-        pDialog.close()
-    except Exception as e:
-        pDialog.close()
-        dialog.ok('Import Failed', str(e))
-        return
-
-    if not isinstance(new_vault, dict):
-        dialog.ok('Import Failed', 'Decrypted data is not a valid vault')
-        return
-
-    keys = sorted(new_vault.keys())
-    if not dialog.yesno(
-        'Confirm Import',
-        f'Restored vault has {len(keys)} keys:',
-        ', '.join(keys[:10]) + ('...' if len(keys) > 10 else ''),
-        'This will OVERWRITE your current vault. Continue?'
-    ):
-        return
-
-    if save_vault(new_vault):
-        dialog.ok('Imported', f'Vault restored with {len(keys)} keys.', 'Run "Sync All to Addons" next.')
-    else:
-        dialog.ok('Save Failed', 'Could not persist vault to disk')
-
-
-def sync_map_manager():
-    """Manage the user-editable sync map JSON."""
-    from resources.lib import auth_manager
-    dialog = xbmcgui.Dialog()
-    path = auth_manager.get_user_sync_map_path()
-    try:
-        data = auth_manager.load_sync_map()
-        count = len(data)
-    except Exception:
-        count = 0
-
-    choice = dialog.select('Sync Map Manager', [
-        f'Active mappings: {count} addon(s)',
-        f'File: {path}',
-        '---',
-        'View Sync Map',
-        'Reload Sync Map (after editing)',
-        'Reset to Defaults',
-        'How to edit (help)'
-    ])
-    if choice == 3:
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            dialog.textviewer('Sync Map (read-only preview)', content)
-        except Exception as e:
-            dialog.ok('Error', f'Could not read sync map: {e}')
-    elif choice == 4:
-        new_map = auth_manager.load_sync_map()
-        auth_manager.ADDON_SYNC_MAP = new_map
-        notify('Sync Map', f'Reloaded - {len(new_map)} addon(s)')
-    elif choice == 5:
-        if dialog.yesno('Reset Sync Map', 'Overwrite your sync_map.json with bundled defaults?\n\nAny custom addons you added will be lost.'):
-            if auth_manager.reset_user_sync_map():
-                auth_manager.ADDON_SYNC_MAP = auth_manager.load_sync_map()
-                notify('Sync Map', 'Reset to defaults')
-            else:
-                dialog.ok('Error', 'Reset failed - see kodi.log')
-    elif choice == 6:
-        dialog.ok(
-            'How to Edit Sync Map',
-            f'File location:\n{path}',
-            'Structure: {"addons": {"plugin.video.foo": {"rd": [["target_setting_id", "vault_key"]], ...}}}',
-            'Supported services: rd, pm, ad, tb, trakt, tmdb',
-            'Vault keys: rd_token, rd_refresh, rd_client_id, rd_client_secret, rd_expires, pm_token, ad_token, tb_token, trakt_token, trakt_refresh, trakt_expires, tmdb_api_key',
-            'After saving, use "Reload Sync Map" to apply without restarting Kodi.'
-        )
+    sync_to_all_addons(vault, save_vault)
 
 
 def show_account_cards():
-    """Show detailed account info for all services"""
+    """Show detailed account info for all services with custom Window XLM skin"""
     from resources.lib import auth_manager
+    from resources.lib.account_cards_window import show_account_cards_window
+    
     vault = load_vault()
-    dialog = xbmcgui.Dialog()
     pDialog = xbmcgui.DialogProgress()
     pDialog.create('The Accountant', 'Fetching account details...')
 
-    lines = []
+    # Collect account info for all services
+    account_info = {}
 
     # Real-Debrid
-    pDialog.update(20, 'Checking Real-Debrid...')
+    pDialog.update(15, 'Checking Real-Debrid...')
     rd_token = vault.get('rd_token', '')
     if rd_token:
         info = auth_manager.get_rd_account_info(rd_token)
         if info:
-            lines.append('--- REAL-DEBRID ---')
-            lines.append(f"User: {info['username']}")
-            lines.append(f"Email: {info['email']}")
-            lines.append(f"Status: {info['status']}")
-            lines.append(f"Expires: {info['expiration']}")
-            lines.append(f"Days Left: {info['days_left']}")
-            lines.append(f"Fidelity Points: {info['fidelity']}")
-        else:
-            lines.append('--- REAL-DEBRID ---')
-            lines.append('Token saved but could not fetch info')
-    else:
-        lines.append('--- REAL-DEBRID ---')
-        lines.append('Not authorized')
-
-    lines.append('')
+            account_info['rd'] = info
 
     # Premiumize
-    pDialog.update(40, 'Checking Premiumize...')
+    pDialog.update(30, 'Checking Premiumize...')
     pm_token = vault.get('pm_token', '')
     if pm_token:
         info = auth_manager.get_pm_account_info(pm_token)
         if info:
-            lines.append('--- PREMIUMIZE ---')
-            lines.append(f"Customer ID: {info['customer_id']}")
-            lines.append(f"Status: {info['status']}")
-            lines.append(f"Expires: {info['expiration']}")
-            lines.append(f"Days Left: {info['days_left']}")
-            lines.append(f"Space Used: {info['space_used']}")
-        else:
-            lines.append('--- PREMIUMIZE ---')
-            lines.append('Key saved but could not fetch info')
-    else:
-        lines.append('--- PREMIUMIZE ---')
-        lines.append('Not authorized')
-
-    lines.append('')
+            account_info['pm'] = info
 
     # AllDebrid
-    pDialog.update(60, 'Checking AllDebrid...')
+    pDialog.update(45, 'Checking AllDebrid...')
     ad_token = vault.get('ad_token', '')
     if ad_token:
         info = auth_manager.get_ad_account_info(ad_token)
         if info:
-            lines.append('--- ALLDEBRID ---')
-            lines.append(f"User: {info['username']}")
-            lines.append(f"Email: {info['email']}")
-            lines.append(f"Status: {info['status']}")
-            lines.append(f"Expires: {info['expiration']}")
-            lines.append(f"Days Left: {info['days_left']}")
-            lines.append(f"Fidelity Points: {info['fidelity']}")
-        else:
-            lines.append('--- ALLDEBRID ---')
-            lines.append('Key saved but could not fetch info')
-    else:
-        lines.append('--- ALLDEBRID ---')
-        lines.append('Not authorized')
-
-    lines.append('')
+            account_info['ad'] = info
 
     # Trakt
-    pDialog.update(80, 'Checking Trakt...')
+    pDialog.update(60, 'Checking Trakt...')
     trakt_token = vault.get('trakt_token', '')
     if trakt_token:
         info = auth_manager.get_trakt_account_info(trakt_token)
         if info:
-            lines.append('--- TRAKT ---')
-            lines.append(f"User: {info['username']}")
-            lines.append(f"Status: {info['vip']}")
-            lines.append(f"Joined: {info['joined']}")
-            lines.append(f"Movies Watched: {info['movies_watched']}")
-            lines.append(f"Shows Watched: {info['shows_watched']}")
-            lines.append(f"Episodes Watched: {info['episodes_watched']}")
-            lines.append(f"Ratings Given: {info['ratings']}")
-        else:
-            lines.append('--- TRAKT ---')
-            lines.append('Token saved but could not fetch info')
-    else:
-        lines.append('--- TRAKT ---')
-        lines.append('Not authorized')
+            account_info['trakt'] = info
+
+    # TorBox
+    pDialog.update(75, 'Checking TorBox...')
+    tb_token = vault.get('tb_token', '')
+    if tb_token:
+        account_info['tb'] = {'status': 'Authorized'}
+
+    # TMDB
+    pDialog.update(90, 'Checking TMDB...')
+    tmdb_key = vault.get('tmdb_api_key', '')
+    if tmdb_key:
+        tmdb_info = auth_manager.get_tmdb_info(tmdb_key)
+        account_info['tmdb'] = tmdb_info or {'status': 'API Key Set'}
 
     pDialog.close()
-    dialog.textviewer('Account Cards', '\n'.join(lines))
+
+    # Show custom Window XLM skin
+    show_account_cards_window(vault, account_info)
 
 # ============================================
 # IPTV VAULT
@@ -854,6 +427,9 @@ def export_iptv_to_addon(iptv_data):
         data = iptv_data[provider]
         
         try:
+            if not xbmc.getCondVisibility('System.HasAddon(pvr.iptvsimple)'):
+                dialog.ok("Export Failed", "PVR IPTV Simple Client not installed")
+                return
             pvr = xbmcaddon.Addon('pvr.iptvsimple')
             pvr.setSetting('m3uPathType', '1')  # Remote URL
             pvr.setSetting('m3uUrl', data.get('url', ''))
@@ -903,9 +479,7 @@ def favourites_vault():
                 pass
         
         dialog.ok("Favourites Status",
-                  f"Current Favourites: {current_exists}",
-                  f"Backup Exists: {backup_exists}",
-                  f"Backup Date: {backup_date}")
+                  f"Current Favourites: {current_exists}\nBackup Exists: {backup_exists}\nBackup Date: {backup_date}")
                   
     elif choice == 3:  # Clear
         if xbmcvfs.exists(DEEP_FAV):
@@ -1055,7 +629,7 @@ def one_click_restore():
     pDialog.close()
     
     if restored:
-        dialog.ok("Restore Complete", f"Restored: {', '.join(restored)}", "Restart Kodi for full effect")
+        dialog.ok("Restore Complete", f"Restored: {', '.join(restored)}\nRestart Kodi for full effect")
     else:
         dialog.ok("Restore", "No backup data found to restore")
 
@@ -1163,7 +737,7 @@ def fix_dependencies():
     delete_folder_contents(KODI_PACKAGES, ['.zip'])
     
     pDialog.close()
-    dialog.ok("Dependencies", "Dependency check complete", "Restart Kodi if issues persist")
+    dialog.ok("Dependencies", "Dependency check complete\nRestart Kodi if issues persist")
 
 def repair_specific_addon():
     """Repair a specific addon"""
@@ -1202,7 +776,7 @@ def repair_specific_addon():
             notify("Repair", f"Cache cleared for {addon_id}")
             
         elif repair_choice == 1:
-            if dialog.yesno("Warning", f"This will delete ALL data for {addon_id}", "Continue?"):
+            if dialog.yesno("Warning", f"This will delete ALL data for {addon_id}\nContinue?"):
                 addon_data = os.path.join(KODI_ADDON_DATA, addon_id)
                 if os.path.exists(addon_data):
                     shutil.rmtree(addon_data)
@@ -1324,9 +898,7 @@ def clear_packages():
     
     if choice == 0:
         dialog.ok("Package Info",
-                  f"Total Packages: {pkg_count}",
-                  f"Total Size: {pkg_size:.1f} MB",
-                  f"Location: {KODI_PACKAGES}")
+                  f"Total Packages: {pkg_count}\nTotal Size: {pkg_size:.1f} MB\nLocation: {KODI_PACKAGES}")
                   
     elif choice == 1:
         if dialog.yesno("Confirm", f"Delete ALL {pkg_count} packages ({pkg_size:.1f} MB)?"):
@@ -1368,6 +940,254 @@ def clear_packages():
         dialog.ok("Old Packages Cleared", f"Deleted {deleted} old package(s)")
 
 # ============================================
+# LOG UPLOADER / VIEWER
+# ============================================
+def log_uploader_menu():
+    """Log Uploader Menu - View and upload Kodi logs"""
+    dialog = xbmcgui.Dialog()
+    
+    # Kodi log paths
+    log_path = xbmcvfs.translatePath('special://logpath/kodi.log')
+    old_log_path = xbmcvfs.translatePath('special://logpath/kodi.old.log')
+    
+    choice = dialog.select("Log Uploader", [
+        "View Current Log (kodi.log)",
+        "View Previous Log (kodi.old.log)",
+        "Upload Log to Pastebin",
+        "Upload Log to paste.kodi.tv",
+        "Copy Log Path to Clipboard",
+        "Log File Info"
+    ])
+    
+    if choice == 0:
+        view_log_fullscreen(log_path, "Current Kodi Log")
+    elif choice == 1:
+        view_log_fullscreen(old_log_path, "Previous Kodi Log")
+    elif choice == 2:
+        upload_log_to_pastebin(log_path)
+    elif choice == 3:
+        upload_log_to_kodi_paste(log_path)
+    elif choice == 4:
+        copy_log_path(log_path)
+    elif choice == 5:
+        show_log_info(log_path, old_log_path)
+
+
+def view_log_fullscreen(log_path, title="Kodi Log"):
+    """View log file in fullscreen with syntax highlighting"""
+    dialog = xbmcgui.Dialog()
+    
+    if not xbmcvfs.exists(log_path):
+        dialog.ok("Log Not Found", f"Log file not found:\n{log_path}")
+        return
+    
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+        
+        # Get last portion if too large (Kodi textviewer has limits)
+        max_chars = 100000
+        if len(content) > max_chars:
+            content = f"... [Showing last {max_chars} characters] ...\n\n" + content[-max_chars:]
+        
+        # Apply simple syntax highlighting with Kodi color tags
+        highlighted = apply_log_highlighting(content)
+        
+        dialog.textviewer(title, highlighted)
+        
+    except Exception as e:
+        dialog.ok("Error Reading Log", f"Could not read log file:\n{str(e)}")
+
+
+def apply_log_highlighting(content):
+    """Apply syntax highlighting to log content using Kodi color tags"""
+    lines = content.split('\n')
+    highlighted_lines = []
+    
+    for line in lines:
+        # Error lines - red
+        if 'ERROR' in line.upper() or 'EXCEPTION' in line.upper():
+            highlighted_lines.append(f'[COLOR red]{line}[/COLOR]')
+        # Warning lines - orange
+        elif 'WARNING' in line.upper() or 'WARN' in line.upper():
+            highlighted_lines.append(f'[COLOR orange]{line}[/COLOR]')
+        # Debug lines - gray
+        elif 'DEBUG' in line.upper():
+            highlighted_lines.append(f'[COLOR gray]{line}[/COLOR]')
+        # Info lines - cyan (matching theme)
+        elif 'INFO' in line.upper():
+            highlighted_lines.append(f'[COLOR cyan]{line}[/COLOR]')
+        # Notice lines - yellow
+        elif 'NOTICE' in line.upper():
+            highlighted_lines.append(f'[COLOR yellow]{line}[/COLOR]')
+        # Timestamps - slightly dimmed
+        elif line.startswith('20') and ':' in line[:20]:
+            highlighted_lines.append(f'[COLOR lightgray]{line}[/COLOR]')
+        else:
+            highlighted_lines.append(line)
+    
+    return '\n'.join(highlighted_lines)
+
+
+def upload_log_to_pastebin(log_path):
+    """Upload log to dpaste.com (no API key required)"""
+    dialog = xbmcgui.Dialog()
+    
+    if not xbmcvfs.exists(log_path):
+        dialog.ok("Log Not Found", "Log file not found.")
+        return
+    
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Uploading Log", "Reading log file...")
+    
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+        
+        # Limit size for upload
+        max_size = 500000  # 500KB limit
+        if len(content) > max_size:
+            content = content[-max_size:]
+            content = "... [Truncated - showing last 500KB] ...\n\n" + content
+        
+        pDialog.update(50, "Uploading to dpaste.com...")
+        
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        # Use dpaste.com API
+        data = urllib.parse.urlencode({
+            'content': content,
+            'syntax': 'text',
+            'expiry_days': 7
+        }).encode('utf-8')
+        
+        req = urllib.request.Request(
+            'https://dpaste.com/api/v2/',
+            data=data,
+            headers={'User-Agent': 'TheAccountant/4.3'}
+        )
+        
+        response = urllib.request.urlopen(req, context=ctx, timeout=30)
+        paste_url = response.read().decode('utf-8').strip()
+        
+        pDialog.close()
+        
+        dialog.ok("Upload Complete", f"Log uploaded successfully!\n\nURL: {paste_url}\n\nShare this URL for support.")
+        
+        # Try to copy to clipboard
+        try:
+            xbmc.executebuiltin(f'SetProperty(clipboard,{paste_url},10000)')
+        except:
+            pass
+            
+    except Exception as e:
+        pDialog.close()
+        dialog.ok("Upload Failed", f"Could not upload log:\n{str(e)}")
+
+
+def upload_log_to_kodi_paste(log_path):
+    """Upload log to paste.kodi.tv"""
+    dialog = xbmcgui.Dialog()
+    
+    if not xbmcvfs.exists(log_path):
+        dialog.ok("Log Not Found", "Log file not found.")
+        return
+    
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Uploading Log", "Reading log file...")
+    
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+        
+        # Limit size
+        max_size = 500000
+        if len(content) > max_size:
+            content = content[-max_size:]
+        
+        pDialog.update(50, "Uploading to paste.kodi.tv...")
+        
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        # paste.kodi.tv uses POST
+        data = urllib.parse.urlencode({
+            'paste_data': content,
+            'api_submit': 'true',
+            'paste_lang': 'kodi'
+        }).encode('utf-8')
+        
+        req = urllib.request.Request(
+            'https://paste.kodi.tv/',
+            data=data,
+            headers={'User-Agent': 'TheAccountant/4.3'}
+        )
+        
+        response = urllib.request.urlopen(req, context=ctx, timeout=30)
+        result = response.read().decode('utf-8')
+        
+        pDialog.close()
+        
+        # Parse response for URL
+        if 'paste.kodi.tv' in result or result.startswith('http'):
+            paste_url = result.strip() if result.startswith('http') else f"https://paste.kodi.tv/{result.strip()}"
+            dialog.ok("Upload Complete", f"Log uploaded successfully!\n\nURL: {paste_url}")
+        else:
+            dialog.ok("Upload Result", f"Server response:\n{result[:500]}")
+            
+    except Exception as e:
+        pDialog.close()
+        dialog.ok("Upload Failed", f"Could not upload log:\n{str(e)}\n\nTry using dpaste.com instead.")
+
+
+def copy_log_path(log_path):
+    """Copy log path to clipboard / show path"""
+    dialog = xbmcgui.Dialog()
+    dialog.ok("Log File Path", f"Kodi Log Location:\n\n{log_path}\n\nUse a file manager to access this file.")
+
+
+def show_log_info(log_path, old_log_path):
+    """Show information about log files"""
+    dialog = xbmcgui.Dialog()
+    
+    info_lines = ["[COLOR cyan]LOG FILE INFORMATION[/COLOR]\n"]
+    
+    for path, name in [(log_path, "Current Log (kodi.log)"), (old_log_path, "Previous Log (kodi.old.log)")]:
+        info_lines.append(f"[COLOR yellow]{name}[/COLOR]")
+        if xbmcvfs.exists(path):
+            try:
+                size = os.path.getsize(path)
+                mtime = os.path.getmtime(path)
+                info_lines.append(f"  Path: {path}")
+                info_lines.append(f"  Size: {size / 1024:.1f} KB")
+                info_lines.append(f"  Modified: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))}")
+                
+                # Count errors/warnings
+                try:
+                    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                    error_count = content.upper().count('ERROR')
+                    warning_count = content.upper().count('WARNING')
+                    info_lines.append(f"  Errors: [COLOR red]{error_count}[/COLOR]")
+                    info_lines.append(f"  Warnings: [COLOR orange]{warning_count}[/COLOR]")
+                except:
+                    pass
+            except:
+                info_lines.append(f"  Path: {path}")
+                info_lines.append("  Could not read file info")
+        else:
+            info_lines.append(f"  [COLOR gray]File not found[/COLOR]")
+        info_lines.append("")
+    
+    dialog.textviewer("Log Information", '\n'.join(info_lines))
+
+
+# ============================================
 # HELP / GUIDE
 # ============================================
 def help_menu():
@@ -1385,39 +1205,374 @@ def help_menu():
     
     if choice == 0:
         dialog.ok("About The Accountant",
-                  "Version: 3.9.4",
-                  "Author: zeus768",
-                  "Master Pro Suite for Kodi maintenance")
+                  "Version: 4.0.3\nAuthor: zeus768\nMaster Pro Suite for Kodi maintenance")
                   
     elif choice == 1:
         dialog.ok("Speed Optimizer",
-                  "Clears temp files, old thumbnails, and packages.",
-                  "Run weekly for best performance.",
-                  "Restart Kodi after optimization.")
+                  "Clears temp files, old thumbnails, and packages.\nRun weekly for best performance.\nRestart Kodi after optimization.")
                   
     elif choice == 2:
         dialog.ok("Authentication Setup",
-                  "1. Enter your API keys/tokens in Auth menu",
-                  "2. Use 'Sync All' to push to addons",
-                  "3. Credentials are stored securely in vault")
+                  "1. Enter your API keys/tokens in Auth menu\n2. Use 'Sync All' to push to addons\n3. Credentials are stored securely in vault")
                   
     elif choice == 3:
         dialog.ok("Backup & Restore",
-                  "USB Backup: Export/import vault to USB drive",
-                  "Favourites Vault: Backup your Kodi favourites",
-                  "One-Click Restore: Restore all saved data")
+                  "USB Backup: Export/import vault to USB drive\nFavourites Vault: Backup your Kodi favourites\nOne-Click Restore: Restore all saved data")
                   
     elif choice == 4:
         dialog.ok("Troubleshooting",
-                  "Addons not working? Try 'Repair Video Addons'",
-                  "Slow performance? Run 'Speed Optimizer'",
-                  "Lost settings? Use 'One-Click Restore'")
+                  "Addons not working? Try 'Repair Video Addons'\nSlow performance? Run 'Speed Optimizer'\nLost settings? Use 'One-Click Restore'")
                   
     elif choice == 5:
         dialog.ok("Credits",
-                  "The Accountant by zeus768",
-                  "Master Pro Suite v3.9.4",
-                  "Thank you for using this addon!")
+                  "The Accountant by zeus768\nMaster Pro Suite v4.0.3\nThank you for using this addon!")
+
+# ============================================
+# INTERNET SPEED TESTER
+# ============================================
+def speed_test_menu():
+    """Internet Speed Test Menu"""
+    dialog = xbmcgui.Dialog()
+    
+    choice = dialog.select("Internet Speed Tester", [
+        "Real-Time Speed Test (Animated Gauge)",
+        "Run Full Speed Test (Download + Upload + Ping)",
+        "Quick Download Test Only",
+        "Quick Upload Test Only",
+        "Ping Test Only",
+        "View Last Test Results",
+        "Speed Test Settings"
+    ])
+    
+    if choice == 0:
+        # New animated speedometer window
+        from resources.lib.speed_test_window import show_speed_test_window
+        show_speed_test_window()
+    elif choice == 1:
+        run_full_speed_test()
+    elif choice == 2:
+        run_download_test()
+    elif choice == 3:
+        run_upload_test()
+    elif choice == 4:
+        run_ping_test()
+    elif choice == 5:
+        view_speed_results()
+    elif choice == 6:
+        speed_test_settings()
+
+def run_full_speed_test():
+    """Run complete speed test"""
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Internet Speed Test", "Initializing...")
+    
+    results = {
+        'ping': 0,
+        'download': 0,
+        'upload': 0,
+        'server': 'Unknown',
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+    }
+    
+    try:
+        import urllib.request
+        import urllib.error
+        import ssl
+        
+        # Create SSL context that doesn't verify (for compatibility)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        # Test servers - using fast.com CDN and other reliable endpoints
+        test_urls = [
+            ('https://speed.cloudflare.com/__down?bytes=10000000', 'Cloudflare'),
+            ('https://proof.ovh.net/files/1Mb.dat', 'OVH Europe'),
+            ('http://speedtest.tele2.net/1MB.zip', 'Tele2'),
+        ]
+        
+        # Step 1: Ping Test
+        pDialog.update(10, "Testing ping latency...")
+        ping_times = []
+        ping_url = 'https://www.google.com'
+        
+        for i in range(3):
+            try:
+                start = time.time()
+                req = urllib.request.Request(ping_url, headers={'User-Agent': 'Mozilla/5.0'})
+                urllib.request.urlopen(req, timeout=5, context=ctx)
+                ping_times.append((time.time() - start) * 1000)
+            except:
+                pass
+        
+        if ping_times:
+            results['ping'] = sum(ping_times) / len(ping_times)
+        
+        if pDialog.iscanceled():
+            pDialog.close()
+            return
+        
+        # Step 2: Download Test
+        pDialog.update(30, "Testing download speed...")
+        download_speeds = []
+        
+        for url, server_name in test_urls:
+            if pDialog.iscanceled():
+                break
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                start = time.time()
+                response = urllib.request.urlopen(req, timeout=15, context=ctx)
+                data = response.read()
+                elapsed = time.time() - start
+                
+                if elapsed > 0:
+                    speed_mbps = (len(data) * 8) / (elapsed * 1000000)
+                    download_speeds.append((speed_mbps, server_name))
+                    pDialog.update(50, f"Download: {speed_mbps:.2f} Mbps ({server_name})")
+            except Exception as e:
+                xbmc.log(f'[Accountant] Speed test download error: {e}', xbmc.LOGDEBUG)
+                pass
+        
+        if download_speeds:
+            best_download = max(download_speeds, key=lambda x: x[0])
+            results['download'] = best_download[0]
+            results['server'] = best_download[1]
+        
+        if pDialog.iscanceled():
+            pDialog.close()
+            return
+        
+        # Step 3: Upload Test (using POST to httpbin)
+        pDialog.update(70, "Testing upload speed...")
+        try:
+            # Generate random data for upload test
+            test_data = b'x' * 500000  # 500KB test data
+            
+            upload_url = 'https://httpbin.org/post'
+            req = urllib.request.Request(upload_url, data=test_data, 
+                                         headers={'User-Agent': 'Mozilla/5.0', 
+                                                  'Content-Type': 'application/octet-stream'})
+            
+            start = time.time()
+            response = urllib.request.urlopen(req, timeout=30, context=ctx)
+            response.read()
+            elapsed = time.time() - start
+            
+            if elapsed > 0:
+                results['upload'] = (len(test_data) * 8) / (elapsed * 1000000)
+        except Exception as e:
+            xbmc.log(f'[Accountant] Speed test upload error: {e}', xbmc.LOGDEBUG)
+            results['upload'] = 0
+        
+        pDialog.update(90, "Saving results...")
+        
+        # Save results
+        save_speed_results(results)
+        
+        pDialog.close()
+        
+        # Show results
+        dialog = xbmcgui.Dialog()
+        result_text = (f"[COLOR cyan]SPEED TEST RESULTS[/COLOR]\n\n"
+                      f"[COLOR yellow]Ping:[/COLOR] {results['ping']:.0f} ms\n"
+                      f"[COLOR green]Download:[/COLOR] {results['download']:.2f} Mbps\n"
+                      f"[COLOR orange]Upload:[/COLOR] {results['upload']:.2f} Mbps\n\n"
+                      f"Server: {results['server']}\n"
+                      f"Time: {results['timestamp']}")
+        
+        dialog.textviewer("Speed Test Complete", result_text)
+        
+    except Exception as e:
+        pDialog.close()
+        xbmc.log(f'[Accountant] Speed test error: {e}', xbmc.LOGERROR)
+        xbmcgui.Dialog().ok("Speed Test Failed", f"Error: {str(e)}")
+
+def run_download_test():
+    """Quick download test only"""
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Download Speed Test", "Testing download speed...")
+    
+    try:
+        import urllib.request
+        import ssl
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        test_url = 'https://speed.cloudflare.com/__down?bytes=10000000'
+        req = urllib.request.Request(test_url, headers={'User-Agent': 'Mozilla/5.0'})
+        
+        start = time.time()
+        response = urllib.request.urlopen(req, timeout=30, context=ctx)
+        data = response.read()
+        elapsed = time.time() - start
+        
+        pDialog.close()
+        
+        if elapsed > 0:
+            speed_mbps = (len(data) * 8) / (elapsed * 1000000)
+            xbmcgui.Dialog().ok("Download Test Complete", 
+                               f"Download Speed: {speed_mbps:.2f} Mbps\nData: {len(data)/1000000:.1f} MB in {elapsed:.1f}s")
+        else:
+            xbmcgui.Dialog().ok("Download Test", "Could not calculate speed")
+            
+    except Exception as e:
+        pDialog.close()
+        xbmcgui.Dialog().ok("Download Test Failed", f"Error: {str(e)}")
+
+def run_upload_test():
+    """Quick upload test only"""
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Upload Speed Test", "Testing upload speed...")
+    
+    try:
+        import urllib.request
+        import ssl
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        test_data = b'x' * 500000
+        upload_url = 'https://httpbin.org/post'
+        req = urllib.request.Request(upload_url, data=test_data,
+                                     headers={'User-Agent': 'Mozilla/5.0',
+                                              'Content-Type': 'application/octet-stream'})
+        
+        start = time.time()
+        response = urllib.request.urlopen(req, timeout=30, context=ctx)
+        response.read()
+        elapsed = time.time() - start
+        
+        pDialog.close()
+        
+        if elapsed > 0:
+            speed_mbps = (len(test_data) * 8) / (elapsed * 1000000)
+            xbmcgui.Dialog().ok("Upload Test Complete",
+                               f"Upload Speed: {speed_mbps:.2f} Mbps\nData: {len(test_data)/1000:.0f} KB in {elapsed:.1f}s")
+        else:
+            xbmcgui.Dialog().ok("Upload Test", "Could not calculate speed")
+            
+    except Exception as e:
+        pDialog.close()
+        xbmcgui.Dialog().ok("Upload Test Failed", f"Error: {str(e)}")
+
+def run_ping_test():
+    """Quick ping test only"""
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Ping Test", "Testing network latency...")
+    
+    try:
+        import urllib.request
+        import ssl
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        test_hosts = [
+            ('https://www.google.com', 'Google'),
+            ('https://www.cloudflare.com', 'Cloudflare'),
+            ('https://www.amazon.com', 'Amazon'),
+        ]
+        
+        results = []
+        for i, (url, name) in enumerate(test_hosts):
+            pDialog.update(int((i/len(test_hosts))*100), f"Pinging {name}...")
+            ping_times = []
+            
+            for _ in range(3):
+                try:
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    start = time.time()
+                    urllib.request.urlopen(req, timeout=5, context=ctx)
+                    ping_times.append((time.time() - start) * 1000)
+                except:
+                    pass
+            
+            if ping_times:
+                avg = sum(ping_times) / len(ping_times)
+                results.append(f"{name}: {avg:.0f} ms")
+        
+        pDialog.close()
+        
+        if results:
+            xbmcgui.Dialog().ok("Ping Test Complete", "\n".join(results))
+        else:
+            xbmcgui.Dialog().ok("Ping Test", "Could not reach any servers")
+            
+    except Exception as e:
+        pDialog.close()
+        xbmcgui.Dialog().ok("Ping Test Failed", f"Error: {str(e)}")
+
+def save_speed_results(results):
+    """Save speed test results to vault"""
+    vault = load_vault()
+    
+    if 'speed_history' not in vault:
+        vault['speed_history'] = []
+    
+    vault['speed_history'].insert(0, results)
+    vault['speed_history'] = vault['speed_history'][:10]  # Keep last 10 results
+    vault['last_speed_test'] = results
+    
+    save_vault(vault)
+
+def view_speed_results():
+    """View historical speed test results"""
+    vault = load_vault()
+    history = vault.get('speed_history', [])
+    
+    if not history:
+        xbmcgui.Dialog().ok("Speed Test History", "No speed tests recorded yet.\nRun a speed test first!")
+        return
+    
+    lines = ["[COLOR cyan]SPEED TEST HISTORY[/COLOR]\n"]
+    for i, result in enumerate(history):
+        lines.append(f"[COLOR yellow]Test {i+1}:[/COLOR] {result.get('timestamp', 'Unknown')}")
+        lines.append(f"  Ping: {result.get('ping', 0):.0f} ms")
+        lines.append(f"  Download: {result.get('download', 0):.2f} Mbps")
+        lines.append(f"  Upload: {result.get('upload', 0):.2f} Mbps")
+        lines.append(f"  Server: {result.get('server', 'Unknown')}")
+        lines.append("")
+    
+    xbmcgui.Dialog().textviewer("Speed Test History", "\n".join(lines))
+
+def speed_test_settings():
+    """Speed test configuration"""
+    dialog = xbmcgui.Dialog()
+    vault = load_vault()
+    
+    current_size = vault.get('speedtest_size', 'medium')
+    
+    choice = dialog.select("Speed Test Settings", [
+        f"Test Data Size: {current_size.upper()}",
+        "Set to Small (1MB - Fast)",
+        "Set to Medium (10MB - Balanced)",
+        "Set to Large (25MB - Accurate)",
+        "Clear Speed Test History"
+    ])
+    
+    if choice == 1:
+        vault['speedtest_size'] = 'small'
+        save_vault(vault)
+        notify("Speed Test", "Test size set to Small")
+    elif choice == 2:
+        vault['speedtest_size'] = 'medium'
+        save_vault(vault)
+        notify("Speed Test", "Test size set to Medium")
+    elif choice == 3:
+        vault['speedtest_size'] = 'large'
+        save_vault(vault)
+        notify("Speed Test", "Test size set to Large")
+    elif choice == 4:
+        if dialog.yesno("Clear History", "Delete all speed test history?"):
+            vault.pop('speed_history', None)
+            vault.pop('last_speed_test', None)
+            save_vault(vault)
+            notify("Speed Test", "History cleared")
 
 # ============================================
 # SCHEDULED AUTO-CLEAN
@@ -1502,6 +1657,215 @@ def check_auto_clean_on_startup():
     except:
         pass
 
+
+# ============================================
+# SAVE MY BUILD (Build Creator / Zip Exporter)
+# ============================================
+def save_my_build():
+    """Build Creator - zip up a Kodi build (addons + userdata) and save to device."""
+    import zipfile
+    dialog = xbmcgui.Dialog()
+
+    # --- Mode selection: Quick full vs Custom ---
+    mode = dialog.select("Save My Build", [
+        "Quick Build (addons + userdata)",
+        "Custom Build (choose what to include)",
+        "About Save My Build"
+    ])
+    if mode < 0:
+        return
+    if mode == 2:
+        dialog.ok("Save My Build",
+                  "Package your current Kodi setup into a portable .zip build.\n\n"
+                  "Quick: addons + userdata (skin settings, sources, favourites, keymaps)\n"
+                  "Custom: pick exactly which sections to include\n\n"
+                  "Saved zip can be restored on any Kodi device.")
+        return
+
+    # --- Define build sections (label, source path, arcname inside zip) ---
+    sections = [
+        ("Addons",                KODI_ADDONS,                           "addons"),
+        ("Addon Data (settings)", KODI_ADDON_DATA,                       "userdata/addon_data"),
+        ("Favourites",            FAV_FILE,                              "userdata/favourites.xml"),
+        ("Sources",               os.path.join(KODI_USERDATA, 'sources.xml'),  "userdata/sources.xml"),
+        ("Profiles",              os.path.join(KODI_USERDATA, 'profiles.xml'), "userdata/profiles.xml"),
+        ("Keymaps",               os.path.join(KODI_USERDATA, 'keymaps'),      "userdata/keymaps"),
+        ("GUI Settings",          os.path.join(KODI_USERDATA, 'guisettings.xml'), "userdata/guisettings.xml"),
+        ("Advanced Settings",     os.path.join(KODI_USERDATA, 'advancedsettings.xml'), "userdata/advancedsettings.xml"),
+        ("Player Core Factory",   os.path.join(KODI_USERDATA, 'playercorefactory.xml'), "userdata/playercorefactory.xml"),
+    ]
+
+    if mode == 0:  # Quick
+        selected_idx = list(range(len(sections)))
+    else:  # Custom
+        preselected = [True] * len(sections)
+        picked = dialog.multiselect("Select what to include in build",
+                                    [s[0] for s in sections],
+                                    preselect=[i for i, v in enumerate(preselected) if v])
+        if not picked:
+            return
+        selected_idx = picked
+
+    # --- Build name ---
+    default_name = f"MyBuild_{time.strftime('%Y-%m-%d_%H%M')}"
+    build_name = dialog.input("Name your build (no extension)", default_name)
+    if not build_name:
+        return
+    # sanitize
+    safe_name = "".join(c for c in build_name if c.isalnum() or c in "-_ .").strip().replace(" ", "_")
+    if not safe_name:
+        safe_name = default_name
+    zip_filename = safe_name + ".zip"
+
+    # --- Build Info banner (creator name + note, remembered in vault) ---
+    vault = load_vault()
+    last_creator = vault.get('build_creator', '')
+    creator = dialog.input("Creator name (shown in build info)", last_creator)
+    if creator is None:
+        creator = ''
+    note = dialog.input("Build note / description (optional)", "")
+    if note is None:
+        note = ''
+    if creator and creator != last_creator:
+        vault['build_creator'] = creator
+        save_vault(vault)
+
+    # --- Save destination: default OR browse ---
+    default_dest = os.path.join(KODI_HOME, 'build_exports')
+    dest_choice = dialog.select("Save location", [
+        f"Default folder ({default_dest})",
+        "Browse... (pick any folder on device)"
+    ])
+    if dest_choice < 0:
+        return
+    if dest_choice == 0:
+        dest_dir = default_dest
+        try:
+            os.makedirs(dest_dir, exist_ok=True)
+        except Exception as e:
+            dialog.ok("Save My Build", f"Could not create default folder:\n{e}")
+            return
+    else:
+        dest_dir = dialog.browse(0, 'Select Save Folder', 'files')
+        if not dest_dir:
+            return
+
+    zip_path = os.path.join(dest_dir, zip_filename)
+
+    # --- Confirm if overwriting ---
+    if os.path.exists(zip_path):
+        if not dialog.yesno("Save My Build", f"{zip_filename} already exists.\nOverwrite?"):
+            return
+
+    # --- Build the zip ---
+    pDialog = xbmcgui.DialogProgress()
+    pDialog.create("Save My Build", "Preparing build...")
+
+    # Paths to skip (avoid recursion & bloat)
+    skip_dirs = {
+        os.path.normpath(KODI_PACKAGES),
+        os.path.normpath(KODI_THUMBNAILS),
+        os.path.normpath(KODI_TEMP),
+    }
+    skip_names = {'cache', 'Cache', 'temp', 'Temp', 'tmp', 'Thumbnails', 'packages'}
+
+    total = len(selected_idx)
+    added_files = 0
+    added_bytes = 0
+
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
+            for i, idx in enumerate(selected_idx):
+                label, src, arc = sections[idx]
+                pct = int((i / max(total, 1)) * 100)
+                pDialog.update(pct, f"Adding: {label}")
+                if pDialog.iscanceled():
+                    raise RuntimeError("Cancelled by user")
+
+                if not os.path.exists(src):
+                    continue
+
+                if os.path.isfile(src):
+                    try:
+                        zf.write(src, arc)
+                        added_files += 1
+                        added_bytes += os.path.getsize(src)
+                    except:
+                        pass
+                    continue
+
+                # Directory: walk
+                src_norm = os.path.normpath(src)
+                for root, dirs, files in os.walk(src):
+                    # Filter junk subdirs in-place
+                    dirs[:] = [d for d in dirs
+                               if d not in skip_names
+                               and os.path.normpath(os.path.join(root, d)) not in skip_dirs]
+                    for f in files:
+                        fp = os.path.join(root, f)
+                        try:
+                            rel = os.path.relpath(fp, src_norm)
+                            zf.write(fp, os.path.join(arc, rel))
+                            added_files += 1
+                            added_bytes += os.path.getsize(fp)
+                        except:
+                            pass
+                    if pDialog.iscanceled():
+                        raise RuntimeError("Cancelled by user")
+
+            # Write a manifest
+            manifest = {
+                "build_name": safe_name,
+                "creator": creator,
+                "note": note,
+                "created": time.strftime('%Y-%m-%d %H:%M:%S'),
+                "created_epoch": int(time.time()),
+                "created_by": "The Accountant - Save My Build",
+                "addon_version": ADDON.getAddonInfo('version'),
+                "sections": [sections[i][0] for i in selected_idx],
+                "files": added_files,
+                "size_bytes": added_bytes
+            }
+            zf.writestr("build_manifest.json", json.dumps(manifest, indent=2))
+
+            # Human-readable banner
+            banner = (
+                "============================================\n"
+                f"  {safe_name}\n"
+                "============================================\n"
+                f"Creator   : {creator or 'Unknown'}\n"
+                f"Created   : {manifest['created']}\n"
+                f"Built with: The Accountant v{manifest['addon_version']}\n"
+                f"Sections  : {', '.join(manifest['sections'])}\n"
+                f"Files     : {added_files}\n"
+                f"Size      : {added_bytes / (1024*1024):.1f} MB\n"
+            )
+            if note:
+                banner += f"\nNote:\n{note}\n"
+            zf.writestr("build_info.txt", banner)
+
+        pDialog.close()
+        size_mb = added_bytes / (1024 * 1024)
+        dialog.ok("Build Saved",
+                  f"[COLOR cyan]{zip_filename}[/COLOR]\n"
+                  f"Creator: {creator or 'Unknown'}\n"
+                  f"Location: {dest_dir}\n"
+                  f"Files: {added_files}\n"
+                  f"Size: {size_mb:.1f} MB")
+    except Exception as e:
+        try:
+            pDialog.close()
+        except:
+            pass
+        # Clean up partial zip
+        try:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+        except:
+            pass
+        dialog.ok("Save My Build Failed", f"Error: {str(e)}")
+
+
 # ============================================
 # MAIN MENU
 # ============================================
@@ -1526,20 +1890,26 @@ def main_menu():
     """Main menu display"""
     items = [
         ("ONE-CLICK SPEED OPTIMIZER", "speed", "speed.png"),
-        ("NETWORK SPEED TEST", "speedtest", "speed.png"),
         ("SCHEDULED AUTO-CLEAN", "autoclean", "autoclean.png"),
+        ("--- Network & Connectivity ---", "spacer", ""),
+        ("INTERNET SPEED TESTER", "speedtest", "speedtest.png"),
+        ("--- Account Management ---", "spacer", ""),
         ("Pair RD / Trakt / Auth / PM / AD / TMDB", "auth", "auth.png"),
         ("VIEW ACCOUNT CARDS", "account_cards", "auth.png"),
-        ("REFRESH WIDGETS", "refresh_widgets", "refresh.png"),
+        ("SYNC ALL TO ADDONS", "sync_all", "sync.png"),
+        ("--- Backup & Restore ---", "spacer", ""),
         ("IPTV Login Vault", "iptv", "iptv.png"),
         ("Favourites Vault", "favs", "favs.png"),
         ("USB BACKUP TOOL", "usb", "usb.png"),
+        ("SAVE MY BUILD", "save_build", "build.png"),
+        ("BUILD WIZARD CREATOR", "wizard_creator", "build.png"),
         ("ONE-CLICK RESTORE (ALL)", "restore", "restore.png"),
-        ("SYNC ALL TO ADDONS", "sync_all", "sync.png"),
         ("--- Maintenance Tools ---", "spacer", ""),
+        ("REFRESH WIDGETS", "refresh_widgets", "refresh.png"),
         ("REPAIR VIDEO ADDONS", "repair", "repair.png"),
         ("CLEAR CACHE (MANUAL)", "clean", "clean.png"),
         ("CLEAR PACKAGES", "packages", "packages.png"),
+        ("LOG UPLOADER", "log_uploader", "log.png"),
         ("--- Help & Info ---", "spacer", ""),
         ("HELP / GUIDE", "help", "help.png"),
         ("Buy Me a Beer", "buy_beer", "")
@@ -1561,6 +1931,278 @@ def main_menu():
     xbmcplugin.endOfDirectory(HANDLE)
 
 # ============================================
+# BUILD WIZARD CREATOR
+# ============================================
+def build_wizard_menu():
+    import hashlib
+    d = xbmcgui.Dialog()
+    exports = os.path.join(KODI_HOME, 'build_exports')
+    os.makedirs(exports, exist_ok=True)
+    c = d.select("Build Wizard Creator", [
+        "Manage Builds (list / rename / delete)",
+        "Wizard Settings (GitHub user, repo, author)",
+        "Generate wizard.xml for a build",
+        "Generate Repo Scaffold (ready to upload)",
+        "Generate Companion Wizard Addon (.zip)",
+        "How To Publish on GitHub (instructions)",
+    ])
+    if c == 0: bwc_manage(exports)
+    elif c == 1: bwc_settings()
+    elif c == 2: bwc_gen_xml(exports)
+    elif c == 3: bwc_scaffold(exports)
+    elif c == 4: bwc_gen_wizard_addon(exports)
+    elif c == 5: bwc_instructions()
+
+def bwc_manage(exports):
+    d = xbmcgui.Dialog()
+    zips = sorted([f for f in os.listdir(exports) if f.endswith('.zip')])
+    if not zips:
+        d.ok("Build Manager", "No builds yet. Use SAVE MY BUILD first.")
+        return
+    labels = [f"{z} ({os.path.getsize(os.path.join(exports, z))/1048576:.1f} MB)" for z in zips]
+    i = d.select("Select a build", labels)
+    if i < 0: return
+    path = os.path.join(exports, zips[i])
+    act = d.select(zips[i], ["Rename", "Delete", "Duplicate", "Show path", "View build_info.txt"])
+    if act == 0:
+        n = d.input("New name (no extension)", zips[i][:-4])
+        if n:
+            os.rename(path, os.path.join(exports, n + ".zip"))
+            notify("Builds", "Renamed")
+    elif act == 1:
+        if d.yesno("Delete", f"Delete {zips[i]}?"):
+            os.remove(path); notify("Builds", "Deleted")
+    elif act == 2:
+        shutil.copy2(path, os.path.join(exports, zips[i][:-4] + "_copy.zip"))
+        notify("Builds", "Duplicated")
+    elif act == 3:
+        d.ok("Path", path)
+    elif act == 4:
+        import zipfile
+        try:
+            with zipfile.ZipFile(path) as zf:
+                d.textviewer("build_info.txt", zf.read("build_info.txt").decode('utf-8', 'ignore'))
+        except Exception as e:
+            d.ok("Error", str(e))
+
+def bwc_settings():
+    d = xbmcgui.Dialog(); v = load_vault(); ws = v.get('wizard_settings', {})
+    fields = [("gh_user", "GitHub username"), ("gh_repo", "Repo name"),
+              ("author", "Build author display name"),
+              ("addon_id", "Wizard addon id (e.g. program.yourname.wizard)"),
+              ("icon_url", "Icon URL (optional)"), ("fanart_url", "Fanart URL (optional)"),
+              ("support_url", "Support URL (optional)")]
+    while True:
+        labels = []
+        for k, lbl in fields:
+            val = ws.get(k, '')
+            labels.append(f"{lbl}: {val if val else '(not set)'}")
+        pages_url = f"https://{ws.get('gh_user','<user>')}.github.io/{ws.get('gh_repo','<repo>')}/"
+        labels.append(f"--- Your Pages URL will be: {pages_url} ---")
+        labels.append("Save & Exit")
+        c = d.select("Wizard Settings", labels)
+        if c < 0 or c == len(labels)-1:
+            v['wizard_settings'] = ws; save_vault(v); return
+        if c == len(labels)-2: continue
+        k, lbl = fields[c]
+        ws[k] = d.input(lbl, ws.get(k, ''))
+
+def _ws():
+    return load_vault().get('wizard_settings', {})
+
+def _require_ws():
+    ws = _ws()
+    if not ws.get('gh_user') or not ws.get('gh_repo'):
+        xbmcgui.Dialog().ok("Setup needed", "Open 'Wizard Settings' first and enter your GitHub username and repo name.")
+        return None
+    return ws
+
+def _pick_zip(exports):
+    zips = sorted([f for f in os.listdir(exports) if f.endswith('.zip')])
+    if not zips:
+        xbmcgui.Dialog().ok("No builds", "Create a build first with SAVE MY BUILD.")
+        return None
+    i = xbmcgui.Dialog().select("Select build", zips)
+    return os.path.join(exports, zips[i]) if i >= 0 else None
+
+def _md5(path):
+    import hashlib
+    h = hashlib.md5()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(1<<20), b''): h.update(chunk)
+    return h.hexdigest()
+
+def bwc_gen_xml(exports):
+    ws = _require_ws()
+    if not ws: return
+    zpath = _pick_zip(exports)
+    if not zpath: return
+    d = xbmcgui.Dialog()
+    name = d.input("Build display name", os.path.basename(zpath)[:-4])
+    if not name: return
+    ver = d.input("Version", "1.0.0")
+    kodi_min = ["19", "20", "21"][max(0, d.select("Minimum Kodi version", ["19 Matrix", "20 Nexus", "21 Omega"]))]
+    changelog = d.input("Changelog (one line or \\n for new lines)", "Initial release")
+    pages = f"https://{ws['gh_user']}.github.io/{ws['gh_repo']}/"
+    url = d.input("Public zip URL", pages + "builds/" + os.path.basename(zpath))
+    size = os.path.getsize(zpath)
+    md5 = _md5(zpath)
+    xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<wizard>
+  <build>
+    <name>{name}</name>
+    <version>{ver}</version>
+    <kodi>{kodi_min}</kodi>
+    <author>{ws.get('author','')}</author>
+    <url>{url}</url>
+    <md5>{md5}</md5>
+    <size>{size}</size>
+    <icon>{ws.get('icon_url','')}</icon>
+    <fanart>{ws.get('fanart_url','')}</fanart>
+    <support>{ws.get('support_url','')}</support>
+    <created>{time.strftime('%Y-%m-%d %H:%M:%S')}</created>
+    <changelog>{changelog}</changelog>
+  </build>
+</wizard>
+'''
+    out = os.path.join(exports, 'wizard.xml')
+    with open(out, 'w', encoding='utf-8') as f: f.write(xml)
+    d.ok("wizard.xml created", f"Saved to:\n{out}\n\nMD5: {md5}\nSize: {size/1048576:.1f} MB")
+
+def bwc_scaffold(exports):
+    ws = _require_ws()
+    if not ws: return
+    zpath = _pick_zip(exports)
+    if not zpath: return
+    # Ensure wizard.xml exists
+    xml_path = os.path.join(exports, 'wizard.xml')
+    if not os.path.exists(xml_path):
+        if xbmcgui.Dialog().yesno("Missing wizard.xml", "No wizard.xml yet. Generate it now?"):
+            bwc_gen_xml(exports)
+        if not os.path.exists(xml_path): return
+    repo_dir = os.path.join(exports, ws['gh_repo'])
+    os.makedirs(os.path.join(repo_dir, 'builds'), exist_ok=True)
+    shutil.copy2(zpath, os.path.join(repo_dir, 'builds', os.path.basename(zpath)))
+    shutil.copy2(xml_path, os.path.join(repo_dir, 'wizard.xml'))
+    pages = f"https://{ws['gh_user']}.github.io/{ws['gh_repo']}/"
+    readme = f"""# {ws.get('author','My')} Kodi Builds
+
+## Install the wizard on Kodi
+1. In Kodi: Settings > System > Add-ons > enable **Unknown sources**
+2. Settings > File manager > Add source: `{pages}`  (name it anything)
+3. Install from zip file > pick that source > install the wizard zip
+4. Open the wizard addon > pick your build > done
+
+## Files
+- `wizard.xml` - build manifest (auto-generated)
+- `builds/` - your build zip(s)
+"""
+    instructions = f"""HOW TO PUBLISH (no command line needed)
+
+1. Go to https://github.com and sign up (free).
+2. Click 'New repository'. Name it EXACTLY: {ws['gh_repo']}
+   - Set to PUBLIC. Tick 'Add README'. Create.
+3. In the new repo click 'Add file' > 'Upload files'.
+4. Drag the ENTIRE contents of this folder in:
+   {repo_dir}
+5. Commit changes.
+6. Repo > Settings > Pages > Source = 'Deploy from branch' > main / root > Save.
+7. Wait ~1 minute. Your site is live at:
+   {pages}
+
+Direct URLs users will use:
+- wizard.xml : {pages}wizard.xml
+- build zip  : {pages}builds/{os.path.basename(zpath)}
+"""
+    with open(os.path.join(repo_dir, 'README.md'), 'w') as f: f.write(readme)
+    with open(os.path.join(repo_dir, 'INSTRUCTIONS.txt'), 'w') as f: f.write(instructions)
+    xbmcgui.Dialog().ok("Repo scaffold ready", f"Folder:\n{repo_dir}\n\nOpen it with a file manager and follow INSTRUCTIONS.txt")
+
+def bwc_gen_wizard_addon(exports):
+    import zipfile
+    ws = _require_ws()
+    if not ws: return
+    addon_id = ws.get('addon_id') or f"program.{ws['gh_user']}.wizard"
+    pages = f"https://{ws['gh_user']}.github.io/{ws['gh_repo']}/"
+    wizard_xml_url = pages + "wizard.xml"
+    addon_name = xbmcgui.Dialog().input("Wizard addon name", f"{ws.get('author','My')} Build Wizard")
+    if not addon_name: return
+    version = "1.0.0"
+    # addon.xml
+    addon_xml = f'''<?xml version="1.0" encoding="UTF-8"?>
+<addon id="{addon_id}" name="{addon_name}" version="{version}" provider-name="{ws.get('author','')}">
+    <requires><import addon="xbmc.python" version="3.0.0"/></requires>
+    <extension point="xbmc.python.pluginsource" library="main.py"><provides>executable</provides></extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">{addon_name}</summary>
+        <description lang="en">Install builds from {ws.get('author','')}.</description>
+        <platform>all</platform>
+        <assets><icon>icon.png</icon></assets>
+    </extension>
+</addon>
+'''
+    main_py = f'''import xbmc, xbmcgui, xbmcvfs, sys, os, urllib.request, ssl, hashlib, zipfile, xml.etree.ElementTree as ET
+WIZARD_XML = "{wizard_xml_url}"
+def _get(url):
+    ctx = ssl.create_default_context(); ctx.check_hostname=False; ctx.verify_mode=ssl.CERT_NONE
+    req = urllib.request.Request(url, headers={{'User-Agent':'KodiWizard/1.0'}})
+    return urllib.request.urlopen(req, context=ctx, timeout=30).read()
+def main():
+    d = xbmcgui.Dialog()
+    try:
+        root = ET.fromstring(_get(WIZARD_XML))
+    except Exception as e:
+        d.ok("Wizard", f"Cannot load manifest:\\n{{e}}"); return
+    builds = root.findall('build')
+    if not builds: d.ok("Wizard","No builds listed."); return
+    labels = [f"{{b.find('name').text}} v{{b.find('version').text}}" for b in builds]
+    i = d.select("Pick a build", labels)
+    if i < 0: return
+    b = builds[i]
+    url = b.find('url').text; md5 = (b.find('md5').text or '').strip()
+    if not d.yesno("Install", f"Install {{labels[i]}}?\\nThis will overwrite current setup."): return
+    p = xbmcgui.DialogProgress(); p.create("Downloading build","Please wait...")
+    tmp = xbmcvfs.translatePath('special://temp/wizard_build.zip')
+    try:
+        data = _get(url)
+        with open(tmp,'wb') as f: f.write(data)
+        if md5 and hashlib.md5(open(tmp,'rb').read()).hexdigest() != md5:
+            p.close(); d.ok("Wizard","MD5 mismatch. Aborting."); return
+        p.update(60,"Extracting...")
+        home = xbmcvfs.translatePath('special://home/')
+        with zipfile.ZipFile(tmp) as zf: zf.extractall(home)
+        p.close(); d.ok("Done","Build installed. Restart Kodi.")
+    except Exception as e:
+        p.close(); d.ok("Failed", str(e))
+main()
+'''
+    # Build a tiny themed icon (solid dark + cyan square)
+    icon_bytes = open(os.path.join(MEDIA_PATH, 'build.png'), 'rb').read()
+    out_zip = os.path.join(exports, f"{addon_id}-{version}.zip")
+    with zipfile.ZipFile(out_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"{addon_id}/addon.xml", addon_xml)
+        zf.writestr(f"{addon_id}/main.py", main_py)
+        zf.writestr(f"{addon_id}/icon.png", icon_bytes)
+    xbmcgui.Dialog().ok("Wizard addon created", f"Saved to:\n{out_zip}\n\nUpload it into your repo at builds/ or tell users to install it directly.")
+
+def bwc_instructions():
+    ws = _ws()
+    pages = f"https://{ws.get('gh_user','<user>')}.github.io/{ws.get('gh_repo','<repo>')}/"
+    text = (
+        "[COLOR cyan]PUBLISH YOUR BUILD ON GITHUB (free, no command line)[/COLOR]\n\n"
+        "[COLOR yellow]1. GitHub account[/COLOR]\n- Go to github.com > Sign up (free).\n\n"
+        "[COLOR yellow]2. Create repo[/COLOR]\n- Click + > New repository.\n"
+        f"- Name it: {ws.get('gh_repo','<repo>')} (must match your Wizard Settings).\n- Public. Tick 'Add README'. Create.\n\n"
+        "[COLOR yellow]3. Generate scaffold[/COLOR]\n- In this menu pick 'Generate Repo Scaffold'.\n- It creates a folder on your device with wizard.xml + your build.zip + README + INSTRUCTIONS.\n\n"
+        "[COLOR yellow]4. Upload[/COLOR]\n- Open the repo in your browser.\n- 'Add file' > 'Upload files' > drag the scaffold contents in > Commit.\n\n"
+        "[COLOR yellow]5. Enable Pages[/COLOR]\n- Repo Settings > Pages > Source = main / root > Save.\n- Wait ~1 minute.\n\n"
+        f"[COLOR yellow]6. Your public URLs[/COLOR]\n- Site:       {pages}\n- Manifest:   {pages}wizard.xml\n\n"
+        "[COLOR yellow]7. Wizard addon[/COLOR]\n- Pick 'Generate Companion Wizard Addon'.\n- Share that .zip with users - they install it once and get your builds forever.\n\n"
+        "[COLOR yellow]8. Updating a build[/COLOR]\n- Make a new build > regenerate wizard.xml > re-upload wizard.xml + new zip. Done.\n"
+    )
+    xbmcgui.Dialog().textviewer("How To Publish", text)
+
+# ============================================
 # ROUTER
 # ============================================
 if __name__ == '__main__':
@@ -1575,7 +2217,7 @@ if __name__ == '__main__':
     elif action == 'speed':
         speed_optimizer()
     elif action == 'speedtest':
-        network_speed_test()
+        speed_test_menu()
     elif action == 'autoclean':
         auto_clean_settings()
     elif action == 'auth':
@@ -1594,18 +2236,8 @@ if __name__ == '__main__':
         auth_tmdb()
     elif action == 'sync_all':
         sync_all_addons()
-    elif action == 'preview_scan':
-        preview_scan_addons()
-    elif action == 'auto_sync':
-        toggle_auto_sync()
-    elif action == 'sync_map_mgr':
-        sync_map_manager()
-    elif action == 'vault_qr':
-        vault_qr_menu()
     elif action == 'account_cards':
         show_account_cards()
-    elif action == 'auth_view':
-        authorisation_view()
     elif action == 'iptv':
         iptv_vault()
     elif action == 'favs':
@@ -1645,7 +2277,14 @@ if __name__ == '__main__':
             pass
     elif action == 'refresh_widgets':
         refresh_widgets()
+    elif action == 'log_uploader':
+        log_uploader_menu()
     elif action == 'account_cards':
         show_account_cards()
+    elif action == 'wizard_creator':
+        build_wizard_menu()
     elif action == 'main':
         main_menu()
+    elif action == 'save_build':
+        save_my_build()
+

@@ -87,7 +87,7 @@ def movie_menu():
         _menu_item('Popular', 'trakt_list', extra_params={'path': 'movies/popular', 'media_type': 'movie'}),
         _menu_item('Most Watched (Week)', 'trakt_list', extra_params={'path': 'movies/watched/weekly', 'media_type': 'movie'}),
         _menu_item('Most Watched (All Time)', 'trakt_list', extra_params={'path': 'movies/watched/all', 'media_type': 'movie'}),
-        _menu_item('Box Office', 'trakt_list', extra_params={'path': 'movies/boxoffice', 'media_type': 'movie'}),
+        _menu_item('Box Office', 'tmdb_list', extra_params={'endpoint': 'now_playing', 'media_type': 'movie'}),
         _menu_item('Anticipated', 'anticipated', extra_params={'media_type': 'movie'}),
         _menu_item('Recommended For You', 'recommendations', extra_params={'media_type': 'movie'}),
         _menu_item('Genres', 'list_genres', extra_params={'path': 'movie'}),
@@ -660,6 +660,19 @@ if __name__ == '__main__':
     elif action == 'trakt_list':
         page = params.get('page', '1')
         trakt_api.get_list(params.get('path'), params.get('media_type', 'movie'), page)
+    elif action == 'tmdb_list':
+        tmdb.show_tmdb_list(
+            params.get('endpoint', 'now_playing'),
+            params.get('media_type', 'movie'),
+            params.get('page', '1')
+        )
+    elif action == 'tmdb_discover':
+        tmdb.show_genre_discover(
+            params.get('media_type', 'movie'),
+            params.get('genre_id', ''),
+            params.get('label', ''),
+            params.get('page', '1')
+        )
     elif action == 'search_dialog':
         search_dialog(params.get('media_type', 'movie'))
     elif action == 'search_results':
@@ -687,7 +700,11 @@ if __name__ == '__main__':
     elif action == 'continue_watching':
         trakt_api.get_playback_progress()
     elif action == 'rate':
-        trakt_api.rate_item(params.get('media_type', 'movie'), params.get('trakt_id', ''))
+        trakt_api.rate_item(
+            params.get('media_type', 'movie'),
+            trakt_id=params.get('trakt_id') or None,
+            imdb_id=params.get('imdb_id') or None,
+        )
     elif action == 'add_watchlist':
         trakt_api.add_to_watchlist(params.get('media_type', 'movie'), params.get('imdb_id', ''))
 

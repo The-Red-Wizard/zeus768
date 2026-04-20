@@ -11,7 +11,11 @@ from . import precache
 
 ADDON = xbmcaddon.Addon()
 
-QUALITY_MAP = {'0': '1080p', '1': '720p', '2': '480p'}
+# v2.4.4: settings.xml has 4 options (4K/1080p/720p/480p indexed 0..3).
+# Previous map only had 3 entries and silently collapsed 4K to 1080p.
+QUALITY_MAP = {'0': '2160p', '1': '1080p', '2': '720p', '3': '480p'}
+QUALITY_LABEL = {'2160p': '4K', '1080p': '1080p', '720p': '720p', '480p': '480p'}
+QUALITY_ORDER = ['2160p', '1080p', '720p', '480p']
 
 
 def _handle():
@@ -23,6 +27,51 @@ def _handle():
 
 def _max_quality():
     return QUALITY_MAP.get(ADDON.getSetting('preferred_quality'), '1080p')
+
+
+def _auto_play_enabled():
+    """'Auto-Play Best Quality' setting. Default TRUE (matches settings.xml)."""
+    val = ADDON.getSetting('auto_play')
+    # Kodi returns 'true'/'false' strings; empty means unset -> default True.
+    if not val:
+        return True
+    return val.lower() not in ('false', '0', 'no')
+
+
+def _sort_key_factory(preferred, cached_set):
+    """Return a sort key that puts cached+preferred-quality first, then other
+    qualities by closeness to the user's preference, then by seed count."""
+    pref_idx = QUALITY_ORDER.index(preferred) if preferred in QUALITY_ORDER else 1
+
+    def _key(r):
+        is_cached = 0 if r.get('hash', '').lower() in cached_set else 1
+        q = r.get('quality', '720p')
+        q_idx = QUALITY_ORDER.index(q) if q in QUALITY_ORDER else 9
+        # Distance from user preference (preferred = 0; lower qualities grow).
+        q_distance = q_idx - pref_idx if q_idx >= pref_idx else 10 - (pref_idx - q_idx)
+        return (is_cached, q_distance, -r.get('seeds', 0))
+    return _key
+
+
+def _pick_source(results, cached_set):
+    """Show a selectable list of sources. Returns picked source dict, or None."""
+    labels = []
+    for r in results[:40]:
+        is_cached = r.get('hash', '').lower() in cached_set
+        tag = '[CACHED] ' if is_cached else ''
+        labels.append(
+            '{tag}[{q}] {src} - {seeds} seeds - {title}'.format(
+                tag=tag,
+                q=QUALITY_LABEL.get(r.get('quality', ''), r.get('quality', '?')),
+                src=r.get('source', '?'),
+                seeds=r.get('seeds', 0),
+                title=(r.get('title', '') or '')[:60]
+            )
+        )
+    idx = xbmcgui.Dialog().select('Select Source', labels)
+    if idx < 0:
+        return None
+    return results[idx]
 
 
 def _set_scrobble_props(media_type, title, imdb_id='', season=0, episode=0, show_title='', tmdb_id=''):
@@ -79,17 +128,20 @@ def play(title, year='', imdb_id=''):
         except Exception as e:
             xbmc.log('Cache check failed: %s' % str(e), xbmc.LOGWARNING)
 
-    # Sort: cached first, then by quality, then seeds
-    QUALITY_ORDER = ['1080p', '720p', '480p']
-    order_map = {q: i for i, q in enumerate(QUALITY_ORDER)}
-
-    def sort_key(r):
-        is_cached = 0 if r.get('hash', '').lower() in cached_set else 1
-        q_idx = order_map.get(r.get('quality', '720p'), 9)
-        return (is_cached, q_idx, -r.get('seeds', 0))
-
-    results.sort(key=sort_key)
+    # Sort with new preference-aware key
+    results.sort(key=_sort_key_factory(max_q, cached_set))
     cached_count = sum(1 for r in results if r.get('hash', '').lower() in cached_set)
+
+    # If auto-play is OFF, let user pick a source manually.
+    if not _auto_play_enabled():
+        progress.close()
+        picked = _pick_source(results, cached_set)
+        if not picked:
+            xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
+            return
+        results = [picked]
+        progress = xbmcgui.DialogProgress()
+        progress.create('Trakt Player', 'Resolving selected source...')
 
     progress.update(55, 'Found %d sources (%d cached). Resolving...' % (len(results), cached_count))
 
@@ -173,11 +225,20 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
         except Exception:
             pass
 
-    QUALITY_ORDER = ['1080p', '720p', '480p']
-    order_map = {q: i for i, q in enumerate(QUALITY_ORDER)}
-    results.sort(key=lambda r: (0 if r.get('hash', '').lower() in ep_cached_set else 1,
-                                 order_map.get(r.get('quality', '720p'), 9), -r.get('seeds', 0)))
+    results.sort(key=_sort_key_factory(max_q, ep_cached_set))
     ep_cached_count = sum(1 for r in results if r.get('hash', '').lower() in ep_cached_set)
+
+    # If auto-play is OFF, let user pick.
+    if not _auto_play_enabled():
+        progress.close()
+        picked = _pick_source(results, ep_cached_set)
+        if not picked:
+            xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
+            return
+        results = [picked]
+        progress = xbmcgui.DialogProgress()
+        progress.create('Trakt Player', 'Resolving selected source...')
+
     progress.update(55, 'Found %d sources (%d cached). Resolving...' % (len(results), ep_cached_count))
 
     for i, source in enumerate(results[:10]):

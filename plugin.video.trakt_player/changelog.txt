@@ -1,3 +1,75 @@
+v2.4.4 (2026-04-XX) - EIGHT BUG FIXES
+=====================================
+[BUG 1] Can't add TV/Movies to Trakt lists
+  - Root cause: add_to_list / add_to_watchlist existed but had
+    no UI entry point (no context menu on any list item)
+  - Fix: context menu now attached to every list item in
+    get_list() + _display_items() with "Add to Watchlist",
+    "Add to Custom List", and "Rate on Trakt" options
+  - rate_item() now accepts either trakt_id or imdb_id so the
+    context-menu invocation (which only has imdb_id) works
+
+[BUG 2] Trakt list only shows TV shows up to "R"
+  - Root cause: sync/watchlist endpoint returned one page of
+    30 items, stopping mid-alphabet
+  - Fix: new _auto_paginate() helper loads up to 20 pages
+    (up to 2000 items) for any sync/, users/ or lists/ path
+  - Per-request limit bumped from 30 to 100 for these endpoints
+
+[BUG 3] Scraping always plays in 1080p even with 4K selected
+  - Root cause: QUALITY_MAP had only 3 entries
+    ('0'->1080p, '1'->720p, '2'->480p) but settings.xml exposes
+    4 options (4K/1080p/720p/480p, indexed 0..3), so picking
+    4K silently collapsed to 1080p
+  - Fix: QUALITY_MAP = {'0': '2160p', '1': '1080p',
+    '2': '720p', '3': '480p'}. Sort key now favours the user's
+    preferred quality first (cached results first, then
+    distance from the preferred quality, then seeds)
+
+[BUG 4] Auto-play still fires when turned off
+  - Root cause: play() / play_episode() picked the top source
+    unconditionally; auto_play setting was never read
+  - Fix: if auto_play is disabled, a source-picker dialog is
+    now shown listing up to 40 sources with quality label,
+    seeds, cached tag, and source name
+
+[BUG 5] Box Office shows only 10 movies, no next-page icon
+  - Root cause: Trakt's /movies/boxoffice endpoint is capped
+    at 10 weekly entries and does not paginate
+  - Fix: Box Office now routes through TMDB /movie/now_playing
+    via new tmdb_list action - returns 20 movies per page with
+    infinite pagination (500+ pages available)
+
+[BUG 6] Movie genres all show the same content
+  - Root cause: get_genres() built URL as "trakt_list?path=
+    movies/popular&genre=<id>" but the trakt_list action never
+    read the genre parameter, so every genre hit the same
+    popular list
+  - Fix: genres now route through new tmdb_discover action
+    that uses TMDB /discover/{movie|tv}?with_genres=<id>,
+    actually filtering by genre, with infinite pagination
+
+[BUG 7] API error 405 on every TV show genre
+  - Root cause: endpoint was built as "tvs/popular" (tv + 's')
+    which Trakt does not accept (correct path is "shows/popular")
+  - Fix: same as bug #6 - genres now use TMDB /discover/tv
+
+[BUG 8] Discovery feed not working at all
+  - Root cause: feed.py called tmdb.get_trending_movies,
+    get_trending_shows, get_now_playing, get_upcoming_movies,
+    get_trailer - NONE of which were defined in tmdb.py
+  - Fix: added all five functions. get_trailer() scores
+    YouTube videos by Trailer > Teaser and official flag.
+    Tested live: all five return real results (20+ movies
+    per page, Interstellar trailer key = LY19rHKAaAg)
+
+OTHER:
+  - New context-menu helper _build_context_menu() shared by
+    get_list() and _display_items()
+  - New _display_list_items() extracted from get_list for
+    reuse by auto-paginated path
+
+
 Trakt Player Changelog
 ======================
 
