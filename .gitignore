@@ -40,3 +40,12 @@ package-lock.json
 *.zip
 *.tar.gz
 !zips/**/*.zip
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
