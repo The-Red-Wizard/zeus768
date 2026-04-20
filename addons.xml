@@ -1,17 +1,135 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
 
-<addon id="plugin.program.theaccountant" name="The Accountant" version="4.0.3" provider-name="zeus768">
+<addon id="plugin.program.theaccountant" name="The Accountant" version="4.4.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>executable</provides>
     </extension>
+    <extension point="xbmc.service" library="service.py" start="login"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">The Accountant: Master Pro Suite</summary>
-        <description lang="en">v3.9.7: FULL FEATURES - Speed Optimizer, Scheduled Auto-Clean, RD/PM/AD/Trakt/TMDB Auth, IPTV Vault, Favourites Vault, USB Backup, Repair Tools, Cache and Package Cleaner.</description>
+        <description lang="en">v4.4.0: Authorisation Matrix (see which addon is authorised with which account), Network Speed Test (Cloudflare, with Mbps + latency), fixed Speed Optimizer freeze on large libraries. Plus v4.3 Vault QR Transfer, auto-sync, editable sync_map.json, dynamic addon scanner, Chains repo support, device-code auth.</description>
         <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="plugin.video.genesis" name="Genesis" version="1.5.3" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.genesis.skins" version="1.1.0"/>
+        <import addon="script.module.resolveurl" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Genesis - Cloud, Local Media, Free Links, Anime, Debrid, Plex &amp; Emby</summary>
+        <description lang="en">Genesis v1.5.0 - Cloud Browser, Local Scanner, Plex &amp; Emby Integration!
+
+NEW in v1.5.0 - PLEX &amp; EMBY SERVERS:
+- Plex Media Server Integration
+  - Browse your Plex libraries (Movies, TV Shows)
+  - On Deck (Continue Watching)
+  - Recently Added content
+  - Search Plex library
+  - Direct playback from Plex server
+- Emby Media Server Integration
+  - Browse your Emby libraries
+  - Continue Watching / Next Up
+  - Recently Added content
+  - Search Emby library
+  - Direct playback from Emby server
+- TMDb Artwork for Local Media
+  - Automatically fetches posters/fanart for local files
+  - Uses TMDb API for accurate artwork matching
+- Menu categories only visible when server is enabled
+- New themed icons for Plex and Emby
+
+Previous Features v1.4.0 - CLOUD &amp; LOCAL MEDIA:
+- Cloud Browser section (appears when debrid configured)
+  - View Downloaded files from all debrid services
+  - Monitor Currently Downloading items
+  - Browse Cached/History items
+  - Supports: Real-Debrid, AllDebrid, Premiumize, TorBox
+- Local Media Scanner
+  - Scan configured folders for movies and TV shows
+  - Auto-detects movie titles, years, quality
+  - Groups TV shows by series and season
+  - Configure folders in Tools menu
+- Free Links Integration
+  - Scrapes thechains24.com for free streaming links
+  - Integrated into Source Picker (★ symbol)
+  - Uses ResolveURL for link resolution
+  - Filter by "Free Links Only" in source picker
+
+Previous features:
+- Complete Anime Movies section with submenus
+- Complete Anime TV Shows section
+- Networks &amp; Studios browser
+- Manga section
+- 7 Anime Torrent Sites
+- Enhanced X-Ray with Multi-Source Ratings
+- Full Cast &amp; Crew info with profile images
+- Enhanced Source Picker with filters
+- Click-and-Play via 5 Debrid services
+- Scrapes 10+ torrent sites for sources
+- TMDB + OMDB metadata integration
+- Trakt scrobbling and lists support
+- Live Channels with EPG
+
+Created by zeus768.</description>
+        <disclaimer lang="en">This addon does not host any content.</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-only</license>
+        <news>
+v1.5.0 (2026)
+- NEW: Plex Media Server Integration
+  - Browse libraries, On Deck, Recently Added
+  - Search and direct playback
+- NEW: Emby Media Server Integration
+  - Browse libraries, Continue Watching, Next Up
+  - Search and direct playback
+- NEW: TMDb Artwork for Local Media
+  - Auto-fetches posters/fanart for local files
+- Menu categories only visible when enabled
+- New Plex and Emby icons for all themes
+
+v1.4.0 (2026)
+- NEW: Cloud Browser for debrid services
+- NEW: Local Media Scanner
+- NEW: Free Links Integration
+
+v1.3.1 (2026)
+- Renamed to Genesis
+- Added script.genesis.skins as dependency
+- Updated icon and fanart
+
+v1.3.0 (2026)
+- NEW: Full Anime &amp; Manga Category
+- NEW: 7 Anime Torrent Sites
+- NEW: Jikan API integration
+
+v1.2.0 (2026)
+- Enhanced X-Ray with Multi-Source Ratings
+- Enhanced Source Picker with filters
+
+v1.1.0 (2026)
+- Live Channels Section with EPG
+- Latest Releases (In Cinemas Now)
+- X-Ray Metadata
+
+v1.0.0 (2026)
+- Initial release
+        </news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
@@ -29,13 +147,69 @@
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Orion Media Explorer</summary>
-        <description lang="en">Orion v3.7.2 - Complete media addon with Netflix-style interface. Portrait poster carousels, BIG poster grid, cyan theme, Netflix-style search, History, Favorites, Settings. Season dropdown and episode grid for TV shows. Up Next auto-play. Trakt scrobbling. Master skin toggle. Multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox.</description>
+        <description lang="en">Orion v3.7.0 - Complete media addon with Netflix-style interface. BIG poster cards, cyan (#00D4FF) theme. Netflix-style views for History, Favorites, Continue Watching. Netflix-style Trakt integration. Netflix-style Settings panel. Season dropdown and episode grid. Master skin toggle in Settings to switch between Netflix and classic list view.</description>
+        <news>[3.7.0] Netflix-style History, Favorites, Continue Watching grids. Netflix-style Settings panel. All views use proper poster art. Trakt fully skinned. Master skin toggle controls everything. [3.6.2] Wider poster tiles, SEASONS button fix, back navigation fix.</news>
         <platform>all</platform>
         <license>GPL-3.0</license>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
         </assets>
+    </extension>
+</addon>
+
+<addon id="plugin.video.poseidonplayer" name="Poseidon Player" version="2.5.0" provider-name="poseidon12">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+        <import addon="inputstream.adaptive" version="2.6.0" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="kodi.context.item">
+        <menu id="kodi.core.main">
+            <item library="main.py">
+                <label>Add to Poseidon Favorites</label>
+                <visible>true</visible>
+            </item>
+        </menu>
+    </extension>
+    <!-- IPTV Manager Integration -->
+    <extension point="xbmc.python.pluginsource" library="iptv_manager.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Premium Xtream Codes IPTV Player with Poseidon Guide EPG Grid</summary>
+        <description lang="en">Poseidon Player provides a premium IPTV experience with:
+- Poseidon Guide: Full EPG Grid view with channel logos, time slots, and program info
+- TV Guide/EPG: Detailed program listings with current/next shows
+- Live TV: Categories and channel lists with EPG info
+- Movies (VOD): With genres, top-rated, and recently added
+- TV Series: Full series/season/episode navigation
+- Favorites: Save your favorite channels, movies, and series
+- Search: Search across all content
+- Recently Watched: Track your viewing history
+- Catch-up TV: Watch past programs
+- Reminders: Set reminders for upcoming programs with popup notifications
+- Background Service: Keep-alive for stable streams, automatic reminder notifications
+- IPTV Manager Integration: Full TV Guide experience
+- Stream Format Options: HLS (m3u8) for stability or TS for direct streams
+
+All powered by Xtream Codes API. Enter your own credentials on first run.</description>
+        <disclaimer lang="en">Poseidon Player does not provide any content. You must provide your own Xtream Codes credentials. Author: poseidon12</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <news>v2.5.0 - NEW: Background service for keep-alive streams &amp; reminder popup notifications
+v2.4.0 - FIXED: Persistent login state (no repeated login notifications), Stream stability with HLS/m3u8 format + inputstream.adaptive support
+v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issues, Improved cache handling</news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <!-- IPTV Manager support -->
+        <reuselanguageinvoker>true</reuselanguageinvoker>
     </extension>
 </addon>
 
@@ -151,6 +325,135 @@ v2.7.0 (2026-01-10)
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon>
+
+<addon id="plugin.video.syncher" name="Syncher" version="3.4.0" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Syncher - All-in-One: Movies, TV, Sports, Music (AI), Podcasts, Audiobooks, Radio</summary>
+        <description lang="en">Syncher v3.4.0 by zeus768 - The ultimate all-in-one Kodi addon. Movies and TV Shows via Trakt/TMDB with scene release scrapers. Sports Highlights from replay sites. Massive Music section: AI Daily Playlists powered by Emergent Universal Key (like Spotify daily mixes), mood/decade playlists, Deezer charts/genres/artists, user playlists with shuffle/sort/export. Live Radio (30,000+ stations via Radio Browser API). Podcasts via iTunes with RSS episode streaming. Audiobooks via LibriVox and Internet Archive with chapter-by-chapter playback. Resolves through Real-Debrid, Premiumize, AllDebrid, TorBox. AI features powered by Emergent Universal Key.</description>
+        <disclaimer lang="en">This addon does not host any content. A debrid service is recommended. AI features require an Emergent Universal Key.</disclaimer>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <news>
+v3.4.0 (2026)
+- NEW: Podcasts section (iTunes Search API)
+  * Top podcasts, browse by 19 genres
+  * Search podcasts by name
+  * Stream episodes directly via RSS feeds
+  * Episode metadata with dates and durations
+- NEW: Audiobooks section (LibriVox + Internet Archive)
+  * 50+ popular classic audiobooks
+  * New arrivals from LibriVox
+  * Browse by 20 genres
+  * Search by title or author
+  * Internet Archive search (millions of free audiobooks)
+  * Chapter-by-chapter playback with Play All
+  * Dual-source: LibriVox API + Internet Archive API
+- Updated main menu: Movies, TV, Sports, Music, Podcasts, Audiobooks
+- Updated search menu: includes podcast and audiobook search
+- AI features use Emergent Universal Key only
+
+v3.3.0 (2026)
+- AI Daily Playlists (14 themes, mood, decades, similar artist)
+- Live Radio via Radio Browser API
+- Enhanced playlists (shuffle, sort, export, import)
+
+v3.2.0 (2026)
+- Deezer Music section (genres, artists, albums, charts, playlists)
+
+v2.0.0 (2026)
+- Initial release: Movies, TV, Sports, Debrid, Trakt
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
+<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.1" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+        <import addon="script.module.urllib3" version="1.26.5"/>
+        <import addon="script.module.resolveurl" version="5.0.00"/>
+        <import addon="script.module.beautifulsoup4" version="4.9.3"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">The Golden Eagle of Entertainment</summary>
+        <description lang="en">Tinklepad v1.9.0 - Extended Scrapers Edition
+
+CUSTOM XML WINDOWS:
+- Beautiful golden-themed search progress window
+- WindowXML dialogs with threading/callbacks
+- Animated golden spinner/orb effect
+- Provider-by-provider progress bars
+- LINK HUB v3, ARCHIVE STREAM, PEER NETWORK, NEXUS DATABASE
+- Real-time source count updates
+
+SOURCE SELECTION:
+- Stunning golden-themed source list
+- Color-coded sources (FREE=green, DDL=gold, TORRENT=orange)
+- Quality badges: 4K=red, 1080p=green, 720p=blue
+- Poster and metadata display
+- Smooth scrolling list
+
+FALLBACK DIALOGS:
+- Automatic fallback to standard Kodi dialogs
+- Works on all Kodi versions/skins
+
+DEBRID SUPPORT:
+- Real-Debrid, AllDebrid, Premiumize
+- Magnet/Torrent cloud downloading
+
+By Zeus768</description>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <news>v1.9.0 - Extended Scrapers Edition:
+- NEW: EZTV.re for TV shows
+- NEW: RARBG mirrors/clones support
+- NEW: Nyaa.si for anime
+- NEW: LimeTorrents support
+- NEW: Torlock support
+- NEW: Comet (Stremio-style indexer)
+- NEW: CocoScrapers integration (optional)
+- NEW: GearsScrapers integration (optional)
+- External scraper packs auto-detected if installed
+- Toggle each scraper pack in settings
+
+v1.8.6 - Submenu Bug Fix:
+- FIX: Submenus now open correctly (Movies, TV Shows, etc)
+- FIX: Resolved UnboundLocalError in main.py
+- Removed redundant local import causing variable scope issue
+
+v1.8.5 - Custom Golden XML Theme:
+- NEW: WindowXML search dialog with golden theme
+- NEW: Animated golden spinner/orb animation
+- NEW: Provider progress bars (LINK HUB, ARCHIVE STREAM, etc)
+- NEW: Threading support for non-blocking UI updates
+- NEW: Beautiful source selection with poster display
+- Automatic fallback to standard dialogs if XML fails
+
+v1.8.4: Performance &amp; caching improvements
+v1.8.3: Animated loading effect
+v1.8.2: Custom XML window support
+v1.8.1: Stability fixes</news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
 <addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.2" provider-name="zeus768">
@@ -271,61 +574,6 @@ v2.1.5 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.poseidonplayer" name="Poseidon Player" version="2.5.0" provider-name="poseidon12">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.requests" version="2.25.1"/>
-        <import addon="inputstream.adaptive" version="2.6.0" optional="true"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.service" library="service.py" start="startup"/>
-    <extension point="kodi.context.item">
-        <menu id="kodi.core.main">
-            <item library="main.py">
-                <label>Add to Poseidon Favorites</label>
-                <visible>true</visible>
-            </item>
-        </menu>
-    </extension>
-    <!-- IPTV Manager Integration -->
-    <extension point="xbmc.python.pluginsource" library="iptv_manager.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Premium Xtream Codes IPTV Player with Poseidon Guide EPG Grid</summary>
-        <description lang="en">Poseidon Player provides a premium IPTV experience with:
-- Poseidon Guide: Full EPG Grid view with channel logos, time slots, and program info
-- TV Guide/EPG: Detailed program listings with current/next shows
-- Live TV: Categories and channel lists with EPG info
-- Movies (VOD): With genres, top-rated, and recently added
-- TV Series: Full series/season/episode navigation
-- Favorites: Save your favorite channels, movies, and series
-- Search: Search across all content
-- Recently Watched: Track your viewing history
-- Catch-up TV: Watch past programs
-- Reminders: Set reminders for upcoming programs with popup notifications
-- Background Service: Keep-alive for stable streams, automatic reminder notifications
-- IPTV Manager Integration: Full TV Guide experience
-- Stream Format Options: HLS (m3u8) for stability or TS for direct streams
-
-All powered by Xtream Codes API. Enter your own credentials on first run.</description>
-        <disclaimer lang="en">Poseidon Player does not provide any content. You must provide your own Xtream Codes credentials. Author: poseidon12</disclaimer>
-        <platform>all</platform>
-        <license>GPL-3.0-only</license>
-        <news>v2.5.0 - NEW: Background service for keep-alive streams &amp; reminder popup notifications
-v2.4.0 - FIXED: Persistent login state (no repeated login notifications), Stream stability with HLS/m3u8 format + inputstream.adaptive support
-v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issues, Improved cache handling</news>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-        <!-- IPTV Manager support -->
-        <reuselanguageinvoker>true</reuselanguageinvoker>
-    </extension>
-</addon>
-
 <addon id="program.poseidonguide" name="Poseidon Guide" version="1.1.0" provider-name="poseidon12">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -337,9 +585,10 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">EPG Grid Guide for Poseidon Player</summary>
-        <description lang="en">Poseidon Guide - Full EPG grid view for Poseidon Player with channel numbers, icons and names.</description>
+        <description lang="en">Poseidon Guide - Full EPG grid view for Poseidon Player with solid dark background, channel numbers, icons and names.</description>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
+        <news>v1.0.3 - Fixed channel column layout, removed transparency, improved EPG grid</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
@@ -347,150 +596,40 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="repository.zeus768" name="Zeus768 Repository" version="1.2.0" provider-name="zeus768, [COLOR red]The Red Wizard[/COLOR]">
+<addon id="repository.zeus768" name="Zeus768 Repository" version="1.2.0" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
     <extension point="xbmc.addon.repository" name="Zeus768 Repository">
-        <dir>
+        <dir><!--Zeus768 Repository-->
             <info compressed="false">https://raw.githubusercontent.com/Zeus768/zeus768/main/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/Zeus768/zeus768/main/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/Zeus768/zeus768/main/zips/</datadir>
         </dir>
-        <dir>
+        <dir><!--ResolveURL Repository-->
             <info compressed="false">https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml</info>
             <checksum>https://raw.githubusercontent.com/Gujal00/smrzips/master/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/Gujal00/smrzips/master/zips/</datadir>
         </dir>
     </extension>
+    <extension point="xbmc.service" library="service.py" start="login"/>
     <extension point="xbmc.addon.metadata">
         <summary>Zeus768 Repository - Kodi Addons</summary>
-        <description>Zeus768's Kodi Addon Repository.
+        <description>Zeus768 Kodi Addon Repository with auto-update detection.
 
 Available Addons:
-- SALTS (Stream All The Sources) - 35+ scrapers, Debrid, Trakt
+- Genesis - Stream Movies and TV Shows with Debrid and Trakt
+- Genesis Skins - Theme packs for Genesis
+- SALTS (Stream All The Sources) - 120+ scrapers, Debrid, Trakt
 - Trakt Player - Click and Play, Debrid-powered
-- Orion - Media Explorer with Torrent Scrapers
+- Orion - Media Explorer with Netflix-style UI
 - Poseidon Player - Premium IPTV Player with EPG
 - Poseidon Guide - EPG Grid for Poseidon Player
-- The Accountant - Kodi Maintenance Suite
-- ResolveURL - URL Resolver Module</description>
+- The Accountant - Auth Manager, Account Cards, Maintenance Suite
+- ResolveURL - URL Resolver Module
+
+Auto-Update: Checks GitHub every 30 minutes for new commits and forces Kodi to refresh addon updates instantly.</description>
         <platform>all</platform>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-</addon>
-
-    <addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.1" provider-name="Zeus768">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.requests" version="2.25.1"/>
-        <import addon="script.module.urllib3" version="1.26.5"/>
-        <import addon="script.module.resolveurl" version="5.0.00"/>
-        <import addon="script.module.beautifulsoup4" version="4.9.3"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">The Golden Eagle of Entertainment</summary>
-        <description lang="en">Tinklepad v1.9.0 - Extended Scrapers Edition
-
-CUSTOM XML WINDOWS:
-- Beautiful golden-themed search progress window
-- WindowXML dialogs with threading/callbacks
-- Animated golden spinner/orb effect
-- Provider-by-provider progress bars
-- LINK HUB v3, ARCHIVE STREAM, PEER NETWORK, NEXUS DATABASE
-- Real-time source count updates
-
-SOURCE SELECTION:
-- Stunning golden-themed source list
-- Color-coded sources (FREE=green, DDL=gold, TORRENT=orange)
-- Quality badges: 4K=red, 1080p=green, 720p=blue
-- Poster and metadata display
-- Smooth scrolling list
-
-FALLBACK DIALOGS:
-- Automatic fallback to standard Kodi dialogs
-- Works on all Kodi versions/skins
-
-DEBRID SUPPORT:
-- Real-Debrid, AllDebrid, Premiumize
-- Magnet/Torrent cloud downloading
-
-By Zeus768</description>
-        <platform>all</platform>
-        <license>GPL-3.0</license>
-        <news>v1.9.0 - Extended Scrapers Edition:
-- NEW: EZTV.re for TV shows
-- NEW: RARBG mirrors/clones support
-- NEW: Nyaa.si for anime
-- NEW: LimeTorrents support
-- NEW: Torlock support
-- NEW: Comet (Stremio-style indexer)
-- NEW: CocoScrapers integration (optional)
-- NEW: GearsScrapers integration (optional)
-- External scraper packs auto-detected if installed
-- Toggle each scraper pack in settings
-
-v1.8.6 - Submenu Bug Fix:
-- FIX: Submenus now open correctly (Movies, TV Shows, etc)
-- FIX: Resolved UnboundLocalError in main.py
-- Removed redundant local import causing variable scope issue
-
-v1.8.5 - Custom Golden XML Theme:
-- NEW: WindowXML search dialog with golden theme
-- NEW: Animated golden spinner/orb animation
-- NEW: Provider progress bars (LINK HUB, ARCHIVE STREAM, etc)
-- NEW: Threading support for non-blocking UI updates
-- NEW: Beautiful source selection with poster display
-- Automatic fallback to standard dialogs if XML fails
-
-v1.8.4: Performance &amp; caching improvements
-v1.8.3: Animated loading effect
-v1.8.2: Custom XML window support
-v1.8.1: Stability fixes</news>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-    <extension point="xbmc.service" library="service.py" start="startup"/>
-</addon>
-
-<addon id="plugin.video.syncher" name="Syncher" version="3.4.0" provider-name="zeus768">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.requests" version="2.25.0"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Syncher - All-in-One: Movies, TV, Sports, Music (AI), Podcasts, Audiobooks, Radio</summary>
-        <description lang="en">Syncher v3.4.0 by zeus768 - All-in-one: Movies, TV, Sports, Music (AI daily playlists via Emergent, Deezer, Radio), Podcasts (iTunes), Audiobooks (LibriVox + Internet Archive). Debrid resolvers, Trakt, TMDB. AI powered by Emergent Universal Key.</description>
-        <disclaimer lang="en">This addon does not host any content. A debrid service is recommended. AI features require an Emergent Universal Key.</disclaimer>
-        <platform>all</platform>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-</addon>
-
-<addon id="plugin.video.genesis" name="Genesis" version="1.5.3" provider-name="zeus768">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.resolveurl" version="5.0.0" optional="true"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Genesis - Stream Movies and TV Shows</summary>
-        <description lang="en">Genesis v1.5.2 - Complete media addon with multiple torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox support. Live Channels with EPG. Cloud storage (Dropbox, GDrive, OneDrive). Plex and Emby integration. Trakt sync. Anime section with MAL integration.</description>
-        <platform>all</platform>
-        <license>GPL-3.0</license>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
@@ -502,14 +641,47 @@ v1.8.1: Stability fixes</news>
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
-    <extension point="xbmc.python.script" library="default.py">
-        <provides></provides>
+    <extension point="xbmc.python.script" library="icon_helper.py">
+        <provides>executable</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">Genesis Skins - Theme pack for Genesis</summary>
-        <description lang="en">Theme pack for Genesis addon. Includes Classic and Anime icon themes.</description>
+        <summary lang="en">Genesis Skins - Icon Theme Pack for Genesis</summary>
+        <description lang="en">Genesis Skins v1.1.0 provides customizable icon themes for the Genesis addon.
+
+NEW in v1.1.0:
+- Added Plex Server icon (all themes)
+- Added Emby Server icon (all themes)
+- Icons match existing theme styles
+
+Included Themes:
+- Classic: Traditional clean icons
+- Futuristic: Modern sci-fi style icons
+- Anime: Japanese animation style icons
+- Water: Blue aquatic themed icons
+
+Features:
+- Auto-detects new theme folders
+- Works with Genesis addon
+- Easy to add your own themes
+
+To add a new theme:
+1. Create a folder in resources/media/
+2. Add PNG icons with the same names as existing placeholders
+3. The new theme will appear automatically in settings
+
+Created by zeus768.</description>
+        <disclaimer lang="en">This addon provides icon themes only.</disclaimer>
+        <language>en</language>
         <platform>all</platform>
-        <license>GPL-3.0</license>
+        <license>GPL-2.0-only</license>
+        <news>
+v1.1.0 (2026)
+- Added Plex Server icon for all themes
+- Added Emby Server icon for all themes
+
+v1.0.0 (2026)
+- Initial release with 4 themes
+        </news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
