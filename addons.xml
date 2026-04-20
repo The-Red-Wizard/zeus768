@@ -456,7 +456,7 @@ v1.8.1: Stability fixes</news>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.2" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.3" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -520,6 +520,18 @@ v1.0.8 - Initial Release
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <news>
+v2.4.3 (2026)
+- FIXED: Wrong posters in mixed Trakt lists (watchlists, popular lists,
+  custom lists, history, friend activity, continue watching).
+  * Each item's actual type (movie/show/episode) is now detected from
+    Trakt's own 'type' field instead of a hard-coded default.
+  * Posters now fetched from the correct TMDB namespace (movie vs tv),
+    fixing random/unrelated artwork being shown for TV shows.
+  * Episode entries (history, playback progress) now correctly use the
+    parent show's poster.
+  * Image batch limit increased from 30 to 100 so long lists also get
+    posters for every item.
+
 v2.4.2 (2026)
 - NEW: 1337x Scraper - reliable torrent source with multiple mirrors
 - NEW: Debrid Cloud Browser - browse and play files from your debrid cloud

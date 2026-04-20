@@ -1,6 +1,21 @@
 Trakt Player Changelog
 ======================
 
+Version 2.4.3 (April 2026 - Poster Fix for Mixed Lists)
+- FIXED: Wrong posters in Trakt lists (watchlists, popular lists, custom
+  lists, continue watching, history, friend activity)
+  * Root cause: list items' media type was hard-coded to 'movie', so TV
+    shows were being looked up against TMDB's movie endpoint. Because
+    TMDB uses separate ID namespaces for movies and TV, this returned
+    unrelated posters (e.g. "The Pinch Singer" for "Fire Country").
+  * Each item's real type is now detected from Trakt's 'type' field.
+  * Episode entries (in history/playback) now correctly use the show
+    poster instead of looking up the episode ID as a movie.
+  * Posters now batch-fetched from the correct TMDB endpoint
+    (/3/movie/{id} or /3/tv/{id}).
+  * Image batch cap raised from 30 -> 100 so longer lists are fully
+    covered.
+
 Version 2.4.2 (April 2026 - 1337x Scraper + Cloud Browser)
 - NEW: 1337x Scraper
   * Reliable torrent source with good seeds

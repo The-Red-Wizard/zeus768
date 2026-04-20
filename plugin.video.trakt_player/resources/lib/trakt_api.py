@@ -417,7 +417,13 @@ def _http_post(url, data=None, headers=None, timeout=15):
 
 
 def _display_items(items, media_type='movie', key=None):
-    """Display Trakt items with TMDB metadata in Kodi directory."""
+    """Display Trakt items with TMDB metadata in Kodi directory.
+
+    FIX: Determines per-item media type (movie/show/episode) from Trakt's
+    own 'type' field so we query the correct TMDB endpoint (movie vs tv).
+    TMDB movie and TV IDs are separate namespaces - using the wrong one
+    returns completely unrelated posters.
+    """
     handle = int(sys.argv[1])
     addon_icon = get_addon_icon()
     addon_fanart = get_addon_fanart()
@@ -427,60 +433,110 @@ def _display_items(items, media_type='movie', key=None):
         xbmcplugin.endOfDirectory(handle)
         return
     
+    default_is_movie = media_type in ('movie', 'movies')
+    
+    # First pass: parse each item and determine its ACTUAL media type
+    parsed = []
     for item in items:
         if not isinstance(item, dict):
             continue
         
+        # Detect actual per-item type (Trakt returns 'movie', 'show', 'episode', 'season', 'person')
+        item_type = item.get('type')
         data = None
+        actual_type = None
+        
         if key and key in item:
             data = item[key]
-        elif 'movie' in item:
-            data = item['movie']
-        elif 'show' in item:
-            data = item['show']
-        elif 'title' in item:
-            data = item
-        else:
-            continue
+            actual_type = 'show' if key == 'show' else ('movie' if key == 'movie' else None)
+        
+        if data is None:
+            if item_type == 'movie' and isinstance(item.get('movie'), dict):
+                data = item['movie']
+                actual_type = 'movie'
+            elif item_type == 'show' and isinstance(item.get('show'), dict):
+                data = item['show']
+                actual_type = 'show'
+            elif item_type == 'episode' and isinstance(item.get('show'), dict):
+                # Episode entries (history, playback): use show for poster
+                data = item['show']
+                actual_type = 'show'
+            elif isinstance(item.get('movie'), dict):
+                data = item['movie']
+                actual_type = 'movie'
+            elif isinstance(item.get('show'), dict):
+                data = item['show']
+                actual_type = 'show'
+            elif 'title' in item and 'ids' in item:
+                data = item
+                actual_type = 'movie' if default_is_movie else 'show'
+            else:
+                continue
         
         if not data or not isinstance(data, dict):
             continue
         
+        if actual_type is None:
+            actual_type = 'movie' if default_is_movie else 'show'
+        
+        parsed.append({'data': data, 'actual_type': actual_type})
+    
+    if not parsed:
+        xbmcgui.Dialog().notification('Trakt', 'No items found', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(handle)
+        return
+    
+    # Batch-fetch TMDB images grouped by actual type (much faster than sequential)
+    movie_ids = [str(p['data'].get('ids', {}).get('tmdb') or '')
+                 for p in parsed if p['actual_type'] == 'movie' and p['data'].get('ids', {}).get('tmdb')]
+    show_ids = [str(p['data'].get('ids', {}).get('tmdb') or '')
+                for p in parsed if p['actual_type'] == 'show' and p['data'].get('ids', {}).get('tmdb')]
+    
+    movie_images = tmdb.get_images_batch(movie_ids, 'movie') if movie_ids else {}
+    show_images = tmdb.get_images_batch(show_ids, 'tv') if show_ids else {}
+    
+    # Track what content type to set: mixed lists default to 'videos'
+    has_movie = any(p['actual_type'] == 'movie' for p in parsed)
+    has_show = any(p['actual_type'] == 'show' for p in parsed)
+    
+    for p in parsed:
+        data = p['data']
+        actual_type = p['actual_type']
+        
         title = data.get('title', 'Unknown')
         year = data.get('year', '')
         ids = data.get('ids', {})
-        tmdb_id = str(ids.get('tmdb', '')) if ids else ''
+        tmdb_id_raw = ids.get('tmdb') if ids else None
+        tmdb_id = str(tmdb_id_raw) if tmdb_id_raw else ''
         imdb_id = str(ids.get('imdb', '')) if ids else ''
         
         label = f'{title} ({year})' if year else title
-        
-        # TMDB metadata
-        poster_url = addon_icon
-        backdrop_url = addon_fanart
         overview = data.get('overview', '')
         
+        # Look up artwork from the correct namespace
+        images = {}
         if tmdb_id:
-            try:
-                search_type = 'movie' if media_type in ('movie', 'movies') else 'tv'
-                meta = tmdb.get_details(int(tmdb_id), search_type)
-                if meta:
-                    if meta.get('poster'):
-                        poster_url = meta['poster']
-                    overview = meta.get('overview', overview)
-            except Exception:
-                pass
+            if actual_type == 'movie':
+                # get_images_batch keys results by the original tmdb_id value type.
+                images = movie_images.get(tmdb_id_raw) or movie_images.get(tmdb_id) or {}
+            else:
+                images = show_images.get(tmdb_id_raw) or show_images.get(tmdb_id) or {}
+        
+        poster_url = images.get('poster') or addon_icon
+        backdrop_url = images.get('backdrop') or addon_fanart
         
         li = xbmcgui.ListItem(label=label)
         li.setArt({
             'icon': poster_url, 'thumb': poster_url,
-            'poster': poster_url, 'fanart': backdrop_url
+            'poster': poster_url, 'fanart': backdrop_url,
+            'banner': backdrop_url
         })
         info_tag = li.getVideoInfoTag()
         info_tag.setTitle(title)
         info_tag.setYear(int(year) if year else 0)
         info_tag.setPlot(overview)
         
-        if media_type in ('movie', 'movies'):
+        if actual_type == 'movie':
             info_tag.setMediaType('movie')
             url = f"{sys.argv[0]}?action=play&title={quote_plus(title)}&year={year}&imdb_id={imdb_id}"
             li.setProperty('IsPlayable', 'true')
@@ -490,7 +546,13 @@ def _display_items(items, media_type='movie', key=None):
             url = f"{sys.argv[0]}?action=show_seasons&tmdb_id={tmdb_id}&title={quote_plus(title)}"
             xbmcplugin.addDirectoryItem(handle, url, li, True)
     
-    content = 'movies' if media_type in ('movie', 'movies') else 'tvshows'
+    # Pick content view based on what we actually have
+    if has_movie and not has_show:
+        content = 'movies'
+    elif has_show and not has_movie:
+        content = 'tvshows'
+    else:
+        content = 'videos'
     xbmcplugin.setContent(handle, content)
     xbmcplugin.endOfDirectory(handle, cacheToDisc=True)
 

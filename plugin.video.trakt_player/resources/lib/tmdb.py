@@ -118,7 +118,7 @@ def get_images_batch(tmdb_ids, media_type='movie'):
     # Limit concurrent requests to avoid overwhelming the API
     max_threads = 10
     
-    for tmdb_id in tmdb_ids[:30]:  # Limit to 30 items max
+    for tmdb_id in tmdb_ids[:100]:  # Support larger lists (user lists can be 50+)
         if tmdb_id:
             # Check cache first
             cache_key = f"{media_type}_{tmdb_id}"
