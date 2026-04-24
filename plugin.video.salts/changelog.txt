@@ -1,0 +1,348 @@
+SALTS - Stream All The Sources
+Changelog
+=========
+
+v2.9.5 (2026) - butterbeansrstop ENHANCEMENTS
+- Added: settings for butterbeansrstop scraper in Settings ->
+  Streaming Sites:
+    * butterbeansrstop_enabled (default: true)
+    * butterbeansrstop_username (optional)
+    * butterbeansrstop_password (optional, hidden)
+    * butterbeansrstop_cloudscraper (default: true)
+- Added: cookie-based login session. When username/password are set
+  the scraper performs a one-time POST to /index.php and persists the
+  session cookies to <profile>/butterbeansrstop_cookies.lwp so later
+  requests reuse them. Logged-in requests expose the real iframe URL
+  on each embed-selector link where available.
+- Added: cloudscraper fallback. If a direct urllib request returns
+  403 / 503 (Cloudflare challenge) the scraper retries the same URL
+  through cloudscraper (cookies are mirrored back into the jar), so
+  users just need `pip install cloudscraper` on the Kodi host - no
+  code change required when/if they add it.
+- Added: direct-URL capture on the embed-selector tag (href /
+  data-link / data-url). When present the source URL is the actual
+  embed URL instead of the srstop.link episode page, letting
+  ResolveURL handle playback end-to-end.
+
+v2.9.4 (2026) - NEW SCRAPER: butterbeansrstop (srstop.link)
+- Added: new scraper module scrapers/butterbeansrstop_scraper.py named
+  "butterbeansrstop" which scrapes TV episode streaming sources from
+  https://srstop.link.
+- Episode page parser reads each <a class="embed-selector"> entry and
+  extracts:
+    * host       - from the .embed-flag "favicons?domain=HOST" URL
+    * quality    - from sibling span classes: vris1080=1080p,
+                   vris720=720p, vris480=SD, vrislow=SD
+    * url        - the srstop.link episode page itself (the site
+                   resolves the real iframe client-side / behind login,
+                   so returned sources are non-direct and go through
+                   ResolveURL or an external open)
+- Resolution flow: try direct slug guesses
+  (/show/<slug>-sNNeNN/season/N/episode/N) first, fall back to the
+  site's /index.php?menu=search query, finally fall back to parsing a
+  show page to recover the real slug.
+- Movie search returns an empty list - srstop.link is TV-only.
+- Registered in scrapers/__init__.py under ALL_SCRAPERS (Legacy
+  Streaming Sites block) and in the "streaming_sites" category list.
+- Follows the same BaseScraper interface / caching model as the other
+  streaming-site scrapers (watchseries, primewire, movie4k).
+
+v2.9.3 (2026) - PUNCHPLAY BETA NOTICE
+- Added a one-shot Kodi toast informing users that PunchPlay integration is
+  in beta. Fires the first time the user opens the main menu with PunchPlay
+  enabled, or opens the PunchPlay menu directly. Flag is persisted in
+  addon_data/punchplay_beta_seen.json so it never re-appears.
+- PunchPlay main-menu entry now carries a small "[BETA]" tag.
+- Continue Watching row carries a small "[BETA]" tag.
+- PunchPlay submenu shows a non-clickable "[BETA] rough edges expected" line
+  at the top so users always have context, even after the toast is dismissed.
+
+v2.9.2 (2026) - CONTINUE WATCHING (PunchPlay /api/playback)
+- Added a "Continue Watching" row at the top of the SALTS main menu, pulled
+  from PunchPlay's /api/playback endpoint (Jellyfin/Plex-style resume bar).
+- Ships as a stub: the row is hidden entirely until /api/playback returns
+  HTTP 200. Nothing changes for users on PunchPlay builds that don't yet
+  expose the endpoint - it will light up automatically once deployed.
+- Endpoint availability is cached for 60s so the main menu stays snappy.
+- Items show percent-complete in the label and set Kodi's ResumeTime /
+  TotalTime properties (progress bar in the default skin). Clicking an
+  item routes into the existing get_sources flow with the right TMDB ids
+  / season / episode.
+- New setting: PunchPlay -> "Show 'Continue Watching' on main menu (when
+  API available)" (default: on). Respects punchplay_enabled + login state.
+- Only read access is used; no write endpoints are called.
+
+v2.9.1 (2026) - PUNCHPLAY.TV INTEGRATION
+- Added PunchPlay.tv as a parallel tracker alongside Trakt (scrobble + mark-watched
+  mirror to your PunchPlay account whenever Trakt scrobbling fires).
+- Added device-code login flow (Settings -> PunchPlay -> Login to PunchPlay).
+- Added top-level "PunchPlay" menu with status / toggle / login / logout.
+- New Settings category "PunchPlay":
+    * Enable PunchPlay scrobbling
+    * Mark watched on PunchPlay (at end of playback)
+    * Mirror Trakt "mark watched" actions to PunchPlay
+    * Backend URL (advanced, defaults to https://punchplay.tv)
+- Only PunchPlay's publicly documented endpoints are used (/api/auth/device/*,
+  /api/scrobble/*). Watchlist/lists/calendar etc. continue to come from Trakt.
+
+v2.9.0 (2026-02) - MORE STREAMTAPE / LULUVDO SOURCES
+- Added 10 new site-scrape scrapers that visit independent movie/TV sites and
+  extract any Streamtape / LuluVdo iframe found on the watch page:
+    * Goku.sx, GokuTV.net  (multi-server streaming)
+    * Putlockers.fm        (streamtape mirrors)
+    * MyFlixerz.to         (streamtape / luluvdo servers)
+    * FMovies24.to         (streamtape / luluvdo embeds)
+    * Soaper.live          (TV shows, alt servers)
+    * HDToday.cc           (multi-server, streamtape mirror)
+    * Flixtor.video        (streamtape & luluvdo alt-servers)
+    * MoviesJoy.plus       (per-title streamtape mirrors)
+    * French-Stream.lol    (FR; off by default)
+- Added DuckDuckGo HTML fallback search (opt-in, off by default) - last-resort
+  hunt for "<title> streamtape" / "<title> luluvdo" embeds when curated sites
+  don't cover the title.
+- Every URL produced flows through the existing bones_resolver, so each
+  Streamtape / LuluVdo embed is auto-converted to a direct mp4 / m3u8 link
+  that plays in Kodi without ResolveURL.
+- New per-source toggles in Settings -> Free Streams.
+- No additional thechains24 endpoints used; Bones still uses its original
+  single feed URL only.
+
+v2.8.9 (2026-01-20) - BONES & SCRAPER DISPATCH FIX
+- Fixed: Bones scraper was silently skipped when no debrid service was
+  configured, which was the root cause of many "no sources / everything
+  erroring" reports. Bones is now treated as a free scraper alongside
+  VidSrc/2Embed/etc. and runs without debrid.
+- Fixed: Bones title matching was too loose; short/common queries matched
+  almost every entry in the catalog. Matching now requires exact or full
+  word-set equality with a year tolerance so remakes/same-name films no
+  longer collide (e.g. Saw / Saw X).
+- Fixed: Bones year is now parsed from the stream filename and used to
+  disambiguate results.
+- Fixed: Streamtape resolver now supports all current obfuscation patterns
+  and all streamtape mirror domains (streamtape.to, streamtape.net,
+  streamtape.cc, streamta.pe, stape.fun, shavetape.cash, etc.).
+- Fixed: Scraper dispatcher now recognizes any scraper exposing
+  `is_free = True` and is resilient to scrapers using the legacy
+  `search(query, media_type)` signature.
+- Improved: Scraper-side exceptions are now logged at WARNING instead of
+  DEBUG so failures appear in kodi.log for easier diagnosis.
+- Added: `bones_enabled` setting so Bones can be toggled from Settings.
+
+v2.8.7 (2026-04-18) - BONES FIX + RD SETTINGS HARDENED
+========================================================
+- FIXED: BonesScraper.search() signature mismatch with framework
+  * Was receiving wrong positional args, now uses (query, media_type, **kwargs)
+  * Bones results will now appear in source list when searching
+- FIXED: Real-Debrid settings hardened with try/except fallbacks
+  * realdebrid_client_id, client_secret, expires all have safe defaults
+  * No more crashes on fresh installs missing these settings
+
+v2.8.6 (2026-04-18) - CRITICAL FIX
+====================================
+- FIXED: IndentationError in default.py that prevented SALTS from loading
+- FIXED: IndentationError in service.py that prevented background service
+- Restored proper 4-space Python indentation from last working codebase
+- Re-applied all v2.8.x features on clean base
+
+v2.8.5 (2026-04-18) - BONES SCRAPER + CUSTOM RESOLVERS + RD AUTH FIX
+=====================================================================
+NEW SCRAPER:
+- Added: Bones - Direct stream links provider
+  * Pre-resolved streaming links - no debrid required
+  * Custom resolvers for Streamtape and LuluVid - no ResolveURL dependency
+  * HLS/m3u8 stream extraction with P.A.C.K.E.R JS unpacker
+  * Automatic catalog sync with poster art and metadata
+  * Dual mirror support (Streamtape + LuluVid)
+  * Always enabled, highest priority for instant playback
+
+RD AUTH FIX:
+- Added missing realdebrid_client_id and realdebrid_client_secret to settings.xml
+- Fixes RD device code auth failing to save credentials
+
+SETTINGS FIX:
+- Restructured settings.xml for TV remote/D-pad navigation
+- Reduced from 17 categories to 12 for less tabbing
+- Added visual section separators within long categories
+- Consolidated related scrapers into single tabs
+- Moved Playback settings to category 2 for quick access
+
+CLEANUP:
+- Removed all COLOR tags from menus
+- Removed all emoji characters from Python files
+- Clean plain text menus throughout
+
+v2.8.0 (2026-01-15) - MASSIVE SCRAPER EXPANSION - 120+ SOURCES!
+================================================================
+NEW FREE STREAM SOURCES (No Debrid Required):
+- Added: VidSrc Network (8 mirrors) - VidSrc.xyz, VidSrc.cc, VidSrc.in, VidSrc.pm, VidSrc.nl, VidSrc.pro, VidSrc.me, VidSrc.to
+- Added: 2Embed.cc and 2Embed.org
+- Added: Embed.su, AutoEmbed, MultiEmbed, VidLink, VidPlay
+- Added: MoviesAPI, SmashyStream, NontonGo, RgShorts/RiveStream
+
+NEW STREMIO FREE ADDONS:
+- Added: Braflix - Free movies & TV
+- Added: StreamingCommunity - Italian & English streams
+- Added: TheMovieArchive - Public domain & free movies
+- Added: PublicDomainMovies - Legal free content
+- Added: WatchHub - Multi-source aggregator
+- Added: KnightCrawler - Torrent aggregator
+- Added: Jackettio - Jackett for Stremio
+- Added: Orionoid - Premium torrent indexer
+- Added: TPBPlus - Enhanced TPB for Stremio
+- Added: YTS-Stremio, RARBG-Stremio mirrors
+- Added: Torrentio Free Mode - No debrid required
+- Added: AIOStreams - All-in-One stream aggregator
+- Added: StremThru - Stream passthrough service
+- Added: MediaFlow - High quality streams
+- Added: DDLStream - Direct download links
+- Added: PlutoTV, Tubi - Free ad-supported streaming
+- Added: Anime-Stremio, AnimeTosho-Stremio
+
+NEW STREAMING SITES (20+ Sources):
+- Added: FlixHQ - High quality free streaming
+- Added: BFlix - Free movies & TV
+- Added: HDToday - HD streaming
+- Added: Soap2Day - Popular free streaming
+- Added: LookMovie - Quality streams
+- Added: AZMovies - A-Z Movies
+- Added: YesMovies - Yes to movies
+- Added: FMovies - Classic free streaming
+- Added: GoMovies - Go stream movies
+- Added: 123Movies - Classic streaming
+- Added: StreamLord - Stream everything
+- Added: MoviesJoy - Joy of movies
+- Added: SFlix - S Flix streaming
+- Added: Putlocker - Classic streaming
+- Added: WatchSeriesHD - HD TV shows
+- Added: M4UFree - Movies 4 U
+- Added: YifyMovies - YIFY quality streams
+- Added: SolarMovie - Solar streams
+- Added: XMovies8 - X Movies
+- Added: IOMovies - IO Streaming
+- Added: CMoviesHD - HD streaming
+
+NEW TORRENT SITES (13 Sources):
+- Added: BitSearch - Torrent meta search
+- Added: TorrentDownloads - General torrents
+- Added: TorLock - Verified torrents
+- Added: TorrentFunk - Verified torrents
+- Added: YourBittorrent - Torrent site
+- Added: LeetX - 1337x alternative mirror
+- Added: TorrentsCSV - Open torrent database
+- Added: SolidTorrents2 - Quality torrents
+- Added: AcgTorrent - Anime torrents
+- Added: EtHD - HD torrents
+- Added: SkyTorrent - General torrents
+
+NEW FRENCH SOURCES:
+- Added: Torrent9 - French torrents
+- Added: YggTorrent - French torrents (public)
+
+NEW ANIME SOURCES (12 Sources):
+- Added: Zoro.to - Quality anime streaming
+- Added: 9Anime - Popular anime site
+- Added: GogoAnime - Classic anime streaming
+- Added: AniWave - Anime waves
+- Added: HiAnime - High quality anime
+- Added: AnimePahe - Pahe anime
+- Added: AnimeFlix - Flix anime
+- Added: KickAssAnime - KA anime
+- Added: YugenAnime - Yugen anime
+- Added: AllAnime - All anime
+- Added: AnimeSuge - Suge anime
+- Added: Aniwatch - Watch anime
+
+NEW ASIAN DRAMA SOURCES (5 Sources):
+- Added: WatchAsian - Asian dramas
+- Added: KissAsian - Asian content
+- Added: DramaCool - Asian dramas
+- Added: ViewAsian - Asian viewing
+- Added: AsianLoad - Asian content loader
+
+IMPROVEMENTS:
+- Improved: Settings reorganized into categories for easier management
+- Improved: Scraper __init__.py with full documentation
+- Improved: Added get_scraper_count() and get_scrapers_by_category() helper functions
+- Improved: Parallel scraping support with configurable max scrapers setting
+
+TOTAL SCRAPERS: 120+ Sources across all categories!
+
+----------------------------------------------------------------
+
+v2.7.2 (2026-01-12)
+===================
+- Added: Movie Schedules - View what's playing on all movie channels for the next 12 hours
+- Added: Force Refresh EPG button in Movie Channels menu
+- Added: Returning Shows - Browse TV shows with new seasons starting in next 30 days
+- Added: Network Browser - Browse TV shows by network (Netflix, HBO, BBC, Amazon, Disney+, Apple TV+, and 20+ more)
+- Added: Episode Countdown - Track your favorite shows and see days until next episode
+- Added: Context menu "Track Episode Countdown" on all TV shows
+- Added: TODAY/TOMORROW/X days countdown indicators
+- Improved: EPG now shows unique movies per channel based on genre
+
+v2.7.1 (2026-01-12)
+===================
+- Fixed: EPG now shows unique movies for each channel (no more duplicate listings)
+- Fixed: Each movie channel pulls from TMDB based on genre (Action, Comedy, Thriller, etc.)
+- Added: Channel logos/icons for all 35+ movie channels
+- Added: New Preferences settings category
+- Added: "Show International Premieres" setting - toggle Japanese, Chinese, Korean shows
+- Changed: Latest Show Premieres now defaults to English/American shows only
+- Added: Country indicators on international show premieres when enabled
+
+v2.7.0 (2026-01-10)
+===================
+- Added: Live Movie Channels with EPG support (35+ channels worldwide)
+- Added: EPG integration showing current and next programs
+- Added: Watch Live or Start from Beginning choice for channels
+- Added: New Episodes Today calendar (scroll back up to 7 days)
+- Added: Latest Show Premieres with infinite pagination (50 items/page, last 7 days)
+- Added: Smart movie stream finding when clicking on live channels
+
+v2.6.0 (2026-01-08)
+===================
+- Added: Stremio Protocol Scrapers (Torrentio, MediaFusion, Comet, CyberFlix, Annatar, PeerFlix, EasyNews+)
+- Added: Free Stream sources (VidSrc, 2Embed, AutoEmbed - no debrid needed!)
+- Added: TorBox debrid service support
+- Added: Batch cache checking across all debrid services
+- Added: AI Search with natural language queries
+- Added: Pre-scrape on hover (background scraping when browsing)
+- Added: Source caching for faster repeat access
+- Improved: Parallel scraping for faster results
+
+v2.5.0 (2026-01-05)
+===================
+- Added: International scrapers (Russian, Chinese sources)
+- Added: Anime scrapers (Nyaa, SubsPlease, TokyoTosho, AnimeTosho, AniDex)
+- Added: Extra torrent scrapers (Kickass, BTDigg, Zooqle, MagnetDL, etc.)
+- Added: Quality presets support
+- Added: Scraper priority ordering
+- Improved: Database utilities with hover cache
+
+v2.4.0 (2026-01-01)
+===================
+- Modernized for Kodi 21 Omega
+- Added: Trakt integration with scrobbling
+- Added: Real-Debrid, Premiumize, AllDebrid support
+- Added: Jackett and Prowlarr aggregator support
+- Added: 45+ torrent site scrapers
+- Updated: Native urllib (no external requests dependency)
+- Updated: ResolveURL integration
+
+v2.0.0 - Original Revival
+=========================
+- Initial revival by zeus768
+- Ported to Python 3 / Kodi 19+
+- Core scraper framework established
+
+Original SALTS by tknorris
+==========================
+- Original addon for Kodi 17 and below
+- Thank you tknorris for the foundation!
+
+Credits
+=======
+- Original Author: tknorris
+- Revived & Modernized by: zeus768
+- Special Thanks: Mister X, Zaxxon709
+- License: GPL-3.0
