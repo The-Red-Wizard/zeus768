@@ -1,3 +1,31 @@
+v1.3.1 (2026-04-XX) - TIME-RULER GRID VIEW
+===========================================
+NEW - CLASSIC TV GRID LAYOUT:
+- New "Layout" setting (under Guide Appearance) with two
+  choices:
+    * List + PiP    - previous release's layout (channels
+                      down the left, programme stack on the
+                      right, PiP top-right)
+    * Time-ruler Grid + PiP - Sky-style horizontal grid:
+                      channels stacked vertically, a 6-slot
+                      time axis across the top (30 min each,
+                      so 3h visible), PiP tile top-right.
+- Vertical "now" indicator draws a 2 px accent line through
+  the grid at the current time.
+- Left/Right pan the time window by one slot; Up/Down move
+  between channels (PiP updates live, debounced).
+- The "I" (Info) key toggles live between list and grid
+  without having to reopen the Guide.
+
+IMPLEMENTATION:
+- New skin: resources/skins/default/1080i/script-poseidonguide-grid.xml
+- New Python class GuideGridWindow in resources/lib/guide_window.py
+- _slot_start() + _find_block() helpers locate the programme
+  that overlaps each visible slot.
+- Toggle mechanic uses Skin/Home window properties so no
+  reload of channels/EPG is needed when switching views.
+
+
 v1.3.0 (2026-04-XX) - SKIN STYLES + PICTURE-IN-PICTURE
 =======================================================
 NEW - FULL-SCREEN EPG WINDOW:

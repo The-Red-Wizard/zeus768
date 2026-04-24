@@ -1,38 +1,77 @@
 """
 Custom stream resolvers for Bones provider
-Handles Streamtape and LuluVid without requiring ResolveURL
+Handles Streamtape and LuluVid/LuluVDO without requiring ResolveURL.
+Updated 2026-01 — multiple streamtape obfuscation patterns, hardened error handling.
 """
 import re
 import xbmc
 from urllib.request import urlopen, Request
-from urllib.error import URLError
+from urllib.error import URLError, HTTPError
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
+_STREAMTAPE_HOSTS = (
+    'streamtape.com', 'streamtape.to', 'streamtape.net', 'streamtape.cc',
+    'streamta.pe', 'streamtape.xyz', 'streamtape.site', 'streamtape.online',
+    'streamadblocker.xyz', 'stape.fun', 'shavetape.cash',
+)
+_LULU_HOSTS = ('luluvid.com', 'luluvdo.com')
+
+
+def _is_streamtape(url):
+    u = (url or '').lower()
+    return any(h in u for h in _STREAMTAPE_HOSTS)
+
+
+def _is_lulu(url):
+    u = (url or '').lower()
+    return any(h in u for h in _LULU_HOSTS)
+
 
 def resolve(url):
-    """Resolve a stream URL to a direct playable link"""
-    if 'streamtape.com' in url:
+    """Resolve a stream URL to a direct playable link. Returns URL or None."""
+    if not url:
+        return None
+    if _is_streamtape(url):
         return _resolve_streamtape(url)
-    elif 'luluvid.com' in url:
-        return _resolve_luluvid(url)
-    elif 'luluvdo.com' in url:
+    if 'luluvdo.com' in url.lower():
         return _resolve_luluvdo(url)
+    if 'luluvid.com' in url.lower():
+        return _resolve_luluvid(url)
+    # Unknown host — return as-is so caller can fall back to ResolveURL
     return url
 
 
-def _resolve_streamtape(url):
-    """Resolve Streamtape URL to direct video link"""
-    try:
-        headers = {'User-Agent': USER_AGENT, 'Referer': 'https://streamtape.com/'}
-        req = Request(url, headers=headers)
-        resp = urlopen(req, timeout=15)
-        html = resp.read().decode('utf-8', errors='ignore')
+def _fetch(url, referer=None):
+    headers = {
+        'User-Agent': USER_AGENT,
+        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+    }
+    if referer:
+        headers['Referer'] = referer
+    req = Request(url, headers=headers)
+    resp = urlopen(req, timeout=15)
+    return resp.read().decode('utf-8', errors='ignore')
 
-        # Method 1: norobotlink with substring concat
+
+def _resolve_streamtape(url):
+    """Resolve Streamtape /v/<id>/<name> or /e/<id> URL to a direct MP4 link."""
+    try:
+        # Normalize /v/<id> → /e/<id> which is the embed page (simpler markup)
+        m = re.search(r'streamtape\.[a-z]+/(?:v|e)/([A-Za-z0-9]+)', url, re.IGNORECASE)
+        embed_url = url
+        if m:
+            embed_url = f'https://streamtape.com/e/{m.group(1)}'
+
+        html = _fetch(embed_url, referer='https://streamtape.com/')
+
+        # --- Method 1: innerHTML = 'x' + ('y').substring(a).substring(b) -----
         match = re.search(
-            r"getElementById\('norobotlink'\)\.innerHTML\s*=\s*['\"]([^'\"]+)['\"]\s*\+\s*\('([^']+)'\)\.substring\((\d+)\)\.substring\((\d+)\)",
-            html
+            r"getElementById\(['\"]\w+['\"]\)\.innerHTML\s*=\s*"
+            r"['\"]([^'\"]+)['\"]\s*\+\s*\(['\"]([^'\"]+)['\"]\)"
+            r"\.substring\((\d+)\)\.substring\((\d+)\)",
+            html,
         )
         if match:
             base = match.group(1)
@@ -40,62 +79,86 @@ def _resolve_streamtape(url):
             sub1 = int(match.group(3))
             sub2 = int(match.group(4))
             token = token_raw[sub1:][sub2:]
-            video_url = 'https:' + base + token if not base.startswith('http') else base + token
-            xbmc.log(f'Streamtape resolved (norobot): {video_url[:80]}...', xbmc.LOGINFO)
-            return video_url
+            return _normalize_st_url(base + token)
 
-        # Method 2: innerHTML concat with single substring
+        # --- Method 2: innerHTML = 'x' + ('y').substring(a) ------------------
         match = re.search(
-            r"getElementById\('(?:norobotlink|ideoooolink|captchalink)'\)\.innerHTML\s*=\s*['\"]([^'\"]+)['\"]\s*\+\s*\('([^']+)'\)\.substring\((\d+)\)",
-            html
+            r"getElementById\(['\"]\w+['\"]\)\.innerHTML\s*=\s*"
+            r"['\"]([^'\"]+)['\"]\s*\+\s*\(['\"]([^'\"]+)['\"]\)"
+            r"\.substring\((\d+)\)",
+            html,
         )
         if match:
             base = match.group(1)
             token_raw = match.group(2)
             sub_idx = int(match.group(3))
             token = token_raw[sub_idx:]
-            video_url = 'https:' + base + token if not base.startswith('http') else base + token
-            xbmc.log(f'Streamtape resolved (method2): {video_url[:80]}...', xbmc.LOGINFO)
-            return video_url
+            return _normalize_st_url(base + token)
 
-        # Method 3: Direct div content
-        match = re.search(r'id="norobotlink"[^>]*>([^<]+)<', html)
+        # --- Method 3: concatenated string form inside any JS var -----------
+        # e.g.  robotlink = ('/get_video?id=xxx&expires=...&ip=...&token='+('abcdef').substring(3)).substring(...)
+        match = re.search(
+            r"\(['\"]([^'\"]+/get_video\?[^'\"]*)['\"]\s*\+\s*"
+            r"\(['\"]([^'\"]+)['\"]\)\.substring\((\d+)\)",
+            html,
+        )
+        if match:
+            base = match.group(1)
+            token = match.group(2)[int(match.group(3)):]
+            return _normalize_st_url(base + token)
+
+        # --- Method 4: raw div content fallback -----------------------------
+        match = re.search(r'id=["\'](?:norobotlink|ideoooolink|captchalink)["\'][^>]*>([^<]+)<', html)
         if match:
             link = match.group(1).strip()
-            video_url = 'https:' + link if not link.startswith('http') else link
-            xbmc.log(f'Streamtape resolved (div): {video_url[:80]}...', xbmc.LOGINFO)
-            return video_url
+            return _normalize_st_url(link)
 
-        xbmc.log('Streamtape: Could not extract video URL', xbmc.LOGWARNING)
+        xbmc.log('Streamtape: could not extract video URL (patterns not found)', xbmc.LOGWARNING)
         return None
 
+    except HTTPError as e:
+        xbmc.log(f'Streamtape HTTP {e.code}: {e.reason}', xbmc.LOGWARNING)
+        return None
+    except URLError as e:
+        xbmc.log(f'Streamtape network error: {e.reason}', xbmc.LOGWARNING)
+        return None
     except Exception as e:
         xbmc.log(f'Streamtape resolve error: {e}', xbmc.LOGWARNING)
         return None
 
 
+def _normalize_st_url(link):
+    """Normalize an extracted streamtape token into a full URL with stream=1."""
+    link = link.strip()
+    if link.startswith('//'):
+        full = 'https:' + link
+    elif link.startswith('http'):
+        full = link
+    elif link.startswith('/'):
+        full = 'https://streamtape.com' + link
+    else:
+        full = 'https://streamtape.com/' + link
+    if 'stream=1' not in full:
+        full += ('&' if '?' in full else '?') + 'stream=1'
+    xbmc.log(f'Streamtape resolved: {full[:120]}', xbmc.LOGINFO)
+    return full
+
+
 def _resolve_luluvid(url):
     """Resolve LuluVid URL - fetches embed page from luluvdo.com"""
     try:
-        headers = {'User-Agent': USER_AGENT, 'Referer': 'https://luluvid.com/'}
-        req = Request(url, headers=headers)
-        resp = urlopen(req, timeout=15)
-        html = resp.read().decode('utf-8', errors='ignore')
+        html = _fetch(url, referer='https://luluvid.com/')
 
-        # Find the luluvdo embed iframe
         iframe = re.search(r'<iframe[^>]+src=["\']([^"\']+luluvdo\.com[^"\']+)["\']', html)
         if iframe:
             return _resolve_luluvdo(iframe.group(1))
 
-        # Try extracting file_id and constructing embed URL
         file_id_match = re.search(r'/[de]/([a-zA-Z0-9]+)', url)
         if file_id_match:
-            embed_url = f'https://luluvdo.com/e/{file_id_match.group(1)}'
-            return _resolve_luluvdo(embed_url)
+            return _resolve_luluvdo(f'https://luluvdo.com/e/{file_id_match.group(1)}')
 
-        xbmc.log('LuluVid: Could not find embed', xbmc.LOGWARNING)
+        xbmc.log('LuluVid: could not find embed', xbmc.LOGWARNING)
         return None
-
     except Exception as e:
         xbmc.log(f'LuluVid resolve error: {e}', xbmc.LOGWARNING)
         return None
@@ -104,19 +167,22 @@ def _resolve_luluvid(url):
 def _resolve_luluvdo(embed_url):
     """Resolve LuluVDO embed page - unpack JS to get HLS URL"""
     try:
-        headers = {'User-Agent': USER_AGENT, 'Referer': 'https://luluvid.com/'}
-        req = Request(embed_url, headers=headers)
-        resp = urlopen(req, timeout=15)
-        html = resp.read().decode('utf-8', errors='ignore')
+        html = _fetch(embed_url, referer='https://luluvid.com/')
 
-        # Extract P.A.C.K.E.R packed JS
         packed_match = re.search(
             r"eval\(function\(p,a,c,k,e,d\)\{.*?\}\('(.*?)',\s*(\d+)\s*,\s*(\d+)\s*,\s*'(.*?)'\s*\.split\('\|'\)",
-            html, re.DOTALL
+            html, re.DOTALL,
         )
 
         if not packed_match:
-            xbmc.log('LuluVDO: No packed JS found', xbmc.LOGWARNING)
+            # Try to find a direct m3u8/mp4 in the raw html before giving up
+            for patt in (r'(https?://[^\s"\'<>]+\.m3u8[^\s"\'<>]*)',
+                         r'(https?://[^\s"\'<>]+\.mp4[^\s"\'<>]*)'):
+                m = re.search(patt, html)
+                if m:
+                    xbmc.log(f'LuluVDO resolved (raw): {m.group(1)[:120]}', xbmc.LOGINFO)
+                    return m.group(1)
+            xbmc.log('LuluVDO: no packed JS or direct URL found', xbmc.LOGWARNING)
             return None
 
         payload = packed_match.group(1)
@@ -133,21 +199,17 @@ def _resolve_luluvdo(embed_url):
 
         unpacked = re.sub(r'\b\w+\b', replacer, payload)
 
-        # Extract m3u8 URL from unpacked jwplayer config
         m3u8_match = re.search(r'(https?://[^\s"\'\\}]+\.m3u8[^\s"\'\\}]*)', unpacked)
         if m3u8_match:
-            video_url = m3u8_match.group(1)
-            xbmc.log(f'LuluVDO resolved: {video_url[:80]}...', xbmc.LOGINFO)
-            return video_url
+            xbmc.log(f'LuluVDO resolved: {m3u8_match.group(1)[:120]}', xbmc.LOGINFO)
+            return m3u8_match.group(1)
 
-        # Fallback: any video URL
         mp4_match = re.search(r'(https?://[^\s"\'\\}]+\.mp4[^\s"\'\\}]*)', unpacked)
         if mp4_match:
-            video_url = mp4_match.group(1)
-            xbmc.log(f'LuluVDO resolved (mp4): {video_url[:80]}...', xbmc.LOGINFO)
-            return video_url
+            xbmc.log(f'LuluVDO resolved (mp4): {mp4_match.group(1)[:120]}', xbmc.LOGINFO)
+            return mp4_match.group(1)
 
-        xbmc.log('LuluVDO: Could not extract video URL from unpacked JS', xbmc.LOGWARNING)
+        xbmc.log('LuluVDO: could not extract video URL from unpacked JS', xbmc.LOGWARNING)
         return None
 
     except Exception as e:

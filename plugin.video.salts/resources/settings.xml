@@ -24,6 +24,21 @@
         <setting id="trakt_expires" type="text" label="Expires" default="0" visible="false"/>
     </category>
 
+    <category label="PunchPlay">
+        <setting type="lsep" label="PunchPlay.tv (Trakt alternative)"/>
+        <setting id="punchplay_enabled" type="bool" label="Enable PunchPlay scrobbling" default="false"/>
+        <setting id="punchplay_mark_watched" type="bool" label="Mark watched on PunchPlay (at end of playback)" default="true" enable="eq(-1,true)"/>
+        <setting id="punchplay_mirror_trakt" type="bool" label="Mirror Trakt 'mark watched' actions to PunchPlay" default="true" enable="eq(-2,true)"/>
+        <setting id="punchplay_login" type="action" label="Login to PunchPlay" action="RunPlugin(plugin://plugin.video.salts/?mode=punchplay_auth)"/>
+        <setting id="punchplay_logout" type="action" label="Logout of PunchPlay" action="RunPlugin(plugin://plugin.video.salts/?mode=punchplay_revoke)"/>
+        <setting id="punchplay_status" type="action" label="Check PunchPlay status" action="RunPlugin(plugin://plugin.video.salts/?mode=punchplay_status)"/>
+        <setting id="punchplay_base_url" type="text" label="Backend URL (advanced)" default="https://punchplay.tv"/>
+        <setting id="punchplay_continue_watching" type="bool" label="Show 'Continue Watching' on main menu (when API available)" default="true"/>
+        <setting id="punchplay_access_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="punchplay_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="punchplay_expires" type="text" label="Expires" default="0" visible="false"/>
+    </category>
+
     <category label="Debrid Services">
         <setting type="lsep" label="Real-Debrid"/>
         <setting id="realdebrid_enabled" type="bool" label="Enable Real-Debrid" default="false"/>
@@ -45,6 +60,19 @@
 
     <category label="Free Streams">
         <setting id="freestream_enabled" type="bool" label="Enable Free Stream Aggregator" default="true"/>
+        <setting id="bones_enabled" type="bool" label="Enable Bones (direct Streamtape links)" default="true"/>
+        <setting type="lsep" label="Streamtape/LuluVdo Site Scrapers (NEW)"/>
+        <setting id="site_goku_st_enabled" type="bool" label="Goku.sx (Streamtape)" default="true"/>
+        <setting id="site_gokutv_st_enabled" type="bool" label="GokuTV.net (Streamtape)" default="true"/>
+        <setting id="site_putlocker_st_enabled" type="bool" label="Putlockers.fm (Streamtape)" default="true"/>
+        <setting id="site_myflixerz_st_enabled" type="bool" label="MyFlixerz.to (Streamtape/LuluVdo)" default="true"/>
+        <setting id="site_fmovies_st_enabled" type="bool" label="FMovies24.to (Streamtape/LuluVdo)" default="true"/>
+        <setting id="site_soaper_st_enabled" type="bool" label="Soaper.live (Streamtape/LuluVdo)" default="true"/>
+        <setting id="site_hdtoday_st_enabled" type="bool" label="HDToday.cc (Streamtape/LuluVdo)" default="true"/>
+        <setting id="site_flixtor_st_enabled" type="bool" label="Flixtor.video (Streamtape/LuluVdo)" default="true"/>
+        <setting id="site_moviesjoy_st_enabled" type="bool" label="MoviesJoy.plus (Streamtape/LuluVdo)" default="true"/>
+        <setting id="site_frstream_st_enabled" type="bool" label="French-Stream.lol (Streamtape) [FR]" default="false"/>
+        <setting id="ddg_st_enabled" type="bool" label="DuckDuckGo fallback search (slow, opt-in)" default="false"/>
         <setting type="lsep" label="VidSrc Sources"/>
         <setting id="vidsrc_xyz_enabled" type="bool" label="VidSrc.xyz" default="true"/>
         <setting id="vidsrc_cc_enabled" type="bool" label="VidSrc.cc" default="true"/>
@@ -128,6 +156,11 @@
         <setting id="watchseries_enabled" type="bool" label="WatchSeries" default="true"/>
         <setting id="movie4k_enabled" type="bool" label="Movie4K" default="true"/>
         <setting id="solarmovie_enabled" type="bool" label="SolarMovie (Legacy)" default="true"/>
+        <setting type="lsep" label="butterbeansrstop (srstop.link)"/>
+        <setting id="butterbeansrstop_enabled" type="bool" label="butterbeansrstop (srstop.link) [TV only]" default="true"/>
+        <setting id="butterbeansrstop_username" type="text" label="    srstop.link username (optional)" default="" enable="eq(-1,true)"/>
+        <setting id="butterbeansrstop_password" type="text" label="    srstop.link password (optional)" default="" option="hidden" enable="eq(-2,true)"/>
+        <setting id="butterbeansrstop_cloudscraper" type="bool" label="    Use cloudscraper fallback on Cloudflare block" default="true" enable="eq(-3,true)"/>
     </category>
 
     <category label="Torrent Sites">

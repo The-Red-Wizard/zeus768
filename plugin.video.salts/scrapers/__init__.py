@@ -48,6 +48,25 @@ from .base_scraper import BaseScraper, TorrentScraper
 from .bones_scraper import BonesScraper
 
 # ==========================================================
+# STREAMTAPE / LULUVDO EXTRA SOURCES (NEW 2026-02)
+# Independent sites only (NOT thechains24.com)
+# ==========================================================
+from .streamtape_lulu_scrapers import (
+    GokuStreamtapeScraper,
+    GokuTVStreamtapeScraper,
+    FrenchStreamScraper,
+    PutlockerFmScraper,
+    MyFlixerHostScraper,
+    FmoviesHostScraper,
+    SoaperHostScraper,
+    HdtodayHostScraper,
+    FlixtorHostScraper,
+    MoviesJoyHostScraper,
+    DDGStreamtapeScraper,
+    ST_LULU_SCRAPERS,
+)
+
+# ==========================================================
 # CORE FREE STREAM SCRAPERS
 # ==========================================================
 from .freestream_scraper import FreeStreamScraper
@@ -234,6 +253,7 @@ from .primewire_scraper import PrimeWireScraper
 from .watchseries_scraper import WatchSeriesScraper
 from .movie4k_scraper import Movie4KScraper
 from .solarmovie_scraper import SolarMovieScraper
+from .butterbeansrstop_scraper import ButterbeanSRStopScraper
 
 # ==========================================================
 # AGGREGATORS
@@ -249,6 +269,21 @@ from .torrentapi_scraper import TorrentAPIScraper
 ALL_SCRAPERS = [
     # ========== BONES (Direct Stream Links) ==========
     BonesScraper,
+
+    # ========== STREAMTAPE / LULUVDO EXTRA SOURCES (NEW) ==========
+    # Site scrapers - search live sites for streamtape/luluvdo iframes
+    GokuStreamtapeScraper,
+    GokuTVStreamtapeScraper,
+    PutlockerFmScraper,
+    MyFlixerHostScraper,
+    FmoviesHostScraper,
+    SoaperHostScraper,
+    HdtodayHostScraper,
+    FlixtorHostScraper,
+    MoviesJoyHostScraper,
+    FrenchStreamScraper,
+    # Last-resort web search (opt-in)
+    DDGStreamtapeScraper,
 
     # ========== FREE STREAMS (No Debrid - Direct Play) ==========
     # Primary Free Stream Aggregator
@@ -329,6 +364,7 @@ ALL_SCRAPERS = [
     WatchSeriesScraper,
     Movie4KScraper,
     SolarMovieScraper,
+    ButterbeanSRStopScraper,
     
     # ========== STREMIO PROTOCOL (Debrid Enhanced) ==========
     TorrentioScraper,
@@ -474,6 +510,7 @@ def get_scrapers_by_category():
             FlixHQScraper, BFlixTVScraper, HDTodayScraper, Soap2DayScraper,
             LookMovieScraper, FMoviesScraper, GoMoviesScraper, Movies123Scraper,
             MoviesJoyScraper, PutlockerScraper, SolarMovieScraper,
+            ButterbeanSRStopScraper,
         ],
         'torrent_primary': [
             X1337Scraper, YTSScraper, EZTVScraper, TorrentGalaxyScraper, TPBScraper,

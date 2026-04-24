@@ -109,6 +109,12 @@ class GuideSkinWindow(xbmcgui.WindowXML):
             self._stop_pip()
             self.close()
             return
+        # "I" (Info) key -> toggle to the time-ruler grid view.
+        if action_id == 11:
+            self._stop_pip()
+            self.close()
+            xbmcgui.Window(10000).setProperty('pg_switch_to_grid', '1')
+            return
         # Channel list navigation triggers PiP + grid refresh on a debounce.
         if action_id in (1, 2, 3, 4):   # up/down/left/right
             xbmc.sleep(60)              # let the focus update
@@ -242,6 +248,218 @@ def open_guide_window(theme, channels, epg_map, play_resolver,
     turns a stream_id into a playable URL (mode-aware)."""
     w = GuideSkinWindow(
         'script-poseidonguide-main.xml',
+        ADDON_PATH,
+        'default',
+        '1080i',
+        channels=channels,
+        epg_map=epg_map,
+        theme=theme,
+        pip_enabled=pip_enabled,
+        pip_autoplay=pip_autoplay,
+        play_resolver=play_resolver,
+    )
+    w.doModal()
+    del w
+
+
+# ======================================================================
+# TIME-RULER GRID VIEW (v1.3.0 upgrade)
+# ======================================================================
+SLOT_MINUTES = 30   # each column = 30 min
+SLOT_COUNT = 6      # 6 slots visible -> matches grid XML
+
+
+def _slot_start(now_ts):
+    """Round down to the nearest 30 minute slot."""
+    secs = int(now_ts)
+    return secs - (secs % (SLOT_MINUTES * 60))
+
+
+def _find_block(programs, slot_start_ts):
+    """Return the programme whose timespan overlaps this slot, or None."""
+    slot_end_ts = slot_start_ts + SLOT_MINUTES * 60
+    for p in programs:
+        s = int(p.get('start_timestamp') or p.get('start') or 0)
+        e = int(p.get('stop_timestamp') or p.get('end') or 0)
+        if s == 0 and e == 0:
+            continue
+        if s < slot_end_ts and e > slot_start_ts:
+            return p
+    return None
+
+
+class GuideGridWindow(xbmcgui.WindowXML):
+    """Time-ruler grid view - channels x time slots with PiP."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.channels = kwargs.get('channels', [])
+        self.epg_map = kwargs.get('epg_map', {})
+        self.theme = kwargs.get('theme', 'sky')
+        self.pip_enabled = kwargs.get('pip_enabled', True)
+        self.pip_autoplay = kwargs.get('pip_autoplay', True)
+        self._player = xbmc.Player()
+        self._play_resolver = kwargs.get('play_resolver')
+        self._last_pip_id = None
+        self._last_move_ts = 0
+        self._pip_debounce = 0.6
+        # Time cursor - programmes starting at this slot fill Block1.
+        self._cursor = _slot_start(time.time())
+
+    def onInit(self):
+        theme = _apply_theme(self.theme)
+        xbmc.executebuiltin(
+            'Skin.SetString(PG_PiP_Hidden,%s)' % ('false' if self.pip_enabled else 'true')
+        )
+        self._refresh_ruler_and_rows()
+        self.setProperty('pip_channel', '')
+
+    def onAction(self, action):
+        aid = action.getId()
+        if aid in (9, 10, 13, 92):  # back / stop
+            self._stop_pip()
+            self.close()
+            return
+        # Left/Right pan the time window
+        if aid == 1:  # left
+            self._cursor -= SLOT_MINUTES * 60
+            self._refresh_ruler_and_rows()
+            return
+        if aid == 2:  # right
+            self._cursor += SLOT_MINUTES * 60
+            self._refresh_ruler_and_rows()
+            return
+        # "I" (Info) key -> toggle back to list view.
+        if aid == 11:
+            self._stop_pip()
+            self.close()
+            xbmcgui.Window(10000).setProperty('pg_switch_to_list', '1')
+            return
+        # Up/Down let Kodi handle focus change in the list; after the frame,
+        # refresh PiP.
+        if aid in (3, 4):
+            xbmc.sleep(60)
+            self._on_channel_moved()
+
+    def onClick(self, control_id):
+        if control_id == 9000:
+            idx = self.getControl(9000).getSelectedPosition()
+            if 0 <= idx < len(self.channels):
+                self._full_play(self.channels[idx])
+
+    # ---- rendering ----
+    def _refresh_ruler_and_rows(self):
+        # Labels for the 6 slot columns
+        for i in range(SLOT_COUNT):
+            ts = self._cursor + i * SLOT_MINUTES * 60
+            self.setProperty(f'slot{i + 1}', _format_time(ts))
+
+        # Window label shows the viewport time range
+        end_ts = self._cursor + SLOT_COUNT * SLOT_MINUTES * 60
+        self.setProperty(
+            'window_label',
+            f'{_format_time(self._cursor)} - {_format_time(end_ts)}'
+        )
+
+        # Position the "now" indicator if current time falls inside the window.
+        now_ts = time.time()
+        if self._cursor <= now_ts < end_ts:
+            # Columns live at x=260..1400 (1140 px wide, 6 slots)
+            frac = (now_ts - self._cursor) / (SLOT_COUNT * SLOT_MINUTES * 60)
+            x_px = 40 + 260 + int(frac * (1400 - 260))
+            self.setProperty('now_x', str(x_px))
+        else:
+            self.setProperty('now_x', '')
+
+        # Build one ListItem per channel with Block1..Block6 properties.
+        ctl = self.getControl(9000)
+        ctl.reset()
+        items = []
+        for ch in self.channels:
+            li = xbmcgui.ListItem(label=ch.get('name', ''))
+            li.setArt({'icon': ch.get('stream_icon', '') or ADDON_ICON,
+                       'thumb': ch.get('stream_icon', '') or ADDON_ICON})
+            li.setProperty('num', str(ch.get('num', '')))
+            progs = self.epg_map.get(str(ch.get('stream_id')), [])
+            for i in range(SLOT_COUNT):
+                slot_ts = self._cursor + i * SLOT_MINUTES * 60
+                prog = _find_block(progs, slot_ts)
+                if prog:
+                    li.setProperty(f'b{i + 1}t', prog.get('title', '')[:26])
+                    start = prog.get('start_timestamp') or prog.get('start') or 0
+                    li.setProperty(f'b{i + 1}s', _format_time(start))
+                else:
+                    li.setProperty(f'b{i + 1}t', '--')
+                    li.setProperty(f'b{i + 1}s', '')
+            items.append(li)
+        ctl.addItems(items)
+
+    # ---- PiP reuses same strategy as list view ----
+    def _on_channel_moved(self):
+        idx = self.getControl(9000).getSelectedPosition()
+        if idx < 0 or idx >= len(self.channels):
+            return
+        ch = self.channels[idx]
+        self.setProperty('pip_channel', ch.get('name', ''))
+        now = time.time()
+        if self.pip_enabled and self.pip_autoplay and (now - self._last_move_ts) >= self._pip_debounce:
+            self._last_move_ts = now
+            self._start_pip(ch)
+
+    def _start_pip(self, channel):
+        stream_id = str(channel.get('stream_id'))
+        if not stream_id or stream_id == self._last_pip_id:
+            return
+        if not self._play_resolver:
+            return
+        try:
+            url = self._play_resolver(stream_id)
+        except Exception:
+            return
+        if not url:
+            return
+        li = xbmcgui.ListItem(path=url)
+        li.setProperty('inputstream', 'inputstream.adaptive')
+        li.setProperty('inputstream.adaptive.manifest_type', 'hls')
+        try:
+            self._player.play(url, li, windowed=True)
+            self._last_pip_id = stream_id
+        except Exception:
+            pass
+
+    def _stop_pip(self):
+        try:
+            if self._player.isPlaying():
+                self._player.stop()
+        except Exception:
+            pass
+        self._last_pip_id = None
+
+    def _full_play(self, channel):
+        stream_id = str(channel.get('stream_id'))
+        if not stream_id or not self._play_resolver:
+            return
+        try:
+            url = self._play_resolver(stream_id)
+        except Exception:
+            url = None
+        if not url:
+            xbmcgui.Dialog().notification('Poseidon Guide', 'Stream unavailable',
+                                          xbmcgui.NOTIFICATION_ERROR, 3000)
+            return
+        self._stop_pip()
+        li = xbmcgui.ListItem(path=url)
+        li.setProperty('inputstream', 'inputstream.adaptive')
+        li.setProperty('inputstream.adaptive.manifest_type', 'hls')
+        self.close()
+        xbmc.Player().play(url, li)
+
+
+def open_grid_window(theme, channels, epg_map, play_resolver,
+                     pip_enabled=True, pip_autoplay=True):
+    """Modal time-ruler grid view."""
+    w = GuideGridWindow(
+        'script-poseidonguide-grid.xml',
         ADDON_PATH,
         'default',
         '1080i',

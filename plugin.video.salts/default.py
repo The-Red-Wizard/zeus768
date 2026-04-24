@@ -105,12 +105,30 @@ def main_menu():
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
         {'title': '[B]AI Search[/B]', 'mode': 'ai_search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
+        {'title': '[B]PunchPlay[/B] [COLOR grey][BETA][/COLOR]', 'mode': 'punchplay_menu'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu'},
         {'title': 'Debrid Services', 'mode': 'debrid_menu'},
         {'title': 'Tools', 'mode': 'tools_menu'},
         {'title': 'Settings', 'mode': 'addon_settings'},
         {'title': 'Buy Me a Beer', 'mode': 'buy_beer'},
     ]
+
+    # Continue Watching (PunchPlay /api/playback) - only shown when the endpoint
+    # responds 200. Probe is cached for 60s so this does not slow the menu.
+    try:
+        if _punchplay_playback_available():
+            items.insert(0, {'title': '[B][COLOR orange]Continue Watching[/COLOR][/B] [COLOR grey][BETA][/COLOR]',
+                             'mode': 'continue_watching'})
+    except Exception:
+        pass
+
+    # One-shot beta notice the first time a user lands on the main menu after
+    # enabling PunchPlay. Gated behind punchplay_enabled so non-users never see it.
+    try:
+        if xbmcaddon.Addon().getSetting('punchplay_enabled') == 'true':
+            _punchplay_beta_notice()
+    except Exception:
+        pass
     
     for item in items:
         li = xbmcgui.ListItem(item['title'])
@@ -2055,7 +2073,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
             if not scraper.is_enabled():
                 return scraper_name, [], False
             is_free_scraper = isinstance(scraper, FreeStreamScraper)
-            
+
             # Check for Stremio-based scrapers
             is_stremio = False
             try:
@@ -2063,17 +2081,18 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
                 is_stremio = isinstance(scraper, StremioBaseScraper)
             except ImportError:
                 pass
-            
-            if not debrid_enabled and not is_free_scraper and not (is_stremio and scraper.is_free):
+
+            # Any scraper that exposes `is_free = True` (e.g. Bones direct-stream
+            # provider) is allowed to run without a configured debrid service.
+            scraper_is_free = bool(getattr(scraper, 'is_free', False))
+
+            if (not debrid_enabled
+                    and not is_free_scraper
+                    and not scraper_is_free
+                    and not (is_stremio and getattr(scraper, 'is_free', False))):
                 return scraper_name, [], False
-            if is_free_scraper:
-                results = scraper.search(
-                    query, media_type,
-                    tmdb_id=tmdb_id,
-                    title=title, year=year,
-                    season=season, episode=episode
-                )
-            elif is_stremio:
+
+            if is_free_scraper or is_stremio:
                 results = scraper.search(
                     query, media_type,
                     tmdb_id=tmdb_id,
@@ -2081,13 +2100,26 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
                     season=season, episode=episode
                 )
             else:
-                results = scraper.search(query, media_type)
+                # Try the rich signature first (Bones + any future kwarg-aware
+                # scrapers), fall back to minimal signature for legacy scrapers.
+                try:
+                    results = scraper.search(
+                        query, media_type,
+                        tmdb_id=tmdb_id,
+                        title=title, year=year,
+                        season=season, episode=episode,
+                    )
+                except TypeError:
+                    results = scraper.search(query, media_type)
+
+            results = results or []
             for r in results:
                 r['scraper'] = scraper_name
             return scraper_name, results, True
         except Exception as e:
-            log_utils.log(f'Scraper {scraper_cls}: {e}', xbmc.LOGDEBUG)
-            return str(scraper_cls), [], False
+            # Elevate to WARNING so scraper failures are diagnosable from kodi.log
+            log_utils.log(f'Scraper {getattr(scraper_cls, "NAME", scraper_cls)} error: {e}', xbmc.LOGWARNING)
+            return getattr(scraper_cls, 'NAME', str(scraper_cls)), [], False
     
     SCRAPER_TIMEOUT = 30  # seconds - abandon any scraper slower than this
     futures = {}
@@ -2343,8 +2375,15 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
             stream_url = url
             log_utils.log(f'Direct stream URL: {stream_url}', xbmc.LOGINFO)
         else:
-            # Try Bones custom resolver first (Streamtape, LuluVid)
-            if any(host in url.lower() for host in ['streamtape.com', 'luluvid.com', 'luluvdo.com']):
+            # Try Bones custom resolver first (Streamtape mirrors, LuluVid)
+            _bones_hosts = (
+                'streamtape.com', 'streamtape.to', 'streamtape.net',
+                'streamtape.cc', 'streamta.pe', 'streamtape.xyz',
+                'streamtape.site', 'streamtape.online',
+                'streamadblocker.xyz', 'stape.fun', 'shavetape.cash',
+                'luluvid.com', 'luluvdo.com',
+            )
+            if any(host in url.lower() for host in _bones_hosts):
                 try:
                     from scrapers.bones_resolver import resolve as bones_resolve
                     progress = xbmcgui.DialogProgress()
@@ -2410,10 +2449,10 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
         return
     
     # Monitor playback for skip intro and next episode
-    _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id)
+    _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id, title=title)
 
 
-def _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id=''):
+def _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id='', title=''):
     """Monitor playback for skip intro, next episode, Trakt scrobbling, and pre-emptive scraping"""
     skip_intro_shown = False
     next_ep_shown = False
@@ -2429,6 +2468,7 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
     trakt_obj = None
     trakt_item_id = None
     trakt_item_type = None
+    imdb_id = ''
     
     if trakt_enabled:
         try:
@@ -2439,6 +2479,7 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                 results = trakt_obj._call_api(f'/search/tmdb/{tmdb_id}?type={mt}', cache_limit=24)
                 if results and isinstance(results, list) and len(results) > 0:
                     trakt_item_id = results[0].get(mt, {}).get('ids', {}).get('trakt')
+                    imdb_id = results[0].get(mt, {}).get('ids', {}).get('imdb') or ''
                     trakt_item_type = 'movies' if media_type == 'movie' else 'episodes'
                     
                     if trakt_item_type == 'episodes' and season and episode:
@@ -2452,8 +2493,25 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                             )
                             if ep_data and isinstance(ep_data, dict):
                                 trakt_item_id = ep_data.get('ids', {}).get('trakt', trakt_item_id)
+                                imdb_id = ep_data.get('ids', {}).get('imdb') or imdb_id
         except Exception as e:
             log_utils.log(f'Trakt scrobble init error: {e}', xbmc.LOGDEBUG)
+    
+    # PunchPlay scrobbling setup (parallel to Trakt)
+    pp_enabled = xbmcaddon.Addon().getSetting('punchplay_enabled') == 'true'
+    pp_obj = None
+    pp_started = False
+    pp_media_type = 'episode' if media_type == 'tvshow' else 'movie'
+    pp_title = show_title or title or ''
+    if pp_enabled:
+        try:
+            from salts_lib.punchplay_api import PunchPlayAPI
+            pp_obj = PunchPlayAPI()
+            if not pp_obj.is_authorized():
+                pp_obj = None
+        except Exception as e:
+            log_utils.log(f'PunchPlay init error: {e}', xbmc.LOGDEBUG)
+            pp_obj = None
     
     total_time = 0
     
@@ -2477,6 +2535,22 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                     log_utils.log(f'Trakt scrobble started: {trakt_item_type}/{trakt_item_id}', xbmc.LOGINFO)
                 except Exception as e:
                     log_utils.log(f'Trakt scrobble start error: {e}', xbmc.LOGDEBUG)
+            
+            # PunchPlay: start scrobble after 2% of playback (parallel to Trakt)
+            if pp_obj and not pp_started and progress_pct > 2:
+                pp_started = True
+                try:
+                    pp_obj.scrobble_start(
+                        pp_media_type, pp_title, year, tmdb_id, imdb_id,
+                        progress=progress_pct / 100.0,
+                        duration_seconds=total_time,
+                        position_seconds=current_time,
+                        season=season if pp_media_type == 'episode' else None,
+                        episode=episode if pp_media_type == 'episode' else None,
+                    )
+                    log_utils.log(f'PunchPlay scrobble started: {pp_media_type}/{pp_title}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'PunchPlay scrobble start error: {e}', xbmc.LOGDEBUG)
             
             # Skip Intro: show during first N seconds of TV episodes
             if (skip_intro_enabled and media_type == 'tvshow' and not skip_intro_shown
@@ -2521,6 +2595,19 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                                 trakt_obj.scrobble_stop(trakt_item_type, trakt_item_id, progress_pct)
                             except Exception:
                                 pass
+                        if pp_obj and pp_started:
+                            try:
+                                pp_obj.scrobble_stop(
+                                    pp_media_type, pp_title, year, tmdb_id, imdb_id,
+                                    progress=progress_pct / 100.0,
+                                    duration_seconds=total_time,
+                                    position_seconds=current_time,
+                                    season=season if pp_media_type == 'episode' else None,
+                                    episode=episode if pp_media_type == 'episode' else None,
+                                    watched=(progress_pct > 80),
+                                )
+                            except Exception:
+                                pass
                         player.stop()
                         xbmc.sleep(500)
                         get_sources(show_title, year, season, str(next_ep), 'tvshow')
@@ -2551,6 +2638,24 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                     log_utils.log(f'Trakt mark watched error: {e}', xbmc.LOGDEBUG)
         except Exception as e:
             log_utils.log(f'Trakt scrobble stop error: {e}', xbmc.LOGDEBUG)
+
+    # Playback ended - PunchPlay scrobble stop + mark watched (parallel to Trakt)
+    if pp_obj and pp_started:
+        try:
+            final_pct = progress_pct if progress_pct > 0 else 100
+            pp_watched_thresh = xbmcaddon.Addon().getSetting('punchplay_mark_watched') == 'true'
+            pp_obj.scrobble_stop(
+                pp_media_type, pp_title, year, tmdb_id, imdb_id,
+                progress=final_pct / 100.0,
+                duration_seconds=total_time,
+                position_seconds=int((final_pct / 100.0) * (total_time or 0)),
+                season=season if pp_media_type == 'episode' else None,
+                episode=episode if pp_media_type == 'episode' else None,
+                watched=(pp_watched_thresh and final_pct > 80),
+            )
+            log_utils.log(f'PunchPlay scrobble stopped at {final_pct:.0f}%', xbmc.LOGINFO)
+        except Exception as e:
+            log_utils.log(f'PunchPlay scrobble stop error: {e}', xbmc.LOGDEBUG)
 
 
 def _preemptive_scrape(title, year, season, episode):
@@ -3184,7 +3289,6 @@ def trakt_list(list_id):
     """Show items in a Trakt list"""
     from salts_lib.trakt_api import TraktAPI, TraktError, TransientTraktError
     trakt = TraktAPI()
-    
     try:
         items = trakt.get_list(list_id)
     except (TraktError, TransientTraktError) as e:
@@ -3370,6 +3474,138 @@ def _show_trakt_items(items, media_type, key=None):
     
     xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movies' else 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+
+# ==================== PunchPlay Functions ====================
+
+def punchplay_menu():
+    """PunchPlay.tv menu (Trakt alternative - scrobbling only)"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    pp = PunchPlayAPI()
+    is_auth = pp.is_authorized()
+    enabled = xbmcaddon.Addon().getSetting('punchplay_enabled') == 'true'
+
+    status = 'Authorized' if is_auth else 'Not Authorized'
+    action_label = 'Re-Authorize PunchPlay' if is_auth else 'Authorize PunchPlay'
+    toggle_label = 'Disable PunchPlay Scrobbling' if enabled else 'Enable PunchPlay Scrobbling'
+
+    items = [
+        {'title': '[COLOR grey][BETA] PunchPlay is in beta - rough edges expected[/COLOR]', 'mode': 'punchplay_menu'},
+        {'title': f'Status: {status}', 'mode': 'punchplay_status'},
+        {'title': f'Scrobbling: {"ON" if enabled else "OFF"} (toggle)', 'mode': 'punchplay_toggle'},
+        {'title': action_label, 'mode': 'punchplay_auth'},
+    ]
+    if is_auth:
+        items.append({'title': 'Revoke Authorization', 'mode': 'punchplay_revoke'})
+    items.append({'title': 'Open PunchPlay website', 'mode': 'punchplay_open_site'})
+
+    # Fire the one-shot beta toast the first time a user opens the menu directly
+    # (covers people who land here before flipping the Enable toggle).
+    try:
+        _punchplay_beta_notice()
+    except Exception:
+        pass
+
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': item['mode']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def punchplay_status():
+    """Show PunchPlay authorization status"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    pp = PunchPlayAPI()
+    if pp.is_authorized():
+        me = None
+        try:
+            me = pp.get_me()
+        except Exception:
+            pass
+        username = ''
+        if isinstance(me, dict):
+            username = me.get('username') or me.get('name') or ''
+        if username:
+            xbmcgui.Dialog().ok('PunchPlay Status', f'Authorized as: {username}')
+        else:
+            xbmcgui.Dialog().ok('PunchPlay Status', 'Authorized.')
+    else:
+        xbmcgui.Dialog().ok(
+            'PunchPlay Status',
+            'Not Authorized.\n\nOpen the PunchPlay menu and select "Authorize PunchPlay".'
+        )
+
+
+def punchplay_auth():
+    """Start PunchPlay device-code authorization"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    pp = PunchPlayAPI()
+    pp.authorize()
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def punchplay_revoke():
+    """Revoke PunchPlay authorization"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    confirm = xbmcgui.Dialog().yesno(
+        'Revoke PunchPlay',
+        'Are you sure you want to revoke PunchPlay authorization?'
+    )
+    if confirm:
+        pp = PunchPlayAPI()
+        pp.clear_authorization()
+        xbmcgui.Dialog().notification('PunchPlay', 'Authorization revoked', xbmcgui.NOTIFICATION_INFO)
+        xbmc.executebuiltin('Container.Refresh')
+
+
+def punchplay_toggle():
+    """Flip the punchplay_enabled setting"""
+    addon = xbmcaddon.Addon()
+    current = addon.getSetting('punchplay_enabled') == 'true'
+    addon.setSetting('punchplay_enabled', 'false' if current else 'true')
+    new_state = 'disabled' if current else 'enabled'
+    xbmcgui.Dialog().notification('PunchPlay', f'Scrobbling {new_state}', ADDON_ICON)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def punchplay_open_site():
+    """Show the PunchPlay web URL"""
+    xbmcgui.Dialog().ok(
+        'PunchPlay',
+        'Visit https://punchplay.tv on any browser to manage your profile,\n'
+        'lists, and watch history.'
+    )
+
+
+def _punchplay_mark_watched(media_type, tmdb_id, imdb_id='', title='', year='',
+                             season=None, episode=None):
+    """Helper: mirror a Trakt mark_watched action onto PunchPlay.
+
+    Called from places in default.py where SALTS explicitly marks an item
+    watched on Trakt. Honors the 'punchplay_mirror_trakt' setting.
+    """
+    try:
+        addon = xbmcaddon.Addon()
+        if addon.getSetting('punchplay_enabled') != 'true':
+            return
+        if addon.getSetting('punchplay_mirror_trakt') != 'true':
+            return
+        from salts_lib.punchplay_api import PunchPlayAPI
+        pp = PunchPlayAPI()
+        if not pp.is_authorized():
+            return
+        pp.mark_watched(
+            'episode' if media_type in ('tvshow', 'episode', 'episodes', 'shows') else 'movie',
+            title, year, tmdb_id, imdb_id,
+            season=season, episode=episode,
+        )
+    except Exception as e:
+        log_utils.log(f'PunchPlay mirror mark_watched error: {e}', xbmc.LOGDEBUG)
+
 
 
 # ==================== FRANCHISES ====================
@@ -4390,6 +4626,188 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
     return None
 
 
+def _punchplay_beta_notice():
+    """One-shot toast informing the user that PunchPlay is still in beta.
+
+    Fires at most once per install (flag stored in addon_data). Silent no-op
+    on any failure so it never blocks menu rendering.
+    """
+    try:
+        flag_file = os.path.join(ADDON_DATA, 'punchplay_beta_seen.json')
+        if os.path.exists(flag_file):
+            return
+        if not os.path.isdir(ADDON_DATA):
+            os.makedirs(ADDON_DATA, exist_ok=True)
+        xbmcgui.Dialog().notification(
+            'PunchPlay (Beta)',
+            'PunchPlay integration is in beta - expect rough edges. Continue Watching lights up when the API goes live.',
+            ADDON_ICON,
+            7000,
+            False,
+        )
+        with open(flag_file, 'w') as f:
+            json.dump({'shown_at': time.time(), 'version': ADDON_VERSION}, f)
+    except Exception as e:
+        log_utils.log(f'PunchPlay beta notice failed: {e}', xbmc.LOGDEBUG)
+
+
+def _punchplay_playback_available():
+    """Cached probe for /api/playback availability.
+
+    Returns True if:
+      * PunchPlay is enabled AND authorized, AND
+      * The Continue Watching UI is toggled on (default: true), AND
+      * GET /api/playback returned HTTP 200 within the last PROBE_TTL seconds.
+
+    Result is cached in addon_data/punchplay_probe.json (60s TTL) so the main
+    menu does not issue a network call on every render. Any failure => False,
+    which makes the row disappear silently (matches the "hide entirely until
+    endpoint responds 200" product decision).
+    """
+    PROBE_TTL = 60  # seconds
+    try:
+        addon = xbmcaddon.Addon()
+        if addon.getSetting('punchplay_enabled') != 'true':
+            return False
+        if addon.getSetting('punchplay_continue_watching') == 'false':
+            return False
+    except Exception:
+        return False
+
+    probe_file = os.path.join(ADDON_DATA, 'punchplay_probe.json')
+    now = time.time()
+    try:
+        if os.path.exists(probe_file):
+            with open(probe_file, 'r') as f:
+                cached = json.load(f)
+            if now - float(cached.get('checked_at', 0)) < PROBE_TTL:
+                return bool(cached.get('available', False))
+    except Exception:
+        pass
+
+    available = False
+    try:
+        from salts_lib.punchplay_api import PunchPlayAPI
+        pp = PunchPlayAPI()
+        if pp.is_authorized():
+            available = pp.is_playback_api_available()
+    except Exception as e:
+        log_utils.log(f'PunchPlay probe error: {e}', xbmc.LOGDEBUG)
+
+    try:
+        if not os.path.isdir(ADDON_DATA):
+            os.makedirs(ADDON_DATA, exist_ok=True)
+        with open(probe_file, 'w') as f:
+            json.dump({'available': available, 'checked_at': now}, f)
+    except Exception:
+        pass
+
+    return available
+
+
+def continue_watching_menu():
+    """List in-progress items pulled from PunchPlay /api/playback.
+
+    Clicking a movie routes to get_sources (same as search results). Clicking
+    an episode routes to get_sources with season/episode params. Position /
+    duration are surfaced as ResumeTime / TotalTime so Kodi shows a progress
+    bar in the default skin. Actual seek-on-play requires threading position
+    through play() - tracked as a follow-up.
+    """
+    try:
+        from salts_lib.punchplay_api import PunchPlayAPI
+        pp = PunchPlayAPI()
+        items = pp.get_continue_watching(limit=30)
+    except Exception as e:
+        log_utils.log(f'Continue Watching fetch failed: {e}', xbmc.LOGWARNING)
+        items = []
+
+    if not items:
+        li = xbmcgui.ListItem('Nothing in progress on PunchPlay')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        xbmcplugin.addDirectoryItem(HANDLE, build_url({'mode': 'punchplay_menu'}), li, isFolder=True)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for it in items:
+        media_type = it.get('type') or 'movie'
+        title = it.get('title') or 'Unknown'
+        year = str(it.get('year') or '')
+        tmdb_id = str(it.get('tmdb_id') or '')
+        position = float(it.get('position') or 0)
+        duration = float(it.get('duration') or 0)
+        pct = int((position / duration) * 100) if duration > 0 else 0
+
+        poster = it.get('poster') or ''
+        if poster and not poster.startswith('http'):
+            poster = f'{TMDB_IMG}/w500{poster}'
+        fanart = it.get('fanart') or ''
+        if fanart and not fanart.startswith('http'):
+            fanart = f'{TMDB_IMG}/original{fanart}'
+
+        if media_type == 'episode':
+            season = it.get('season') or 0
+            episode = it.get('episode') or 0
+            label = f'{title} - S{int(season):02d}E{int(episode):02d}  [{pct}%]'
+            query = {
+                'mode': 'get_sources',
+                'title': title,
+                'year': year,
+                'tmdb_id': tmdb_id,
+                'season': str(season),
+                'episode': str(episode),
+                'media_type': 'tv',
+            }
+        else:
+            label = f'{title} ({year})  [{pct}%]' if year else f'{title}  [{pct}%]'
+            query = {
+                'mode': 'get_sources',
+                'title': title,
+                'year': year,
+                'tmdb_id': tmdb_id,
+                'media_type': 'movie',
+            }
+
+        li = xbmcgui.ListItem(label)
+        art = {'icon': poster or ADDON_ICON, 'thumb': poster or ADDON_ICON,
+               'poster': poster or ADDON_ICON, 'fanart': fanart or ADDON_FANART}
+        li.setArt(art)
+
+        info = {'title': title, 'plot': it.get('overview') or ''}
+        try:
+            if year:
+                info['year'] = int(year)
+        except Exception:
+            pass
+        if media_type == 'episode':
+            info['mediatype'] = 'episode'
+            try:
+                info['season'] = int(it.get('season') or 0)
+                info['episode'] = int(it.get('episode') or 0)
+                info['tvshowtitle'] = title
+            except Exception:
+                pass
+        else:
+            info['mediatype'] = 'movie'
+        try:
+            li.setInfo('video', info)
+        except Exception:
+            pass
+
+        if duration > 0:
+            try:
+                li.setProperty('TotalTime', str(int(duration)))
+                li.setProperty('ResumeTime', str(int(position)))
+            except Exception:
+                pass
+
+        li.setProperty('IsPlayable', 'false')
+        xbmcplugin.addDirectoryItem(HANDLE, build_url(query), li, isFolder=True)
+
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
 def router(params):
     """Route to appropriate function based on mode"""
     mode = params.get('mode', '')
@@ -4507,6 +4925,21 @@ def router(params):
         trakt_lists()
     elif mode == 'trakt_list':
         trakt_list(params.get('list_id', ''))
+    # PunchPlay modes
+    elif mode == 'punchplay_menu':
+        punchplay_menu()
+    elif mode == 'punchplay_auth':
+        punchplay_auth()
+    elif mode == 'punchplay_status':
+        punchplay_status()
+    elif mode == 'punchplay_revoke':
+        punchplay_revoke()
+    elif mode == 'punchplay_toggle':
+        punchplay_toggle()
+    elif mode == 'punchplay_open_site':
+        punchplay_open_site()
+    elif mode == 'continue_watching':
+        continue_watching_menu()
     # Franchise modes
     elif mode == 'franchises_menu':
         franchises_menu()

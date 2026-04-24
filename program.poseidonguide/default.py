@@ -1266,6 +1266,7 @@ def launch_skin_window(bridge):
         return False
     pip_enabled = addon.getSetting('pip_enabled').lower() != 'false'
     pip_autoplay = addon.getSetting('pip_autoplay').lower() != 'false'
+    layout = addon.getSetting('guide_layout') or 'list'
 
     progress = xbmcgui.DialogProgress()
     progress.create('Poseidon Guide', 'Preparing TV guide...')
@@ -1277,15 +1278,29 @@ def launch_skin_window(bridge):
             'Poseidon Guide', 'No channels available', xbmcgui.NOTIFICATION_WARNING, 3000)
         return True
 
-    from resources.lib.guide_window import open_guide_window
-    open_guide_window(
-        theme=theme,
-        channels=channels,
-        epg_map=epg_map,
-        play_resolver=lambda sid: _resolve_stream_url(bridge, sid),
-        pip_enabled=pip_enabled,
-        pip_autoplay=pip_autoplay,
-    )
+    from resources.lib.guide_window import open_guide_window, open_grid_window
+
+    # Toggle between list and grid views if the user pressed Info inside.
+    home = xbmcgui.Window(10000)
+    while True:
+        home.clearProperty('pg_switch_to_list')
+        home.clearProperty('pg_switch_to_grid')
+        opener = open_grid_window if layout == 'grid' else open_guide_window
+        opener(
+            theme=theme,
+            channels=channels,
+            epg_map=epg_map,
+            play_resolver=lambda sid: _resolve_stream_url(bridge, sid),
+            pip_enabled=pip_enabled,
+            pip_autoplay=pip_autoplay,
+        )
+        if home.getProperty('pg_switch_to_grid') == '1':
+            layout = 'grid'
+            continue
+        if home.getProperty('pg_switch_to_list') == '1':
+            layout = 'list'
+            continue
+        break
     return True
 
 

@@ -15,6 +15,20 @@
                     </constraints>
                     <control type="list" format="string"/>
                 </setting>
+                <setting id="guide_layout" type="string" label="Layout" default="list">
+                    <level>0</level>
+                    <default>list</default>
+                    <constraints>
+                        <options>
+                            <option label="List + PiP (channels down, programmes below)">list</option>
+                            <option label="Time-ruler Grid + PiP (Sky-style horizontal grid)">grid</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string"/>
+                    <dependencies>
+                        <dependency type="visible" setting="guide_skin">!string.isequal(classic)</dependency>
+                    </dependencies>
+                </setting>
                 <setting id="pip_enabled" type="boolean" label="Picture-in-Picture Preview"
                          default="true">
                     <level>0</level>
