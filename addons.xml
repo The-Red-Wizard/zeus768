@@ -213,7 +213,7 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.8.8" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.9.5" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -278,6 +278,84 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.9.5 (2026) - butterbeansrstop ENHANCEMENTS
+- Added: Settings toggle "butterbeansrstop (srstop.link)" under
+  Settings -> Streaming Sites (default on).
+- Added: Optional srstop.link username / password fields - when set,
+  the scraper maintains a logged-in cookie jar (persisted to the
+  addon profile) so login-gated embed URLs are revealed.
+- Added: Cloudflare-bypass toggle (default on) - when urllib receives
+  a 403/503 CF challenge, the scraper transparently retries through
+  cloudscraper if the module is available.
+- Added: Direct-URL capture - when the logged-in site exposes an href /
+  data-link on the embed-selector, the scraper returns that URL so
+  ResolveURL can resolve it directly instead of opening the page.
+
+
+v2.9.4 (2026) - NEW SCRAPER: butterbeansrstop (srstop.link)
+- Added: butterbeansrstop scraper targeting srstop.link (TV shows only).
+- Parses the site's embed-selector list on episode pages to extract
+  hoster name (luluvdo, doodstream, etc.) and quality (1080p / 720p /
+  SD) from the vris* class markers.
+- Uses direct slug guessing first, then the site's /index.php?menu=search
+  query as a fallback so it works without a site login for discovery.
+- Registered under the "streaming_sites" category, TV-only.
+
+
+v2.9.1 (2026) - PUNCHPLAY.TV INTEGRATION
+- Added: PunchPlay.tv as a parallel tracker alongside Trakt. Scrobble
+  start/pause/stop + mark-watched now mirror to your PunchPlay account
+  whenever Trakt scrobbling fires (both can be enabled independently).
+- Added: Device-code login flow - open Settings -> PunchPlay, press
+  "Login to PunchPlay", visit the URL shown, enter the code.
+- Added: New top-level "PunchPlay" menu with status/toggle/login/logout.
+- Added: New Settings -> PunchPlay category:
+    * Enable PunchPlay scrobbling
+    * Mark watched on PunchPlay (end of playback)
+    * Mirror Trakt "mark watched" actions to PunchPlay
+    * Backend URL (advanced - defaults to https://punchplay.tv)
+- Note: PunchPlay's non-scrobble API (watchlist, lists, calendar, etc.) is
+  not publicly documented, so SALTS continues to use Trakt for browsing
+  those lists. PunchPlay receives a full watch history from your scrobbles.
+
+v2.9.0 (2026-02) - MORE STREAMTAPE / LULUVDO SOURCES
+- Added 10 NEW site-scrape scrapers that visit independent movie/TV sites and
+  extract any Streamtape / LuluVdo iframe found on the watch page:
+    * Goku.sx, GokuTV.net  (multi-server streaming)
+    * Putlockers.fm        (streamtape mirrors)
+    * MyFlixerz.to         (streamtape / luluvdo servers)
+    * FMovies24.to         (streamtape / luluvdo embeds)
+    * Soaper.live          (TV shows, alt servers)
+    * HDToday.cc           (multi-server, streamtape mirror)
+    * Flixtor.video        (streamtape & luluvdo alt-servers)
+    * MoviesJoy.plus       (per-title streamtape mirrors)
+    * French-Stream.lol    (FR; off by default)
+- Added DuckDuckGo HTML fallback search (opt-in, off by default) - last-resort
+  hunt for Streamtape/LuluVdo embeds when curated sites don't cover the title.
+- Every URL produced flows through the existing bones_resolver, so each
+  Streamtape / LuluVdo embed is auto-converted to a direct mp4 / m3u8 link
+  that plays in Kodi without ResolveURL.
+- New per-source toggles in Settings -> Free Streams.
+- No additional thechains24 endpoints used; Bones still uses only its
+  original single feed URL.
+
+v2.8.9 (2026-01-20) - BONES & SCRAPER DISPATCH FIX
+- Fixed: Bones scraper was skipped when no debrid service was configured (main
+  cause of "no sources / everything erroring" reports). Bones now runs in free
+  mode alongside VidSrc/2Embed/etc.
+- Fixed: Bones title matching was too loose (e.g. common words matched every
+  movie). Now requires exact or full word-set match plus year tolerance.
+- Fixed: Bones year is now extracted from the stream filename so "Saw" (2004)
+  does not collide with "Saw X" (2023), etc.
+- Fixed: Streamtape resolver now handles all current obfuscation patterns and
+  all streamtape mirror domains (streamtape.to/.net/.cc/streamta.pe, etc.).
+- Fixed: `get_sources` dispatcher now recognizes any scraper exposing
+  `is_free = True` and is resilient to scrapers using the legacy
+  `search(query, media_type)` signature.
+- Improved: scraper-side exceptions are now logged at WARNING instead of DEBUG
+  so they show up in kodi.log for easier diagnosis.
+- Added: `bones_enabled` setting so Bones can be toggled from Settings.
+
 v2.8.0 (2026-01-15) - MASSIVE SCRAPER EXPANSION
 - Added: 75+ NEW SCRAPERS bringing total to 120+ sources!
 - Added: VidSrc Network (8 mirrors): xyz, cc, in, pm, nl, pro, me, to
@@ -319,57 +397,6 @@ v2.7.0 (2026-01-10)
 - Added: New Episodes Today calendar (scroll back up to 7 days)
 - Added: Latest Show Premieres with infinite pagination (50 items/page, last 7 days)
 - Added: Smart movie stream finding when clicking on live channels
-        </news>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-        </assets>
-    </extension>
-</addon>
-
-<addon id="plugin.video.syncher" name="Syncher" version="3.4.0" provider-name="zeus768">
-    <requires>
-        <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.requests" version="2.25.0"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="main.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Syncher - All-in-One: Movies, TV, Sports, Music (AI), Podcasts, Audiobooks, Radio</summary>
-        <description lang="en">Syncher v3.4.0 by zeus768 - The ultimate all-in-one Kodi addon. Movies and TV Shows via Trakt/TMDB with scene release scrapers. Sports Highlights from replay sites. Massive Music section: AI Daily Playlists powered by Emergent Universal Key (like Spotify daily mixes), mood/decade playlists, Deezer charts/genres/artists, user playlists with shuffle/sort/export. Live Radio (30,000+ stations via Radio Browser API). Podcasts via iTunes with RSS episode streaming. Audiobooks via LibriVox and Internet Archive with chapter-by-chapter playback. Resolves through Real-Debrid, Premiumize, AllDebrid, TorBox. AI features powered by Emergent Universal Key.</description>
-        <disclaimer lang="en">This addon does not host any content. A debrid service is recommended. AI features require an Emergent Universal Key.</disclaimer>
-        <platform>all</platform>
-        <license>GPL-3.0-only</license>
-        <news>
-v3.4.0 (2026)
-- NEW: Podcasts section (iTunes Search API)
-  * Top podcasts, browse by 19 genres
-  * Search podcasts by name
-  * Stream episodes directly via RSS feeds
-  * Episode metadata with dates and durations
-- NEW: Audiobooks section (LibriVox + Internet Archive)
-  * 50+ popular classic audiobooks
-  * New arrivals from LibriVox
-  * Browse by 20 genres
-  * Search by title or author
-  * Internet Archive search (millions of free audiobooks)
-  * Chapter-by-chapter playback with Play All
-  * Dual-source: LibriVox API + Internet Archive API
-- Updated main menu: Movies, TV, Sports, Music, Podcasts, Audiobooks
-- Updated search menu: includes podcast and audiobook search
-- AI features use Emergent Universal Key only
-
-v3.3.0 (2026)
-- AI Daily Playlists (14 themes, mood, decades, similar artist)
-- Live Radio via Radio Browser API
-- Enhanced playlists (shuffle, sort, export, import)
-
-v3.2.0 (2026)
-- Deezer Music section (genres, artists, albums, charts, playlists)
-
-v2.0.0 (2026)
-- Initial release: Movies, TV, Sports, Debrid, Trakt
         </news>
         <assets>
             <icon>icon.png</icon>
