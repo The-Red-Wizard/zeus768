@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addons>
 
-<addon id="plugin.program.theaccountant" name="The Accountant" version="4.7.0" provider-name="zeus768">
+<addon id="plugin.program.theaccountant" name="The Accountant" version="4.8.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -20,7 +20,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="1.5.3" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="1.5.4" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.skins" version="1.1.0"/>
@@ -534,7 +534,7 @@ v1.8.1: Stability fixes</news>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.4" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.5" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>

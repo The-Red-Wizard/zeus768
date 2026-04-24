@@ -368,16 +368,31 @@ def iptv_vault():
     if choice == 0:  # Add new
         name = dialog.input("Provider Name (e.g., MyIPTV)")
         if name:
-            url = dialog.input("M3U URL or Server URL")
-            username = dialog.input("Username (optional)")
-            password = dialog.input("Password (optional)")
-            
-            iptv_data[name] = {
-                'url': url,
-                'username': username,
-                'password': password
-            }
-            
+            # v4.8.0: ask for portal type so we can target Poseidon Player
+            # correctly (Xtreme Codes vs STB MAC).
+            ptype = dialog.select("Portal Type", [
+                "Xtreme Codes (URL + username + password)",
+                "STB MAC (portal URL + MAC address)",
+            ])
+            if ptype == 1:
+                portal_url = dialog.input("Portal URL")
+                mac = dialog.input("MAC Address (AA:BB:CC:DD:EE:FF)")
+                iptv_data[name] = {
+                    'type': 'mac',
+                    'portal_url': (portal_url or '').rstrip('/'),
+                    'mac': (mac or '').upper(),
+                }
+            else:
+                url = dialog.input("M3U URL or Server URL")
+                username = dialog.input("Username (optional)")
+                password = dialog.input("Password (optional)")
+                iptv_data[name] = {
+                    'type': 'xtream',
+                    'url': url,
+                    'username': username,
+                    'password': password,
+                }
+
             os.makedirs(PROFILE_PATH, exist_ok=True)
             with open(IPTV_VAULT, 'w') as f:
                 json.dump(iptv_data, f, indent=2)
@@ -417,25 +432,54 @@ def iptv_vault():
         export_iptv_to_addon(iptv_data)
 
 def export_iptv_to_addon(iptv_data):
-    """Export IPTV settings to PVR IPTV Simple Client"""
+    """Export IPTV credentials to Poseidon Player ONLY.
+
+    v4.8.0: No longer writes to pvr.iptvsimple. Users requested that IPTV
+    credentials stay self-contained inside Poseidon Player so that Simple IPTV
+    Client is never mutated by The Accountant.
+    """
     dialog = xbmcgui.Dialog()
     providers = list(iptv_data.keys())
-    
+    if not providers:
+        dialog.ok("No providers", "Add an IPTV provider to the vault first.")
+        return
+
     choice = dialog.select("Select Provider to Export", providers)
-    if choice >= 0:
-        provider = providers[choice]
-        data = iptv_data[provider]
-        
-        try:
-            if not xbmc.getCondVisibility('System.HasAddon(pvr.iptvsimple)'):
-                dialog.ok("Export Failed", "PVR IPTV Simple Client not installed")
-                return
-            pvr = xbmcaddon.Addon('pvr.iptvsimple')
-            pvr.setSetting('m3uPathType', '1')  # Remote URL
-            pvr.setSetting('m3uUrl', data.get('url', ''))
-            notify("IPTV Export", f"{provider} exported to PVR IPTV Simple")
-        except:
-            dialog.ok("Export Failed", "PVR IPTV Simple Client not installed")
+    if choice < 0:
+        return
+    provider = providers[choice]
+    data = iptv_data[provider]
+
+    # Target: Poseidon Player only.
+    if not xbmc.getCondVisibility('System.HasAddon(plugin.video.poseidonplayer)'):
+        dialog.ok(
+            "Poseidon Player not installed",
+            "IPTV details can only be exported to Poseidon Player.",
+            "Install Poseidon Player from the repo and try again.",
+        )
+        return
+
+    try:
+        poseidon = xbmcaddon.Addon('plugin.video.poseidonplayer')
+    except Exception as e:
+        dialog.ok("Export Failed", f"Could not access Poseidon Player ({e})")
+        return
+
+    # Poseidon Player supports two portal modes; write whichever matches the
+    # vault entry. Vault shape is flexible so we detect by key presence.
+    if data.get('mac') or data.get('portal_url'):
+        poseidon.setSetting('portal_mode', 'mac')
+        poseidon.setSetting('portal_url', data.get('portal_url') or data.get('url', ''))
+        poseidon.setSetting('mac_address', data.get('mac', '').upper())
+        mode_label = 'STB MAC'
+    else:
+        poseidon.setSetting('portal_mode', 'xtream')
+        poseidon.setSetting('dns', data.get('url', '') or data.get('dns', ''))
+        poseidon.setSetting('username', data.get('username', '') or data.get('user', ''))
+        poseidon.setSetting('password', data.get('password', '') or data.get('pass', ''))
+        mode_label = 'Xtreme Codes'
+
+    notify("IPTV Export", f"{provider} exported to Poseidon Player ({mode_label})")
 
 # ============================================
 # FAVOURITES VAULT

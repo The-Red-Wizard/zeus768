@@ -1,3 +1,30 @@
+v2.4.5 (2026-04-24) - QUALITY + ALPHABET FIXES (round 2)
+=========================================================
+[BUG #2 round 2] Lists still truncated around "R"
+  - Root cause of the remainder: ITEMS_PER_PAGE was 30.
+    For non-sync paths (trending / popular / anticipated)
+    my 2.4.4 auto-paginate didn't fire, so Kodi sorted the
+    30-item directory alphabetically and the user saw
+    "A through R".
+  - Fix: bumped ITEMS_PER_PAGE from 30 -> 100 (the Trakt
+    API maximum). A single page now covers A-Z comfortably
+    for any public list.
+
+[BUG #3 round 2] Still auto-plays 1080p when 4K is selected
+  - Root cause of the remainder: the sort key was
+    (is_cached, q_distance, -seeds). Cached-first always
+    beat quality, so a cached 1080p won even when the user
+    asked for 4K.
+  - Fix: sort key reordered to (q_distance, is_cached,
+    -seeds). Preferred-quality results are picked first,
+    with cached ranking inside each quality bucket.
+  - Extra: upscale fallback (higher than preferred) is
+    penalised lightly; downgrade (lower than preferred)
+    is penalised heavily. So if you pick 4K and no 4K
+    exists, the addon falls back to 1080p rather than
+    jumping to 480p.
+
+
 v2.4.4 (2026-04-24) - EIGHT BUG FIXES
 =====================================
 [BUG 1] Can't add TV/Movies to Trakt lists

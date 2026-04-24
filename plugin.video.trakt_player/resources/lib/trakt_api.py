@@ -27,7 +27,10 @@ CLIENT_ID = 'd2a8e820fec0d46079cbbceaca851648df9431cbc73ede2c10d35dfb1c7a36e2'
 USER_AGENT = 'TraktPlayer Kodi Addon'
 
 # Pagination settings - reduced for faster loading
-ITEMS_PER_PAGE = 30
+# v2.4.5: Bumped from 30 -> 100. Trakt API caps at 100 per page. With 30
+# items + Kodi's alphabetical sort of tvshow directories, users reported
+# "only shows up to R" because a partial A-Z pool gets truncated mid-alphabet.
+ITEMS_PER_PAGE = 100
 
 
 def get_addon_icon():

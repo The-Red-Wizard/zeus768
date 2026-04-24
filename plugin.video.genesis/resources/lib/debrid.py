@@ -1092,10 +1092,29 @@ class Torbox:
             
             data = result.get('data', {})
             device_code = data.get('device_code')
-            user_code = data.get('user_code')
-            verification_url = data.get('verification_url', self.DEVICE_URL)
-            expires_in = int(data.get('expires_in', 600))
-            interval = int(data.get('interval', 5))
+            # TorBox API returns the user-facing code as 'code' (not 'user_code').
+            user_code = data.get('code') or data.get('user_code')
+            # Prefer the friendly (shorter) URL for TV screens when present.
+            verification_url = (data.get('friendly_verification_url')
+                                or data.get('verification_url')
+                                or self.DEVICE_URL)
+            # TorBox returns `expires_at` as an ISO-8601 string; compute seconds.
+            expires_in = int(data.get('expires_in', 0) or 0)
+            if not expires_in:
+                exp_at = data.get('expires_at')
+                if exp_at:
+                    try:
+                        from datetime import datetime, timezone
+                        ts = exp_at.replace('Z', '+00:00')
+                        exp_dt = datetime.fromisoformat(ts)
+                        if exp_dt.tzinfo is None:
+                            exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+                        expires_in = max(60, int(exp_dt.timestamp() - time.time()))
+                    except Exception:
+                        expires_in = 600
+                else:
+                    expires_in = 600
+            interval = int(data.get('interval', 5) or 5)
             
             if not device_code or not user_code:
                 xbmcgui.Dialog().notification('Error', 'Invalid device code response', xbmcgui.NOTIFICATION_ERROR)
@@ -1152,12 +1171,17 @@ class Torbox:
                         xbmc.log('Torbox: Authorization successful', xbmc.LOGINFO)
                         return True
                 
-                # Check for errors
+                # Check for errors - allow many "pending" variants without failing.
                 if isinstance(check_result, dict):
-                    error = check_result.get('error', '')
-                    if error and error not in ['authorization_pending', 'slow_down']:
+                    error = str(check_result.get('error', '') or '').lower()
+                    pending_markers = ('pending', 'slow_down', 'wait', 'expired_not_yet')
+                    if error and not any(m in error for m in pending_markers):
                         dialog.close()
-                        xbmcgui.Dialog().notification('Error', check_result.get('detail', 'Auth failed'), xbmcgui.NOTIFICATION_WARNING)
+                        xbmcgui.Dialog().notification(
+                            'Error',
+                            check_result.get('detail', 'Auth failed'),
+                            xbmcgui.NOTIFICATION_WARNING,
+                        )
                         return False
             
             dialog.close()

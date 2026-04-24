@@ -1,0 +1,18 @@
+v1.5.4 (2026-04-24) - TORBOX DEVICE CODE FIX
+=============================================
+FIX:
+- "Get code for TorBox not working / get code error"
+- Root cause: TorBox device-code response shape differs
+  from Real-Debrid. The addon was reading 'user_code' and
+  'expires_in' but TorBox returns 'code' and 'expires_at'
+  (ISO-8601 timestamp). User therefore saw an empty/blank
+  code screen and polling never confirmed.
+- Fix: read 'code' (or 'user_code' as fallback for future
+  API changes), compute expires_in from 'expires_at' ISO
+  string when needed, and prefer the 'friendly_verification_url'
+  (the shorter URL that fits better on TV screens) when
+  TorBox provides one.
+- Expanded the "pending" marker list so variant error
+  codes ('slow_down', 'wait', 'expired_not_yet', upper/
+  lower case) do not abort the polling loop.
+

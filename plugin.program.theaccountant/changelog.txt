@@ -1,3 +1,21 @@
+v4.8.0 (2026-04-24) - IPTV VAULT SCOPED TO POSEIDON PLAYER
+===========================================================
+CHANGE:
+- IPTV Vault export now targets ONLY Poseidon Player. The
+  Accountant will NEVER write to pvr.iptvsimple again.
+- If Poseidon Player is not installed, the export is
+  blocked with a clear message instead of silently
+  mutating a different addon.
+- Mode-aware: vault entries with portal_url+mac fields
+  are exported as STB MAC; entries with url+username+
+  password are exported as Xtreme Codes. The matching
+  portal_mode is set on Poseidon Player in the same step.
+
+- Add-new-provider flow now asks up front whether the
+  entry is Xtreme Codes or STB MAC so the correct fields
+  are captured.
+
+
 v4.7.0
 - Trakt card now flexes your taste:
   * TOTAL WATCH TIME - pulled from the

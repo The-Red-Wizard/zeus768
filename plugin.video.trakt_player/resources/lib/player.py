@@ -39,17 +39,29 @@ def _auto_play_enabled():
 
 
 def _sort_key_factory(preferred, cached_set):
-    """Return a sort key that puts cached+preferred-quality first, then other
-    qualities by closeness to the user's preference, then by seed count."""
+    """Return a sort key that respects the user's QUALITY preference first,
+    then prefers cached, then seed count.
+
+    v2.4.5: Previously cached-first always won, so a cached 1080p beat an
+    uncached 4K even when the user explicitly picked 4K. Now the bucket of
+    results matching the preferred quality is fully preferred (cached sorted
+    first within that bucket) before falling back to lower/higher qualities.
+    """
     pref_idx = QUALITY_ORDER.index(preferred) if preferred in QUALITY_ORDER else 1
 
     def _key(r):
-        is_cached = 0 if r.get('hash', '').lower() in cached_set else 1
         q = r.get('quality', '720p')
         q_idx = QUALITY_ORDER.index(q) if q in QUALITY_ORDER else 9
-        # Distance from user preference (preferred = 0; lower qualities grow).
-        q_distance = q_idx - pref_idx if q_idx >= pref_idx else 10 - (pref_idx - q_idx)
-        return (is_cached, q_distance, -r.get('seeds', 0))
+        # Distance from user preference: preferred = 0 (best).
+        # Higher qualities get a small penalty; lower qualities get a larger one.
+        if q_idx == pref_idx:
+            q_distance = 0
+        elif q_idx < pref_idx:
+            q_distance = (pref_idx - q_idx) + 2   # upscale fallback - slight penalty
+        else:
+            q_distance = (q_idx - pref_idx) * 3   # downgrade - heavier penalty
+        is_cached = 0 if r.get('hash', '').lower() in cached_set else 1
+        return (q_distance, is_cached, -r.get('seeds', 0))
     return _key
 
 
