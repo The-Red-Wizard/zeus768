@@ -61,6 +61,7 @@
     <category label="Playback">
         <setting id="preferred_quality" type="select" label="Preferred Quality" default="1" values="4K/2160p|1080p|720p|480p"/>
         <setting id="auto_play" type="bool" label="Auto-Play Best Quality" default="true"/>
+        <setting id="quality_badges" type="bool" label="Show [4K]/[1080p] Badges on List Items" default="true"/>
         <setting id="quality_fallback" type="bool" label="Auto-Fallback to Lower Quality" default="true"/>
         <setting type="sep"/>
         <setting type="lsep" label="Pre-Cache Next Episode"/>

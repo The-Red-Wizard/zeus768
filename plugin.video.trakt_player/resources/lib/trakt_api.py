@@ -242,6 +242,12 @@ def _display_list_items(data, media_type, addon_icon, addon_fanart, handle,
         imdb_id = item['imdb_id']
 
         label = f'{title}' if not year else f'{title} ({year})'
+        # v2.4.5: prepend cached quality badge (empty if not yet known)
+        try:
+            from . import quality_cache
+            label = quality_cache.lookup(imdb_id) + label
+        except Exception:
+            pass
         li = xbmcgui.ListItem(label=label)
 
         images = images_cache.get(tmdb_id, {})
@@ -568,6 +574,12 @@ def _display_items(items, media_type='movie', key=None):
         imdb_id = str(ids.get('imdb', '')) if ids else ''
         
         label = f'{title} ({year})' if year else title
+        # v2.4.5: prepend quality badge if cached
+        try:
+            from . import quality_cache
+            label = quality_cache.lookup(imdb_id) + label
+        except Exception:
+            pass
         overview = data.get('overview', '')
         
         # Look up artwork from the correct namespace

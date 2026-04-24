@@ -72,6 +72,7 @@ def main_menu():
         _menu_item('My Stats', 'user_stats', is_folder=False),
         _menu_item('Account Status', 'account_status', is_folder=False),
         _menu_item('Buy Me a Beer', 'donate', is_folder=False),
+        _menu_item('Clear Quality Badge Cache', 'clear_quality_cache', is_folder=False),
         _menu_item('Settings', 'open_settings', is_folder=False),
     ]
     for url, li, is_folder in items:
@@ -649,6 +650,18 @@ if __name__ == '__main__':
         my_trakt()
     elif action == 'open_settings':
         get_addon().openSettings()
+    elif action == 'clear_quality_cache':
+        from resources.lib import quality_cache
+        before = quality_cache.size()
+        if quality_cache.clear():
+            xbmcgui.Dialog().notification(
+                'Trakt Player',
+                f'Cleared {before} cached badge(s)',
+                xbmcgui.NOTIFICATION_INFO, 3000
+            )
+        else:
+            xbmcgui.Dialog().notification(
+                'Trakt Player', 'Clear failed', xbmcgui.NOTIFICATION_ERROR)
     elif action == 'donate':
         show_donation()
     elif action == 'account_status':

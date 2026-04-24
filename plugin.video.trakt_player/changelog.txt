@@ -1,3 +1,35 @@
+v2.4.6 (2026-04-24) - QUALITY BADGES ON LIST ITEMS
+===================================================
+NEW - "AT-A-GLANCE" QUALITY BADGES:
+- Every time you play a title the scraper's best quality
+  is remembered.  Next time that title appears in ANY list
+  (watchlist, trending, popular, related, search etc.) the
+  label is prefixed with a colour-coded tag:
+    [COLOR gold][4K][/COLOR]  - 2160p source exists
+    [COLOR lime][1080p][/COLOR]
+    [COLOR cyan][720p][/COLOR]
+    [COLOR grey][SD][/COLOR]  - 480p
+- Zero extra network cost at render time (cache on disk).
+- Cache entries expire after 14 days so re-releases get
+  re-probed automatically.
+- LRU-capped at 2000 entries.
+
+NEW - SETTINGS:
+- "Show [4K]/[1080p] Badges on List Items" toggle
+  (default: on).
+
+NEW - TOOLS ENTRY:
+- "Clear Quality Badge Cache" on the main menu wipes the
+  cache and reports how many entries were removed.
+
+IMPLEMENTATION:
+- New file: resources/lib/quality_cache.py
+- player.play()        - records max quality after scrape
+- player.play_episode()- records max quality after scrape
+- trakt_api.get_list() - prepends badge to every label
+- trakt_api._display_items() - same for the shared renderer
+
+
 v2.4.5 (2026-04-24) - QUALITY + ALPHABET FIXES (round 2)
 =========================================================
 [BUG #2 round 2] Lists still truncated around "R"

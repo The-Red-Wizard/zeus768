@@ -534,7 +534,7 @@ v1.8.1: Stability fixes</news>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.5" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.6" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>

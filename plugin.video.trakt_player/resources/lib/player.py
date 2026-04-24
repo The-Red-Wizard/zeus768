@@ -124,6 +124,13 @@ def play(title, year='', imdb_id=''):
         xbmcplugin.setResolvedUrl(_handle(), False, xbmcgui.ListItem())
         return
 
+    # v2.4.5: cache the max quality found so future list views can badge it.
+    try:
+        from . import quality_cache
+        quality_cache.record_results(imdb_id, results)
+    except Exception:
+        pass
+
     # Cache check: prioritize cached torrents for instant playback
     progress.update(40, 'Found %d sources. Checking debrid cache...' % len(results))
     hashes = []
@@ -224,6 +231,12 @@ def play_episode(title, season, episode, imdb_id='', tmdb_id=''):
 
     # Cache check for episodes
     progress.update(40, 'Found %d sources. Checking cache...' % len(results))
+    # v2.4.5: record max quality so show-level badges reflect episode reality.
+    try:
+        from . import quality_cache
+        quality_cache.record_results(imdb_id, results)
+    except Exception:
+        pass
     hashes = []
     for r in results:
         h = scrapers.extract_hash(r.get('magnet', ''))
