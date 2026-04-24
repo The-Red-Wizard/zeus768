@@ -1,4 +1,4 @@
-v2.4.4 (2026-04-XX) - EIGHT BUG FIXES
+v2.4.4 (2026-04-24) - EIGHT BUG FIXES
 =====================================
 [BUG 1] Can't add TV/Movies to Trakt lists
   - Root cause: add_to_list / add_to_watchlist existed but had

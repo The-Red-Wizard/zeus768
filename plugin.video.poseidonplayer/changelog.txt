@@ -1,4 +1,4 @@
-v2.6.1 (2026-04-XX) - CATCH-UP TV FOR MAC PORTALS
+v2.6.1 (2026-04-24) - CATCH-UP TV FOR MAC PORTALS
 ==================================================
 NEW:
 - list_channel_catchup and play_catchup are now mode-aware.
@@ -11,7 +11,7 @@ NEW:
 - Existing Xtream timeshift flow is unchanged.
 
 
-v2.6.0 (2026-04-XX) - STB MAC / Stalker Portal Support
+v2.6.0 (2026-04-24) - STB MAC / Stalker Portal Support
 =======================================================
 NEW - DUAL PORTAL PROTOCOL:
 - On first launch (and whenever no credentials are saved)

@@ -1,4 +1,4 @@
-v1.3.1 (2026-04-XX) - TIME-RULER GRID VIEW
+v1.3.1 (2026-04-24) - TIME-RULER GRID VIEW
 ===========================================
 NEW - CLASSIC TV GRID LAYOUT:
 - New "Layout" setting (under Guide Appearance) with two
@@ -26,7 +26,7 @@ IMPLEMENTATION:
   reload of channels/EPG is needed when switching views.
 
 
-v1.3.0 (2026-04-XX) - SKIN STYLES + PICTURE-IN-PICTURE
+v1.3.0 (2026-04-24) - SKIN STYLES + PICTURE-IN-PICTURE
 =======================================================
 NEW - FULL-SCREEN EPG WINDOW:
 - New Kodi WindowXMLDialog shows a Sky TV / Virgin TV style
@@ -59,7 +59,7 @@ IMPLEMENTATION:
       through to the directory view when theme=classic.
 
 
-v1.2.0 (2026-04-XX) - STB MAC / Stalker Portal Support
+v1.2.0 (2026-04-24) - STB MAC / Stalker Portal Support
 =======================================================
 NEW:
 - Poseidon Guide now reads the Player's portal_mode setting
