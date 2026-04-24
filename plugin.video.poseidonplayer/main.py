@@ -85,12 +85,28 @@ def format_duration(start, end):
     except:
         return ''
 
+def _portal_mode():
+    """Current portal protocol: 'xtream' or 'mac'."""
+    return ADDON.getSetting('portal_mode') or 'xtream'
+
+
 def get_stream_format():
     """Get preferred stream format from settings (default: m3u8 for better stability)"""
     return ADDON.getSetting('stream_format') or 'm3u8'
 
 def build_live_stream_url(stream_id):
-    """Build live stream URL with configured format"""
+    """Build live stream URL with configured format.
+
+    v2.6.0: Mode-aware. Xtream builds a direct HLS URL; MAC portals resolve
+    the channel via Stalker's create_link API which returns a transient URL.
+    """
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            return stalker.create_link(stream_id)
+        except Exception as e:
+            log(f'create_link failed: {e}', xbmc.LOGERROR)
+            return None
     if not SESSION.is_valid():
         return None
     stream_format = get_stream_format()
@@ -145,10 +161,15 @@ class SessionManager:
         return cls._instance
     
     def _load_saved_credentials(self):
-        """Load credentials from Kodi addon settings"""
+        """Load credentials from Kodi addon settings (both modes)."""
+        self.mode = ADDON.getSetting('portal_mode') or 'xtream'
+        # Xtream fields
         self.dns = ADDON.getSetting('dns').rstrip('/') or None
         self.username = ADDON.getSetting('username') or None
         self.password = ADDON.getSetting('password') or None
+        # MAC fields
+        self.portal_url = (ADDON.getSetting('portal_url') or '').rstrip('/') or None
+        self.mac_address = (ADDON.getSetting('mac_address') or '').upper() or None
     
     @property
     def authenticated(self):
@@ -161,36 +182,58 @@ class SessionManager:
         ADDON.setSetting('authenticated', 'true' if value else 'false')
     
     def set_credentials(self, dns, username, password):
-        """Set and SAVE credentials to addon settings"""
+        """Set and SAVE Xtream credentials to addon settings"""
+        self.mode = 'xtream'
         self.dns = dns.rstrip('/')
         self.username = username
         self.password = password
         self.authenticated = False
-        
+
+        ADDON.setSetting('portal_mode', 'xtream')
         ADDON.setSetting('dns', self.dns)
         ADDON.setSetting('username', self.username)
         ADDON.setSetting('password', self.password)
-        log(f"Credentials saved for user: {self.username}")
-    
+        log(f"Xtream credentials saved for user: {self.username}")
+
+    def set_mac_credentials(self, portal_url, mac_address):
+        """Set and SAVE MAC portal credentials to addon settings (v2.6.0)"""
+        self.mode = 'mac'
+        self.portal_url = portal_url.rstrip('/')
+        self.mac_address = mac_address.upper()
+        self.authenticated = False
+
+        ADDON.setSetting('portal_mode', 'mac')
+        ADDON.setSetting('portal_url', self.portal_url)
+        ADDON.setSetting('mac_address', self.mac_address)
+        log(f"MAC credentials saved: {self.mac_address} @ {self.portal_url}")
+
     def clear(self):
         """Clear credentials from memory AND settings"""
         self.dns = None
         self.username = None
         self.password = None
+        self.portal_url = None
+        self.mac_address = None
         self.authenticated = False
         self.user_info = None
         self.server_info = None
-        
+
         ADDON.setSetting('dns', '')
         ADDON.setSetting('username', '')
         ADDON.setSetting('password', '')
+        ADDON.setSetting('portal_url', '')
+        ADDON.setSetting('mac_address', '')
         ADDON.setSetting('authenticated', 'false')
-    
+
     def is_valid(self):
+        if self.mode == 'mac':
+            return bool(self.portal_url and self.mac_address)
         return all([self.dns, self.username, self.password])
-    
+
     def has_saved_credentials(self):
-        """Check if credentials are saved in settings"""
+        """Check if credentials are saved in settings (mode-aware)."""
+        if ADDON.getSetting('portal_mode') == 'mac':
+            return bool(ADDON.getSetting('portal_url') and ADDON.getSetting('mac_address'))
         return bool(ADDON.getSetting('dns') and ADDON.getSetting('username') and ADDON.getSetting('password'))
 
 SESSION = SessionManager()
@@ -379,15 +422,33 @@ def api_request(action, extra_params=None, timeout=30):
     return None
 
 def authenticate():
-    """Authenticate with Xtream Codes server"""
+    """Authenticate with the configured portal (Xtream or MAC)."""
     if not SESSION.is_valid():
         return False
-    
+
+    # ---- MAC / Stalker ----
+    if SESSION.mode == 'mac':
+        try:
+            from resources.lib import stalker
+            if stalker.authenticate(SESSION.portal_url, SESSION.mac_address):
+                SESSION.authenticated = True
+                SESSION.user_info = stalker.account_info()
+                SESSION.server_info = {'url': SESSION.portal_url}
+                return True
+            notify("Portal handshake failed. Check MAC / URL.",
+                   icon=xbmcgui.NOTIFICATION_ERROR)
+            return False
+        except Exception as e:
+            log(f"MAC auth error: {e}", xbmc.LOGERROR)
+            notify("Failed to reach portal.", icon=xbmcgui.NOTIFICATION_ERROR)
+            return False
+
+    # ---- Xtream Codes ----
     try:
         url = f"{SESSION.dns}/player_api.php?username={SESSION.username}&password={SESSION.password}"
         response = requests.get(url, timeout=15)
         data = response.json()
-        
+
         if data.get('user_info', {}).get('auth') == 1:
             SESSION.authenticated = True
             SESSION.user_info = data.get('user_info', {})
@@ -402,24 +463,57 @@ def authenticate():
         return False
 
 def get_live_categories_cached():
-    """Get live categories with caching"""
+    """Get live categories with caching (mode-aware v2.6.0)."""
+    # MAC / Stalker path
+    if _portal_mode() == 'mac':
+        if not EPG_CACHE.is_categories_stale():
+            cached = EPG_CACHE.get_categories('live')
+            if cached:
+                return cached
+        try:
+            from resources.lib import stalker
+            cats = stalker.get_genres()
+        except Exception as e:
+            log(f'stalker.get_genres failed: {e}', xbmc.LOGERROR)
+            cats = []
+        if cats:
+            EPG_CACHE.set_categories(cats, 'live')
+        return cats or []
+
+    # Xtream path (unchanged)
     if not EPG_CACHE.is_categories_stale():
         cached = EPG_CACHE.get_categories('live')
         if cached:
             return cached
-    
+
     categories = api_request("get_live_categories")
     if categories:
         EPG_CACHE.set_categories(categories, 'live')
     return categories or []
 
 def get_live_streams_cached(cat_id):
-    """Get live streams with caching"""
+    """Get live streams with caching (mode-aware v2.6.0)."""
+    if _portal_mode() == 'mac':
+        if not EPG_CACHE.is_channels_stale():
+            cached = EPG_CACHE.get_channels(cat_id)
+            if cached:
+                return cached
+        try:
+            from resources.lib import stalker
+            streams = stalker.get_channels_for_category(cat_id)
+        except Exception as e:
+            log(f'stalker.get_channels_for_category failed: {e}', xbmc.LOGERROR)
+            streams = []
+        if streams:
+            EPG_CACHE.set_channels(streams, cat_id)
+        return streams or []
+
+    # Xtream path (unchanged)
     if not EPG_CACHE.is_channels_stale():
         cached = EPG_CACHE.get_channels(cat_id)
         if cached:
             return cached
-    
+
     streams = api_request("get_live_streams", f"&category_id={cat_id}")
     if streams:
         EPG_CACHE.set_channels(streams, cat_id)
@@ -440,12 +534,23 @@ def get_all_live_streams_cached():
     return all_streams
 
 def get_epg_for_stream(stream_id, limit=10):
-    """Get EPG data for a specific stream with caching"""
+    """Get EPG data for a specific stream with caching (mode-aware v2.6.0)."""
     if not EPG_CACHE.is_epg_stale():
         cached = EPG_CACHE.get_epg(stream_id)
         if cached:
             return cached
-    
+
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            listings = stalker.get_short_epg(stream_id, limit=limit)
+        except Exception as e:
+            log(f'stalker.get_short_epg failed: {e}', xbmc.LOGERROR)
+            listings = []
+        if listings:
+            EPG_CACHE.set_epg(stream_id, listings)
+        return listings or []
+
     data = api_request("get_short_epg", f"&stream_id={stream_id}&limit={limit}")
     if data and 'epg_listings' in data:
         EPG_CACHE.set_epg(stream_id, data['epg_listings'])
@@ -453,7 +558,14 @@ def get_epg_for_stream(stream_id, limit=10):
     return []
 
 def get_full_epg(stream_id):
-    """Get full EPG data for a stream"""
+    """Get full EPG data for a stream (mode-aware v2.6.0)."""
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            return stalker.get_short_epg(stream_id, limit=50) or []
+        except Exception as e:
+            log(f'stalker full epg failed: {e}', xbmc.LOGERROR)
+            return []
     data = api_request("get_simple_data_table", f"&stream_id={stream_id}")
     if data and 'epg_listings' in data:
         return data['epg_listings']
@@ -573,96 +685,165 @@ def iptv_manager_epg():
 # ============================================================================
 # FORCE LOGIN DIALOG
 # ============================================================================
+def _prompt_portal_mode():
+    """Ask user to pick Xtreme Codes vs STB MAC. Persists choice to settings.
+    Returns the chosen mode string."""
+    dialog = xbmcgui.Dialog()
+    pick = dialog.select(
+        "Poseidon Player - Choose Portal Type",
+        ["Xtreme Codes  (URL + username + password)",
+         "STB MAC / Stalker Portal  (URL + MAC address)"],
+    )
+    if pick < 0:
+        return None
+    mode = 'xtream' if pick == 0 else 'mac'
+    ADDON.setSetting('portal_mode', mode)
+    SESSION.mode = mode
+    return mode
+
+
+def _collect_mac_credentials():
+    """Prompt for portal URL + MAC. Returns True if credentials were set."""
+    from resources.lib import stalker
+    dialog = xbmcgui.Dialog()
+
+    portal = dialog.input("Enter Portal URL (e.g. http://portal.tld/c/)",
+                          type=xbmcgui.INPUT_ALPHANUM)
+    if not portal:
+        return False
+    if not portal.startswith('http://') and not portal.startswith('https://'):
+        portal = 'http://' + portal
+
+    # Offer to generate a random MAG-style MAC if the user doesn't have one.
+    choice = dialog.select("MAC Address", [
+        "Enter my MAC address",
+        "Generate a random MAC (00:1A:79:XX:XX:XX)",
+    ])
+    if choice < 0:
+        return False
+    if choice == 1:
+        mac = stalker.suggest_random_mac()
+        if not dialog.yesno("Generated MAC", f"{mac}\n\nUse this MAC?"):
+            return False
+    else:
+        mac = dialog.input("Enter MAC Address (AA:BB:CC:DD:EE:FF)",
+                           type=xbmcgui.INPUT_ALPHANUM)
+        if not mac or len(mac.replace(':', '').strip()) < 12:
+            notify("Invalid MAC address", icon=xbmcgui.NOTIFICATION_ERROR)
+            return False
+
+    SESSION.set_mac_credentials(portal, mac)
+    return True
+
+
+def _collect_xtream_credentials():
+    """Original Xtreme Codes login prompts."""
+    dialog = xbmcgui.Dialog()
+    dns = dialog.input("Enter Server URL (e.g., http://server.com:8080)",
+                       type=xbmcgui.INPUT_ALPHANUM)
+    if not dns:
+        return False
+    if not dns.startswith('http://') and not dns.startswith('https://'):
+        dns = 'http://' + dns
+
+    username = dialog.input("Enter Username", type=xbmcgui.INPUT_ALPHANUM)
+    if not username:
+        return False
+
+    password = dialog.input("Enter Password", type=xbmcgui.INPUT_ALPHANUM,
+                            option=xbmcgui.ALPHANUM_HIDE_INPUT)
+    if not password:
+        return False
+
+    SESSION.set_credentials(dns, username, password)
+    return True
+
+
 def force_login(silent=False):
-    """Force user to login before accessing main menu
-    
-    Args:
-        silent: If True, skip notifications for already authenticated sessions
+    """Force user to login before accessing main menu.
+
+    v2.6.0: Shows portal-type picker when no mode has been chosen yet.
     """
     dialog = xbmcgui.Dialog()
-    
+
+    # If we have saved credentials for the current mode, try auto-auth.
     if SESSION.has_saved_credentials():
         SESSION._load_saved_credentials()
-        
-        # If already authenticated (persistent state), just verify credentials are valid
+
         if SESSION.authenticated and SESSION.is_valid():
-            # Quick validation - no notification needed for returning users
             log("Session already authenticated, skipping login dialog")
             return True
-        
-        # Show progress only for re-authentication
+
         progress = xbmcgui.DialogProgress()
         progress.create("Poseidon Player", "Logging in with saved credentials...")
-        
         if authenticate():
             progress.close()
-            # Only show notification on first login of session (when not silent)
             if not silent:
-                exp_date = SESSION.user_info.get('exp_date', '')
+                exp_date = (SESSION.user_info or {}).get('exp_date', '')
                 if exp_date:
                     try:
                         exp_str = datetime.fromtimestamp(int(exp_date)).strftime('%Y-%m-%d')
                         notify(f"Welcome back! Account expires: {exp_str}")
-                    except:
+                    except Exception:
                         notify("Welcome back!")
                 else:
                     notify("Welcome back!")
             return True
-        else:
-            progress.close()
-            # Auth failed, clear the persistent state
-            SESSION.authenticated = False
-            dialog.ok(
-                "Poseidon Player",
-                "Saved credentials are invalid or expired.\n\n"
-                "Please enter new credentials."
-            )
+        progress.close()
+        SESSION.authenticated = False
+        dialog.ok(
+            "Poseidon Player",
+            "Saved credentials are invalid or expired.\n\n"
+            "Please enter new credentials.",
+        )
+
+    # No saved creds - pick portal type (or reuse the stored one silently if
+    # user has explicitly set it in settings.xml).
+    stored_mode = ADDON.getSetting('portal_mode')
+    if not stored_mode or not SESSION.has_saved_credentials():
+        mode = _prompt_portal_mode()
+        if not mode:
+            return False
+    else:
+        mode = stored_mode
+
+    if mode == 'mac':
+        dialog.ok(
+            "Poseidon Player",
+            "STB MAC portal\n\n"
+            "Please enter your portal URL and MAC address.\n"
+            "Your details will be saved for next time.",
+        )
+        if not _collect_mac_credentials():
+            return False
     else:
         dialog.ok(
             "Poseidon Player",
             "Welcome to Poseidon Player!\n\n"
-            "Please enter your Xtream Codes credentials.\n"
-            "Your login will be saved for next time."
+            "Please enter your Xtreme Codes credentials.\n"
+            "Your login will be saved for next time.",
         )
-    
-    # Get DNS/Server URL
-    dns = dialog.input("Enter Server URL (e.g., http://server.com:8080)", type=xbmcgui.INPUT_ALPHANUM)
-    if not dns:
-        return False
-    
-    if not dns.startswith('http://') and not dns.startswith('https://'):
-        dns = 'http://' + dns
-    
-    username = dialog.input("Enter Username", type=xbmcgui.INPUT_ALPHANUM)
-    if not username:
-        return False
-    
-    password = dialog.input("Enter Password", type=xbmcgui.INPUT_ALPHANUM, option=xbmcgui.ALPHANUM_HIDE_INPUT)
-    if not password:
-        return False
-    
-    SESSION.set_credentials(dns, username, password)
-    
+        if not _collect_xtream_credentials():
+            return False
+
     progress = xbmcgui.DialogProgress()
     progress.create("Poseidon Player", "Authenticating...")
-    
     success = authenticate()
     progress.close()
-    
+
     if success:
-        exp_date = SESSION.user_info.get('exp_date', '')
+        exp_date = (SESSION.user_info or {}).get('exp_date', '')
         if exp_date:
             try:
                 exp_str = datetime.fromtimestamp(int(exp_date)).strftime('%Y-%m-%d')
                 notify(f"Welcome! Account expires: {exp_str}")
-            except:
+            except Exception:
                 notify("Login successful!")
         else:
             notify("Login successful!")
         return True
-    else:
-        SESSION.clear()
-        return False
+    SESSION.clear()
+    return False
 
 # ============================================================================
 # MAIN MENU

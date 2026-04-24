@@ -2,21 +2,49 @@
 <settings version="2">
     <section id="0">
         <category id="credentials" label="Server Credentials">
+            <group id="0" label="Portal Type">
+                <setting id="portal_mode" type="string" label="Portal Protocol" default="xtream">
+                    <level>0</level>
+                    <default>xtream</default>
+                    <constraints>
+                        <options>
+                            <option label="Xtreme Codes (username / password)">xtream</option>
+                            <option label="STB MAC / Stalker Portal">mac</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string"/>
+                </setting>
+            </group>
             <group id="1" label="Login Details">
                 <setting id="dns" type="string" label="Server URL (DNS)" default="">
                     <level>0</level>
                     <default></default>
                     <control type="edit" format="string"/>
+                    <visible>eq(-1,xtream)</visible>
                 </setting>
                 <setting id="username" type="string" label="Username" default="">
                     <level>0</level>
                     <default></default>
                     <control type="edit" format="string"/>
+                    <visible>eq(-2,xtream)</visible>
                 </setting>
                 <setting id="password" type="string" label="Password" default="">
                     <level>0</level>
                     <default></default>
                     <control type="edit" format="string" option="hidden"/>
+                    <visible>eq(-3,xtream)</visible>
+                </setting>
+                <setting id="portal_url" type="string" label="Portal URL" default="">
+                    <level>0</level>
+                    <default></default>
+                    <control type="edit" format="string"/>
+                    <visible>eq(-4,mac)</visible>
+                </setting>
+                <setting id="mac_address" type="string" label="MAC Address (AA:BB:CC:DD:EE:FF)" default="">
+                    <level>0</level>
+                    <default></default>
+                    <control type="edit" format="string"/>
+                    <visible>eq(-5,mac)</visible>
                 </setting>
                 <setting id="authenticated" type="boolean" label="Authenticated (internal)" visible="false" default="false">
                     <level>3</level>

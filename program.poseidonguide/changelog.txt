@@ -1,0 +1,24 @@
+v1.2.0 (2026-04-XX) - STB MAC / Stalker Portal Support
+=======================================================
+NEW:
+- Poseidon Guide now reads the Player's portal_mode setting
+  and transparently fetches channels + EPG from either an
+  Xtreme Codes server or an STB MAC / Stalker portal.
+- PoseidonBridge.get_creds() returns a mode-tagged dict so
+  the rest of the guide doesn't need to branch.
+
+INTERNALS:
+- In-process MAC adapter handles handshake, channel list
+  pagination, genres list and get_short_epg.
+- api_call() translates the three actions the guide uses
+  (get_live_categories / get_live_streams / get_short_epg)
+  to the equivalent Stalker endpoints, returning results in
+  the same shape as the existing Xtream responses.
+- All logic backwards-compatible: existing Xtreme Codes
+  installs continue to work exactly as before.
+
+v1.1.0 - Previous release
+  - UK channels first, then USA, then rest
+  - All categories loaded
+  - Proper EPG
+  - Added List View option with popup choice

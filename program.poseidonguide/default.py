@@ -167,28 +167,242 @@ class PoseidonBridge:
             self.addon = xbmcaddon.Addon(PLAYER_ADDON_ID)
         except:
             pass
-    
+
     def installed(self):
         return self.addon is not None
-    
+
+    def mode(self):
+        """v1.2.0: returns 'xtream' or 'mac' based on player addon's setting."""
+        if not self.addon:
+            return 'xtream'
+        return self.addon.getSetting('portal_mode') or 'xtream'
+
     def get_creds(self):
         if not self.addon:
+            return None
+        if self.mode() == 'mac':
+            portal = self.addon.getSetting('portal_url')
+            mac = self.addon.getSetting('mac_address')
+            if portal and mac:
+                self.creds = {
+                    'mode': 'mac',
+                    'portal_url': portal.rstrip('/'),
+                    'mac_address': mac.upper(),
+                }
+                return self.creds
             return None
         dns = self.addon.getSetting('dns')
         user = self.addon.getSetting('username')
         pwd = self.addon.getSetting('password')
         if dns and user and pwd:
-            self.creds = {'dns': dns.rstrip('/'), 'user': user, 'pwd': pwd}
+            self.creds = {
+                'mode': 'xtream',
+                'dns': dns.rstrip('/'),
+                'user': user,
+                'pwd': pwd,
+            }
             return self.creds
         return None
-    
+
     def valid(self):
         return self.get_creds() is not None
 
+
+# ------------------------------------------------------------------
+# v1.2.0 - MAC / Stalker portal adapter
+# ------------------------------------------------------------------
+# Lightweight in-process state so we reuse the handshake across calls.
+_MAC_STATE = {
+    'portal': None,       # resolved portal URL (with /portal.php etc.)
+    'token': None,
+    'mac': None,
+    'channels': [],
+    'genres': [],
+    'cmd_by_id': {},
+    'fetched_at': 0,
+}
+
+_MAC_PATHS = (
+    '/portal.php',
+    '/stalker_portal/server/load.php',
+    '/server/load.php',
+    '/c/portal.php',
+)
+_MAC_UA = ('Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 '
+           '(KHTML, like Gecko) MAG200 stbapp ver: 4 rev: 250 Safari/533.3')
+
+
+def _mac_headers(mac, token=None):
+    h = {
+        'User-Agent': _MAC_UA,
+        'Cookie': f'mac={mac};stb_lang=en;timezone=Europe/London',
+        'X-User-Agent': 'Model: MAG254; Link: WiFi',
+        'Accept': 'application/json',
+    }
+    if token:
+        h['Authorization'] = f'Bearer {token}'
+    return h
+
+
+def _mac_get(url, headers):
+    try:
+        r = requests.get(url, headers=headers, timeout=25, verify=False)
+        if r.status_code != 200:
+            return None
+        try:
+            return r.json()
+        except Exception:
+            try:
+                return json.loads(r.text)
+            except Exception:
+                return None
+    except Exception:
+        return None
+
+
+def _mac_handshake(creds):
+    base = creds['portal_url'].rstrip('/')
+    for suffix in ('/portal.php', '/stalker_portal/server/load.php', '/c', '/c/'):
+        if base.endswith(suffix):
+            base = base[:-len(suffix)].rstrip('/')
+    mac = creds['mac_address']
+    for path in _MAC_PATHS:
+        url = f'{base}{path}?type=stb&action=handshake&JsHttpRequest=1-xml'
+        data = _mac_get(url, _mac_headers(mac))
+        if data and isinstance(data, dict) and data.get('js', {}).get('token'):
+            _MAC_STATE['portal'] = f'{base}{path}'
+            _MAC_STATE['token'] = data['js']['token']
+            _MAC_STATE['mac'] = mac
+            return True
+    return False
+
+
+def _mac_ensure(creds):
+    if _MAC_STATE['token'] and _MAC_STATE['mac'] == creds['mac_address']:
+        return True
+    return _mac_handshake(creds)
+
+
+def _mac_fetch_channels(creds):
+    if _MAC_STATE['channels'] and (time.time() - _MAC_STATE['fetched_at']) < 1800:
+        return _MAC_STATE['channels']
+    if not _mac_ensure(creds):
+        return []
+    all_ch = []
+    page = 1
+    while True:
+        url = (f'{_MAC_STATE["portal"]}?type=itv&action=get_all_channels'
+               f'&p={page}&JsHttpRequest=1-xml')
+        data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+        if not data:
+            break
+        js = data.get('js', {})
+        batch = js.get('data') if isinstance(js, dict) else None
+        if not batch:
+            break
+        all_ch.extend(batch)
+        total_items = js.get('total_items') if isinstance(js, dict) else None
+        if not total_items or len(all_ch) >= int(total_items):
+            break
+        page += 1
+        if page > 50:
+            break
+    _MAC_STATE['channels'] = all_ch
+    _MAC_STATE['fetched_at'] = time.time()
+    _MAC_STATE['cmd_by_id'] = {str(c.get('id', '')): c.get('cmd', '') for c in all_ch}
+    return all_ch
+
+
+def _mac_get_categories(creds):
+    if not _mac_ensure(creds):
+        return []
+    if _MAC_STATE['genres']:
+        return _MAC_STATE['genres']
+    url = f'{_MAC_STATE["portal"]}?type=itv&action=get_genres&JsHttpRequest=1-xml'
+    data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+    if not data:
+        return []
+    raw = data.get('js', data) or []
+    genres = []
+    for g in raw:
+        gid = str(g.get('id', ''))
+        if gid and gid != '*':
+            genres.append({'category_id': gid,
+                           'category_name': g.get('title') or g.get('alias') or f'Genre {gid}'})
+    _MAC_STATE['genres'] = genres
+    return genres
+
+
+def _mac_get_streams(creds, cat_id):
+    channels = _mac_fetch_channels(creds)
+    out = []
+    for c in channels:
+        gid = str(c.get('tv_genre_id', ''))
+        if cat_id and gid != str(cat_id):
+            continue
+        out.append({
+            'stream_id': str(c.get('id', '')),
+            'name': c.get('name', ''),
+            'stream_icon': c.get('logo', '') or '',
+            'epg_channel_id': c.get('xmltv_id', '') or str(c.get('id', '')),
+            'category_id': gid,
+            'num': c.get('number', ''),
+        })
+    return out
+
+
+def _mac_get_epg(creds, stream_id, limit=15):
+    if not _mac_ensure(creds):
+        return []
+    url = (f'{_MAC_STATE["portal"]}?type=itv&action=get_short_epg'
+           f'&ch_id={stream_id}&size={int(limit)}&JsHttpRequest=1-xml')
+    data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+    if not data:
+        return []
+    raw = data.get('js', []) or []
+    out = []
+    for p in raw:
+        out.append({
+            'title': p.get('name', ''),
+            'description': p.get('descr', ''),
+            'start': p.get('start_timestamp', 0),
+            'end': p.get('stop_timestamp', 0),
+            'start_timestamp': p.get('start_timestamp', 0),
+            'stop_timestamp': p.get('stop_timestamp', 0),
+        })
+    return out
+
+
 def api_call(bridge, action, params='', timeout=25):
+    """v1.2.0: transparently routes to MAC adapter when portal_mode=mac."""
     c = bridge.get_creds()
     if not c:
         return None
+
+    if c.get('mode') == 'mac':
+        # Translate a limited set of player_api actions into Stalker calls.
+        if action == 'get_live_categories':
+            return _mac_get_categories(c)
+        if action == 'get_live_streams':
+            # params like "&category_id=123"
+            cat_id = ''
+            for p in params.split('&'):
+                if p.startswith('category_id='):
+                    cat_id = p.split('=', 1)[1]
+                    break
+            return _mac_get_streams(c, cat_id)
+        if action == 'get_short_epg':
+            stream_id = ''
+            for p in params.split('&'):
+                if p.startswith('stream_id='):
+                    stream_id = p.split('=', 1)[1]
+                    break
+            listings = _mac_get_epg(c, stream_id)
+            return {'epg_listings': listings} if listings else None
+        # Unknown action in MAC mode - just return None.
+        log(f'MAC adapter: unsupported action {action}', xbmc.LOGWARNING)
+        return None
+
     url = f"{c['dns']}/player_api.php?username={c['user']}&password={c['pwd']}&action={action}{params}"
     try:
         r = requests.get(url, timeout=timeout, headers={'User-Agent': 'Kodi/20.0'})

@@ -1,0 +1,38 @@
+v2.6.0 (2026-04-XX) - STB MAC / Stalker Portal Support
+=======================================================
+NEW - DUAL PORTAL PROTOCOL:
+- On first launch (and whenever no credentials are saved)
+  the user now picks between two portal types:
+    * Xtreme Codes  (URL + username + password)  [default]
+    * STB MAC / Stalker Portal  (URL + MAC address)
+
+NEW - FULL STB STALKER IMPLEMENTATION
+  (resources/lib/stalker.py)
+  * Handshake -> get_profile -> channel/genre caches
+  * Auto-probes /portal.php, /stalker_portal/server/load.php,
+    /c/portal.php until one answers a valid token
+  * Channel list + EPG paginated and cached in-session
+  * create_link resolves each channel's transient stream URL
+  * Optional "generate random MAC" helper for users who
+    don't have a device-bound MAC assigned
+
+PLAYBACK + EPG:
+- build_live_stream_url, get_live_categories_cached,
+  get_live_streams_cached, get_epg_for_stream, get_full_epg
+  all now branch on the new portal_mode setting and route to
+  stalker.* when mac mode is active. Response shapes are
+  normalised so downstream renderers are unchanged.
+
+SETTINGS:
+- New settings: portal_mode, portal_url, mac_address
+- Xtream fields (dns, username, password) are hidden when
+  portal_mode=mac and vice versa
+- Authenticated flag and keep-alive service still work in both modes
+
+CREDENTIAL STORAGE:
+- SessionManager now tracks a 'mode' attribute and exposes
+  both set_credentials(...) and set_mac_credentials(...)
+- clear() wipes both sets of fields
+- has_saved_credentials() is mode-aware so the addon prompts
+  only when the *currently selected* mode has no details yet
+
