@@ -200,11 +200,20 @@ def get_all_free_movies():
 
 def resolve_free_link(url):
     """
-    Resolve free link using ResolveURL if available,
-    otherwise return direct link for streamtape/luluvid
+    Resolve free link using Zeus Resolvers first (Streamtape / DDownloads),
+    then ResolveURL, then built-in fallbacks.
     """
+    # 1. Zeus Resolvers (debrid-free) takes priority for supported hosts
     try:
-        # Try ResolveURL first
+        from resources.lib.zeus_hook import try_zeus
+        zeus_url = try_zeus(url)
+        if zeus_url:
+            return zeus_url
+    except Exception as e:
+        xbmc.log(f'Zeus hook error: {e}', xbmc.LOGWARNING)
+
+    try:
+        # Try ResolveURL next
         import resolveurl
         resolved = resolveurl.resolve(url)
         if resolved:

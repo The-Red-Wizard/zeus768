@@ -78,7 +78,17 @@ def get_active_debrid():
 
 
 def resolve_with_resolveurl(url):
-    """Try to resolve URL using ResolveURL addon"""
+    """Try to resolve URL using Zeus Resolvers first, then ResolveURL addon"""
+    # Zeus Resolvers first (Streamtape / DDownloads, no debrid required)
+    try:
+        from resources.lib.zeus_hook import try_zeus
+        zeus_url = try_zeus(url)
+        if zeus_url:
+            xbmc.log(f"Zeus Resolvers resolved: {zeus_url[:50]}...", xbmc.LOGINFO)
+            return zeus_url
+    except Exception as e:
+        xbmc.log(f"Zeus hook error: {e}", xbmc.LOGWARNING)
+
     try:
         import resolveurl
         

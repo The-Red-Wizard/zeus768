@@ -2396,6 +2396,16 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
                     log_utils.log(f'Bones resolver error: {e}', xbmc.LOGWARNING)
             # Fallback to ResolveURL
             if not stream_url:
+                # Zeus Resolvers first (Streamtape / DDownloads, no debrid required)
+                try:
+                    from salts_lib.zeus_hook import try_zeus
+                    zeus_url = try_zeus(url)
+                    if zeus_url:
+                        stream_url = zeus_url
+                        log_utils.log(f'Resolved via Zeus Resolvers: {stream_url}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Zeus hook error: {e}', xbmc.LOGWARNING)
+            if not stream_url:
                 try:
                     import resolveurl
                     progress = xbmcgui.DialogProgress()
@@ -4613,6 +4623,14 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
             elif url:
                 if any(ext in url.lower() for ext in ['.m3u8', '.mp4', '.mkv']):
                     return url
+                # Zeus Resolvers first (free playback for Streamtape / DDownloads)
+                try:
+                    from salts_lib.zeus_hook import try_zeus
+                    zeus_url = try_zeus(url)
+                    if zeus_url:
+                        return zeus_url
+                except Exception:
+                    pass
                 try:
                     import resolveurl
                     stream = resolveurl.resolve(url)

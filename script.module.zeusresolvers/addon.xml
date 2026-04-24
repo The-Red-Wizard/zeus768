@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.0" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+    <extension point="xbmc.python.module" library="lib"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Debrid-free URL resolver for Streamtape and DDownloads</summary>
+        <description lang="en_GB">Zeus Resolvers is a lightweight Kodi Python module that resolves direct playable streams from selected file hosters (Streamtape, DDownloads) without requiring a Debrid subscription. Acts as a drop-in primary resolver with automatic fallback to ResolveURL for any other host.</description>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum></forum>
+        <website></website>
+        <source>https://github.com/Zeus768</source>
+        <news>
+v1.0.0
+- Initial release
+- Streamtape resolver (norobotlink/ideoooolink token extraction)
+- DDownloads resolver (two-step form POST + redirect capture)
+- Public API: zeusresolvers.resolve(url), zeusresolvers.can_resolve(url)
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
