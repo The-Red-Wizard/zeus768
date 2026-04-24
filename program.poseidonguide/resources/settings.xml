@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings version="2">
+    <section id="0">
+        <category id="display" label="Display">
+            <group id="1" label="Guide Appearance">
+                <setting id="guide_skin" type="string" label="Skin Style" default="sky">
+                    <level>0</level>
+                    <default>sky</default>
+                    <constraints>
+                        <options>
+                            <option label="Classic (directory view)">classic</option>
+                            <option label="Sky TV style (grid + PiP)">sky</option>
+                            <option label="Virgin TV style (grid + PiP)">virgin</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string"/>
+                </setting>
+                <setting id="pip_enabled" type="boolean" label="Picture-in-Picture Preview"
+                         default="true">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="pip_autoplay" type="boolean"
+                         label="Auto-play preview on channel change"
+                         default="true">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                    <dependencies>
+                        <dependency type="enable" setting="pip_enabled">true</dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="2" label="Grid Options">
+                <setting id="grid_hours" type="integer"
+                         label="Hours to show across the grid" default="3">
+                    <level>0</level>
+                    <default>3</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>6</maximum>
+                    </constraints>
+                    <control type="slider" format="integer"/>
+                </setting>
+            </group>
+        </category>
+    </section>
+</settings>

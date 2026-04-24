@@ -1,3 +1,36 @@
+v1.3.0 (2026-04-XX) - SKIN STYLES + PICTURE-IN-PICTURE
+=======================================================
+NEW - FULL-SCREEN EPG WINDOW:
+- New Kodi WindowXMLDialog shows a Sky TV / Virgin TV style
+  guide with a channel column on the left, programme grid on
+  the right and a Picture-in-Picture preview in the top-right.
+- Channel navigation (up/down) debounces PiP so the portal is
+  not hammered when scrolling fast.
+- OK on any item plays the channel full-screen.
+
+NEW - SKIN CHOICE (Guide Settings):
+- Skin Style dropdown lets the user pick:
+    * Classic     - original directory view
+    * Sky TV      - deep Sky blue + light-blue highlight bar
+    * Virgin TV   - near-black + Virgin red highlight bar
+- Picture-in-Picture toggle (default on) with a sub-toggle
+  for "Auto-play preview on channel change" (default on).
+- Grid hours slider (1-6) for future grid-view expansion.
+
+IMPLEMENTATION:
+- Single script-poseidonguide-main.xml drives both themes;
+  colours are injected via Skin.String()s at window onInit.
+- resources/lib/guide_window.py contains the GuideSkinWindow
+  class plus theme palettes.
+- default.py:
+    * _resolve_stream_url(bridge, stream_id) - mode-aware
+      live URL resolver used for the PiP player.
+    * _collect_channels_for_window() - gathers channels + EPG
+      with a cancelable progress dialog before showing window.
+    * launch_skin_window() called at main() entry; drops
+      through to the directory view when theme=classic.
+
+
 v1.2.0 (2026-04-XX) - STB MAC / Stalker Portal Support
 =======================================================
 NEW:

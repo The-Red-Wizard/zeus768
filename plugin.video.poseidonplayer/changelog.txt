@@ -1,3 +1,16 @@
+v2.6.1 (2026-04-XX) - CATCH-UP TV FOR MAC PORTALS
+==================================================
+NEW:
+- list_channel_catchup and play_catchup are now mode-aware.
+- stalker.get_catchup_programs() pulls archive-eligible
+  programmes via get_simple_data_table and filters to past
+  entries that have has_archive=1.
+- stalker.create_link(stream_id, epg_start=ts) adds an
+  &archive= parameter so the portal returns the catch-up
+  stream rather than live.
+- Existing Xtream timeshift flow is unchanged.
+
+
 v2.6.0 (2026-04-XX) - STB MAC / Stalker Portal Support
 =======================================================
 NEW - DUAL PORTAL PROTOCOL:

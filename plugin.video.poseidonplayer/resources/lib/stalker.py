@@ -294,8 +294,12 @@ def get_short_epg(stream_id, limit=10):
     return out
 
 
-def create_link(stream_id):
-    """Resolve a channel's `cmd` into a playable URL."""
+def create_link(stream_id, epg_start=None):
+    """Resolve a channel's `cmd` into a playable URL.
+
+    v2.6.1: If epg_start is given, also append an archive request so the
+    portal returns the catch-up (archive) stream instead of live.
+    """
     if not _ensure_auth():
         return None
     sess = get_session()
@@ -306,8 +310,10 @@ def create_link(stream_id):
         log(f'No cmd for stream_id={stream_id}', xbmc.LOGWARNING)
         return None
     encoded = urllib.parse.quote(cmd, safe='')
+    archive_param = f'&archive={int(epg_start)}' if epg_start else ''
     url = (f'{sess.portal}?type=itv&action=create_link&cmd={encoded}'
            f'&forced_storage=undefined&disable_ad=0&download=0'
+           f'{archive_param}'
            f'&JsHttpRequest=1-xml')
     data = _http_get(url, _headers(sess.mac, sess.token))
     if not data:
@@ -320,6 +326,44 @@ def create_link(stream_id):
             raw = raw[len(prefix):]
             break
     return raw.strip() or None
+
+
+def get_catchup_programs(stream_id):
+    """Return EPG listings from the archive window that are marked has_archive.
+
+    Uses the portal's get_simple_data_table which covers the catch-up period
+    (typically 1-7 days depending on the portal).
+    """
+    if not _ensure_auth():
+        return []
+    sess = get_session()
+    url = (f'{sess.portal}?type=itv&action=get_simple_data_table'
+           f'&genre=*&type=itv&force_ch_link_check=&fav=0&sortby=number'
+           f'&hd=0&p=1&ch_id={stream_id}&JsHttpRequest=1-xml')
+    data = _http_get(url, _headers(sess.mac, sess.token))
+    if not data:
+        return []
+    js = data.get('js', {})
+    raw = js.get('data') if isinstance(js, dict) else None
+    if not raw:
+        return []
+    out = []
+    now = time.time()
+    for p in raw:
+        if not p.get('has_archive'):
+            continue
+        start = int(p.get('start_timestamp') or 0)
+        stop = int(p.get('stop_timestamp') or 0)
+        if stop > now:
+            continue  # only past programs have replayable archive
+        out.append({
+            'title': p.get('name', ''),
+            'description': p.get('descr', ''),
+            'start_timestamp': start,
+            'stop_timestamp': stop,
+            'has_archive': 1,
+        })
+    return out
 
 
 def account_info():

@@ -2650,47 +2650,52 @@ def list_catchup_channels(cat_id):
     xbmcplugin.endOfDirectory(HANDLE)
 
 def list_channel_catchup(stream_id, channel_name):
-    """List past programs for catch-up"""
-    epg = get_full_epg(stream_id)
-    if not epg:
-        epg = get_epg_for_stream(stream_id, limit=100)
-    
-    if not epg:
-        notify("No EPG data available for catch-up")
-        xbmcplugin.endOfDirectory(HANDLE)
-        return
-    
-    now = time.time()
-    
-    # Filter to past programs
-    past_programs = [p for p in epg if int(p.get('stop_timestamp', 0)) < now]
-    
+    """List past programs for catch-up (mode-aware v2.6.1)."""
+    # MAC / Stalker path - use dedicated catchup endpoint for best accuracy.
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            past_programs = stalker.get_catchup_programs(stream_id)
+        except Exception as e:
+            log(f'stalker catchup failed: {e}', xbmc.LOGERROR)
+            past_programs = []
+    else:
+        epg = get_full_epg(stream_id)
+        if not epg:
+            epg = get_epg_for_stream(stream_id, limit=100)
+        if not epg:
+            notify("No EPG data available for catch-up")
+            xbmcplugin.endOfDirectory(HANDLE)
+            return
+        now = time.time()
+        past_programs = [p for p in epg if int(p.get('stop_timestamp', 0)) < now]
+
     if not past_programs:
         notify("No past programs available")
         xbmcplugin.endOfDirectory(HANDLE)
         return
-    
+
     # Sort by start time, most recent first
     past_programs.sort(key=lambda x: x.get('start_timestamp', 0), reverse=True)
-    
+
     for prog in past_programs[:50]:
         title = prog.get('title', 'Unknown Program')
         desc = prog.get('description', '')
         start = int(prog.get('start_timestamp', 0))
         end = int(prog.get('stop_timestamp', 0))
-        
+
         start_str = format_date(start)
         duration = format_duration(start, end)
-        
+
         label = f"[COLOR purple]{start_str}[/COLOR] - [COLOR gold]{title}[/COLOR] ({duration})"
-        
+
         li = xbmcgui.ListItem(label=label)
         li.setArt({'fanart': os.path.join(ADDON_PATH, 'fanart.jpg')})
-        
+
         info = li.getVideoInfoTag()
         info.setTitle(title)
         info.setPlot(desc)
-        
+
         catchup_url = build_url({
             'action': 'play_catchup',
             'stream_id': stream_id,
@@ -2698,20 +2703,36 @@ def list_channel_catchup(stream_id, channel_name):
             'end': end
         })
         li.setProperty('IsPlayable', 'true')
-        
+
         xbmcplugin.addDirectoryItem(HANDLE, catchup_url, li, False)
-    
+
     xbmcplugin.endOfDirectory(HANDLE)
 
+
 def play_catchup(stream_id, start, end):
-    """Play catch-up content"""
-    if not SESSION.is_valid():
-        notify("Not logged in", icon=xbmcgui.NOTIFICATION_ERROR)
-        return
-    
-    # Build timeshift URL
-    play_url = f"{SESSION.dns}/timeshift/{SESSION.username}/{SESSION.password}/{end - start}/{start}/{stream_id}.ts"
-    
+    """Play catch-up content (mode-aware v2.6.1)."""
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            play_url = stalker.create_link(stream_id, epg_start=start)
+        except Exception as e:
+            log(f'stalker archive create_link failed: {e}', xbmc.LOGERROR)
+            play_url = None
+        if not play_url:
+            notify("Catch-up stream unavailable", icon=xbmcgui.NOTIFICATION_ERROR)
+            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+            return
+    else:
+        if not SESSION.is_valid():
+            notify("Not logged in", icon=xbmcgui.NOTIFICATION_ERROR)
+            return
+        try:
+            duration = int(end) - int(start)
+        except (TypeError, ValueError):
+            duration = 3600
+        # Build timeshift URL
+        play_url = f"{SESSION.dns}/timeshift/{SESSION.username}/{SESSION.password}/{duration}/{start}/{stream_id}.ts"
+
     li = xbmcgui.ListItem(path=play_url)
     xbmcplugin.setResolvedUrl(HANDLE, True, li)
 

@@ -1201,9 +1201,121 @@ class GuideManager:
             else:
                 self.running = False
 
+def _resolve_stream_url(bridge, stream_id):
+    """Return a playable URL for the given stream_id, mode-aware."""
+    c = bridge.get_creds()
+    if not c:
+        return None
+    if c.get('mode') == 'mac':
+        if not _mac_ensure(c):
+            return None
+        _mac_fetch_channels(c)
+        cmd = _MAC_STATE['cmd_by_id'].get(str(stream_id))
+        if not cmd:
+            return None
+        import urllib.parse as _up
+        encoded = _up.quote(cmd, safe='')
+        url = (f'{_MAC_STATE["portal"]}?type=itv&action=create_link&cmd={encoded}'
+               f'&forced_storage=undefined&disable_ad=0&download=0'
+               f'&JsHttpRequest=1-xml')
+        data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+        js = (data or {}).get('js', {})
+        raw = js.get('cmd') or js.get('url') or ''
+        for pref in ('ffmpeg ', 'ffrt ', 'ffrt3 ', 'auto '):
+            if raw.startswith(pref):
+                raw = raw[len(pref):]
+                break
+        return raw.strip() or None
+    fmt = 'm3u8'
+    return f"{c['dns']}/live/{c['user']}/{c['pwd']}/{stream_id}.{fmt}"
+
+
+def _collect_channels_for_window(bridge, progress=None, max_channels=300):
+    """Gather all channels + their short EPG, ready for the Sky/Virgin window."""
+    channels = get_all_channels(bridge, progress=progress)
+    if not channels:
+        return [], {}
+    channels = channels[:max_channels]
+    epg_map = {}
+    total = max(1, len(channels))
+    for i, ch in enumerate(channels):
+        if progress:
+            try:
+                progress.update(
+                    min(95, int((i / total) * 95)),
+                    f"Loading EPG {i + 1}/{total}",
+                )
+                if progress.iscanceled():
+                    break
+            except Exception:
+                pass
+        sid = str(ch.get('stream_id'))
+        progs = get_epg(bridge, sid, limit=15) or []
+        # Normalise timestamp fields: XC gives 'start_timestamp'/'stop_timestamp',
+        # MAC already returns that shape from the adapter.
+        epg_map[sid] = progs
+    return channels, epg_map
+
+
+def launch_skin_window(bridge):
+    """Open the Sky/Virgin/Classic full-screen EPG window."""
+    addon = xbmcaddon.Addon()
+    theme = addon.getSetting('guide_skin') or 'sky'
+    if theme == 'classic':
+        # Classic = directory view (original behaviour). Drop straight through.
+        return False
+    pip_enabled = addon.getSetting('pip_enabled').lower() != 'false'
+    pip_autoplay = addon.getSetting('pip_autoplay').lower() != 'false'
+
+    progress = xbmcgui.DialogProgress()
+    progress.create('Poseidon Guide', 'Preparing TV guide...')
+    channels, epg_map = _collect_channels_for_window(bridge, progress=progress)
+    progress.close()
+
+    if not channels:
+        xbmcgui.Dialog().notification(
+            'Poseidon Guide', 'No channels available', xbmcgui.NOTIFICATION_WARNING, 3000)
+        return True
+
+    from resources.lib.guide_window import open_guide_window
+    open_guide_window(
+        theme=theme,
+        channels=channels,
+        epg_map=epg_map,
+        play_resolver=lambda sid: _resolve_stream_url(bridge, sid),
+        pip_enabled=pip_enabled,
+        pip_autoplay=pip_autoplay,
+    )
+    return True
+
+
 def main():
-    log("Poseidon Guide v1.1.0")
+    log("Poseidon Guide v1.2.0")
+    bridge = PoseidonBridge()
+    if not bridge.valid():
+        xbmcgui.Dialog().ok('Poseidon Guide',
+                            'Open Poseidon Player first and enter your credentials.')
+        return
+
+    # Allow ?action=settings to jump straight to settings
+    params = {}
+    try:
+        if len(sys.argv) > 1:
+            import urllib.parse as _up
+            q = sys.argv[1] if sys.argv[1].startswith('?') else ''
+            if q:
+                params = dict(_up.parse_qsl(q.lstrip('?')))
+    except Exception:
+        pass
+    if params.get('action') == 'settings':
+        xbmcaddon.Addon().openSettings()
+        return
+
+    # Respect the user's skin choice.
+    if launch_skin_window(bridge):
+        return
     GuideManager().run()
+
 
 if __name__ == '__main__':
     main()

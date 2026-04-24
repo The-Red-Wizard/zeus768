@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Poseidon Guide - Sky TV / Virgin TV style EPG with Picture-in-Picture
+    Author: poseidon12, 2026-04
+
+    Colour palette is driven by the window's Skin.String properties so one XML
+    covers both Sky and Virgin themes:
+
+      Skin.String(PG_Theme)       -> 'sky' | 'virgin' | 'classic'
+      Skin.String(PG_BG)          -> hex ARGB of background
+      Skin.String(PG_Accent)      -> hex ARGB of accent / highlight bar
+      Skin.String(PG_Label)       -> hex ARGB of primary labels
+      Skin.String(PG_SubLabel)    -> hex ARGB of secondary labels
+      Skin.String(PG_Logo)        -> path to theme logo texture
+
+    Window id 6100 is arbitrary but unique to this addon to avoid collisions.
+-->
+<window type="window" id="6100">
+    <defaultcontrol always="true">9000</defaultcontrol>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx>
+        <posy>0</posy>
+    </coordinates>
+    <controls>
+        <!-- Solid background colour (theme-driven) -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture fallback="black">black.png</texture>
+            <colordiffuse>$INFO[Skin.String(PG_BG)]</colordiffuse>
+        </control>
+
+        <!-- Header strip -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>110</height>
+            <texture fallback="black">black.png</texture>
+            <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse>
+        </control>
+
+        <!-- Theme logo -->
+        <control type="image">
+            <posx>40</posx>
+            <posy>25</posy>
+            <width>160</width>
+            <height>60</height>
+            <aspectratio>keep</aspectratio>
+            <texture>$INFO[Skin.String(PG_Logo)]</texture>
+        </control>
+
+        <!-- Clock -->
+        <control type="label">
+            <posx>1720</posx>
+            <posy>30</posy>
+            <width>160</width>
+            <height>60</height>
+            <align>right</align>
+            <font>font30_title</font>
+            <textcolor>$INFO[Skin.String(PG_Label)]</textcolor>
+            <label>$INFO[System.Time(hh:mm)]</label>
+        </control>
+
+        <!-- Now playing title (selected program) -->
+        <control type="label">
+            <posx>220</posx>
+            <posy>20</posy>
+            <width>1480</width>
+            <height>40</height>
+            <font>font30_title</font>
+            <textcolor>$INFO[Skin.String(PG_Label)]</textcolor>
+            <label>$INFO[Window.Property(selected_title)]</label>
+            <aligny>center</aligny>
+        </control>
+        <control type="label">
+            <posx>220</posx>
+            <posy>60</posy>
+            <width>1480</width>
+            <height>30</height>
+            <font>font13</font>
+            <textcolor>$INFO[Skin.String(PG_SubLabel)]</textcolor>
+            <label>$INFO[Window.Property(selected_time)]  -  $INFO[Window.Property(selected_desc)]</label>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Picture-in-Picture window (rendered when addon is playing) -->
+        <control type="group" visible="!Skin.String(PG_PiP_Hidden,true)">
+            <control type="image">
+                <posx>1440</posx>
+                <posy>140</posy>
+                <width>440</width>
+                <height>258</height>
+                <texture fallback="black">black.png</texture>
+                <colordiffuse>FF000000</colordiffuse>
+            </control>
+            <control type="videowindow">
+                <posx>1444</posx>
+                <posy>144</posy>
+                <width>432</width>
+                <height>250</height>
+            </control>
+            <control type="label">
+                <posx>1440</posx>
+                <posy>402</posy>
+                <width>440</width>
+                <height>28</height>
+                <font>font12</font>
+                <textcolor>$INFO[Skin.String(PG_SubLabel)]</textcolor>
+                <align>center</align>
+                <label>Now Previewing:  $INFO[Window.Property(pip_channel)]</label>
+            </control>
+        </control>
+
+        <!-- Channel column (scrollable list) -->
+        <control type="list" id="9000">
+            <posx>40</posx>
+            <posy>150</posy>
+            <width>340</width>
+            <height>880</height>
+            <onleft>9000</onleft>
+            <onright>9000</onright>
+            <onup>9000</onup>
+            <ondown>9000</ondown>
+            <viewtype label="Channels">list</viewtype>
+            <pagecontrol>-</pagecontrol>
+            <scrolltime>150</scrolltime>
+            <itemlayout height="80" width="340">
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>340</width>
+                    <height>76</height>
+                    <texture fallback="black">black.png</texture>
+                    <colordiffuse>40FFFFFF</colordiffuse>
+                </control>
+                <control type="image">
+                    <posx>10</posx>
+                    <posy>8</posy>
+                    <width>60</width>
+                    <height>60</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture>$INFO[ListItem.Icon]</texture>
+                </control>
+                <control type="label">
+                    <posx>80</posx>
+                    <posy>12</posy>
+                    <width>250</width>
+                    <height>28</height>
+                    <font>font13</font>
+                    <textcolor>$INFO[Skin.String(PG_Label)]</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <posx>80</posx>
+                    <posy>42</posy>
+                    <width>250</width>
+                    <height>24</height>
+                    <font>font10</font>
+                    <textcolor>$INFO[Skin.String(PG_SubLabel)]</textcolor>
+                    <label>$INFO[ListItem.Property(now_title)]</label>
+                </control>
+            </itemlayout>
+            <focusedlayout height="80" width="340">
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>340</width>
+                    <height>76</height>
+                    <texture fallback="black">black.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse>
+                </control>
+                <control type="image">
+                    <posx>10</posx>
+                    <posy>8</posy>
+                    <width>60</width>
+                    <height>60</height>
+                    <aspectratio>keep</aspectratio>
+                    <texture>$INFO[ListItem.Icon]</texture>
+                </control>
+                <control type="label">
+                    <posx>80</posx>
+                    <posy>12</posy>
+                    <width>250</width>
+                    <height>28</height>
+                    <font>font13</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <posx>80</posx>
+                    <posy>42</posy>
+                    <width>250</width>
+                    <height>24</height>
+                    <font>font10</font>
+                    <textcolor>FFFFE699</textcolor>
+                    <label>$INFO[ListItem.Property(now_title)]</label>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- Programme grid (now + upcoming) -->
+        <control type="list" id="9001">
+            <posx>400</posx>
+            <posy>450</posy>
+            <width>1020</width>
+            <height>580</height>
+            <onleft>9000</onleft>
+            <onright>9000</onright>
+            <onup>9001</onup>
+            <ondown>9001</ondown>
+            <scrolltime>150</scrolltime>
+            <itemlayout height="70" width="1020">
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>1020</width>
+                    <height>66</height>
+                    <texture fallback="black">black.png</texture>
+                    <colordiffuse>30FFFFFF</colordiffuse>
+                </control>
+                <control type="label">
+                    <posx>20</posx>
+                    <posy>10</posy>
+                    <width>160</width>
+                    <height>28</height>
+                    <font>font13_title</font>
+                    <textcolor>$INFO[Skin.String(PG_Label)]</textcolor>
+                    <label>$INFO[ListItem.Label2]</label>
+                </control>
+                <control type="label">
+                    <posx>200</posx>
+                    <posy>10</posy>
+                    <width>800</width>
+                    <height>28</height>
+                    <font>font13_title</font>
+                    <textcolor>$INFO[Skin.String(PG_Label)]</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <posx>200</posx>
+                    <posy>38</posy>
+                    <width>800</width>
+                    <height>24</height>
+                    <font>font10</font>
+                    <textcolor>$INFO[Skin.String(PG_SubLabel)]</textcolor>
+                    <label>$INFO[ListItem.Property(plot_short)]</label>
+                </control>
+            </itemlayout>
+            <focusedlayout height="70" width="1020">
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>1020</width>
+                    <height>66</height>
+                    <texture fallback="black">black.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse>
+                </control>
+                <control type="label">
+                    <posx>20</posx>
+                    <posy>10</posy>
+                    <width>160</width>
+                    <height>28</height>
+                    <font>font13_title</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label2]</label>
+                </control>
+                <control type="label">
+                    <posx>200</posx>
+                    <posy>10</posy>
+                    <width>800</width>
+                    <height>28</height>
+                    <font>font13_title</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <posx>200</posx>
+                    <posy>38</posy>
+                    <width>800</width>
+                    <height>24</height>
+                    <font>font10</font>
+                    <textcolor>FFFFE699</textcolor>
+                    <label>$INFO[ListItem.Property(plot_short)]</label>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- Bottom help / footer -->
+        <control type="label">
+            <posx>40</posx>
+            <posy>1040</posy>
+            <width>1840</width>
+            <height>30</height>
+            <font>font10</font>
+            <textcolor>$INFO[Skin.String(PG_SubLabel)]</textcolor>
+            <align>center</align>
+            <label>$INFO[Window.Property(theme_hint)]</label>
+        </control>
+    </controls>
+</window>
