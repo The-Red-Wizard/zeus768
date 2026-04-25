@@ -8,9 +8,11 @@ Strategy (matches ResolveURL/Lambda-class scrapers):
     3. Locate every ``getElementById('XXXlink').innerHTML = <JS expression>;``
        where XXX ends in ``link`` (robotlink / norobotlink / ideoooolink ...).
     4. Evaluate the JS expression using a tiny string-only evaluator that
-       handles ``'a' + 'b'`` and ``('xyz').substring(N[,M])`` slicing -- this
-       is the obfuscation Streamtape uses to hide the real token.
-    5. Pick the result that contains ``token=`` and the most data, build the
+       handles literal concat plus common String prototype methods
+       (``substring``, ``slice``, ``replace``, ``split().join()``). This is
+       the obfuscation Streamtape uses to hide both the token AND the host
+       (e.g. ``'streamtape.cddcom'.replace('cdd', '')`` -> ``streamtape.com``).
+    5. Pick the longest decoded result that contains ``token=``, build the
        final ``https://streamtape.com/get_video?...&token=...&dl=1`` URL,
        and append ``|User-Agent=...&Referer=https://streamtape.com/`` so
        Kodi's curl sends the headers the CDN expects (otherwise -> 403).
@@ -54,13 +56,35 @@ _INNER_PAT = re.compile(
     re.S,
 )
 
-# JS string expression token: optional opening paren, quoted literal, optional
-# closing paren, optional .substring(a) or .substring(a, b).
-_JS_LITERAL_PAT = re.compile(
-    r"""(?:\(\s*)?(['"])([^'"]*)\1(?:\s*\))?"""
-    r"""(?:\s*\.\s*substring\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\))?""",
-    re.S,
+# A JS string operand:
+#   - optional opening '('
+#   - quoted string literal
+#   - optional closing ')'
+#   - any number of  .method(args)  chained on the end
+# The method-args group is non-greedy, supports nested quoted strings only.
+_OPERAND_PAT = re.compile(
+    r"""(?:\(\s*)?                       # optional (
+        (['"])([^'"]*)\1                 # quoted literal
+        (?:\s*\))?                       # optional )
+        ((?:\s*\.\s*[A-Za-z_][\w]*       # method chain: .name(args)
+          \s*\(
+              (?:[^()'"]|'[^']*'|"[^"]*")*?
+          \)
+        )*)
+    """,
+    re.VERBOSE | re.S,
 )
+
+# Individual method call inside a chain.
+_METHOD_PAT = re.compile(
+    r"""\.\s*([A-Za-z_][\w]*)\s*\(
+            ((?:[^()'"]|'[^']*'|"[^"]*")*?)
+        \)""",
+    re.VERBOSE | re.S,
+)
+
+# Quoted string literal (used for parsing replace/split args).
+_LITERAL_PAT = re.compile(r"""(['"])([^'"]*)\1""", re.S)
 
 
 def matches(url):
@@ -70,24 +94,87 @@ def matches(url):
     return any(h == d or h.endswith("." + d) for d in HOSTS)
 
 
-def _eval_js_string(expr):
-    """Concatenate every JS string literal in ``expr``, applying any
-    trailing ``.substring(a[, b])`` slice. Anything that isn't a literal
-    (operators, whitespace, parens) is ignored.
+def _str_args(args_src):
+    """Return a list of bare string values from quoted method-call args."""
+    return [m.group(2) for m in _LITERAL_PAT.finditer(args_src)]
+
+
+def _int_args(args_src):
+    """Return a list of integer arguments from a method-call args string."""
+    return [int(x) for x in re.findall(r"-?\d+", args_src)]
+
+
+def _apply_methods(value, chain_src):
+    """Apply a sequence of ``.method(args)`` calls to ``value`` in order.
+
+    Supported (only the ones Streamtape actually uses):
+        - substring(a) / substring(a, b)
+        - slice(a) / slice(a, b)
+        - replace('a', 'b')               -- first occurrence (JS str semantics)
+        - split('a').join('b')            -- chained, treated as global replace
+        - trim()
+    Unknown methods are ignored (best-effort decoder).
     """
-    parts = []
-    for m in _JS_LITERAL_PAT.finditer(expr):
+    pending_split = None  # remember last split('x') so a chained join consumes it
+    for m in _METHOD_PAT.finditer(chain_src):
+        name = m.group(1)
+        args_src = m.group(2) or ""
+
+        if name == "substring":
+            nums = _int_args(args_src)
+            if len(nums) >= 2:
+                a, b = sorted([max(0, nums[0]), max(0, nums[1])])
+                value = value[a:b]
+            elif nums:
+                value = value[max(0, nums[0]):]
+        elif name == "slice":
+            nums = _int_args(args_src)
+            if len(nums) >= 2:
+                value = value[nums[0]:nums[1]]
+            elif nums:
+                value = value[nums[0]:]
+        elif name == "replace":
+            strs = _str_args(args_src)
+            if len(strs) >= 2:
+                value = value.replace(strs[0], strs[1], 1)  # JS replace = first only
+            elif len(strs) == 1:
+                value = value.replace(strs[0], "", 1)
+        elif name == "replaceAll":
+            strs = _str_args(args_src)
+            if len(strs) >= 2:
+                value = value.replace(strs[0], strs[1])
+            elif len(strs) == 1:
+                value = value.replace(strs[0], "")
+        elif name == "split":
+            strs = _str_args(args_src)
+            pending_split = strs[0] if strs else None
+            # value becomes the array conceptually; we only realise it on join().
+        elif name == "join":
+            strs = _str_args(args_src)
+            joiner = strs[0] if strs else ""
+            if pending_split is not None:
+                # ``s.split(x).join(y)`` is an idiomatic global replace
+                value = value.replace(pending_split, joiner)
+                pending_split = None
+        elif name == "trim":
+            value = value.strip()
+        # else: silently ignore unrecognised methods
+    return value
+
+
+def _eval_js_string(expr):
+    """Concatenate every JS string operand in ``expr`` after applying its
+    method chain. Anything that isn't an operand (operators, whitespace,
+    comments) is ignored.
+    """
+    out = []
+    for m in _OPERAND_PAT.finditer(expr):
         s = m.group(2)
-        a = m.group(3)
-        b = m.group(4)
-        if a is not None:
-            ai = int(a)
-            if b is not None:
-                s = s[ai:int(b)]
-            else:
-                s = s[ai:]
-        parts.append(s)
-    return "".join(parts)
+        chain = m.group(3) or ""
+        if chain.strip():
+            s = _apply_methods(s, chain)
+        out.append(s)
+    return "".join(out)
 
 
 def _build_headers_suffix():

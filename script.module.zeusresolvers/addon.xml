@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.1" provider-name="Zeus768">
+<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.2" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -13,6 +13,14 @@
         <website></website>
         <source>https://github.com/Zeus768</source>
         <news>
+v1.0.2
+- Streamtape: extended JS string evaluator to also handle .replace(),
+  .split().join(), .slice() and .trim(). Streamtape injects a 3-char
+  marker (e.g. 'cdd') into the host string and strips it back out via
+  one of those calls; without this, resolved URLs hit a bogus host
+  (streamtape.cddcom -> 404)
+- New regression tests covering all three obfuscation patterns from
+  reported kodi.log
 v1.0.1
 - Streamtape: proper JS substring evaluation for the obfuscated token
   (was producing the wrong token -> 403 from CDN)
