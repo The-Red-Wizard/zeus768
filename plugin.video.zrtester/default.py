@@ -388,11 +388,84 @@ def play(idx, li_idx):
     xbmcplugin.setResolvedUrl(HANDLE, True, play_item)
 
 
+def _capture_page_source(url):
+    """Fetch ``url`` raw and pull out the bits that matter for diagnosing
+    a Zeus Resolvers failure.
+
+    Returns a list of ``(label, body)`` snippets ready for TextViewer.
+    Captures (best-effort, regex-only):
+        * HTTP status
+        * Every ``getElementById('XXXlink').innerHTML = <expr>;`` JS line
+          (Streamtape obfuscation lives here)
+        * Every ``<div id="XXXlink" ...>...</div>`` body (Streamtape decoy)
+        * Every ``<input name=... value=...>`` in the page (DDownloads form)
+    """
+    import re as _re
+    import urllib.request as _ur
+
+    snippets = []
+    try:
+        req = _ur.Request(url, headers={"User-Agent": USER_AGENT})
+        with _ur.urlopen(req, timeout=20) as resp:
+            status = resp.getcode()
+            html = resp.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        snippets.append(("Fetch error", str(exc)))
+        return snippets
+
+    snippets.append(("HTTP status", str(status)))
+
+    js_blocks = list(_re.finditer(
+        r"getElementById\(\s*['\"]([A-Za-z0-9_]*link)['\"]\s*\)"
+        r"\s*\.innerHTML\s*=\s*([^;]+);",
+        html, _re.S,
+    ))
+    if js_blocks:
+        body = "\n\n".join(
+            f"[#{m.group(1)}]\n  {m.group(2).strip()[:600]}"
+            for m in js_blocks
+        )
+        snippets.append((f"JS innerHTML assignments ({len(js_blocks)})", body))
+
+    div_blocks = list(_re.finditer(
+        r"<div[^>]*id\s*=\s*['\"]([A-Za-z0-9_]*link)['\"][^>]*>([^<]+)</div>",
+        html, _re.I,
+    ))
+    if div_blocks:
+        body = "\n".join(
+            f"[#{m.group(1)}] {m.group(2).strip()[:300]}"
+            for m in div_blocks
+        )
+        snippets.append((f"Hidden DIV bodies ({len(div_blocks)})", body))
+
+    if "ddownload" in url.lower() or "ddl.to" in url.lower():
+        fields = []
+        for m in _re.finditer(
+            r"""<input[^>]*name=["']([^"']+)["'][^>]*value=["']([^"']*)["']""",
+            html, _re.I,
+        ):
+            fields.append(f"  {m.group(1)} = {m.group(2)}")
+        for m in _re.finditer(
+            r"""<input[^>]*value=["']([^"']*)["'][^>]*name=["']([^"']+)["']""",
+            html, _re.I,
+        ):
+            fields.append(f"  {m.group(2)} = {m.group(1)}")
+        if fields:
+            # de-duplicate while preserving order
+            seen = set()
+            deduped = [f for f in fields if not (f in seen or seen.add(f))]
+            snippets.append(("Form input fields", "\n".join(deduped)))
+
+    return snippets
+
+
 def diagnostics():
     """Self-test entry. Loops over every host script.module.zeusresolvers
     claims to support and verifies its matcher recognises a probe URL.
     Optionally lets the user enter a live URL and runs the full
-    ``resolve()`` flow end-to-end, reporting what came back.
+    ``resolve()`` flow end-to-end, reporting what came back. With "Capture
+    page source" enabled, also dumps the raw obfuscation snippets so a
+    failed probe is one paste away from a regex fix.
     """
     zeus = _zeus()
     lines = []
@@ -429,13 +502,17 @@ def diagnostics():
     )
 
     # Optional live probe
-    if xbmcgui.Dialog().yesno(
-        "ZR Tester - Diagnostics",
-        "Matcher self-test finished.\n\nRun a live resolve() probe against "
-        "a real hoster URL? (network call, may take ~10s)",
-        nolabel="View results",
-        yeslabel="Probe URL",
-    ):
+    choice = xbmcgui.Dialog().select(
+        "Live resolve probe",
+        [
+            "View results only (skip live probe)",
+            "Probe URL  (resolve only)",
+            "Capture + probe  (also dump page-source snippets)",
+        ],
+    )
+
+    if choice in (1, 2):
+        capture_mode = (choice == 2)
         url = xbmcgui.Dialog().input(
             "Paste a Streamtape / DDownload URL to probe",
             type=xbmcgui.INPUT_ALPHANUM,
@@ -446,22 +523,39 @@ def diagnostics():
             lines.append("[B]Live resolve probe[/B]")
             lines.append(f"Input : {url}")
             lines.append(f"Match : {bool(zeus.can_resolve(url))}")
+
             progress = xbmcgui.DialogProgressBG()
             progress.create(ADDON_NAME, "Probing\u2026")
+
+            captured = []
+            if capture_mode:
+                progress.update(20, ADDON_NAME, "Capturing page source\u2026")
+                captured = _capture_page_source(url)
+
             try:
+                progress.update(60, ADDON_NAME, "resolve()\u2026")
                 resolved = zeus.resolve(url)
             except Exception as exc:
                 resolved = None
                 lines.append(f"Error : {exc}")
             finally:
                 progress.close()
+
             if resolved:
-                # Show URL but trim long header suffix for readability
-                shown = resolved if len(resolved) < 200 else resolved[:200] + "\u2026"
+                shown = resolved if len(resolved) < 240 else resolved[:240] + "\u2026"
                 lines.append("[COLOR lime][PASS][/COLOR] resolve() returned a URL")
                 lines.append(f"Output: {shown}")
             else:
                 lines.append("[COLOR red][FAIL][/COLOR] resolve() returned None")
+
+            if capture_mode:
+                lines.append("")
+                lines.append("[B]Page source capture[/B]")
+                if not captured:
+                    lines.append("  (no diagnostic snippets extracted)")
+                for label, body in captured:
+                    lines.append(f"\n[COLOR yellow]>>> {label}[/COLOR]")
+                    lines.append(body)
 
     xbmcgui.Dialog().textviewer("ZR Tester - Diagnostics", "\n".join(lines))
     xbmcplugin.endOfDirectory(HANDLE, succeeded=False)

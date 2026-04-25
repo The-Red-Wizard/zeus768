@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.3" provider-name="Zeus768">
+<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.4" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.zeusresolvers" version="1.0.1"/>
+        <import addon="script.module.zeusresolvers" version="1.0.2"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -16,6 +16,14 @@
         <website></website>
         <source>https://github.com/Zeus768/zeus768</source>
         <news>
+v1.0.4
+- Diagnostics: new "Capture + probe" mode. Fetches the hoster page raw
+  and dumps every getElementById('*link').innerHTML JS expression, every
+  hidden div, and every form input field into the TextViewer alongside
+  the resolve() output. Lets the next obfuscation tweak be diagnosed
+  from a single screenshot.
+- Requires script.module.zeusresolvers >= 1.0.2
+
 v1.0.3
 - New "Diagnostics" entry: offline matcher self-test for every supported
   host plus an optional live resolve() probe with a TextViewer report
