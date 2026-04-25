@@ -9,12 +9,17 @@ DDownloads uses a two-step XFileSharing-style flow:
        30x whose ``Location`` header (or an ``<a href=... class="btn-free">``)
        is the direct stream/download link.
 
+The final URL is suffixed with ``|User-Agent=...&Referer=https://ddownload.com/``
+so Kodi's player passes the headers the CDN expects.
+
 Only free-download flow is supported -- premium accounts are not required.
 """
 import re
 import time
 
-from .._http import HttpSession, host_of
+from .._http import USER_AGENT, HttpSession, host_of
+
+REFERER = "https://ddownload.com/"
 
 HOSTS = [
     "ddownload.com",
@@ -58,6 +63,14 @@ def _parse_form_fields(html):
     return fields
 
 
+def _with_headers(direct):
+    if not direct:
+        return None
+    if "|" in direct:
+        return direct
+    return f"{direct}|User-Agent={USER_AGENT}&Referer={REFERER}"
+
+
 def resolve(url):
     m = _ID_PAT.search(url)
     if not m:
@@ -74,7 +87,7 @@ def resolve(url):
     session = HttpSession()
 
     for page_url in page_urls:
-        r1 = session.get(page_url)
+        r1 = session.get(page_url, headers={"Referer": REFERER})
         if r1.get("status") != 200 or not r1.get("text"):
             continue
         html = r1["text"]
@@ -82,7 +95,7 @@ def resolve(url):
         # If the page already exposes a direct media link, take it.
         direct = _DIRECT_LINK_PAT.search(html)
         if direct:
-            return direct.group(1)
+            return _with_headers(direct.group(1))
 
         fields = _parse_form_fields(html)
         if not fields.get("op") and not fields.get("id"):
@@ -112,16 +125,16 @@ def resolve(url):
 
         loc = r2.get("location")
         if loc and loc.startswith("http"):
-            return loc
+            return _with_headers(loc)
 
         # Fallback: follow-through POST and scrape body for direct link / anchor.
         r3 = session.post(post_url, data=fields, headers={"Referer": post_url})
         body = r3.get("text", "") or ""
         direct = _DIRECT_LINK_PAT.search(body)
         if direct:
-            return direct.group(1)
+            return _with_headers(direct.group(1))
         btn = _BTN_FREE_PAT.search(body)
         if btn and btn.group(1).startswith("http"):
-            return btn.group(1)
+            return _with_headers(btn.group(1))
 
     return None

@@ -668,6 +668,42 @@ v2.1.5 (2026)
     </extension>
 </addon>
 
+<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.2" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.zeusresolvers" version="1.0.1"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Zeus Resolver Tester</summary>
+        <description lang="en_GB">Browses a remote XML library and tests link resolution exclusively through the script.module.zeusresolvers module. Targets Kodi 21 (Omega) and newer.</description>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum></forum>
+        <website></website>
+        <source>https://github.com/Zeus768/zeus768</source>
+        <news>
+v1.0.2
+- New ZR Tester branding (icon and fanart)
+
+v1.0.1
+- Added "Test custom URL" entry for resolving and playing arbitrary hoster links
+- Custom URL history saved between sessions
+
+v1.0.0
+- Initial release
+- Streams XML library from Pastebin
+- Resolves Streamtape and DDownload links via script.module.zeusresolvers
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
+
 <addon id="program.poseidonguide" name="Poseidon Guide" version="1.3.1" provider-name="poseidon12">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -783,7 +819,7 @@ v1.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.0" provider-name="Zeus768">
+<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.1" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -797,6 +833,11 @@ v1.0.0 (2026)
         <website></website>
         <source>https://github.com/Zeus768</source>
         <news>
+v1.0.1
+- Streamtape: proper JS substring evaluation for the obfuscated token
+  (was producing the wrong token -> 403 from CDN)
+- Streamtape + DDownloads: append Kodi `|User-Agent=...&Referer=...` to
+  the resolved URL so the player passes the headers the CDN expects
 v1.0.0
 - Initial release
 - Streamtape resolver (norobotlink/ideoooolink token extraction)

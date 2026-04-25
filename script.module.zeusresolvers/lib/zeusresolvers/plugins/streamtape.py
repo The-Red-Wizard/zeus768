@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 """Streamtape resolver.
 
-Strategy:
+Strategy (matches ResolveURL/Lambda-class scrapers):
+
     1. Normalise /e/<id> embed URLs to /v/<id> video pages.
     2. Fetch the page HTML.
-    3. Locate the JS line that assigns ``norobotlink`` innerHTML and pull the
-       ``token=...`` out of it.
-    4. Read the hidden ``<div id="ideoooolink">...</div>`` content for the
-       partial path.
-    5. Concatenate into a https URL and append ``&token=<token>``.
-
-Reference: public streamtape scrapers in Kodi/ResolveURL ecosystem.
+    3. Locate every ``getElementById('XXXlink').innerHTML = <JS expression>;``
+       where XXX ends in ``link`` (robotlink / norobotlink / ideoooolink ...).
+    4. Evaluate the JS expression using a tiny string-only evaluator that
+       handles ``'a' + 'b'`` and ``('xyz').substring(N[,M])`` slicing -- this
+       is the obfuscation Streamtape uses to hide the real token.
+    5. Pick the result that contains ``token=`` and the most data, build the
+       final ``https://streamtape.com/get_video?...&token=...&dl=1`` URL,
+       and append ``|User-Agent=...&Referer=https://streamtape.com/`` so
+       Kodi's curl sends the headers the CDN expects (otherwise -> 403).
 """
 import re
 
-from .._http import HttpSession, host_of
+from .._http import USER_AGENT, HttpSession, host_of
 
 HOSTS = [
     "streamtape.com",
@@ -40,21 +43,23 @@ HOSTS = [
     "tubelessceliresolver.com",
 ]
 
+REFERER = "https://streamtape.com/"
+
 _ID_PAT = re.compile(r"streamtape[^/]*/[ev]/([A-Za-z0-9_-]+)", re.I)
-# Match both styles: token=XXX  and  ('token','XXX')
-_TOKEN_PAT = re.compile(r"token=([A-Za-z0-9_-]+)")
-_IDEO_PAT = re.compile(
-    r"getElementById\(\s*['\"]ideoooolink['\"]\s*\)\s*\.innerHTML\s*=\s*(.+?);",
-    re.S,
-)
+
+# Capture every  document.getElementById('XXXlink').innerHTML = <expr>;  block.
 _INNER_PAT = re.compile(
-    r"getElementById\(\s*['\"](?:norobotlink|ideoooolink|robotlink)['\"]\s*\)"
-    r"\s*\.innerHTML\s*=\s*(.+?);",
+    r"getElementById\(\s*['\"]([A-Za-z0-9_]*link)['\"]\s*\)"
+    r"\s*\.innerHTML\s*=\s*([^;]+);",
     re.S,
 )
-_HIDDEN_DIV_PAT = re.compile(
-    r"<div[^>]*id\s*=\s*['\"]ideoooolink['\"][^>]*>([^<]+)</div>",
-    re.I,
+
+# JS string expression token: optional opening paren, quoted literal, optional
+# closing paren, optional .substring(a) or .substring(a, b).
+_JS_LITERAL_PAT = re.compile(
+    r"""(?:\(\s*)?(['"])([^'"]*)\1(?:\s*\))?"""
+    r"""(?:\s*\.\s*substring\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\))?""",
+    re.S,
 )
 
 
@@ -65,15 +70,29 @@ def matches(url):
     return any(h == d or h.endswith("." + d) for d in HOSTS)
 
 
-def _extract_partial_link(js_expr):
-    """Pull a URL-ish string out of a JS concatenation expression.
-
-    Streamtape commonly encodes the link via ``'https://' + 'streamtape...'``
-    or similar string concatenations. We strip quotes and join fragments.
+def _eval_js_string(expr):
+    """Concatenate every JS string literal in ``expr``, applying any
+    trailing ``.substring(a[, b])`` slice. Anything that isn't a literal
+    (operators, whitespace, parens) is ignored.
     """
-    parts = re.findall(r"'([^']*)'|\"([^\"]*)\"", js_expr)
-    joined = "".join(a or b for a, b in parts)
-    return joined.strip()
+    parts = []
+    for m in _JS_LITERAL_PAT.finditer(expr):
+        s = m.group(2)
+        a = m.group(3)
+        b = m.group(4)
+        if a is not None:
+            ai = int(a)
+            if b is not None:
+                s = s[ai:int(b)]
+            else:
+                s = s[ai:]
+        parts.append(s)
+    return "".join(parts)
+
+
+def _build_headers_suffix():
+    """Kodi pipe-suffix HTTP headers for the resolved URL."""
+    return f"|User-Agent={USER_AGENT}&Referer={REFERER}"
 
 
 def resolve(url):
@@ -85,51 +104,39 @@ def resolve(url):
     page_url = f"https://streamtape.com/v/{video_id}"
 
     session = HttpSession()
-    resp = session.get(page_url)
+    resp = session.get(page_url, headers={"Referer": REFERER})
     if resp.get("status") != 200:
         return None
     html = resp.get("text", "") or ""
 
-    # 2. Hidden div first (most reliable on current layout)
-    partial = ""
-    hidden = _HIDDEN_DIV_PAT.search(html)
-    if hidden:
-        partial = hidden.group(1).strip()
-    if not partial:
-        ideo = _IDEO_PAT.search(html)
-        if ideo:
-            partial = _extract_partial_link(ideo.group(1))
-
-    # 3. Token: scan JS blobs for a token= fragment
-    token = ""
+    # 2. Evaluate every getElementById('*link').innerHTML = ...; assignment.
+    candidates = []
     for inner in _INNER_PAT.finditer(html):
-        tok = _TOKEN_PAT.search(inner.group(1))
-        if tok:
-            token = tok.group(1)
-            break
-    if not token:
-        # Some variants keep token literal inside ideooo div content
-        tok = _TOKEN_PAT.search(partial or "") or _TOKEN_PAT.search(html)
-        if tok:
-            token = tok.group(1)
+        decoded = _eval_js_string(inner.group(2))
+        if decoded and "token=" in decoded:
+            candidates.append(decoded)
 
-    if not partial:
+    if not candidates:
         return None
 
-    # 4. Build final URL
+    # Pick the longest decoded candidate -- the obfuscated full URL is
+    # always longer than any partial decoy on the page.
+    partial = max(candidates, key=len).strip()
+
+    # 3. Normalise to absolute https URL
     if partial.startswith("//"):
         direct = "https:" + partial
     elif partial.startswith("http"):
         direct = partial
+    elif partial.startswith("/"):
+        # Path-only result -> bolt onto streamtape.com
+        direct = "https://streamtape.com" + partial
     else:
         direct = "https://" + partial.lstrip("/")
 
-    if token and "token=" not in direct:
-        sep = "&" if "?" in direct else "?"
-        direct = f"{direct}{sep}token={token}"
-
-    # Force mp4 content-disposition download for Kodi Player
+    # 4. Force download flag (forces mp4 stream)
     if "dl=1" not in direct:
         direct += ("&" if "?" in direct else "?") + "dl=1"
 
-    return direct
+    # 5. Append Kodi-style headers so the player sends Referer + UA.
+    return direct + _build_headers_suffix()

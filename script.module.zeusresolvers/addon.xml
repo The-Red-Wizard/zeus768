@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.0" provider-name="Zeus768">
+<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.1" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -13,6 +13,11 @@
         <website></website>
         <source>https://github.com/Zeus768</source>
         <news>
+v1.0.1
+- Streamtape: proper JS substring evaluation for the obfuscated token
+  (was producing the wrong token -> 403 from CDN)
+- Streamtape + DDownloads: append Kodi `|User-Agent=...&Referer=...` to
+  the resolved URL so the player passes the headers the CDN expects
 v1.0.0
 - Initial release
 - Streamtape resolver (norobotlink/ideoooolink token extraction)
