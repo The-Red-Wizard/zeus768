@@ -45,6 +45,21 @@ _BTN_FREE_PAT = re.compile(
     re.I,
 )
 
+# Final URL must look like a real download link, not a landing page.
+_FINAL_URL_OK = re.compile(
+    r"^https?://[A-Za-z0-9.-]+/[^|]*"
+    r"\.(?:mp4|mkv|avi|mov|m4v|webm|ts|flv)(?:\?[^|]*)?$",
+    re.I,
+)
+
+
+def _validate(direct):
+    if not direct or not isinstance(direct, str):
+        return False
+    # Strip Kodi pipe-suffix headers before validating.
+    base = direct.split("|", 1)[0]
+    return bool(_FINAL_URL_OK.match(base))
+
 
 def matches(url):
     h = host_of(url)
@@ -65,6 +80,8 @@ def _parse_form_fields(html):
 
 def _with_headers(direct):
     if not direct:
+        return None
+    if not _validate(direct):
         return None
     if "|" in direct:
         return direct

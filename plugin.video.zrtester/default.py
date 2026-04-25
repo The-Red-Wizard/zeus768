@@ -460,7 +460,28 @@ def _capture_page_source(url):
 
 
 def diagnostics():
-    """Self-test entry. Loops over every host script.module.zeusresolvers
+    """Self-test entry. Wraps everything in a try/except so any crash is
+    visible in the TextViewer instead of being swallowed by Kodi."""
+    try:
+        _diagnostics_impl()
+    except Exception as exc:
+        import traceback as _tb
+        body = (
+            "[COLOR red][FATAL][/COLOR] diagnostics() crashed:\n\n"
+            f"{exc}\n\n{_tb.format_exc()}"
+        )
+        try:
+            xbmcgui.Dialog().textviewer("ZR Tester - Diagnostics", body)
+        except Exception:
+            pass
+        try:
+            xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        except Exception:
+            pass
+
+
+def _diagnostics_impl():
+    """Real diagnostics body. Loops over every host script.module.zeusresolvers
     claims to support and verifies its matcher recognises a probe URL.
     Optionally lets the user enter a live URL and runs the full
     ``resolve()`` flow end-to-end, reporting what came back. With "Capture

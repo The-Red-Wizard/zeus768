@@ -668,10 +668,10 @@ v2.1.5 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.4" provider-name="Zeus768">
+<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.5" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
-        <import addon="script.module.zeusresolvers" version="1.0.2"/>
+        <import addon="script.module.zeusresolvers" version="1.0.3"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -685,6 +685,11 @@ v2.1.5 (2026)
         <website></website>
         <source>https://github.com/Zeus768/zeus768</source>
         <news>
+v1.0.5
+- Diagnostics: any crash now dumps a full Python traceback into the
+  TextViewer instead of silently failing in Kodi's directory loader
+- Requires script.module.zeusresolvers >= 1.0.3
+
 v1.0.4
 - Diagnostics: new "Capture + probe" mode. Fetches the hoster page raw
   and dumps every getElementById('*link').innerHTML JS expression, every
@@ -832,7 +837,7 @@ v1.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.2" provider-name="Zeus768">
+<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.3" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
@@ -846,6 +851,17 @@ v1.0.0 (2026)
         <website></website>
         <source>https://github.com/Zeus768</source>
         <news>
+v1.0.3
+- Streamtape: rewritten to yt-dlp / ResolveURL conservative style. Only
+  the authoritative `ideoooolink` / `norobotlink` elements are matched,
+  using the exact `'PART1' + ('PART2').substring(N)` form. The page's
+  `botlink` / `robotlink` honeypots that produce trap URLs (e.g.
+  `streamtape.cddcom/...`, `streamtape.com/streamtape.com/get_videod?...`)
+  are now ignored.
+- Streamtape + DDownloads: every resolved URL is validated against a
+  strict pattern before return. Anything that doesn't match (double host,
+  `cdd` injection, missing media extension, etc.) returns `None` so the
+  caller falls through cleanly to ResolveURL.
 v1.0.2
 - Streamtape: extended JS string evaluator to also handle .replace(),
   .split().join(), .slice() and .trim(). Streamtape injects a 3-char
