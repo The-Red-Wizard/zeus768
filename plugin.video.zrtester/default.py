@@ -150,6 +150,22 @@ def list_root():
             HANDLE, _build_url(action="history"), h_li, isFolder=True
         )
 
+    # Diagnostics entry - quick health check of script.module.zeusresolvers
+    diag = xbmcgui.ListItem(
+        label="[COLOR lightgreen][B]\u2699 Diagnostics[/B][/COLOR]"
+    )
+    diag.setArt({"icon": ADDON_ICON, "thumb": ADDON_ICON, "fanart": ADDON_FANART})
+    diag_info = diag.getVideoInfoTag()
+    diag_info.setTitle("Diagnostics")
+    diag_info.setPlot(
+        "Run a self-test of script.module.zeusresolvers: shows version, every "
+        "supported hoster, and whether its matcher recognises a probe URL. "
+        "Optionally probes a live URL end-to-end."
+    )
+    xbmcplugin.addDirectoryItem(
+        HANDLE, _build_url(action="diagnostics"), diag, isFolder=True
+    )
+
     for idx, it in enumerate(items):
         label = it["name"] or f"Item {idx + 1}"
         li = xbmcgui.ListItem(label=label)
@@ -372,6 +388,85 @@ def play(idx, li_idx):
     xbmcplugin.setResolvedUrl(HANDLE, True, play_item)
 
 
+def diagnostics():
+    """Self-test entry. Loops over every host script.module.zeusresolvers
+    claims to support and verifies its matcher recognises a probe URL.
+    Optionally lets the user enter a live URL and runs the full
+    ``resolve()`` flow end-to-end, reporting what came back.
+    """
+    zeus = _zeus()
+    lines = []
+    if zeus is None:
+        lines.append("[COLOR red][FAIL][/COLOR] script.module.zeusresolvers not installed.")
+        xbmcgui.Dialog().textviewer("ZR Tester - Diagnostics", "\n".join(lines))
+        xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+        return
+
+    version = getattr(zeus, "__version__", "?")
+    hosts = zeus.supported_hosts()
+
+    lines.append(f"[B]Module:[/B] script.module.zeusresolvers v{version}")
+    lines.append(f"[B]Supported hosts:[/B] {len(hosts)}")
+    lines.append("")
+    lines.append("[B]Matcher self-test (offline)[/B]")
+
+    pass_count = 0
+    fail_count = 0
+    for host in hosts:
+        probe = f"https://{host}/v/probe123"
+        ok = bool(zeus.can_resolve(probe))
+        if ok:
+            pass_count += 1
+            lines.append(f"  [COLOR lime][PASS][/COLOR] {host}")
+        else:
+            fail_count += 1
+            lines.append(f"  [COLOR red][FAIL][/COLOR] {host}  (probe: {probe})")
+
+    lines.append("")
+    lines.append(
+        f"Matcher: [COLOR lime]{pass_count} pass[/COLOR] / "
+        f"[COLOR red]{fail_count} fail[/COLOR]"
+    )
+
+    # Optional live probe
+    if xbmcgui.Dialog().yesno(
+        "ZR Tester - Diagnostics",
+        "Matcher self-test finished.\n\nRun a live resolve() probe against "
+        "a real hoster URL? (network call, may take ~10s)",
+        nolabel="View results",
+        yeslabel="Probe URL",
+    ):
+        url = xbmcgui.Dialog().input(
+            "Paste a Streamtape / DDownload URL to probe",
+            type=xbmcgui.INPUT_ALPHANUM,
+        )
+        url = (url or "").strip()
+        if url:
+            lines.append("")
+            lines.append("[B]Live resolve probe[/B]")
+            lines.append(f"Input : {url}")
+            lines.append(f"Match : {bool(zeus.can_resolve(url))}")
+            progress = xbmcgui.DialogProgressBG()
+            progress.create(ADDON_NAME, "Probing\u2026")
+            try:
+                resolved = zeus.resolve(url)
+            except Exception as exc:
+                resolved = None
+                lines.append(f"Error : {exc}")
+            finally:
+                progress.close()
+            if resolved:
+                # Show URL but trim long header suffix for readability
+                shown = resolved if len(resolved) < 200 else resolved[:200] + "\u2026"
+                lines.append("[COLOR lime][PASS][/COLOR] resolve() returned a URL")
+                lines.append(f"Output: {shown}")
+            else:
+                lines.append("[COLOR red][FAIL][/COLOR] resolve() returned None")
+
+    xbmcgui.Dialog().textviewer("ZR Tester - Diagnostics", "\n".join(lines))
+    xbmcplugin.endOfDirectory(HANDLE, succeeded=False)
+
+
 def router():
     action = PARAMS.get("action")
     if action == "links":
@@ -384,6 +479,8 @@ def router():
         list_history()
     elif action == "playurl":
         play_url(PARAMS.get("url", ""))
+    elif action == "diagnostics":
+        diagnostics()
     else:
         list_root()
 

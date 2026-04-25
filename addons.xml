@@ -668,7 +668,7 @@ v2.1.5 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.2" provider-name="Zeus768">
+<addon id="plugin.video.zrtester" name="ZR Tester" version="1.0.3" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.zeusresolvers" version="1.0.1"/>
@@ -685,6 +685,11 @@ v2.1.5 (2026)
         <website></website>
         <source>https://github.com/Zeus768/zeus768</source>
         <news>
+v1.0.3
+- New "Diagnostics" entry: offline matcher self-test for every supported
+  host plus an optional live resolve() probe with a TextViewer report
+- Requires script.module.zeusresolvers >= 1.0.1
+
 v1.0.2
 - New ZR Tester branding (icon and fanart)
 
