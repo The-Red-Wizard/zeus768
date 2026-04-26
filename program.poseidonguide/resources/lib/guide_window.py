@@ -7,6 +7,7 @@ colours are injected via Skin.Strings per theme before showing.
 """
 import os
 import time
+import threading
 from datetime import datetime
 
 import xbmc
@@ -73,6 +74,65 @@ def _short_plot(text, length=140):
     return text if len(text) <= length else text[:length - 1] + '...'
 
 
+class _PipScheduler:
+    """Defer PiP starts until the user stops scrolling.
+
+    Channel-list focus changes fire fast on key-repeat. Spinning up a fresh
+    HLS stream on every key event is what made the previous build feel
+    laggy. This helper batches them: every focus change resets a 250 ms
+    timer, and only the *last* request actually triggers the play.
+    """
+
+    def __init__(self, callback, delay=0.25):
+        self._cb = callback
+        self._delay = delay
+        self._timer = None
+        self._lock = threading.Lock()
+
+    def schedule(self, payload):
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+            self._timer = threading.Timer(self._delay, self._fire, args=(payload,))
+            self._timer.daemon = True
+            self._timer.start()
+
+    def cancel(self):
+        with self._lock:
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
+
+    def _fire(self, payload):
+        try:
+            self._cb(payload)
+        except Exception as e:
+            xbmc.log(f'[PoseidonGuide] pip scheduler error: {e}', xbmc.LOGWARNING)
+
+
+class _PipPlayer(xbmc.Player):
+    """xbmc.Player subclass that calls back into the dialog window when
+    full-screen playback ends, so the dialog can resume PiP for whichever
+    channel is currently focused.
+    """
+
+    def __init__(self, on_full_stop):
+        super().__init__()
+        self._on_full_stop = on_full_stop
+
+    def onPlayBackStopped(self):  # noqa: N802 - Kodi API
+        try:
+            self._on_full_stop()
+        except Exception:
+            pass
+
+    def onPlayBackEnded(self):  # noqa: N802 - Kodi API
+        try:
+            self._on_full_stop()
+        except Exception:
+            pass
+
+
 class GuideSkinWindow(xbmcgui.WindowXML):
     """Sky/Virgin-style EPG with Picture-in-Picture preview."""
 
@@ -83,11 +143,11 @@ class GuideSkinWindow(xbmcgui.WindowXML):
         self.theme = kwargs.get('theme', 'sky')
         self.pip_enabled = kwargs.get('pip_enabled', True)
         self.pip_autoplay = kwargs.get('pip_autoplay', True)
-        self._player = xbmc.Player()
+        self._player = _PipPlayer(self._restart_pip_for_focused)
         self._last_pip_id = None
         self._play_resolver = kwargs.get('play_resolver')  # callable(stream_id) -> url
-        self._last_move_ts = 0
-        self._pip_debounce = 0.6  # seconds between PiP starts on fast navigation
+        self._pip_scheduler = _PipScheduler(self._start_pip_now, delay=0.25)
+        self._closing = False
 
     # ---- Kodi callbacks -----------------------------------------------------
     def onInit(self):
@@ -106,18 +166,22 @@ class GuideSkinWindow(xbmcgui.WindowXML):
         action_id = action.getId()
         # Escape / Back / Stop closes the window AND stops PiP playback.
         if action_id in (9, 10, 13, 92):  # PreviousMenu/Stop/Back/NavBack
+            self._closing = True
+            self._pip_scheduler.cancel()
             self._stop_pip()
             self.close()
             return
         # "I" (Info) key -> toggle to the time-ruler grid view.
         if action_id == 11:
+            self._closing = True
+            self._pip_scheduler.cancel()
             self._stop_pip()
             self.close()
             xbmcgui.Window(10000).setProperty('pg_switch_to_grid', '1')
             return
         # Channel list navigation triggers PiP + grid refresh on a debounce.
         if action_id in (1, 2, 3, 4):   # up/down/left/right
-            xbmc.sleep(60)              # let the focus update
+            xbmc.sleep(40)              # let the focus update
             self._on_channel_moved()
 
     def onClick(self, control_id):
@@ -185,11 +249,28 @@ class GuideSkinWindow(xbmcgui.WindowXML):
         channel = self.channels[idx]
         self._refresh_program_grid(channel)
         self.setProperty('pip_channel', channel.get('name', ''))
-        # PiP: debounce so rapid scrolling doesn't spam the portal.
-        now = time.time()
-        if self.pip_enabled and self.pip_autoplay and (now - self._last_move_ts) >= self._pip_debounce:
-            self._last_move_ts = now
-            self._start_pip(channel)
+        # PiP: defer start until the user stops scrolling.
+        if self.pip_enabled and self.pip_autoplay:
+            self._pip_scheduler.schedule(channel)
+
+    def _start_pip_now(self, channel):
+        self._start_pip(channel)
+
+    def _restart_pip_for_focused(self):
+        """Called by _PipPlayer when full-screen playback ends. Resumes PiP
+        on whichever channel is currently focused so the user lands back
+        in the guide WITH PiP active."""
+        if self._closing or not self.pip_enabled:
+            return
+        try:
+            idx = self.getControl(9000).getSelectedPosition()
+        except Exception:
+            return
+        if idx < 0 or idx >= len(self.channels):
+            return
+        # Force a fresh start (clear last id so _start_pip doesn't bail).
+        self._last_pip_id = None
+        self._pip_scheduler.schedule(self.channels[idx])
 
     def _start_pip(self, channel):
         stream_id = str(channel.get('stream_id'))
@@ -233,13 +314,19 @@ class GuideSkinWindow(xbmcgui.WindowXML):
             xbmcgui.Dialog().notification('Poseidon Guide', 'Stream unavailable',
                                           xbmcgui.NOTIFICATION_ERROR, 3000)
             return
-        self._stop_pip()
+        # Cancel any pending PiP starts so we don't race the full-screen play.
+        self._pip_scheduler.cancel()
+        # Tell the resume handler this is the channel we just kicked off, so
+        # when the user stops the stream the PiP comes back on the same one.
+        self._last_pip_id = stream_id
         li = xbmcgui.ListItem(path=url)
         li.setProperty('inputstream', 'inputstream.adaptive')
         li.setProperty('inputstream.adaptive.manifest_type', 'hls')
-        # Close the dialog and let Kodi take over with the fullscreen player.
-        self.close()
-        xbmc.Player().play(url, li)
+        # Do NOT close the window. xbmc.Player().play() takes the foreground
+        # full-screen automatically; the dialog stays modal underneath, so
+        # when the user stops/exits the stream they land back in the guide
+        # and _PipPlayer.onPlayBackStopped restarts PiP.
+        self._player.play(url, li)
 
 
 def open_guide_window(theme, channels, epg_map, play_resolver,
@@ -298,16 +385,16 @@ class GuideGridWindow(xbmcgui.WindowXML):
         self.theme = kwargs.get('theme', 'sky')
         self.pip_enabled = kwargs.get('pip_enabled', True)
         self.pip_autoplay = kwargs.get('pip_autoplay', True)
-        self._player = xbmc.Player()
+        self._player = _PipPlayer(self._restart_pip_for_focused)
         self._play_resolver = kwargs.get('play_resolver')
         self._last_pip_id = None
-        self._last_move_ts = 0
-        self._pip_debounce = 0.6
+        self._pip_scheduler = _PipScheduler(self._start_pip_now, delay=0.25)
+        self._closing = False
         # Time cursor - programmes starting at this slot fill Block1.
         self._cursor = _slot_start(time.time())
 
     def onInit(self):
-        theme = _apply_theme(self.theme)
+        _apply_theme(self.theme)
         xbmc.executebuiltin(
             'Skin.SetString(PG_PiP_Hidden,%s)' % ('false' if self.pip_enabled else 'true')
         )
@@ -317,6 +404,8 @@ class GuideGridWindow(xbmcgui.WindowXML):
     def onAction(self, action):
         aid = action.getId()
         if aid in (9, 10, 13, 92):  # back / stop
+            self._closing = True
+            self._pip_scheduler.cancel()
             self._stop_pip()
             self.close()
             return
@@ -331,6 +420,8 @@ class GuideGridWindow(xbmcgui.WindowXML):
             return
         # "I" (Info) key -> toggle back to list view.
         if aid == 11:
+            self._closing = True
+            self._pip_scheduler.cancel()
             self._stop_pip()
             self.close()
             xbmcgui.Window(10000).setProperty('pg_switch_to_list', '1')
@@ -338,7 +429,7 @@ class GuideGridWindow(xbmcgui.WindowXML):
         # Up/Down let Kodi handle focus change in the list; after the frame,
         # refresh PiP.
         if aid in (3, 4):
-            xbmc.sleep(60)
+            xbmc.sleep(40)
             self._on_channel_moved()
 
     def onClick(self, control_id):
@@ -401,10 +492,23 @@ class GuideGridWindow(xbmcgui.WindowXML):
             return
         ch = self.channels[idx]
         self.setProperty('pip_channel', ch.get('name', ''))
-        now = time.time()
-        if self.pip_enabled and self.pip_autoplay and (now - self._last_move_ts) >= self._pip_debounce:
-            self._last_move_ts = now
-            self._start_pip(ch)
+        if self.pip_enabled and self.pip_autoplay:
+            self._pip_scheduler.schedule(ch)
+
+    def _start_pip_now(self, channel):
+        self._start_pip(channel)
+
+    def _restart_pip_for_focused(self):
+        if self._closing or not self.pip_enabled:
+            return
+        try:
+            idx = self.getControl(9000).getSelectedPosition()
+        except Exception:
+            return
+        if idx < 0 or idx >= len(self.channels):
+            return
+        self._last_pip_id = None
+        self._pip_scheduler.schedule(self.channels[idx])
 
     def _start_pip(self, channel):
         stream_id = str(channel.get('stream_id'))
@@ -447,12 +551,14 @@ class GuideGridWindow(xbmcgui.WindowXML):
             xbmcgui.Dialog().notification('Poseidon Guide', 'Stream unavailable',
                                           xbmcgui.NOTIFICATION_ERROR, 3000)
             return
-        self._stop_pip()
+        self._pip_scheduler.cancel()
+        self._last_pip_id = stream_id
         li = xbmcgui.ListItem(path=url)
         li.setProperty('inputstream', 'inputstream.adaptive')
         li.setProperty('inputstream.adaptive.manifest_type', 'hls')
-        self.close()
-        xbmc.Player().play(url, li)
+        # Don't close - keep dialog modal underneath so player exit returns
+        # to the guide and _PipPlayer auto-restarts PiP.
+        self._player.play(url, li)
 
 
 def open_grid_window(theme, channels, epg_map, play_resolver,

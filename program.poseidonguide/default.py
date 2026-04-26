@@ -29,7 +29,7 @@ PLAYER_ADDON_ID = 'plugin.video.poseidonplayer'
 
 CACHE_CHANNELS = os.path.join(ADDON_DATA, 'channels_cache.json')
 CACHE_EPG = os.path.join(ADDON_DATA, 'epg_cache.json')
-CACHE_MAX_AGE = 1800
+CACHE_MAX_AGE = 21600  # 6 hours - matches user expectation
 
 if not xbmcvfs.exists(ADDON_DATA):
     xbmcvfs.mkdirs(ADDON_DATA)
@@ -1305,7 +1305,7 @@ def launch_skin_window(bridge):
 
 
 def main():
-    log("Poseidon Guide v1.2.0")
+    log("Poseidon Guide v1.3.2")
     bridge = PoseidonBridge()
     if not bridge.valid():
         xbmcgui.Dialog().ok('Poseidon Guide',
@@ -1325,6 +1325,31 @@ def main():
     if params.get('action') == 'settings':
         xbmcaddon.Addon().openSettings()
         return
+
+    # Launcher menu - lets the user reach settings without right-clicking
+    # the addon. Skin choice + skin layout + cache controls all live in here.
+    skin_label = (xbmcaddon.Addon().getSetting('guide_skin') or 'sky').capitalize()
+    layout_label = (xbmcaddon.Addon().getSetting('guide_layout') or 'list').capitalize()
+    options = [
+        f'Open Guide  ({skin_label} skin / {layout_label} layout)',
+        'Settings  (skin, layout, PiP, grid hours)',
+        'Refresh EPG cache now',
+    ]
+    choice = xbmcgui.Dialog().select('Poseidon Guide', options)
+    if choice < 0:
+        return
+    if choice == 1:
+        xbmcaddon.Addon().openSettings()
+        return
+    if choice == 2:
+        # Wipe caches so the next load forces a fresh fetch
+        for f in (CACHE_CHANNELS, CACHE_EPG):
+            try:
+                if os.path.exists(f):
+                    os.remove(f)
+            except Exception:
+                pass
+        notify('EPG cache cleared - opening guide')
 
     # Respect the user's skin choice.
     if launch_skin_window(bridge):

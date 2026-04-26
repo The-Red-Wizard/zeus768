@@ -722,7 +722,7 @@ v1.0.0
     </extension>
 </addon>
 
-<addon id="program.poseidonguide" name="Poseidon Guide" version="1.3.1" provider-name="poseidon12">
+<addon id="program.poseidonguide" name="Poseidon Guide" version="1.3.2" provider-name="poseidon12">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.1"/>
@@ -736,7 +736,7 @@ v1.0.0
         <description lang="en">Poseidon Guide - Full EPG grid view for Poseidon Player with solid dark background, channel numbers, icons and names.</description>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
-        <news>v1.0.3 - Fixed channel column layout, removed transparency, improved EPG grid</news>
+        <news>v1.3.2 - Solid Sky/Virgin backgrounds (no transparency), launcher menu with Settings + Refresh, 6h EPG cache, faster PiP via deferred scheduler, PiP resumes when stream is exited</news>
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
