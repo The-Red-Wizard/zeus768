@@ -29,7 +29,7 @@ THEMES = {
         'PG_Label':    'FFFFFFFF',
         'PG_SubLabel': 'FFBCD4FF',
         'PG_Logo':     ADDON_ICON,
-        'hint':        'Sky TV style - left/right: channels  |  up/down: programmes  |  OK: watch',
+        'hint':        'Sky TV style - left/right: channels  |  up/down: programmes  |  OK: watch  |  C: pin to favourites',
     },
     'virgin': {
         'PG_BG':       'FF111111',   # near-black
@@ -37,7 +37,7 @@ THEMES = {
         'PG_Label':    'FFFFFFFF',
         'PG_SubLabel': 'FFE8E8E8',
         'PG_Logo':     ADDON_ICON,
-        'hint':        'Virgin TV style - left/right: channels  |  up/down: programmes  |  OK: watch',
+        'hint':        'Virgin TV style - left/right: channels  |  up/down: programmes  |  OK: watch  |  C: pin to favourites',
     },
     'classic': {
         'PG_BG':       'FF1A1A1A',
@@ -45,7 +45,7 @@ THEMES = {
         'PG_Label':    'FFFFFFFF',
         'PG_SubLabel': 'FFA0A0A0',
         'PG_Logo':     ADDON_ICON,
-        'hint':        'Classic - left/right: channels  |  up/down: programmes  |  OK: watch',
+        'hint':        'Classic - left/right: channels  |  up/down: programmes  |  OK: watch  |  C: pin to favourites',
     },
 }
 
@@ -183,6 +183,12 @@ class GuideSkinWindow(xbmcgui.WindowXML):
         if action_id in (1, 2, 3, 4):   # up/down/left/right
             xbmc.sleep(40)              # let the focus update
             self._on_channel_moved()
+            return
+        # Context menu (C key / long-press OK on remote): toggle favourite
+        # for the currently focused channel.
+        if action_id == 117:
+            self._toggle_favourite_focused()
+            return
 
     def onClick(self, control_id):
         if control_id == 9000:  # channel list clicked -> play full screen
@@ -328,6 +334,19 @@ class GuideSkinWindow(xbmcgui.WindowXML):
         # and _PipPlayer.onPlayBackStopped restarts PiP.
         self._player.play(url, li)
 
+    def _toggle_favourite_focused(self):
+        idx = self.getControl(9000).getSelectedPosition()
+        if idx < 0 or idx >= len(self.channels):
+            return
+        ch = self.channels[idx]
+        sid = str(ch.get('stream_id'))
+        name = ch.get('name', 'channel')
+        from resources.lib import favourites as _fav
+        added = _fav.toggle(sid)
+        msg = (f'Pinned: {name}' if added else f'Unpinned: {name}')
+        xbmcgui.Dialog().notification('Favourites', msg,
+                                      xbmcgui.NOTIFICATION_INFO, 1500)
+
 
 def open_guide_window(theme, channels, epg_map, play_resolver,
                       pip_enabled=True, pip_autoplay=True):
@@ -431,6 +450,11 @@ class GuideGridWindow(xbmcgui.WindowXML):
         if aid in (3, 4):
             xbmc.sleep(40)
             self._on_channel_moved()
+            return
+        # Context menu key -> toggle favourite for the focused channel.
+        if aid == 117:
+            self._toggle_favourite_focused()
+            return
 
     def onClick(self, control_id):
         if control_id == 9000:
@@ -559,6 +583,19 @@ class GuideGridWindow(xbmcgui.WindowXML):
         # Don't close - keep dialog modal underneath so player exit returns
         # to the guide and _PipPlayer auto-restarts PiP.
         self._player.play(url, li)
+
+    def _toggle_favourite_focused(self):
+        idx = self.getControl(9000).getSelectedPosition()
+        if idx < 0 or idx >= len(self.channels):
+            return
+        ch = self.channels[idx]
+        sid = str(ch.get('stream_id'))
+        name = ch.get('name', 'channel')
+        from resources.lib import favourites as _fav
+        added = _fav.toggle(sid)
+        msg = (f'Pinned: {name}' if added else f'Unpinned: {name}')
+        xbmcgui.Dialog().notification('Favourites', msg,
+                                      xbmcgui.NOTIFICATION_INFO, 1500)
 
 
 def open_grid_window(theme, channels, epg_map, play_resolver,

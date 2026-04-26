@@ -1257,8 +1257,12 @@ def _collect_channels_for_window(bridge, progress=None, max_channels=300):
     return channels, epg_map
 
 
-def launch_skin_window(bridge):
-    """Open the Sky/Virgin/Classic full-screen EPG window."""
+def launch_skin_window(bridge, favourites_only=False):
+    """Open the Sky/Virgin/Classic full-screen EPG window.
+
+    When ``favourites_only`` is True, the channel list is filtered down to
+    the user's pinned favourites before the window is shown.
+    """
     addon = xbmcaddon.Addon()
     theme = addon.getSetting('guide_skin') or 'sky'
     if theme == 'classic':
@@ -1273,9 +1277,15 @@ def launch_skin_window(bridge):
     channels, epg_map = _collect_channels_for_window(bridge, progress=progress)
     progress.close()
 
+    if favourites_only:
+        from resources.lib.favourites import filter_channels as _fav_filter
+        channels = _fav_filter(channels)
+
     if not channels:
+        msg = ('No favourites pinned yet - press C on any channel'
+               if favourites_only else 'No channels available')
         xbmcgui.Dialog().notification(
-            'Poseidon Guide', 'No channels available', xbmcgui.NOTIFICATION_WARNING, 3000)
+            'Poseidon Guide', msg, xbmcgui.NOTIFICATION_WARNING, 3000)
         return True
 
     from resources.lib.guide_window import open_guide_window, open_grid_window
@@ -1330,8 +1340,12 @@ def main():
     # the addon. Skin choice + skin layout + cache controls all live in here.
     skin_label = (xbmcaddon.Addon().getSetting('guide_skin') or 'sky').capitalize()
     layout_label = (xbmcaddon.Addon().getSetting('guide_layout') or 'list').capitalize()
+    from resources.lib.favourites import count as _fav_count
+    fav_n = _fav_count()
     options = [
         f'Open Guide  ({skin_label} skin / {layout_label} layout)',
+        f'Favourites  ({fav_n} saved)' if fav_n
+            else 'Favourites  (none yet - press C in the guide to pin a channel)',
         'Settings  (skin, layout, PiP, grid hours)',
         'Refresh EPG cache now',
     ]
@@ -1339,9 +1353,18 @@ def main():
     if choice < 0:
         return
     if choice == 1:
-        xbmcaddon.Addon().openSettings()
+        # Favourites view: launch_skin_window with the favourites filter active.
+        if fav_n == 0:
+            notify('Open the guide and press C on a channel to pin it')
+            return
+        if launch_skin_window(bridge, favourites_only=True):
+            return
+        GuideManager().run()
         return
     if choice == 2:
+        xbmcaddon.Addon().openSettings()
+        return
+    if choice == 3:
         # Wipe caches so the next load forces a fresh fetch
         for f in (CACHE_CHANNELS, CACHE_EPG):
             try:
