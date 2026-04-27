@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings version="2">
+    <section id="0">
+        <category id="display" label="32000" help="">
+            <group id="1" label="32010">
+                <setting id="guide_skin" type="string" label="32020" help="">
+                    <level>0</level>
+                    <default>sky</default>
+                    <constraints>
+                        <options>
+                            <option label="32040">classic</option>
+                            <option label="32041">sky</option>
+                            <option label="32042">virgin</option>
+                            <option label="32043">directv</option>
+                            <option label="32044">spectrum</option>
+                            <option label="32045">redw</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string"/>
+                </setting>
+                <setting id="guide_layout" type="string" label="32021" help="">
+                    <level>0</level>
+                    <default>grid</default>
+                    <constraints>
+                        <options>
+                            <option label="32050">list</option>
+                            <option label="32051">grid</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string"/>
+                    <dependencies>
+                        <dependency type="visible" setting="guide_skin">!string.isequal(classic)</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="pip_enabled" type="boolean" label="32022" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="pip_autoplay" type="boolean" label="32023" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                    <dependencies>
+                        <dependency type="enable" setting="pip_enabled">true</dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="2" label="32011">
+                <setting id="grid_hours" type="integer" label="32024" help="">
+                    <level>0</level>
+                    <default>3</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>6</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <formatlabel>14044</formatlabel>
+                    </control>
+                </setting>
+                <setting id="show_help" type="boolean" label="32025" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+            </group>
+            <group id="3" label="32012">
+                <setting id="epg_channel_count" type="integer" label="32026" help="">
+                    <level>0</level>
+                    <default>200</default>
+                    <constraints>
+                        <minimum>50</minimum>
+                        <step>50</step>
+                        <maximum>500</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <formatlabel>14043</formatlabel>
+                    </control>
+                </setting>
+                <setting id="cache_hours" type="integer" label="32027" help="">
+                    <level>0</level>
+                    <default>6</default>
+                    <constraints>
+                        <options>
+                            <option label="32060">4</option>
+                            <option label="32061">6</option>
+                            <option label="32062">8</option>
+                            <option label="32063">10</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="integer"/>
+                </setting>
+            </group>
+        </category>
+    </section>
+</settings>

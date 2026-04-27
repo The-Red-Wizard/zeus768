@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="program.poseidonguide" name="Poseidon Guide" version="1.7.4" provider-name="poseidon12">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.25.1"/>
+        <import addon="plugin.video.poseidonplayer" version="2.2.0"/>
+    </requires>
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">EPG Grid Guide for Poseidon Player</summary>
+        <description lang="en">Poseidon Guide - Full EPG grid view for Poseidon Player with solid dark background, channel numbers, icons and names.</description>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <news>v1.7.4 - Spectrum skin polish: new clean WHITE Spectrum wordmark on transparent background (no more dotted/border artifact), hero info banner now fully constrained to the LEFT column so it never overlaps the picture-in-picture preview frame on the right, and stronger row tinting on the EPG grid so channel cells stay clearly visible while programme data is loading.</news>
+        <news>v1.7.3 - FAVOURITES button now ships on every skin (Sky / Virgin / Classic / DirecTV / Spectrum / Red W), reachable via D-pad (Up from first row or Down from last row of the channel list).  Button label flips live between "FAVOURITES (N)" and "ALL CHANNELS" so the same control toggles the pinned-favourites view on and off.  Red W skin keeps the readability polish: bigger, brighter channel callsigns, no overlap in the footer.</news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

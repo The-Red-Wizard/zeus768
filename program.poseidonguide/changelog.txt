@@ -1,0 +1,433 @@
+v1.7.4 (2026-01) - SPECTRUM SKIN POLISH
+==============================================================
+  * New WHITE Spectrum wordmark logo, generated on a fully
+    transparent background.  The previous logo asset rendered
+    a faint dotted/dithered border because of the white matte
+    around it - the new asset is solid white pixels with a
+    clean alpha channel, so the logo now sits flush on the
+    pure-black Spectrum chassis with no border artefact.
+  * Hero info banner (channel + title + meta + synopsis) is
+    now fully constrained to the LEFT column (40..1180) so it
+    can never overlap the picture-in-picture preview frame on
+    the right (1216..1880).  The redundant dark band that was
+    drawn over the top of the PiP for the channel callsign has
+    been removed - the callsign now lives above the title in
+    the hero column where it belongs.
+  * EPG row tint band stepped up from 14FFFFFF to 22FFFFFF so
+    each channel's 5 programme cells stay clearly delimited
+    while the EPG data is still streaming in - no more "empty
+    black row" effect for slow-loading channels.
+
+
+v1.7.3 (2026-01) - FAVOURITES BUTTON ON EVERY SKIN
+==============================================================
+  * Port of the Red W FAVOURITES button to every other skin
+    (Sky, Virgin, Classic, DirecTV, Spectrum, and both their
+    grid variants).  Placement: bottom-right, y=990, above the
+    footer hint strip so nothing overlaps.
+  * Live label: the button now reads "FAVOURITES (N)" (where N
+    is the pinned-favourites count) or "ALL CHANNELS" when the
+    guide is already filtered to favourites.  Pressing it
+    toggles between the two modes without leaving the guide.
+  * D-pad: Up from the first channel row or Down from the last
+    row lands on the button.  Left returns to the list.
+  * Red W skin keeps the v1.7.2 readability polish.
+
+
+v1.7.2 (2026-01) - RED W SKIN POLISH
+==============================================================
+  * Channel callsigns in the left-hand column are now clearly
+    legible: bumped from font13_title to font20_title, the
+    channel cell widened from 200px to 260px so "UK | BBC ONE"
+    fits without truncation, and the colour brightened to
+    FFFF5A5A (still red, just readable at a glance).
+  * Removed the 4 Quick-Access icons under the PiP preview
+    (Record / Add to Watchlist / VOD / Settings).  The synopsis
+    textbox was extended down into the space they freed.
+  * Added a single focusable FAVOURITES button on the
+    bottom-right of the footer.  D-pad navigation works both
+    ways: press Up from the first channel row, or Down from the
+    last channel row, to land on the button; Left returns to
+    the list.  Activating it re-opens the guide filtered to the
+    user's pinned favourites channel list.
+  * Footer split across two rows so the clock / date / user
+    profile strip can never overlap the nav-hints line or the
+    new FAVOURITES button.
+  * RedW skin's onAction handlers now gate the LEFT/RIGHT
+    time-ruler pan on "list is focused" so the D-pad can reach
+    the FAVOURITES button without panning the EPG.
+
+
+v1.7.1 (2026-01) - RED W FOOTER FIX
+==============================================================
+  * Fixed a layout collision in the new Red W Media skin where
+    the left-hand navigation hint strip and the right-hand
+    clock + date + user-profile strip overlapped in the bottom
+    centre of the screen.  The two labels now have hard,
+    non-overlapping bounds:
+      - Left hints:  posx 40, width 1100  (ends at x=1140)
+      - Right strip: posx 1200, width 680, right-aligned to 1880
+    The "C FAVOURITE" hint was dropped from the bottom strip
+    (the C key still pins/unpins favourites - it just isn't
+    advertised in the footer anymore) to keep the line short
+    enough to never overrun.
+
+
+v1.7.0 (2026-01) - NEW RED W MEDIA SKIN (UK)
+==============================================================
+Adds a brand-new "Red W Media" skin built for UK viewers, matching
+the on-screen Red W Media TV Guide reference image:
+
+  * Pure-black chassis with a bright Red W red accent (#E21B25).
+  * Top bar:  red "RW" wordmark on the left and a multi-colour
+    headline that reads RED W (red) MEDIA (white) TV GUIDE (red).
+  * 4-column EPG layout:  CHANNEL | CURRENT | FUTURE | FUTURE.
+      - Channel cell:  dark slate panel with the callsign in red.
+      - Current cell when focused:  red OUTLINE around a slightly
+        brighter slate fill (matches the red highlight in the ref).
+      - Future cells:  filled deep-red panels with white titles and
+        soft-pink time labels.
+  * Right-hand hero panel (25% of the screen):
+      - Picture-in-Picture preview at the top with a "PiP" badge
+        and a thin red ring when an item is selected.
+      - Channel name strip directly under the PiP.
+      - Programme title, time / meta line in red, and synopsis.
+      - "Quick Access" tile row:  Record, Add to Watchlist, VOD,
+        and Settings.
+  * Footer hints (Navigate / Select / Directory / Future / Fav)
+    on the left, and a clock + date + User Profile chip on the
+    right.
+  * Channel sort puts UK groups first (default ordering preserved
+    - none of the USA-first reordering applied to DirecTV /
+    Spectrum is applied here).
+
+Available from Settings -> Display -> Guide skin -> "redw".
+
+
+v1.6.1 (2026-01) - SPECTRUM HERO + LOGO POLISH
+==============================================================
+  * Spectrum logo now blends into the black chassis - the white
+    background that was baked into the PNG has been replaced with
+    a true alpha channel, so the wordmark sits cleanly on the
+    black top bar with no white box behind it.
+  * Hero banner: the channel number + callsign (e.g. "1 UK | BBC
+    ONE") is no longer right-aligned inside the title row, where
+    it could be clipped or hidden on some 16:9 displays.  It is
+    now overlaid as a clean band at the TOP of the picture-in-
+    picture preview, so the channel you're focused on is always
+    visible right next to the PiP image.
+
+
+v1.6.0 (2026-01) - NEW SPECTRUM SKIN
+==============================================================
+Adds a brand-new "Spectrum" skin that pixel-matches the on-screen
+Spectrum (Charter) cable guide reference image:
+
+  * Pure-black chassis with Spectrum-cyan accent (#00B0E5).
+  * Top bar: Spectrum wordmark on the left, large 12-hour clock
+    on the right (e.g. 9:23am).
+  * Hero block (under the top bar):
+      - Programme title in Spectrum cyan, big bold.
+      - Channel number + callsign aligned to the right of the
+        title row (e.g. "503 KREXD").
+      - Time / rating row underneath (e.g. 9-9:30a   TV-PG  HD).
+      - Multi-line synopsis in white.
+      - Picture-in-Picture frame in the top-right corner with a
+        cyan accent ring around the live preview.
+  * Time-ruler strip:  Today  |  9:00a  |  9:30a  |  10:00a   >
+    Each separator drawn as a faint vertical pipe to match the
+    reference screenshot.
+  * Channel rows: number on the left, callsign next, then five
+    30-minute programme cells.  A faint translucent band tints
+    the programme cells so they blend into the chassis.  The
+    focused row gets a Spectrum-cyan focus pill on the FIRST
+    programme cell only (NOT a full-row pill - this is the key
+    visual difference from the DirecTV skin).
+  * Channel sort order on the Spectrum skin is the same as
+    DirecTV: USA -> Canada -> UK -> rest of the world.
+  * Settings -> Display -> Skin Style now exposes "Spectrum
+    style (USA channels first, grid + PiP)" as a fifth option.
+  * No changes to existing Sky / Virgin / DirecTV / Classic
+    skins - they all keep working exactly as in v1.5.5.
+
+
+v1.5.5 (2026-01) - DIRECTV SKIN POLISH (TOP BAR + COLUMNS + SORT)
+==============================================================
+Tightens up the v1.5.4 DirecTV skin based on real-screen feedback:
+
+  * Top bar redesigned into FOUR evenly-spaced slots across the
+    full 1840px width so the clock, "FAVORITES: Press (0)..." and
+    "Press (-) to Search" hints no longer overlap each other or
+    the DIRECTV wordmark.  Layout is now:
+        [ DIRECTV ] | [ 11:54 PM ] | [ FAVORITES: Press (0) ... ]
+                    | [ Press (-) to Search ]
+    Each slot is 460px wide with a thin pipe separator between
+    them and the contents centred inside.  Wifi glyph removed
+    (it was the source of the "TIME @" jumble).
+
+  * Channel-name column widened from 200px to 320px (total
+    channel-info area 0..410) so prefixes like
+    "UK | BBC TWO HD", "UK | CHANNEL 4 HD" or
+    "USA | SKY ATLANTIC HD" no longer truncate to "UK | BBC O...".
+    The 5 EPG cells were re-aligned to start at x=420 and
+    distributed evenly out to x=1840, and the time-strip slots
+    above them were moved to match.
+
+  * Channel sort order on the DirecTV skin is now
+        USA -> Canada -> UK -> Live/PPV -> Rest
+    instead of the previous USA <-> UK swap.  Canada categories
+    (CANADA / CA | / CA- prefixes) are now detected in
+    get_category_priority and given band 200-249 so they slot
+    in just after the US channels.  reorder_for_skin() re-bands
+    the cached priorities only when the active skin is "directv"
+    so the Sky skin keeps its UK-first canonical order.
+
+  * get_all_epg() priority threshold bumped from 200 to 250 so
+    Canada channels are also EPG-loaded in the first 150-channel
+    priority pass.
+
+
+v1.5.4 (2026-01) - DIRECTV SKIN REBUILT (REAL LAYOUT)
+==============================================================
+The v1.5.3 DirecTV skin was just a recolour of the Sky XML.
+v1.5.4 ships a dedicated DirecTV layout that mirrors the
+on-screen DirecTV guide reference image:
+
+  * NEW XML files - the DirecTV skin no longer reuses the Sky XML:
+      - resources/skins/default/1080i/script-poseidonguide-directv-main.xml
+      - resources/skins/default/1080i/script-poseidonguide-directv-grid.xml
+    guide_window.py picks the directv-prefixed XML when the active
+    skin is "directv".
+
+  * Top bar (DirecTV chrome):
+      - "DIRECTV" wordmark top-left
+      - "| 9:50 AM | wifi" pipe-separated
+      - "FAVORITES: Press (0) to Change | Press (-) to Search"
+        right-aligned in the top-right (matches the on-screen
+        DirecTV chrome verbatim)
+
+  * PiP moved to the LEFT (next to a tall programme poster on its
+    right) - this matches the DirecTV reference where the live
+    preview sits next to the show artwork, not floating on the
+    right-hand side like Sky / Virgin.
+
+  * Time strip: "Thu D/M  9:30a  10:00a  10:30a  >>  +12hrs"
+    Replaces the "Today" pill with the actual date and adds the
+    "+12hrs" jump indicator at the far right.
+
+  * Channel rows: "230  DIYHD" style.  Number is right-aligned in
+    a 80px column, callsign in caps to its right.  No channel logo
+    image (DirecTV's reference doesn't show one).
+
+  * Logo cleaned up - the original PNG had a white outer border and
+    a navy inner box that didn't blend.  Logo is now transparent +
+    trimmed to the actual wordmark glyphs.
+
+EXISTING USA-FIRST REORDER:
+  * Untouched - DirecTV still pulls USA categories to the top of
+    the channel list and pushes UK groups to second place.
+
+v1.5.3 (2026-01) - NEW DIRECTV SKIN
+==============================================================
+NEW - DIRECTV SKIN:
+- Added a fourth skin "DirecTV" alongside Classic / Sky / Virgin.
+  Pick it from Settings -> Display -> Skin Style.
+- Palette built to match the on-screen DirecTV guide reference:
+    * Deep navy chassis (#0D1929)
+    * Slightly lighter band across the hero (#132A47)
+    * DirecTV blue focus pill / accents (#1989F0)
+    * White labels, light-grey sub-labels
+- Top-left wordmark switches from "sky" to the DIRECTV logo
+  (resources/skins/default/media/directv_logo.png).
+
+CHANNEL ORDER:
+- DirecTV is a US service, so when the DirecTV skin is active the
+  channel list is re-sorted so all USA categories come first and
+  UK categories slot in immediately afterwards.  Live/PPV and
+  international categories keep their existing position.  Switching
+  back to Sky / Virgin / Classic instantly restores UK-first order
+  - the channel cache is shared, the re-sort happens only at the
+  point the guide window opens.
+
+LOCALISATION:
+- Added string #32043 ("DirecTV style (USA channels first, grid +
+  PiP)") to resources/language/resource.language.en_gb/strings.po.
+
+
+v1.5.2 (2026-01) - SETTINGS DIALOG FIX + CACHE LIFETIME OPTION
+==============================================================
+FIX:
+- The "Settings - Poseidon Guide" dialog appeared completely
+  blank on Kodi Matrix / Nexus / Omega (no category, no group
+  or setting labels were drawn).  Root cause: settings.xml v2
+  requires localised string IDs for labels - plain English
+  strings render as empty in those Kodi releases.
+- Added resources/language/resource.language.en_gb/strings.po
+  with all category, group, setting and option labels.
+- Re-pointed every <label>, <option label> and <group label>
+  in resources/settings.xml at the matching string ID.
+
+NEW - CACHE LIFETIME OPTION:
+- New "Cache lifetime (hours)" dropdown in Settings -> Display
+  -> EPG & Cache.  Choices: 4 / 6 / 8 / 10 hours.  Default 6 h.
+- default.py.load_cache() now reads the live setting on every
+  call instead of using the old hard-coded 21600 s constant,
+  so changing the value takes effect immediately - no addon
+  restart required.
+
+TWEAK - EPG CHANNEL SLIDER:
+- Range tightened from 50-1000 to 50-500 (step 50), so the
+  stepped slider matches the values the typical user will
+  actually want.  Default still 200.
+
+v1.5.1 (2026-01) - NEW SKY LOGO + EPG COUNT SETTING
+====================================================
+NEW:
+- Replaced bundled Sky logo with the transparent multi-colour
+  gradient version (orange/pink/purple/blue) so it sits cleanly
+  on the deep purple background.
+- New "Channels to fetch EPG for" slider in Settings -> Display
+  -> Grid Options. Range 50-1000 (steps of 50), default 200.
+  Higher values cover more of your channel list on first load
+  but take longer; lower values pop the window open faster and
+  the rest is filled in by a background thread as before.
+
+
+v1.5.0 (2026-01) - SKY-PURPLE THEME + INLINE EPG TABS IN LIST VIEW
+==================================================================
+NEW - SKY THEME COLOURS:
+- Background switched from navy (#002C5F) to deep sky-purple
+  (#1A1A6B) to match the actual Sky branding/icon background.
+  Lighter mid-band uses #2A2AA0 for a subtle gradient.
+
+NEW - REAL SKY LOGO ASSET:
+- The Sky wordmark is now bundled as
+  resources/skins/default/media/sky_logo.png and rendered
+  top-left of both views (replaces the previous text-only "sky").
+
+NEW - INLINE EPG TABS IN LIST VIEW:
+- The list view now mirrors the grid: each channel row shows
+  the channel name + 5 EPG time-slot tabs to the right (30 min
+  each, 2.5h visible).
+- Left/Right pans the time ruler by one slot, just like the
+  grid view. The "Today" cell + slot times appear in the ruler
+  header above the rows.
+
+
+v1.4.0 (2026-04-26) - SKY SKIN REDESIGN + CLICK-TO-PREVIEW
+==========================================================
+NEW - SKY-STYLE GUIDE LAYOUT:
+- Top half is now a hero panel matching Sky Q: channel chip,
+  programme title, duration / HD / S / start-time meta line
+  and synopsis underneath. Background is a navy gradient.
+- Bottom half is a 5-column 30 minute time-ruler grid with a
+  bright blue highlight pill on the focused channel, just
+  like the real Sky guide.
+- PiP window moved to the LEFT of the hero (per user request).
+
+NEW - CLICK BEHAVIOUR:
+- OK once on a channel  -> starts that channel in the PiP
+  preview window inside the guide.
+- OK twice (within 600 ms) on the same channel -> exits
+  the guide and plays full screen.
+- PiP no longer auto-starts when scrolling - it only fires
+  on an explicit OK press, which is what the user expected.
+
+NEW - FIRST-LAUNCH TUTORIAL:
+- A one-time popup explains the controls when the guide is
+  first opened. Toggle in Settings -> Display -> Grid Options
+  -> "Show controls tutorial on next launch".
+
+PERF:
+- Initial EPG fetch limited to 50 channels so the window
+  opens immediately. Remaining channel EPG is filled in by
+  a background daemon thread, so rows populate as the user
+  scrolls without blocking the UI.
+- Default layout flipped to 'grid' (the Sky-styled view).
+
+
+v1.3.1 (2026-04-24) - TIME-RULER GRID VIEW
+===========================================
+NEW - CLASSIC TV GRID LAYOUT:
+- New "Layout" setting (under Guide Appearance) with two
+  choices:
+    * List + PiP    - previous release's layout (channels
+                      down the left, programme stack on the
+                      right, PiP top-right)
+    * Time-ruler Grid + PiP - Sky-style horizontal grid:
+                      channels stacked vertically, a 6-slot
+                      time axis across the top (30 min each,
+                      so 3h visible), PiP tile top-right.
+- Vertical "now" indicator draws a 2 px accent line through
+  the grid at the current time.
+- Left/Right pan the time window by one slot; Up/Down move
+  between channels (PiP updates live, debounced).
+- The "I" (Info) key toggles live between list and grid
+  without having to reopen the Guide.
+
+IMPLEMENTATION:
+- New skin: resources/skins/default/1080i/script-poseidonguide-grid.xml
+- New Python class GuideGridWindow in resources/lib/guide_window.py
+- _slot_start() + _find_block() helpers locate the programme
+  that overlaps each visible slot.
+- Toggle mechanic uses Skin/Home window properties so no
+  reload of channels/EPG is needed when switching views.
+
+
+v1.3.0 (2026-04-24) - SKIN STYLES + PICTURE-IN-PICTURE
+=======================================================
+NEW - FULL-SCREEN EPG WINDOW:
+- New Kodi WindowXMLDialog shows a Sky TV / Virgin TV style
+  guide with a channel column on the left, programme grid on
+  the right and a Picture-in-Picture preview in the top-right.
+- Channel navigation (up/down) debounces PiP so the portal is
+  not hammered when scrolling fast.
+- OK on any item plays the channel full-screen.
+
+NEW - SKIN CHOICE (Guide Settings):
+- Skin Style dropdown lets the user pick:
+    * Classic     - original directory view
+    * Sky TV      - deep Sky blue + light-blue highlight bar
+    * Virgin TV   - near-black + Virgin red highlight bar
+- Picture-in-Picture toggle (default on) with a sub-toggle
+  for "Auto-play preview on channel change" (default on).
+- Grid hours slider (1-6) for future grid-view expansion.
+
+IMPLEMENTATION:
+- Single script-poseidonguide-main.xml drives both themes;
+  colours are injected via Skin.String()s at window onInit.
+- resources/lib/guide_window.py contains the GuideSkinWindow
+  class plus theme palettes.
+- default.py:
+    * _resolve_stream_url(bridge, stream_id) - mode-aware
+      live URL resolver used for the PiP player.
+    * _collect_channels_for_window() - gathers channels + EPG
+      with a cancelable progress dialog before showing window.
+    * launch_skin_window() called at main() entry; drops
+      through to the directory view when theme=classic.
+
+
+v1.2.0 (2026-04-24) - STB MAC / Stalker Portal Support
+=======================================================
+NEW:
+- Poseidon Guide now reads the Player's portal_mode setting
+  and transparently fetches channels + EPG from either an
+  Xtreme Codes server or an STB MAC / Stalker portal.
+- PoseidonBridge.get_creds() returns a mode-tagged dict so
+  the rest of the guide doesn't need to branch.
+
+INTERNALS:
+- In-process MAC adapter handles handshake, channel list
+  pagination, genres list and get_short_epg.
+- api_call() translates the three actions the guide uses
+  (get_live_categories / get_live_streams / get_short_epg)
+  to the equivalent Stalker endpoints, returning results in
+  the same shape as the existing Xtream responses.
+- All logic backwards-compatible: existing Xtreme Codes
+  installs continue to work exactly as before.
+
+v1.1.0 - Previous release
+  - UK channels first, then USA, then rest
+  - All categories loaded
+  - Proper EPG
+  - Added List View option with popup choice
