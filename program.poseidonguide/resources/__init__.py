@@ -1,1 +1,0 @@
-# Poseidon Guide resources
