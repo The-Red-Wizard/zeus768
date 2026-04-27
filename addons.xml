@@ -215,12 +215,11 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.9.7" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.9.18" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
         <import addon="script.module.beautifulsoup4" version="4.9.0"/>
-        <import addon="script.module.zeusresolvers" version="1.0.0" optional="true"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -229,6 +228,11 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">Stream All The Sources - 120+ scrapers, Stremio, Trakt, Debrid, Live Movie Channels</summary>
         <description lang="en_GB">SALTS is a multi-source video addon with 120+ scrapers providing maximum coverage for movies and TV shows.
+
+=== DIRECT STREAM SITES (NEW v2.9.14, No-Streamtape) ===
+- Archive.org (public-domain MP4), Cineby, VidFast, RiveStream
+- UiraLive, NetMirror, VidBinge, HollyMovieHD
+  All return direct MP4 / M3U8 via JSON APIs — no embed hosters.
 
 === FREE STREAMS (No Debrid Required) ===
 - VidSrc Network: VidSrc.xyz, VidSrc.cc, VidSrc.in, VidSrc.pm, VidSrc.nl, VidSrc.pro, VidSrc.me, VidSrc.to
@@ -242,8 +246,8 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
 - PlutoTV, Tubi, and more!
 
 === TORRENT SITES ===
-- Primary: 1337x, YTS, EZTV, TorrentGalaxy, ThePirateBay, SolidTorrents
-- Secondary: LimeTorrents, Torrentz2, RARBG, Kickass, MagnetDL, iDope
+- Primary: EZTV, ThePirateBay, SolidTorrents
+- Secondary: LimeTorrents, Torrentz2, RARBG, Kickass, TorrentDownload
 - Additional: BitSearch, TorLock, TorrentFunk, TorrentsCSV, and more!
 
 === ANIME ===
@@ -255,11 +259,11 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
 
 === INTERNATIONAL ===
 - Russian: RuTracker, RuTor, NNM-Club
-- Chinese: DyTT, BTBTT
-- French: Torrent9, YggTorrent
+- Chinese: BTBTT
+- French: Torrent9
 
 === STREMIO DEBRID SCRAPERS ===
-- Torrentio, MediaFusion, Comet, CyberFlix, Annatar, PeerFlix, EasyNews+
+- Torrentio, EasyNews+
 
 === FEATURES ===
 - Live Movie Channels with EPG (35+ channels)
@@ -281,6 +285,63 @@ Thank you to Mister X and Zaxxon709</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.9.13 (2026) - ZEUS RESOLVERS + PLANETSCRAPERS + TORRENTS REVIVED
+- Added: zeus_resolvers - built-in non-debrid hoster regex resolvers
+  (Streamtape, DoodStream/d000d, DDownload/ddl.to, MixDrop, OK.ru,
+   YouTube via Piped, KrakenFiles, plus a generic /embed/ scraper).
+  Wired into the playback path BEFORE and AFTER ResolveURL so free
+  hosts play even when ResolveURL's HEAD-verify pass drops them.
+- Added: PlanetScrapers aggregator - bundles Torrentio (IMDB) plus
+  PirateBay, RARBG, TorrentGalaxy and 1337x text-search under one
+  SALTS scraper entry (salts_lib/planet_scrapers.py).
+- Revived: 1337x, YTS, TorrentGalaxy, Movie4K, PrimeWire scrapers
+  (previously purged in 2.9.10). Re-registered in ALL_SCRAPERS with
+  per-scraper _enabled settings.
+- Fixed: HLS / m3u8 streams now forward Referer / User-Agent pipe
+  headers to inputstream.adaptive via stream_headers and
+  manifest_headers so manifest sub-requests no longer 403.
+- Fixed: Bones custom resolver still runs first for Streamtape /
+  LuluVid / DDownload hosts; zeus_resolvers is the next fallback
+  before ResolveURL, with a last-ditch generic embed-page scrape.
+
+v2.9.11 (2026) - RENAME CHAINS -&gt; BONES 2
+- Renamed: "TheChains Bones Shows" -&gt; "Bones 2 Shows"
+- Renamed: "TheChains Wrestling"   -&gt; "Bones 2 Wrestling"
+  Setting IDs kept (thechains_bones_shows_enabled /
+  thechains_wrestl_enabled) so existing toggles carry over.
+
+v2.9.10 (2026) - DEAD SCRAPER PURGE + ZEUS REMOVED
+- Removed: Zeus Resolvers integration (zeus_hook + optional require)
+  until upstream resolver issues are fixed.
+- Changed: Bones / TheChains / Streamtape / LuluVid / DDownload links
+  now resolve through ResolveURL ONLY. No debrid required for these
+  hosts; the Bones custom resolver still runs first as a shortcut.
+- Removed: 20 dead/blocked scrapers identified from logs
+  (Movie4K, PrimeWire, YTS, TorrentGalaxy, 1337x, PeerFlix,
+  MediaFusion, Comet, CyberFlix, GLODLS, iDope, BTDigg,
+  TorrentProject, AcgTorrent, AniDex, Annatar, EtHD, YggTorrent,
+  DyTT, MagnetDL). Settings entries cleaned up to match.
+
+v2.9.8 (2026) - STABILITY + FREE WRESTLING &amp; BONES SHOWS
+- Fixed: Scrapers no longer hang past the 30s global timeout. The
+  ThreadPoolExecutor now cancels pending futures on timeout so slow
+  providers don't keep logging errors after the run ends.
+- Fixed: TorLock URL-join bug that produced malformed URLs like
+  "https://www.torlock2.comhttp://..." and caused DNS/hang errors.
+  Absolute hrefs are now respected and off-domain links are skipped.
+- Fixed: SubsPlease "'list' object has no attribute 'items'" crash when
+  the API returns an empty list for no-hit searches.
+- Tightened: Default per-request HTTP timeout lowered 30s -> 15s so a
+  single dead host can't eat the whole scrape budget.
+- Added: TheChains Bones Shows scraper — free direct Streamtape streams
+  for the non-shows/classic TV catalog (V, Buck Rogers, Bangkok Hilton,
+  Henry IX, etc). Handles nested MAIN DIR -&gt; SEASON X navigation.
+- Added: TheChains Wrestling scraper — free direct streams for WWE,
+  AEW, NXT, Main Event, Dynamite, WrestleMania, Hall of Fame, etc.
+- Added: Settings toggles under Free Streams:
+    * thechains_bones_shows_enabled (default on)
+    * thechains_wrestl_enabled      (default on)
+
 v2.9.5 (2026) - butterbeansrstop ENHANCEMENTS
 - Added: Settings toggle "butterbeansrstop (srstop.link)" under
   Settings -> Streaming Sites (default on).
@@ -330,7 +391,7 @@ v2.9.0 (2026-02) - MORE STREAMTAPE / LULUVDO SOURCES
     * FMovies24.to         (streamtape / luluvdo embeds)
     * Soaper.live          (TV shows, alt servers)
     * HDToday.cc           (multi-server, streamtape mirror)
-    * Flixtor.video        (streamtape & luluvdo alt-servers)
+    * Flixtor.video        (streamtape &amp; luluvdo alt-servers)
     * MoviesJoy.plus       (per-title streamtape mirrors)
     * French-Stream.lol    (FR; off by default)
 - Added DuckDuckGo HTML fallback search (opt-in, off by default) - last-resort
@@ -342,7 +403,7 @@ v2.9.0 (2026-02) - MORE STREAMTAPE / LULUVDO SOURCES
 - No additional thechains24 endpoints used; Bones still uses only its
   original single feed URL.
 
-v2.8.9 (2026-01-20) - BONES & SCRAPER DISPATCH FIX
+v2.8.9 (2026-01-20) - BONES &amp; SCRAPER DISPATCH FIX
 - Fixed: Bones scraper was skipped when no debrid service was configured (main
   cause of "no sources / everything erroring" reports). Bones now runs in free
   mode alongside VidSrc/2Embed/etc.
@@ -407,7 +468,6 @@ v2.7.0 (2026-01-10)
         </assets>
     </extension>
 </addon>
-
 <addon id="plugin.video.syncher" name="Syncher" version="3.4.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
