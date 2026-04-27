@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.salts" version="2.9.18" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.resolveurl" version="5.1.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.9.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Stream All The Sources - 120+ scrapers, Stremio, Trakt, Debrid, Live Movie Channels</summary>
+        <description lang="en_GB">SALTS is a multi-source video addon with 120+ scrapers providing maximum coverage for movies and TV shows.
+
+=== DIRECT STREAM SITES (NEW v2.9.14, No-Streamtape) ===
+- Archive.org (public-domain MP4), Cineby, VidFast, RiveStream
+- UiraLive, NetMirror, VidBinge, HollyMovieHD
+  All return direct MP4 / M3U8 via JSON APIs — no embed hosters.
+
+=== FREE STREAMS (No Debrid Required) ===
+- VidSrc Network: VidSrc.xyz, VidSrc.cc, VidSrc.in, VidSrc.pm, VidSrc.nl, VidSrc.pro, VidSrc.me, VidSrc.to
+- Embed Services: 2Embed, Embed.su, AutoEmbed, MultiEmbed, VidLink, VidPlay, MoviesAPI, SmashyStream
+- Streaming Sites: FlixHQ, BFlix, HDToday, Soap2Day, LookMovie, FMovies, 123Movies, MoviesJoy, Putlocker
+- And 40+ more free streaming sources!
+
+=== STREMIO FREE ADDONS ===
+- Braflix, StreamingCommunity, TheMovieArchive, PublicDomainMovies
+- KnightCrawler, Jackettio, AIOStreams, Torrentio (Free Mode)
+- PlutoTV, Tubi, and more!
+
+=== TORRENT SITES ===
+- Primary: EZTV, ThePirateBay, SolidTorrents
+- Secondary: LimeTorrents, Torrentz2, RARBG, Kickass, TorrentDownload
+- Additional: BitSearch, TorLock, TorrentFunk, TorrentsCSV, and more!
+
+=== ANIME ===
+- Zoro, 9Anime, GogoAnime, AniWave, HiAnime, AnimePahe
+- Nyaa, SubsPlease, AnimeTosho, and more!
+
+=== ASIAN DRAMA ===
+- WatchAsian, KissAsian, DramaCool, ViewAsian, AsianLoad
+
+=== INTERNATIONAL ===
+- Russian: RuTracker, RuTor, NNM-Club
+- Chinese: BTBTT
+- French: Torrent9
+
+=== STREMIO DEBRID SCRAPERS ===
+- Torrentio, EasyNews+
+
+=== FEATURES ===
+- Live Movie Channels with EPG (35+ channels)
+- Episode Countdown Tracker
+- Network Browser (Netflix, HBO, BBC, etc.)
+- Returning Shows (New Seasons)
+- AI-Powered Natural Language Search
+- Trakt Integration with Scrobbling
+- Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox
+- Jackett/Prowlarr Integration
+- Pre-scrape on Hover
+- Source Caching
+
+Revived and massively expanded by zeus768 for Kodi 21 Omega and above.
+Original author: tknorris
+Thank you to Mister X and Zaxxon709</description>
+        <platform>all</platform>
+        <license>GPL-3.0-only</license>
+        <website>https://github.com/zeus768/plugin.video.salts</website>
+        <source>https://github.com/zeus768/plugin.video.salts</source>
+        <news>
+v2.9.13 (2026) - ZEUS RESOLVERS + PLANETSCRAPERS + TORRENTS REVIVED
+- Added: zeus_resolvers - built-in non-debrid hoster regex resolvers
+  (Streamtape, DoodStream/d000d, DDownload/ddl.to, MixDrop, OK.ru,
+   YouTube via Piped, KrakenFiles, plus a generic /embed/ scraper).
+  Wired into the playback path BEFORE and AFTER ResolveURL so free
+  hosts play even when ResolveURL's HEAD-verify pass drops them.
+- Added: PlanetScrapers aggregator - bundles Torrentio (IMDB) plus
+  PirateBay, RARBG, TorrentGalaxy and 1337x text-search under one
+  SALTS scraper entry (salts_lib/planet_scrapers.py).
+- Revived: 1337x, YTS, TorrentGalaxy, Movie4K, PrimeWire scrapers
+  (previously purged in 2.9.10). Re-registered in ALL_SCRAPERS with
+  per-scraper _enabled settings.
+- Fixed: HLS / m3u8 streams now forward Referer / User-Agent pipe
+  headers to inputstream.adaptive via stream_headers and
+  manifest_headers so manifest sub-requests no longer 403.
+- Fixed: Bones custom resolver still runs first for Streamtape /
+  LuluVid / DDownload hosts; zeus_resolvers is the next fallback
+  before ResolveURL, with a last-ditch generic embed-page scrape.
+
+v2.9.11 (2026) - RENAME CHAINS -&gt; BONES 2
+- Renamed: "TheChains Bones Shows" -&gt; "Bones 2 Shows"
+- Renamed: "TheChains Wrestling"   -&gt; "Bones 2 Wrestling"
+  Setting IDs kept (thechains_bones_shows_enabled /
+  thechains_wrestl_enabled) so existing toggles carry over.
+
+v2.9.10 (2026) - DEAD SCRAPER PURGE + ZEUS REMOVED
+- Removed: Zeus Resolvers integration (zeus_hook + optional require)
+  until upstream resolver issues are fixed.
+- Changed: Bones / TheChains / Streamtape / LuluVid / DDownload links
+  now resolve through ResolveURL ONLY. No debrid required for these
+  hosts; the Bones custom resolver still runs first as a shortcut.
+- Removed: 20 dead/blocked scrapers identified from logs
+  (Movie4K, PrimeWire, YTS, TorrentGalaxy, 1337x, PeerFlix,
+  MediaFusion, Comet, CyberFlix, GLODLS, iDope, BTDigg,
+  TorrentProject, AcgTorrent, AniDex, Annatar, EtHD, YggTorrent,
+  DyTT, MagnetDL). Settings entries cleaned up to match.
+
+v2.9.8 (2026) - STABILITY + FREE WRESTLING &amp; BONES SHOWS
+- Fixed: Scrapers no longer hang past the 30s global timeout. The
+  ThreadPoolExecutor now cancels pending futures on timeout so slow
+  providers don't keep logging errors after the run ends.
+- Fixed: TorLock URL-join bug that produced malformed URLs like
+  "https://www.torlock2.comhttp://..." and caused DNS/hang errors.
+  Absolute hrefs are now respected and off-domain links are skipped.
+- Fixed: SubsPlease "'list' object has no attribute 'items'" crash when
+  the API returns an empty list for no-hit searches.
+- Tightened: Default per-request HTTP timeout lowered 30s -> 15s so a
+  single dead host can't eat the whole scrape budget.
+- Added: TheChains Bones Shows scraper — free direct Streamtape streams
+  for the non-shows/classic TV catalog (V, Buck Rogers, Bangkok Hilton,
+  Henry IX, etc). Handles nested MAIN DIR -&gt; SEASON X navigation.
+- Added: TheChains Wrestling scraper — free direct streams for WWE,
+  AEW, NXT, Main Event, Dynamite, WrestleMania, Hall of Fame, etc.
+- Added: Settings toggles under Free Streams:
+    * thechains_bones_shows_enabled (default on)
+    * thechains_wrestl_enabled      (default on)
+
+v2.9.5 (2026) - butterbeansrstop ENHANCEMENTS
+- Added: Settings toggle "butterbeansrstop (srstop.link)" under
+  Settings -> Streaming Sites (default on).
+- Added: Optional srstop.link username / password fields - when set,
+  the scraper maintains a logged-in cookie jar (persisted to the
+  addon profile) so login-gated embed URLs are revealed.
+- Added: Cloudflare-bypass toggle (default on) - when urllib receives
+  a 403/503 CF challenge, the scraper transparently retries through
+  cloudscraper if the module is available.
+- Added: Direct-URL capture - when the logged-in site exposes an href /
+  data-link on the embed-selector, the scraper returns that URL so
+  ResolveURL can resolve it directly instead of opening the page.
+
+
+v2.9.4 (2026) - NEW SCRAPER: butterbeansrstop (srstop.link)
+- Added: butterbeansrstop scraper targeting srstop.link (TV shows only).
+- Parses the site's embed-selector list on episode pages to extract
+  hoster name (luluvdo, doodstream, etc.) and quality (1080p / 720p /
+  SD) from the vris* class markers.
+- Uses direct slug guessing first, then the site's /index.php?menu=search
+  query as a fallback so it works without a site login for discovery.
+- Registered under the "streaming_sites" category, TV-only.
+
+
+v2.9.1 (2026) - PUNCHPLAY.TV INTEGRATION
+- Added: PunchPlay.tv as a parallel tracker alongside Trakt. Scrobble
+  start/pause/stop + mark-watched now mirror to your PunchPlay account
+  whenever Trakt scrobbling fires (both can be enabled independently).
+- Added: Device-code login flow - open Settings -> PunchPlay, press
+  "Login to PunchPlay", visit the URL shown, enter the code.
+- Added: New top-level "PunchPlay" menu with status/toggle/login/logout.
+- Added: New Settings -> PunchPlay category:
+    * Enable PunchPlay scrobbling
+    * Mark watched on PunchPlay (end of playback)
+    * Mirror Trakt "mark watched" actions to PunchPlay
+    * Backend URL (advanced - defaults to https://punchplay.tv)
+- Note: PunchPlay's non-scrobble API (watchlist, lists, calendar, etc.) is
+  not publicly documented, so SALTS continues to use Trakt for browsing
+  those lists. PunchPlay receives a full watch history from your scrobbles.
+
+v2.9.0 (2026-02) - MORE STREAMTAPE / LULUVDO SOURCES
+- Added 10 NEW site-scrape scrapers that visit independent movie/TV sites and
+  extract any Streamtape / LuluVdo iframe found on the watch page:
+    * Goku.sx, GokuTV.net  (multi-server streaming)
+    * Putlockers.fm        (streamtape mirrors)
+    * MyFlixerz.to         (streamtape / luluvdo servers)
+    * FMovies24.to         (streamtape / luluvdo embeds)
+    * Soaper.live          (TV shows, alt servers)
+    * HDToday.cc           (multi-server, streamtape mirror)
+    * Flixtor.video        (streamtape &amp; luluvdo alt-servers)
+    * MoviesJoy.plus       (per-title streamtape mirrors)
+    * French-Stream.lol    (FR; off by default)
+- Added DuckDuckGo HTML fallback search (opt-in, off by default) - last-resort
+  hunt for Streamtape/LuluVdo embeds when curated sites don't cover the title.
+- Every URL produced flows through the existing bones_resolver, so each
+  Streamtape / LuluVdo embed is auto-converted to a direct mp4 / m3u8 link
+  that plays in Kodi without ResolveURL.
+- New per-source toggles in Settings -> Free Streams.
+- No additional thechains24 endpoints used; Bones still uses only its
+  original single feed URL.
+
+v2.8.9 (2026-01-20) - BONES &amp; SCRAPER DISPATCH FIX
+- Fixed: Bones scraper was skipped when no debrid service was configured (main
+  cause of "no sources / everything erroring" reports). Bones now runs in free
+  mode alongside VidSrc/2Embed/etc.
+- Fixed: Bones title matching was too loose (e.g. common words matched every
+  movie). Now requires exact or full word-set match plus year tolerance.
+- Fixed: Bones year is now extracted from the stream filename so "Saw" (2004)
+  does not collide with "Saw X" (2023), etc.
+- Fixed: Streamtape resolver now handles all current obfuscation patterns and
+  all streamtape mirror domains (streamtape.to/.net/.cc/streamta.pe, etc.).
+- Fixed: `get_sources` dispatcher now recognizes any scraper exposing
+  `is_free = True` and is resilient to scrapers using the legacy
+  `search(query, media_type)` signature.
+- Improved: scraper-side exceptions are now logged at WARNING instead of DEBUG
+  so they show up in kodi.log for easier diagnosis.
+- Added: `bones_enabled` setting so Bones can be toggled from Settings.
+
+v2.8.0 (2026-01-15) - MASSIVE SCRAPER EXPANSION
+- Added: 75+ NEW SCRAPERS bringing total to 120+ sources!
+- Added: VidSrc Network (8 mirrors): xyz, cc, in, pm, nl, pro, me, to
+- Added: 2Embed variants, Embed.su, AutoEmbed, MultiEmbed, VidLink, VidPlay
+- Added: MoviesAPI, SmashyStream, NontonGo, RgShorts/RiveStream
+- Added: Stremio Free Addons: Braflix, StreamingCommunity, TheMovieArchive, PublicDomainMovies
+- Added: KnightCrawler, Jackettio, Orionoid, TPBPlus, AIOStreams, StremThru, MediaFlow
+- Added: Torrentio Free Mode, PlutoTV, Tubi integration
+- Added: 20+ Streaming Sites: FlixHQ, BFlix, HDToday, Soap2Day, LookMovie, FMovies, etc.
+- Added: Additional Torrents: BitSearch, TorLock, TorrentFunk, TorrentsCSV, YggTorrent, Torrent9
+- Added: 12+ Anime Sources: Zoro, 9Anime, GogoAnime, AniWave, HiAnime, AnimePahe, etc.
+- Added: Asian Drama: WatchAsian, KissAsian, DramaCool, ViewAsian, AsianLoad
+- Improved: Settings organized by category for easier management
+- Improved: Source discovery with parallel scraping support
+
+v2.7.2 (2026-01-12)
+- Added: Movie Schedules - View what's playing on all movie channels for the next 12 hours
+- Added: Force Refresh EPG button in Movie Channels menu
+- Added: Returning Shows - Browse TV shows with new seasons starting in next 30 days
+- Added: Network Browser - Browse TV shows by network (Netflix, HBO, BBC, Amazon, Disney+, Apple TV+, and 20+ more)
+- Added: Episode Countdown - Track your favorite shows and see days until next episode
+- Added: Context menu "Track Episode Countdown" on all TV shows
+- Added: TODAY/TOMORROW/X days countdown indicators
+- Improved: EPG now shows unique movies per channel based on genre
+
+v2.7.1 (2026-01-12)
+- Fixed: EPG now shows unique movies for each channel (no more duplicate listings)
+- Fixed: Each movie channel pulls from TMDB based on genre (Action, Comedy, Thriller, etc.)
+- Added: Channel logos/icons for all 35+ movie channels
+- Added: New Preferences settings category
+- Added: "Show International Premieres" setting - toggle Japanese, Chinese, Korean shows
+- Changed: Latest Show Premieres now defaults to English/American shows only
+- Added: Country indicators on international show premieres when enabled
+
+v2.7.0 (2026-01-10)
+- Added: Live Movie Channels with EPG support (35+ channels worldwide)
+- Added: EPG integration showing current and next programs
+- Added: Watch Live or Start from Beginning choice for channels
+- Added: New Episodes Today calendar (scroll back up to 7 days)
+- Added: Latest Show Premieres with infinite pagination (50 items/page, last 7 days)
+- Added: Smart movie stream finding when clicking on live channels
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
