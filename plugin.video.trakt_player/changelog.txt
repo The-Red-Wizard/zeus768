@@ -1,0 +1,304 @@
+v2.4.9 (2026-01-XX) - PLAY NEXT UNWATCHED + CURATED LISTS
+==================================================================
+[NEW] Play Next Unwatched Episode
+  - Long-press / "C" on any TV show in any list now shows
+    "Play Next Unwatched Episode" in the context menu.
+  - Calls Trakt /shows/{id}/progress/watched to find the right
+    S/E for YOUR account (not just S01E01) and plays it through
+    the existing debrid click-and-play pipeline.
+  - If you've never started the show -> falls back to S01E01.
+  - If you're fully caught up -> shows a friendly notification
+    instead of replaying the last episode.
+
+[NEW] Curated Lists menu - IMDb / Letterboxd / Rotten Tomatoes
+  - New entry under My Trakt -> "Curated Lists":
+        IMDb Top 250 Movies
+        IMDb Top 250 TV Shows
+        Letterboxd Top 250
+        Rotten Tomatoes Best Movies
+        Rotten Tomatoes Certified Fresh TV
+  - Each preset is dynamically resolved to the most popular
+    matching public Trakt list via /search/list, so it stays
+    fresh even if a curator deletes their list.
+  - Hardcoded fallback slugs kick in if search returns nothing.
+  - Result is cached for 7 days in
+    addon_data/curated_cache.json (refresh manually with
+    "Refresh Curated Lists Cache" entry).
+  - Lists open through the same auto-paginated renderer as your
+    own custom lists, so they go full A-Z with no 50-item clip.
+
+
+
+v2.4.8 (2026-01-XX) - REMOVE FROM LISTS + CUSTOM LIST PAGINATION
+==================================================================
+[BUG] Custom Trakt lists clipped at 50 items / "only A-R"
+  - Root cause: get_list_items() had a hardcoded ?limit=50 in the
+    Trakt API URL. Lists with >50 entries got chopped off, and Kodi's
+    alphabetical sort made it look like the directory ended around R.
+  - Fix: get_list_items() now auto-paginates the same way the Trakt
+    Watchlist/Collection do - up to 20 pages of 100 items each
+    (~2000 max). A small progress dialog shows while pages load.
+
+[BUG] Could not remove items from a Trakt list
+  - The context menu only had Add to Watchlist / Add to Custom List
+    / Rate. There was no way to remove anything from inside Kodi.
+  - Fix: context menu is now context-aware. Depending on which
+    Trakt list you opened the item from, you'll see one of:
+        Remove from Watchlist
+        Remove from Collection
+        Remove from History
+        Remove from this List   (custom lists)
+    Each calls the matching Trakt /remove endpoint, asks for
+    confirmation, and refreshes the directory on success.
+
+[NEW] Plugin actions
+  - remove_watchlist, remove_collection, remove_history,
+    remove_from_list (with user + list_slug params).
+
+
+
+v2.4.6 (2026-04-24) - QUALITY BADGES ON LIST ITEMS
+===================================================
+NEW - "AT-A-GLANCE" QUALITY BADGES:
+- Every time you play a title the scraper's best quality
+  is remembered.  Next time that title appears in ANY list
+  (watchlist, trending, popular, related, search etc.) the
+  label is prefixed with a colour-coded tag:
+    [COLOR gold][4K][/COLOR]  - 2160p source exists
+    [COLOR lime][1080p][/COLOR]
+    [COLOR cyan][720p][/COLOR]
+    [COLOR grey][SD][/COLOR]  - 480p
+- Zero extra network cost at render time (cache on disk).
+- Cache entries expire after 14 days so re-releases get
+  re-probed automatically.
+- LRU-capped at 2000 entries.
+
+NEW - SETTINGS:
+- "Show [4K]/[1080p] Badges on List Items" toggle
+  (default: on).
+
+NEW - TOOLS ENTRY:
+- "Clear Quality Badge Cache" on the main menu wipes the
+  cache and reports how many entries were removed.
+
+IMPLEMENTATION:
+- New file: resources/lib/quality_cache.py
+- player.play()        - records max quality after scrape
+- player.play_episode()- records max quality after scrape
+- trakt_api.get_list() - prepends badge to every label
+- trakt_api._display_items() - same for the shared renderer
+
+
+v2.4.5 (2026-04-24) - QUALITY + ALPHABET FIXES (round 2)
+=========================================================
+[BUG #2 round 2] Lists still truncated around "R"
+  - Root cause of the remainder: ITEMS_PER_PAGE was 30.
+    For non-sync paths (trending / popular / anticipated)
+    my 2.4.4 auto-paginate didn't fire, so Kodi sorted the
+    30-item directory alphabetically and the user saw
+    "A through R".
+  - Fix: bumped ITEMS_PER_PAGE from 30 -> 100 (the Trakt
+    API maximum). A single page now covers A-Z comfortably
+    for any public list.
+
+[BUG #3 round 2] Still auto-plays 1080p when 4K is selected
+  - Root cause of the remainder: the sort key was
+    (is_cached, q_distance, -seeds). Cached-first always
+    beat quality, so a cached 1080p won even when the user
+    asked for 4K.
+  - Fix: sort key reordered to (q_distance, is_cached,
+    -seeds). Preferred-quality results are picked first,
+    with cached ranking inside each quality bucket.
+  - Extra: upscale fallback (higher than preferred) is
+    penalised lightly; downgrade (lower than preferred)
+    is penalised heavily. So if you pick 4K and no 4K
+    exists, the addon falls back to 1080p rather than
+    jumping to 480p.
+
+
+v2.4.4 (2026-04-24) - EIGHT BUG FIXES
+=====================================
+[BUG 1] Can't add TV/Movies to Trakt lists
+  - Root cause: add_to_list / add_to_watchlist existed but had
+    no UI entry point (no context menu on any list item)
+  - Fix: context menu now attached to every list item in
+    get_list() + _display_items() with "Add to Watchlist",
+    "Add to Custom List", and "Rate on Trakt" options
+  - rate_item() now accepts either trakt_id or imdb_id so the
+    context-menu invocation (which only has imdb_id) works
+
+[BUG 2] Trakt list only shows TV shows up to "R"
+  - Root cause: sync/watchlist endpoint returned one page of
+    30 items, stopping mid-alphabet
+  - Fix: new _auto_paginate() helper loads up to 20 pages
+    (up to 2000 items) for any sync/, users/ or lists/ path
+  - Per-request limit bumped from 30 to 100 for these endpoints
+
+[BUG 3] Scraping always plays in 1080p even with 4K selected
+  - Root cause: QUALITY_MAP had only 3 entries
+    ('0'->1080p, '1'->720p, '2'->480p) but settings.xml exposes
+    4 options (4K/1080p/720p/480p, indexed 0..3), so picking
+    4K silently collapsed to 1080p
+  - Fix: QUALITY_MAP = {'0': '2160p', '1': '1080p',
+    '2': '720p', '3': '480p'}. Sort key now favours the user's
+    preferred quality first (cached results first, then
+    distance from the preferred quality, then seeds)
+
+[BUG 4] Auto-play still fires when turned off
+  - Root cause: play() / play_episode() picked the top source
+    unconditionally; auto_play setting was never read
+  - Fix: if auto_play is disabled, a source-picker dialog is
+    now shown listing up to 40 sources with quality label,
+    seeds, cached tag, and source name
+
+[BUG 5] Box Office shows only 10 movies, no next-page icon
+  - Root cause: Trakt's /movies/boxoffice endpoint is capped
+    at 10 weekly entries and does not paginate
+  - Fix: Box Office now routes through TMDB /movie/now_playing
+    via new tmdb_list action - returns 20 movies per page with
+    infinite pagination (500+ pages available)
+
+[BUG 6] Movie genres all show the same content
+  - Root cause: get_genres() built URL as "trakt_list?path=
+    movies/popular&genre=<id>" but the trakt_list action never
+    read the genre parameter, so every genre hit the same
+    popular list
+  - Fix: genres now route through new tmdb_discover action
+    that uses TMDB /discover/{movie|tv}?with_genres=<id>,
+    actually filtering by genre, with infinite pagination
+
+[BUG 7] API error 405 on every TV show genre
+  - Root cause: endpoint was built as "tvs/popular" (tv + 's')
+    which Trakt does not accept (correct path is "shows/popular")
+  - Fix: same as bug #6 - genres now use TMDB /discover/tv
+
+[BUG 8] Discovery feed not working at all
+  - Root cause: feed.py called tmdb.get_trending_movies,
+    get_trending_shows, get_now_playing, get_upcoming_movies,
+    get_trailer - NONE of which were defined in tmdb.py
+  - Fix: added all five functions. get_trailer() scores
+    YouTube videos by Trailer > Teaser and official flag.
+    Tested live: all five return real results (20+ movies
+    per page, Interstellar trailer key = LY19rHKAaAg)
+
+OTHER:
+  - New context-menu helper _build_context_menu() shared by
+    get_list() and _display_items()
+  - New _display_list_items() extracted from get_list for
+    reuse by auto-paginated path
+
+
+Trakt Player Changelog
+======================
+
+Version 2.4.3 (April 2026 - Poster Fix for Mixed Lists)
+- FIXED: Wrong posters in Trakt lists (watchlists, popular lists, custom
+  lists, continue watching, history, friend activity)
+  * Root cause: list items' media type was hard-coded to 'movie', so TV
+    shows were being looked up against TMDB's movie endpoint. Because
+    TMDB uses separate ID namespaces for movies and TV, this returned
+    unrelated posters (e.g. "The Pinch Singer" for "Fire Country").
+  * Each item's real type is now detected from Trakt's 'type' field.
+  * Episode entries (in history/playback) now correctly use the show
+    poster instead of looking up the episode ID as a movie.
+  * Posters now batch-fetched from the correct TMDB endpoint
+    (/3/movie/{id} or /3/tv/{id}).
+  * Image batch cap raised from 30 -> 100 so longer lists are fully
+    covered.
+
+Version 2.4.2 (April 2026 - 1337x Scraper + Cloud Browser)
+- NEW: 1337x Scraper
+  * Reliable torrent source with good seeds
+  * Multiple mirror support for redundancy (1337x.to, 1337x.st, x1337x.ws)
+  * Automatic fallback between mirrors
+  * Extracts seeds, quality, and file info
+- NEW: Debrid Cloud Browser
+  * Browse and play files directly from your debrid cloud storage
+  * Real-Debrid: View torrents, torrent files, download history
+  * Premiumize: Browse cloud files/folders, view active transfers
+  * Torbox: View torrents and their files
+  * AllDebrid: Browse magnets and their files
+  * Delete items from cloud via context menu (right-click)
+  * Direct playback without re-searching - instant streaming!
+- Added 1337x toggle in Scraper settings (enabled by default)
+
+Version 2.4.1 (April 2026 - Critical Playback Fix)
+- FIXED: Critical bug - added missing extract_hash() function in scrapers.py
+- Links now resolve and play correctly via debrid services
+- Hash extraction supports both hex (40-char) and base32 (32-char) magnet formats
+- This fixes the "AttributeError: module 'resources.lib.scrapers' has no attribute 'extract_hash'" error
+
+Version 2.4.0 (April 2026 - Notifications + Pre-Cache)
+- NEW: Episode Notifications
+  * Get alerts when new episodes air for shows in your Trakt calendar/watchlist
+  * Choose between individual or summary notification style
+  * Automatically checks hourly for new episodes
+- NEW: Pre-Cache Next Episode
+  * Automatically adds next episode to debrid cache at 75% playback
+  * Works with all debrid services (RD, AD, PM, Torbox, LinkSnappy)
+  * Optional notification when caching starts
+- Added background service for notifications and pre-cache monitoring
+- New settings categories for Notifications and Pre-Cache options
+
+Version 2.3.1 (April 2026 - Premiumize & Torbox Auth Fixes)
+- FIXED: Premiumize authorization - ported working OAuth flow from v2.1.8
+  * Uses working public client credentials
+  * Correct device code polling with countdown timer
+  * Better error handling for access_denied and authorization_pending
+- FIXED: Torbox authorization - ported working device code auth from v2.1.8
+  * Uses POST method for token polling (not GET)
+  * Proper user_code field handling
+  * Better progress dialog with countdown
+  * Improved error detection and handling
+
+Version 2.3.0 (April 2026 - Debrid Auth Fixes + TorBox + LinkSnappy)
+- FIXED: Real-Debrid false "expired" errors (token refresh now falls back to testing current token)
+- ADDED: TorBox debrid service with device code authorization
+  * Torrent cache checking, magnet resolving, web download links
+  * Account info with premium status and expiry
+- ADDED: LinkSnappy debrid service with username/password login
+  * Premium link generation for 30+ file hosts
+  * Account info with expiry and package type
+- ADDED: Real account info for all 5 debrid services (username, email, expiry date, days left)
+- ADDED: Real-Debrid shows fidelity points
+- ADDED: Color-coded expiry warnings on Account Status page (green/yellow/red)
+- IMPROVED: Account Status page fetches live data from RD/PM/AD/TB/LS APIs
+- Updated settings with TorBox and LinkSnappy categories
+
+Version 2.2.0 (April 2026 - Feature Merge + Premiumize Fix)
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- ADDED: AI Vibes - mood-based discovery with 12 presets + custom vibe input
+- ADDED: Discovery Feed - trending trailers, new releases, upcoming, shuffle, marathon mode
+- ADDED: Continue Watching from Trakt playback progress
+- ADDED: Recommended For You (personalized Trakt recommendations)
+- ADDED: Anticipated movies/shows
+- ADDED: My Calendar (upcoming episodes from your shows)
+- ADDED: My Custom Lists (create, browse, manage Trakt lists)
+- ADDED: Popular Community Lists browser
+- ADDED: Friends activity feed
+- ADDED: User Stats dashboard (watched/collected/ratings breakdown)
+- ADDED: Account Status (debrid expiry, premium status, Trakt auth check)
+- ADDED: Buy Me a Beer (Ko-fi QR code donation)
+- ADDED: Rate on Trakt from any item
+- ADDED: Add to Watchlist from any item
+- ADDED: Add to Custom List from any item
+
+Version 2.1.6 (April 2026 - Speed Optimizations)
+- FASTER: Trakt lists now load 3-5x faster with parallel TMDB image fetching
+- FASTER: Reduced items per page to 30 for quicker loading
+- FASTER: Added image caching to avoid re-fetching
+- FASTER: Reduced API timeouts for snappier response
+
+Version 2.1.5 (April 2026 - Major Fixes)
+- FIXED: Trakt and Debrid authorization now persists properly
+- FIXED: Uses file-based token storage (trakt_token.json, rd_token.json)
+- FIXED: Auto-play with proper quality fallback (1080p to 720p to 480p)
+- FIXED: Cached torrent detection and priority playback
+- ADDED: Unlimited scroll/pagination in all lists
+- ADDED: Addon icon and fanart in all subfolders
+
+Version 1.0.8 (March 2026 - Initial Release)
+- Trakt and Debrid authorization using native urllib
+- Click-and-Play via debrid services
+- Basic Trakt list browsing

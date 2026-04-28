@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.9" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.zeusresolvers" version="1.0.0" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Superpowered Trakt Player - Click and Play with Debrid, AI Vibes, Discovery Feed</summary>
+        <description lang="en">Trakt Player v2.3.0 - Click-and-Play via 5 Debrid services (Real-Debrid, AllDebrid, Premiumize, TorBox, LinkSnappy). Real account info with expiry tracking. AI Vibes, Discovery Feed, Trakt Scrobbling, Recommendations, Calendar, Friends, Stats, Custom Lists. Created by zeus768.
+
+Features:
+- Click-and-Play: Auto 1080p via debrid with cache-first priority
+- AI Vibes: Mood-based movie marathons powered by AI
+- Discovery Feed: Trending/upcoming trailers with marathon mode
+- Trakt Superpowers: Recommendations, Calendar, Continue Watching, Friends, Stats
+- Debrid: Real-Debrid, AllDebrid, Premiumize with file-based token storage
+- Scrobble: Automatic Trakt scrobbling during playback
+- Up Next: Auto-play next episode
+- Custom Lists: Create, browse, and manage Trakt lists
+
+Created by zeus768.
+
+CHANGELOG:
+
+v2.2.0 - Feature Merge + Premiumize Fix
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- ADDED: AI Vibes - mood-based discovery with 12 presets + custom
+- ADDED: Discovery Feed - trending trailers, new releases, upcoming, shuffle, marathon
+- ADDED: Continue Watching from Trakt playback progress
+- ADDED: Recommended For You (personalized Trakt recommendations)
+- ADDED: Anticipated movies/shows
+- ADDED: My Calendar (upcoming episodes)
+- ADDED: My Custom Lists (create, browse, manage)
+- ADDED: Popular Community Lists
+- ADDED: Friends activity feed
+- ADDED: User Stats dashboard
+- ADDED: Account Status (debrid expiry, premium status)
+- ADDED: Buy Me a Beer (Ko-fi QR code)
+- ADDED: Rate on Trakt, Add to Watchlist, Add to List
+
+v2.1.6 - Speed Optimizations
+- FASTER: Trakt lists now load 3-5x faster with parallel TMDB image fetching
+- FASTER: Reduced items per page to 30 for quicker loading
+- FASTER: Added image caching to avoid re-fetching
+- FASTER: Reduced API timeouts for snappier response
+
+v2.1.5 - Major Fixes
+- FIXED: Trakt and Debrid authorization now persists properly
+- FIXED: Uses file-based token storage (trakt_token.json, rd_token.json)
+- FIXED: Auto-play with proper quality fallback (1080p to 720p to 480p)
+- FIXED: Cached torrent detection and priority playback
+- ADDED: Unlimited scroll/pagination in all lists
+- ADDED: Addon icon and fanart in all subfolders
+
+v1.0.8 - Initial Release
+- Trakt and Debrid authorization using native urllib</description>
+        <disclaimer lang="en">This addon does not host any content.</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-only</license>
+        <news>
+v2.4.3 (2026)
+- FIXED: Wrong posters in mixed Trakt lists (watchlists, popular lists,
+  custom lists, history, friend activity, continue watching).
+  * Each item's actual type (movie/show/episode) is now detected from
+    Trakt's own 'type' field instead of a hard-coded default.
+  * Posters now fetched from the correct TMDB namespace (movie vs tv),
+    fixing random/unrelated artwork being shown for TV shows.
+  * Episode entries (history, playback progress) now correctly use the
+    parent show's poster.
+  * Image batch limit increased from 30 to 100 so long lists also get
+    posters for every item.
+
+v2.4.2 (2026)
+- NEW: 1337x Scraper - reliable torrent source with multiple mirrors
+- NEW: Debrid Cloud Browser - browse and play files from your debrid cloud
+  * Real-Debrid: View torrents, files, download history
+  * Premiumize: Browse cloud files and folders, view transfers
+  * Torbox: View torrents and files
+  * AllDebrid: Browse magnets and files
+- Delete items from cloud via context menu
+- Direct playback from cloud without re-searching
+
+v2.4.1 (2026)
+- FIXED: Critical playback bug - added missing extract_hash() function
+- Links now resolve and play correctly via debrid services
+- Hash extraction supports both hex (40-char) and base32 (32-char) formats
+
+v2.4.0 (2026)
+- NEW: Episode Notifications - Get alerts when new episodes drop for your watchlist shows
+- NEW: Pre-Cache Next Episode - Auto-adds next episode to debrid while watching
+- Background service for notifications and pre-cache monitoring
+- New settings categories for notifications and pre-cache options
+
+v2.3.1 (2026)
+- FIXED: Premiumize authorization (ported working OAuth flow from v2.1.8)
+- FIXED: Torbox authorization (ported working device code auth from v2.1.8)
+
+v2.3.0 (2026)
+- FIXED: Real-Debrid false "expired" errors (token refresh fallback)
+- ADDED: TorBox debrid (device code auth, cache check, magnet resolve)
+- ADDED: LinkSnappy debrid (login auth, 30+ file host link generation)
+- ADDED: Real account info for all 5 debrid services (RD/AD/PM/TB/LS)
+- Color-coded expiry warnings on Account Status page
+
+v2.2.0 (2026)
+- FIXED: Premiumize device code auth (was hitting /api/token instead of /token)
+- MERGED: All custom features into zeus768's v2.1.6 fixed build
+- ADDED: AI Vibes, Discovery Feed, Continue Watching, Recommendations
+- ADDED: Calendar, Custom Lists, Popular Lists, Friends, Stats
+- ADDED: Account Status, Buy Me a Beer, Rate, Watchlist, Add to List
+
+v2.1.6 (2026)
+- FASTER: Trakt lists 3-5x faster with parallel TMDB image fetching
+- FASTER: Image caching, reduced API timeouts
+
+v2.1.5 (2026)
+- FIXED: Trakt/Debrid auth persistence (file-based token storage)
+- ADDED: Unlimited pagination, quality fallback playback
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
