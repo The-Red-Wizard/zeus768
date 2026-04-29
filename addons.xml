@@ -519,7 +519,7 @@ v2.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.1" provider-name="Zeus768">
+<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.3" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.1"/>
@@ -532,7 +532,7 @@ v2.0.0 (2026)
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">The Golden Eagle of Entertainment</summary>
-        <description lang="en">Tinklepad v1.9.0 - Extended Scrapers Edition
+        <description lang="en">Tinklepad v1.9.2 - Premiumize Pairing &amp; New Categories
 
 CUSTOM XML WINDOWS:
 - Beautiful golden-themed search progress window
@@ -560,7 +560,20 @@ DEBRID SUPPORT:
 By Zeus768</description>
         <platform>all</platform>
         <license>GPL-3.0</license>
-        <news>v1.9.0 - Extended Scrapers Edition:
+        <news>v1.9.3 - Movie Networks &amp; Per-Network Icons:
+- NEW: Networks menu added to Movies (uses TMDB watch-providers, defaults to US region)
+- NEW: TV Networks now show per-network placeholder icons (Netflix, Prime, Disney+, HBO, etc.)
+- NEW: 'watch_region' setting honored for movie streaming filters
+
+v1.9.2 - Premiumize Pairing &amp; New Categories:
+- FIX: Premiumize "Get Code" device pairing flow restored (no more manual API key required)
+- NEW: Choice on PM auth between device pairing (recommended) and manual API key
+- NEW: 5 new Movies categories - In Theatres, Upcoming, Top Rated, Documentaries, Anime
+- NEW: 5 new TV Shows categories - Airing Today, On The Air, Top Rated, Documentaries, Anime
+- NEW: Matching golden-eagle themed icons for all new categories
+- TMDB list_content now supports now_playing/upcoming/top_rated/airing_today/on_the_air endpoints
+
+v1.9.0 - Extended Scrapers Edition:
 - NEW: EZTV.re for TV shows
 - NEW: RARBG mirrors/clones support
 - NEW: Nyaa.si for anime
@@ -596,7 +609,6 @@ v1.8.1: Stability fixes</news>
     </extension>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
-
 <addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.9" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
