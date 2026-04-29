@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Orion v3.5.0 - Netflix-style Season Selector Dialog -->
+<!-- Shows show info with horizontal scrolling season cards -->
+<!-- Color Theme: Deep dark (#0D0D15), Cyan accent (#00D4FF) -->
+<window type="dialog">
+    <defaultcontrol always="true">500</defaultcontrol>
+    <zorder>2</zorder>
+    <coordinates>
+        <system>1</system>
+        <left>0</left>
+        <top>0</top>
+    </coordinates>
+    
+    <controls>
+        <!-- Main background -->
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="FF0A0A12">white.png</texture>
+        </control>
+        
+        <!-- Show backdrop image -->
+        <control type="image" id="9000">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>600</height>
+            <aspectratio>scale</aspectratio>
+            <texture fallback="fanart.jpg">$INFO[Window.Property(show_backdrop)]</texture>
+            <colordiffuse>50FFFFFF</colordiffuse>
+        </control>
+        
+        <!-- Backdrop gradient overlay (left) -->
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>700</width>
+            <height>600</height>
+            <texture colordiffuse="FF0A0A12">white.png</texture>
+            <colordiffuse>E00A0A12</colordiffuse>
+        </control>
+        
+        <!-- Backdrop gradient overlay (bottom) -->
+        <control type="image">
+            <left>0</left>
+            <top>400</top>
+            <width>1920</width>
+            <height>250</height>
+            <texture colordiffuse="FF0A0A12">white.png</texture>
+        </control>
+        
+        <!-- Cyan accent line at top -->
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>3</height>
+            <texture colordiffuse="FF00D4FF">white.png</texture>
+        </control>
+        
+        <!-- Back button -->
+        <control type="button" id="50">
+            <left>40</left>
+            <top>25</top>
+            <width>50</width>
+            <height>40</height>
+            <label>BACK</label>
+            <font>font16</font>
+            <textcolor>FF808080</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="60FFFFFF">white.png</texturefocus>
+            <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
+            <align>center</align>
+            <aligny>center</aligny>
+            <ondown>500</ondown>
+            <onright>500</onright>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- SHOW INFO PANEL (Left)  -->
+        <!-- ======================= -->
+        <control type="group" id="100">
+            <left>60</left>
+            <top>100</top>
+            <width>600</width>
+            <height>450</height>
+            
+            <!-- Show Title -->
+            <control type="label" id="101">
+                <left>0</left>
+                <top>0</top>
+                <width>600</width>
+                <height>70</height>
+                <label>$INFO[Window.Property(show_title)]</label>
+                <font>font35_title</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <shadowcolor>FF000000</shadowcolor>
+            </control>
+            
+            <!-- Year • Rating • Seasons • Genre -->
+            <control type="label" id="102">
+                <left>0</left>
+                <top>80</top>
+                <width>600</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(show_meta)]</label>
+                <font>font13</font>
+                <textcolor>FF00D4FF</textcolor>
+            </control>
+            
+            <!-- Show Plot/Overview -->
+            <control type="textbox" id="103">
+                <left>0</left>
+                <top>130</top>
+                <width>580</width>
+                <height>180</height>
+                <label>$INFO[Window.Property(show_plot)]</label>
+                <font>font12</font>
+                <textcolor>FFCCCCCC</textcolor>
+            </control>
+            
+            <!-- Total Episodes indicator -->
+            <control type="label" id="104">
+                <left>0</left>
+                <top>330</top>
+                <width>300</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(total_episodes)] Episodes</label>
+                <font>font12</font>
+                <textcolor>FF909090</textcolor>
+            </control>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- SEASON SECTION HEADER   -->
+        <!-- ======================= -->
+        <control type="label" id="200">
+            <left>60</left>
+            <top>560</top>
+            <width>400</width>
+            <height>40</height>
+            <label>Select Season</label>
+            <font>font_MainMenu</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+        
+        <!-- Season count indicator -->
+        <control type="label" id="201">
+            <left>1700</left>
+            <top>570</top>
+            <width>180</width>
+            <height>30</height>
+            <label>$INFO[Window.Property(season_count)] Seasons</label>
+            <font>font12</font>
+            <textcolor>FF808080</textcolor>
+            <align>right</align>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- SEASON CARDS CAROUSEL   -->
+        <!-- Horizontal scrolling    -->
+        <!-- ======================= -->
+        <control type="list" id="500">
+            <left>60</left>
+            <top>620</top>
+            <width>1800</width>
+            <height>400</height>
+            <orientation>horizontal</orientation>
+            <onup>50</onup>
+            <ondown>500</ondown>
+            <onleft>500</onleft>
+            <onright>500</onright>
+            <scrolltime>200</scrolltime>
+            <!-- Season card: 200x300 poster + info -->
+            <itemlayout width="230" height="380">
+                <!-- Card background -->
+                <control type="image">
+                    <left>10</left>
+                    <top>10</top>
+                    <width>210</width>
+                    <height>360</height>
+                    <texture colordiffuse="20FFFFFF">white.png</texture>
+                </control>
+                <!-- Season Poster - 200x280 -->
+                <control type="image">
+                    <left>15</left>
+                    <top>15</top>
+                    <width>200</width>
+                    <height>280</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
+                </control>
+                <!-- Season name label -->
+                <control type="label">
+                    <left>15</left>
+                    <top>300</top>
+                    <width>200</width>
+                    <height>30</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font12</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <align>center</align>
+                </control>
+                <!-- Episode count -->
+                <control type="label">
+                    <left>15</left>
+                    <top>330</top>
+                    <width>200</width>
+                    <height>25</height>
+                    <label>$INFO[ListItem.Property(episode_count)] Episodes</label>
+                    <font>font10</font>
+                    <textcolor>FF808080</textcolor>
+                    <align>center</align>
+                </control>
+            </itemlayout>
+            <focusedlayout width="230" height="380">
+                <!-- Focus glow - Cyan -->
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>230</width>
+                    <height>380</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                </control>
+                <!-- Inner card -->
+                <control type="image">
+                    <left>8</left>
+                    <top>8</top>
+                    <width>214</width>
+                    <height>364</height>
+                    <texture colordiffuse="FF141420">white.png</texture>
+                </control>
+                <!-- Season Poster -->
+                <control type="image">
+                    <left>15</left>
+                    <top>15</top>
+                    <width>200</width>
+                    <height>280</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture fallback="icon.png">$INFO[ListItem.Art(poster)]</texture>
+                </control>
+                <!-- Play overlay icon -->
+                <control type="image">
+                    <left>85</left>
+                    <top>120</top>
+                    <width>60</width>
+                    <height>60</height>
+                    <texture colordiffuse="E0FFFFFF">white.png</texture>
+                </control>
+                <control type="label">
+                    <left>85</left>
+                    <top>120</top>
+                    <width>60</width>
+                    <height>60</height>
+                    <label>PLAY</label>
+                    <font>font16</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+                <!-- Season name label - highlighted -->
+                <control type="label">
+                    <left>15</left>
+                    <top>300</top>
+                    <width>200</width>
+                    <height>30</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font13</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                </control>
+                <!-- Episode count - highlighted -->
+                <control type="label">
+                    <left>15</left>
+                    <top>330</top>
+                    <width>200</width>
+                    <height>25</height>
+                    <label>$INFO[ListItem.Property(episode_count)] Episodes</label>
+                    <font>font10</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>center</align>
+                </control>
+            </focusedlayout>
+        </control>
+        
+        <!-- Time display -->
+        <control type="label">
+            <left>1750</left>
+            <top>30</top>
+            <width>150</width>
+            <height>30</height>
+            <label>$INFO[System.Time]</label>
+            <font>font12</font>
+            <textcolor>FF808080</textcolor>
+            <align>right</align>
+        </control>
+        
+        <!-- Instructions hint -->
+        <control type="label">
+            <left>60</left>
+            <top>1030</top>
+            <width>600</width>
+            <height>30</height>
+            <label>Select a season to view episodes</label>
+            <font>font11</font>
+            <textcolor>FF606060</textcolor>
+        </control>
+    </controls>
+</window>

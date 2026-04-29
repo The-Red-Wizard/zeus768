@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Orion v3.5.0 - Netflix-style Episode Grid Dialog -->
+<!-- BIG episode thumbnails: 364x205px in Netflix style -->
+<!-- Color Theme: Deep dark (#0D0D15), Cyan accent (#00D4FF) -->
+<window type="dialog">
+    <defaultcontrol always="true">500</defaultcontrol>
+    <zorder>2</zorder>
+    <coordinates>
+        <system>1</system>
+        <left>0</left>
+        <top>0</top>
+    </coordinates>
+    
+    <controls>
+        <!-- Main background -->
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture colordiffuse="FF0A0A12">white.png</texture>
+        </control>
+        
+        <!-- Show backdrop (faded) -->
+        <control type="image" id="9000">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>300</height>
+            <aspectratio>scale</aspectratio>
+            <texture fallback="fanart.jpg">$INFO[Window.Property(show_backdrop)]</texture>
+            <colordiffuse>40FFFFFF</colordiffuse>
+        </control>
+        
+        <!-- Backdrop gradient overlay -->
+        <control type="image">
+            <left>0</left>
+            <top>150</top>
+            <width>1920</width>
+            <height>200</height>
+            <texture colordiffuse="FF0A0A12">white.png</texture>
+        </control>
+        
+        <!-- Cyan accent line at top -->
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>3</height>
+            <texture colordiffuse="FF00D4FF">white.png</texture>
+        </control>
+        
+        <!-- Back button -->
+        <control type="button" id="50">
+            <left>40</left>
+            <top>25</top>
+            <width>50</width>
+            <height>40</height>
+            <label>BACK</label>
+            <font>font16</font>
+            <textcolor>FF808080</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <texturefocus colordiffuse="60FFFFFF">white.png</texturefocus>
+            <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
+            <align>center</align>
+            <aligny>center</aligny>
+            <ondown>500</ondown>
+            <onright>500</onright>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- HEADER INFO SECTION     -->
+        <!-- ======================= -->
+        <control type="group" id="100">
+            <left>110</left>
+            <top>25</top>
+            <width>1600</width>
+            <height>80</height>
+            
+            <!-- Show Title -->
+            <control type="label" id="101">
+                <left>0</left>
+                <top>0</top>
+                <width>800</width>
+                <height>40</height>
+                <label>$INFO[Window.Property(show_title)]</label>
+                <font>font_MainMenu</font>
+                <textcolor>FFFFFFFF</textcolor>
+            </control>
+            
+            <!-- Season indicator -->
+            <control type="label" id="102">
+                <left>0</left>
+                <top>45</top>
+                <width>400</width>
+                <height>30</height>
+                <label>Season $INFO[Window.Property(season_number)]</label>
+                <font>font13</font>
+                <textcolor>FF00D4FF</textcolor>
+            </control>
+            
+            <!-- Episode count -->
+            <control type="label" id="103">
+                <left>1400</left>
+                <top>45</top>
+                <width>200</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(episode_count)] Episodes</label>
+                <font>font12</font>
+                <textcolor>FF808080</textcolor>
+                <align>right</align>
+            </control>
+        </control>
+        
+        <!-- Season navigation (if multiple seasons) -->
+        <control type="group" id="150">
+            <left>1500</left>
+            <top>25</top>
+            <width>200</width>
+            <height>40</height>
+            
+            <!-- Prev Season -->
+            <control type="button" id="151">
+                <left>0</left>
+                <top>0</top>
+                <width>90</width>
+                <height>40</height>
+                <label>Prev</label>
+                <font>font10</font>
+                <textcolor>FF808080</textcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
+                <texturefocus colordiffuse="40FFFFFF">white.png</texturefocus>
+                <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <ondown>500</ondown>
+                <onright>152</onright>
+                <enable>!String.IsEqual(Window.Property(season_number),1)</enable>
+            </control>
+            
+            <!-- Next Season -->
+            <control type="button" id="152">
+                <left>100</left>
+                <top>0</top>
+                <width>90</width>
+                <height>40</height>
+                <label>Next ></label>
+                <font>font10</font>
+                <textcolor>FF808080</textcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
+                <texturefocus colordiffuse="40FFFFFF">white.png</texturefocus>
+                <texturenofocus colordiffuse="00000000">white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <ondown>500</ondown>
+                <onleft>151</onleft>
+                <enable>!String.IsEqual(Window.Property(season_number),Window.Property(total_seasons))</enable>
+            </control>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- EPISODES HEADER         -->
+        <!-- ======================= -->
+        <control type="label">
+            <left>60</left>
+            <top>120</top>
+            <width>300</width>
+            <height>35</height>
+            <label>Episodes</label>
+            <font>font14</font>
+            <textcolor>FFFFFFFF</textcolor>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- EPISODES GRID           -->
+        <!-- BIG thumbnails 364x205  -->
+        <!-- 5 columns x 3 rows      -->
+        <!-- ======================= -->
+        <control type="panel" id="500">
+            <left>40</left>
+            <top>165</top>
+            <width>1840</width>
+            <height>820</height>
+            <onup>50</onup>
+            <ondown>600</ondown>
+            <onleft>500</onleft>
+            <onright>500</onright>
+            <viewtype label="Episodes">panel</viewtype>
+            <orientation>vertical</orientation>
+            <scrolltime>200</scrolltime>
+            <!-- Episode card: 364x275 (thumbnail 364x205 + info + progress) -->
+            <itemlayout width="368" height="275">
+                <!-- Card background -->
+                <control type="image">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>364</width>
+                    <height>270</height>
+                    <texture colordiffuse="18FFFFFF">white.png</texture>
+                </control>
+                <!-- Episode thumbnail - BIG: 364x205 -->
+                <control type="image">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>364</width>
+                    <height>205</height>
+                    <aspectratio aligny="top">scale</aspectratio>
+                    <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                </control>
+                <!-- CONTINUE WATCHING badge (top-left) - shown if has progress -->
+                <control type="image">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <texture colordiffuse="E000D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <label>CONTINUE</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Episode number badge (top-left) - shown if NO progress -->
+                <control type="image">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>50</width>
+                    <height>30</height>
+                    <texture colordiffuse="E0000000">white.png</texture>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>50</width>
+                    <height>30</height>
+                    <label>E$INFO[ListItem.Property(episode_num)]</label>
+                    <font>font10</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- WATCHED checkmark badge (top-right) -->
+                <control type="image">
+                    <left>326</left>
+                    <top>2</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <texture colordiffuse="E000CC66">white.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <control type="label">
+                    <left>326</left>
+                    <top>2</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <label>OK</label>
+                    <font>font12</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- Runtime badge (top-right) - only if not watched -->
+                <control type="image">
+                    <left>296</left>
+                    <top>2</top>
+                    <width>70</width>
+                    <height>26</height>
+                    <texture colordiffuse="80000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <control type="label">
+                    <left>296</left>
+                    <top>2</top>
+                    <width>70</width>
+                    <height>26</height>
+                    <label>$INFO[ListItem.Property(runtime)]</label>
+                    <font>font10</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- PROGRESS BAR background (bottom of thumbnail) -->
+                <control type="image">
+                    <left>2</left>
+                    <top>201</top>
+                    <width>364</width>
+                    <height>6</height>
+                    <texture colordiffuse="80000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- PROGRESS BAR fill (cyan) - width based on progress % -->
+                <control type="image">
+                    <left>2</left>
+                    <top>201</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>6</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Episode title -->
+                <control type="label">
+                    <left>8</left>
+                    <top>212</top>
+                    <width>348</width>
+                    <height>28</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font11</font>
+                    <textcolor>FFCCCCCC</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                </control>
+                <!-- Air date + progress percentage -->
+                <control type="label">
+                    <left>8</left>
+                    <top>242</top>
+                    <width>250</width>
+                    <height>22</height>
+                    <label>$INFO[ListItem.Property(air_date)]</label>
+                    <font>font10</font>
+                    <textcolor>FF707070</textcolor>
+                    <align>left</align>
+                </control>
+                <!-- Progress percentage text -->
+                <control type="label">
+                    <left>260</left>
+                    <top>242</top>
+                    <width>100</width>
+                    <height>22</height>
+                    <label>$INFO[ListItem.Property(progress)]% watched</label>
+                    <font>font10</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>right</align>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+            </itemlayout>
+            <focusedlayout width="368" height="275">
+                <!-- Focus glow - Cyan -->
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>368</width>
+                    <height>275</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                </control>
+                <!-- Inner card -->
+                <control type="image">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>360</width>
+                    <height>267</height>
+                    <texture colordiffuse="FF141420">white.png</texture>
+                </control>
+                <!-- Episode thumbnail -->
+                <control type="image">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>360</width>
+                    <height>203</height>
+                    <aspectratio aligny="top">scale</aspectratio>
+                    <texture fallback="fanart.jpg">$INFO[ListItem.Art(thumb)]</texture>
+                </control>
+                <!-- Play overlay -->
+                <control type="image">
+                    <left>150</left>
+                    <top>75</top>
+                    <width>68</width>
+                    <height>68</height>
+                    <texture colordiffuse="E0FFFFFF">white.png</texture>
+                </control>
+                <control type="label">
+                    <left>150</left>
+                    <top>75</top>
+                    <width>68</width>
+                    <height>68</height>
+                    <label>PLAY</label>
+                    <font>font20</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                </control>
+                <!-- CONTINUE WATCHING badge (top-left) - shown if has progress -->
+                <control type="image">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <texture colordiffuse="FF00D4FF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>120</width>
+                    <height>28</height>
+                    <label>CONTINUE</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Episode number badge - only if NO progress -->
+                <control type="image">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>50</width>
+                    <height>30</height>
+                    <texture colordiffuse="E000D4FF">white.png</texture>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>50</width>
+                    <height>30</height>
+                    <label>E$INFO[ListItem.Property(episode_num)]</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- WATCHED checkmark badge (top-right) -->
+                <control type="image">
+                    <left>324</left>
+                    <top>4</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <texture colordiffuse="FF00CC66">white.png</texture>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <control type="label">
+                    <left>324</left>
+                    <top>4</top>
+                    <width>40</width>
+                    <height>30</height>
+                    <label>OK</label>
+                    <font>font12</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- Runtime badge - only if not watched -->
+                <control type="image">
+                    <left>294</left>
+                    <top>4</top>
+                    <width>70</width>
+                    <height>26</height>
+                    <texture colordiffuse="E0000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <control type="label">
+                    <left>294</left>
+                    <top>4</top>
+                    <width>70</width>
+                    <height>26</height>
+                    <label>$INFO[ListItem.Property(runtime)]</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <visible>!String.IsEmpty(ListItem.Property(runtime))+!String.IsEqual(ListItem.Property(watched),true)</visible>
+                </control>
+                <!-- PROGRESS BAR background -->
+                <control type="image">
+                    <left>4</left>
+                    <top>199</top>
+                    <width>360</width>
+                    <height>8</height>
+                    <texture colordiffuse="80000000">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- PROGRESS BAR fill (bright cyan on focus) -->
+                <control type="image">
+                    <left>4</left>
+                    <top>199</top>
+                    <width>$INFO[ListItem.Property(progress_width)]</width>
+                    <height>8</height>
+                    <texture colordiffuse="FFFFFFFF">white.png</texture>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+                <!-- Episode title - highlighted -->
+                <control type="label">
+                    <left>10</left>
+                    <top>212</top>
+                    <width>344</width>
+                    <height>28</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font12</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                </control>
+                <!-- Air date - highlighted -->
+                <control type="label">
+                    <left>10</left>
+                    <top>242</top>
+                    <width>240</width>
+                    <height>22</height>
+                    <label>$INFO[ListItem.Property(air_date)]</label>
+                    <font>font10</font>
+                    <textcolor>FF00D4FF</textcolor>
+                    <align>left</align>
+                </control>
+                <!-- Progress percentage text -->
+                <control type="label">
+                    <left>255</left>
+                    <top>242</top>
+                    <width>100</width>
+                    <height>22</height>
+                    <label>$INFO[ListItem.Property(progress)]% watched</label>
+                    <font>font10</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>right</align>
+                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                </control>
+            </focusedlayout>
+        </control>
+        
+        <!-- ======================= -->
+        <!-- BOTTOM NAVIGATION BAR   -->
+        <!-- ======================= -->
+        <control type="group" id="599">
+            <left>0</left>
+            <top>1000</top>
+            <width>1920</width>
+            <height>80</height>
+            
+            <!-- Navigation bar background -->
+            <control type="image">
+                <left>0</left>
+                <top>0</top>
+                <width>1920</width>
+                <height>80</height>
+                <texture colordiffuse="F0101018">white.png</texture>
+            </control>
+            
+            <!-- Top border line -->
+            <control type="image">
+                <left>0</left>
+                <top>0</top>
+                <width>1920</width>
+                <height>2</height>
+                <texture colordiffuse="40FFFFFF">white.png</texture>
+            </control>
+            
+            <!-- Previous Page Button -->
+            <control type="button" id="600">
+                <left>700</left>
+                <top>15</top>
+                <width>130</width>
+                <height>50</height>
+                <label>PREV</label>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>FF000000</focusedcolor>
+                <disabledcolor>FF404040</disabledcolor>
+                <texturefocus colordiffuse="FF00D4FF">white.png</texturefocus>
+                <texturenofocus colordiffuse="40FFFFFF">white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <onup>500</onup>
+                <ondown>600</ondown>
+                <onleft>600</onleft>
+                <onright>650</onright>
+                <enable>!String.IsEqual(Window.Property(current_page),1)</enable>
+            </control>
+            
+            <!-- Page Indicator -->
+            <control type="label" id="650">
+                <left>850</left>
+                <top>15</top>
+                <width>220</width>
+                <height>50</height>
+                <label>Page $INFO[Window.Property(current_page)] of $INFO[Window.Property(total_pages)]</label>
+                <font>font14</font>
+                <textcolor>FF00D4FF</textcolor>
+                <align>center</align>
+                <aligny>center</aligny>
+            </control>
+            
+            <!-- Next Page Button -->
+            <control type="button" id="700">
+                <left>1090</left>
+                <top>15</top>
+                <width>130</width>
+                <height>50</height>
+                <label>NEXT  ></label>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>FF000000</focusedcolor>
+                <disabledcolor>FF404040</disabledcolor>
+                <texturefocus colordiffuse="FF00D4FF">white.png</texturefocus>
+                <texturenofocus colordiffuse="40FFFFFF">white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <onup>500</onup>
+                <ondown>700</ondown>
+                <onleft>650</onleft>
+                <onright>700</onright>
+                <enable>!String.IsEqual(Window.Property(current_page),Window.Property(total_pages))</enable>
+            </control>
+        </control>
+        
+        <!-- Time display -->
+        <control type="label">
+            <left>1750</left>
+            <top>30</top>
+            <width>150</width>
+            <height>30</height>
+            <label>$INFO[System.Time]</label>
+            <font>font12</font>
+            <textcolor>FF808080</textcolor>
+            <align>right</align>
+        </control>
+    </controls>
+</window>
