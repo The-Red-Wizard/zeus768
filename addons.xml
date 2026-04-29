@@ -138,7 +138,7 @@ v1.0.0 (2026)
     </extension>
 </addon>
 
-<addon id="plugin.video.orion" name="Orion" version="3.7.3" provider-name="zeus768">
+<addon id="plugin.video.orion" name="Orion" version="3.7.6" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.0.0" optional="true"/>
@@ -150,7 +150,7 @@ v1.0.0 (2026)
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Orion Media Explorer</summary>
         <description lang="en">Orion v3.7.0 - Complete media addon with Netflix-style interface. BIG poster cards, cyan (#00D4FF) theme. Netflix-style views for History, Favorites, Continue Watching. Netflix-style Trakt integration. Netflix-style Settings panel. Season dropdown and episode grid. Master skin toggle in Settings to switch between Netflix and classic list view.</description>
-        <news>[3.7.0] Netflix-style History, Favorites, Continue Watching grids. Netflix-style Settings panel. All views use proper poster art. Trakt fully skinned. Master skin toggle controls everything. [3.6.2] Wider poster tiles, SEASONS button fix, back navigation fix.</news>
+        <news>[3.7.6] PunchPlay.tv is BETA / placeholder. The full Trakt-parity menu (watchlist, collection, watched, lists, recommendations, trending, popular, scrobbling) is wired up, but not every endpoint on the PunchPlay backend is live yet — some lists may return empty until the PunchPlay team finishes their public API. Banners and labels added everywhere PunchPlay appears so users know what to expect. [3.7.5] PunchPlay.tv now has full Trakt-parity: watchlist, collection, watched history, custom &amp; liked lists, recommendations, trending and popular. Right-click context menu supports Remove from Watchlist/Collection/History/List. Netflix-style PunchPlay submenu. Auto-mark watched at 80%+ (movies and episodes). Settings &gt; PunchPlay now accepts your Client ID and Client Secret. [3.7.4] Fix: Trakt list items can now be removed via right-click context menu (custom lists, collection, watched history). New: PunchPlay.tv integration — device-code login + automatic scrobbling alongside Trakt during episode playback. Settings &gt; PunchPlay to authorize. [3.7.0] Netflix-style History, Favorites, Continue Watching grids. Netflix-style Settings panel. All views use proper poster art. Trakt fully skinned. Master skin toggle controls everything. [3.6.2] Wider poster tiles, SEASONS button fix, back navigation fix.</news>
         <platform>all</platform>
         <license>GPL-3.0</license>
         <assets>
