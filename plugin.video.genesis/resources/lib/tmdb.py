@@ -241,8 +241,8 @@ def discover_by_genre(media_type, genre_id, page=1):
                 
                 # Add X-Ray and Extras context menu
                 li.addContextMenuItems([
+                    ('Extras', f'Container.Update(plugin://plugin.video.genesis/?action=extras_hub&tmdb_id={tmdb_id}&media_type=movie&title={quote_plus(title)})'),
                     ('X-Ray: Cast & Info', f'RunPlugin(plugin://plugin.video.genesis/?action=xray&tmdb_id={tmdb_id}&media_type=movie&title={quote_plus(title)})'),
-                    ('Extras: Similar & Cast', f'Container.Update(plugin://plugin.video.genesis/?action=extras_menu&tmdb_id={tmdb_id}&media_type=movie&title={quote_plus(title)})'),
                 ])
                 
                 play_url = f"{sys.argv[0]}?action=play&title={quote_plus(title)}&year={year}&tmdb_id={tmdb_id}"
@@ -251,8 +251,9 @@ def discover_by_genre(media_type, genre_id, page=1):
                 info['mediatype'] = 'tvshow'
                 li.setInfo('video', info)
                 
-                # Add X-Ray context menu for TV shows
+                # Add X-Ray and Extras context menu for TV shows
                 li.addContextMenuItems([
+                    ('Extras', f'Container.Update(plugin://plugin.video.genesis/?action=extras_hub&tmdb_id={tmdb_id}&media_type=tv&title={quote_plus(title)})'),
                     ('X-Ray: Cast & Info', f'RunPlugin(plugin://plugin.video.genesis/?action=xray&tmdb_id={tmdb_id}&media_type=tv&title={quote_plus(title)})'),
                 ])
                 
@@ -343,8 +344,8 @@ def get_latest_releases(page=1):
             
             # Add X-Ray and Extras context menu
             li.addContextMenuItems([
+                ('Extras', f'Container.Update(plugin://plugin.video.genesis/?action=extras_hub&tmdb_id={tmdb_id}&media_type=movie&title={quote_plus(title)})'),
                 ('X-Ray: Cast & Info', f'RunPlugin(plugin://plugin.video.genesis/?action=xray&tmdb_id={tmdb_id}&media_type=movie&title={quote_plus(title)})'),
-                ('Extras: Similar & Cast', f'Container.Update(plugin://plugin.video.genesis/?action=extras_menu&tmdb_id={tmdb_id}&media_type=movie&title={quote_plus(title)})'),
             ])
             
             play_url = f"{sys.argv[0]}?action=play&title={quote_plus(title)}&year={year}&tmdb_id={tmdb_id}"

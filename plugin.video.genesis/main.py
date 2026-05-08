@@ -16,6 +16,7 @@ import xbmcvfs
 from resources.lib import tmdb, trakt_auth, trakt_api, debrid, player, live_channels, xray, anime, anime_scrapers, icon_helper
 from resources.lib import cloud_browser, local_scanner, free_links_scraper
 from resources.lib import plex_server, emby_server, tmdb_artwork
+from resources.lib import extras
 
 def get_addon():
     return xbmcaddon.Addon()
@@ -2099,6 +2100,35 @@ if __name__ == '__main__':
     # Cast Movies (movies by a specific actor)
     elif action == 'cast_movies':
         xray.show_cast_movies(params.get('person_id', ''), params.get('person_name', ''))
+    
+    # ══════════════════════════════════════════════════════════════════════════
+    # EXTRAS HUB (Fenlight-style)
+    # ══════════════════════════════════════════════════════════════════════════
+    elif action == 'extras_hub':
+        extras.show_extras(
+            params.get('tmdb_id', ''), params.get('media_type', 'movie'),
+            params.get('title', ''), params.get('imdb_id', ''),
+            params.get('season', ''), params.get('episode', ''))
+    elif action == 'extras_videos':
+        extras.show_videos(params.get('tmdb_id', ''), params.get('media_type', 'movie'), params.get('title', ''))
+    elif action == 'extras_cast':
+        extras.show_cast(params.get('tmdb_id', ''), params.get('media_type', 'movie'), params.get('title', ''))
+    elif action == 'extras_person':
+        extras.show_person(params.get('person_id', ''), params.get('person_name', ''))
+    elif action == 'extras_reviews':
+        extras.show_reviews(params.get('tmdb_id', ''), params.get('media_type', 'movie'), params.get('title', ''))
+    elif action == 'extras_recommended':
+        extras.show_recommended(params.get('tmdb_id', ''), params.get('media_type', 'movie'), params.get('title', ''))
+    elif action == 'extras_similar':
+        extras.show_similar(params.get('tmdb_id', ''), params.get('media_type', 'movie'), params.get('title', ''))
+    elif action == 'extras_images':
+        extras.show_images(params.get('tmdb_id', ''), params.get('media_type', 'movie'), params.get('title', ''))
+    elif action == 'extras_trivia':
+        extras.show_trivia(
+            params.get('tmdb_id', ''), params.get('media_type', 'movie'),
+            params.get('title', ''), params.get('imdb_id', ''))
+    elif action == 'extras_season':
+        extras.show_season_overview(params.get('tmdb_id', ''), params.get('title', ''), params.get('season', ''))
     
     # ══════════════════════════════════════════════════════════════════════════
     # ANIME & MANGA ROUTES
