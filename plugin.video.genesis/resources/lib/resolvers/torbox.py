@@ -20,7 +20,7 @@ from resources.lib.libraries import client
 
 
 def tbAuthorize():
-    '''Device code flow for TorBox API authorization'''
+    '''Device code flow for TorBox API authorization (JSON POST required)'''
     try:
         if not '' in credentials().values():
             if control.yesnoDialog(
@@ -32,49 +32,96 @@ def tbAuthorize():
                 control.set_setting('torbox_api_key', '')
             raise Exception()
 
-        # TorBox uses direct API key input via PIN
-        progressDialog = control.progressDialog
-        progressDialog.create('TorBox Authorization', '')
-        
-        verification_url = control.lang(30416) + '[COLOR skyblue]https://torbox.app/settings[/COLOR]'
-        instructions = 'Get your API key from TorBox settings and enter it below'
-        
-        progressDialog.update(0, verification_url + '\n' + instructions)
+        import xbmcgui
+        from urllib.request import urlopen, Request
 
-        # Close progress and ask for API key
-        time.sleep(2)
-        progressDialog.close()
-        
-        # Show keyboard for API key input
-        keyboard = control.keyboard
-        k = keyboard('', 'Enter TorBox API Key')
-        k.doModal()
-        
-        if not k.isConfirmed():
-            raise Exception()
-        
-        api_key = k.getText()
-        if not api_key:
-            raise Exception()
+        # Step 1: Get device code via GET
+        start_url = 'https://api.torbox.app/v1/api/user/auth/device/start'
+        req = Request(start_url, headers={'User-Agent': 'Genesis Kodi Addon'})
+        resp = urlopen(req, timeout=15)
+        result = json.loads(resp.read().decode('utf-8'))
 
-        # Validate the API key
-        headers = {'Authorization': 'Bearer %s' % api_key}
-        url = 'https://api.torbox.app/v1/api/user/me'
-        result = client.request(url, headers=headers, timeout=15)
-        
-        if result is None:
-            control.infoDialog('Invalid API Key', heading='TorBox')
-            raise Exception()
-        
-        result = json.loads(result)
         if not result.get('success', False):
-            control.infoDialog('Invalid API Key', heading='TorBox')
+            control.infoDialog('Failed to get device code', heading='TorBox')
             raise Exception()
 
-        # Save the API key
-        control.set_setting('torbox_api_key', api_key)
-        control.infoDialog('Authorization Successful', heading='TorBox')
-        
+        data = result.get('data', {})
+        device_code = data.get('device_code', '')
+        user_code = data.get('code') or data.get('user_code') or ''
+        verify_url = data.get('friendly_verification_url') or data.get('verification_url') or 'https://torbox.app/devices'
+        interval = data.get('interval', 5)
+
+        # Calculate expires_in from expires_at
+        expires_in = 600
+        exp_at = data.get('expires_at')
+        if exp_at:
+            try:
+                from datetime import datetime, timezone
+                ts = exp_at.replace('Z', '+00:00')
+                exp_dt = datetime.fromisoformat(ts)
+                if exp_dt.tzinfo is None:
+                    exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+                expires_in = max(60, int(exp_dt.timestamp() - time.time()))
+            except Exception:
+                pass
+
+        if not device_code or not user_code:
+            control.infoDialog('No device code received', heading='TorBox')
+            raise Exception()
+
+        # Step 2: Show code and poll
+        progressDialog = control.progressDialog
+        progressDialog.create(
+            'TorBox Authorization',
+            'Go to: [COLOR skyblue]%s[/COLOR]\n\nEnter Code: [COLOR yellow]%s[/COLOR]\n\nWaiting for authorization...' % (verify_url, user_code)
+        )
+
+        start_time = time.time()
+        while time.time() - start_time < expires_in:
+            if progressDialog.iscanceled():
+                progressDialog.close()
+                raise Exception()
+
+            time.sleep(interval)
+            elapsed = time.time() - start_time
+            remaining = max(0, expires_in - elapsed)
+            pct = int((elapsed / expires_in) * 100)
+            progressDialog.update(
+                pct,
+                'Go to: [COLOR skyblue]%s[/COLOR]\n\nEnter Code: [COLOR yellow]%s[/COLOR]\n\nTime remaining: %d seconds' % (verify_url, user_code, int(remaining))
+            )
+
+            try:
+                # TorBox requires JSON POST for token endpoint
+                token_url = 'https://api.torbox.app/v1/api/user/auth/device/token'
+                post_data = json.dumps({"device_code": device_code}).encode('utf-8')
+                poll_req = Request(
+                    token_url,
+                    data=post_data,
+                    headers={
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Genesis Kodi Addon'
+                    },
+                    method='POST'
+                )
+                poll_resp = urlopen(poll_req, timeout=15)
+                poll_result = json.loads(poll_resp.read().decode('utf-8'))
+
+                if poll_result.get('success', False):
+                    token_data = poll_result.get('data', {})
+                    api_key = token_data.get('access_token') or token_data.get('api_key') or token_data.get('token') or ''
+                    if api_key:
+                        control.set_setting('torbox_api_key', api_key)
+                        progressDialog.close()
+                        control.infoDialog('Authorization Successful', heading='TorBox')
+                        return
+            except Exception:
+                # authorization_pending or transient error - keep polling
+                pass
+
+        progressDialog.close()
+        control.infoDialog('Authorization timed out', heading='TorBox')
+
     except:
         control.openSettings('4.9')
 
