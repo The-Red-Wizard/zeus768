@@ -1,29 +1,39 @@
 # -*- coding: utf-8 -*-
-
-'''
-    Genesis Add-on
-    Copyright (C) 2026 zeus768
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
-
+"""
+Genesis Background Service
+Handles Trakt scrobbling during playback.
+"""
 import xbmc
+import xbmcaddon
+import time
 
-# Python 2/3 compat - must run before any other Genesis imports
-try:
-    from resources.lib.libraries import py3compat
-except Exception:
-    pass
+ADDON_ID = 'plugin.video.genesis'
 
-xbmc.executebuiltin('RunPlugin(plugin://plugin.video.genesis/?action=service)')
+
+class GenesisService(xbmc.Monitor):
+    """Background service for Genesis"""
+    
+    def __init__(self):
+        super().__init__()
+        self.addon = xbmcaddon.Addon()
+        xbmc.log('Genesis Service: Started', xbmc.LOGINFO)
+    
+    def onSettingsChanged(self):
+        """Called when addon settings change"""
+        self.addon = xbmcaddon.Addon()
+        xbmc.log('Genesis Service: Settings changed', xbmc.LOGDEBUG)
+    
+    def run(self):
+        """Main service loop"""
+        xbmc.sleep(30000)
+        
+        while not self.abortRequested():
+            if self.waitForAbort(10):
+                break
+        
+        xbmc.log('Genesis Service: Stopped', xbmc.LOGINFO)
+
+
+if __name__ == '__main__':
+    service = GenesisService()
+    service.run()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Torrent Scraper for Orion v3.0
-Supports: Orionoid, Torrentio, MediaFusion, Jackettio, 1337x, TorrentDownloads, RARBG
+Torrent Scraper for Orion v3.2
+Supports: Orionoid, Torrentio, MediaFusion, Jackettio, Meteor, Bitmagnet, 1337x, TorrentDownloads, RARBG
 """
 
 import urllib.request
@@ -264,7 +264,7 @@ def _search_torrentio(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'Seeds' in line.lower():
+                    if 'user' in line or 'Seeds' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))
@@ -350,7 +350,7 @@ def _search_mediafusion(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'seed' in line.lower():
+                    if 'user' in line or 'seed' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))
@@ -434,7 +434,7 @@ def _search_jackettio(imdb_id, media_type='movie', season=None, episode=None):
                         size_match = re.search(r'([\d.]+\s*[GM]B)', line)
                         if size_match:
                             size = size_match.group(1)
-                    if '👤' in line or 'seed' in line.lower():
+                    if 'user' in line or 'seed' in line.lower():
                         seeds_match = re.search(r'(\d+)', line)
                         if seeds_match:
                             seeds = int(seeds_match.group(1))
@@ -464,6 +464,222 @@ def _search_jackettio(imdb_id, media_type='movie', season=None, episode=None):
     return results
 
 # ============== COCO SCRAPERS (1337x, TorrentDownloads, RARBG) ==============
+
+# ============== METEOR SCRAPER ==============
+
+def _search_meteor(imdb_id, media_type='movie', season=None, episode=None):
+    """Search Meteor Stremio addon"""
+    results = []
+    
+    if not imdb_id:
+        return results
+    
+    meteor_url = ADDON.getSetting('meteor_manifest')
+    if not meteor_url:
+        # Use public instance
+        meteor_url = "https://meteorfortheweebs.midnightignite.me"
+    
+    # Extract base URL from manifest if needed
+    if '/manifest.json' in meteor_url:
+        meteor_url = meteor_url.rsplit('/manifest.json', 1)[0]
+    if '/configure' in meteor_url:
+        meteor_url = meteor_url.rsplit('/configure', 1)[0]
+    
+    try:
+        # Build stream URL
+        if media_type == 'movie':
+            url = f"{meteor_url}/stream/movie/{imdb_id}.json"
+        else:
+            url = f"{meteor_url}/stream/series/{imdb_id}:{season}:{episode}.json"
+        
+        xbmc.log(f"Meteor search: {url}", xbmc.LOGINFO)
+        
+        data = _fetch_json(url, timeout=25)
+        
+        if not data or 'streams' not in data:
+            return results
+        
+        for stream in data.get('streams', []):
+            try:
+                title = stream.get('title', stream.get('name', ''))
+                info_hash = stream.get('infoHash', '')
+                
+                if not info_hash:
+                    # Try to extract from behaviorHints or URL
+                    behavior = stream.get('behaviorHints', {})
+                    binge_group = behavior.get('bingeGroup', '')
+                    if '|' in binge_group:
+                        info_hash = binge_group.split('|')[-1]
+                    
+                    if not info_hash:
+                        url_field = stream.get('url', '')
+                        if 'magnet:' in url_field:
+                            hash_match = re.search(r'btih:([a-fA-F0-9]{40})', url_field, re.IGNORECASE)
+                            if hash_match:
+                                info_hash = hash_match.group(1)
+                
+                if not info_hash:
+                    continue
+                
+                # Parse title for name and metadata
+                lines = title.split('\n')
+                name = lines[0] if lines else 'Unknown'
+                
+                quality = _detect_quality(name)
+                size = ''
+                seeds = 0
+                
+                for line in lines:
+                    if 'GB' in line or 'MB' in line:
+                        size_match = re.search(r'([\d.]+\s*[GM]B)', line)
+                        if size_match:
+                            size = size_match.group(1)
+                    if 'user' in line or 'seed' in line.lower():
+                        seeds_match = re.search(r'(\d+)', line)
+                        if seeds_match:
+                            seeds = int(seeds_match.group(1))
+                
+                magnet = _create_magnet(info_hash, name)
+                
+                results.append({
+                    'name': name,
+                    'magnet': magnet,
+                    'quality': quality,
+                    'size': size,
+                    'seeds': seeds,
+                    'source': 'Meteor',
+                    'source_type': 'meteor',
+                    'debrid': True
+                })
+                
+            except Exception as e:
+                xbmc.log(f"Error parsing Meteor stream: {e}", xbmc.LOGWARNING)
+                continue
+        
+        xbmc.log(f"Meteor found {len(results)} results", xbmc.LOGINFO)
+        
+    except Exception as e:
+        xbmc.log(f"Meteor search error: {e}", xbmc.LOGERROR)
+    
+    return results
+
+# ============== BITMAGNET SCRAPER ==============
+
+def _search_bitmagnet(query, media_type='movie', imdb_id=None):
+    """Search Bitmagnet self-hosted indexer via GraphQL API"""
+    results = []
+    
+    bitmagnet_url = ADDON.getSetting('bitmagnet_url')
+    if not bitmagnet_url:
+        xbmc.log("Bitmagnet: No URL configured", xbmc.LOGINFO)
+        return results
+    
+    # Ensure URL format
+    if bitmagnet_url.endswith('/'):
+        bitmagnet_url = bitmagnet_url[:-1]
+    
+    try:
+        graphql_url = f"{bitmagnet_url}/graphql"
+        
+        # Build GraphQL query
+        content_type = 'movie' if media_type == 'movie' else 'tv_show'
+        
+        graphql_query = {
+            "query": """
+                query SearchTorrents($query: String!, $contentType: ContentType, $limit: Int) {
+                    torrentContent {
+                        search(query: $query, contentType: $contentType, limit: $limit) {
+                            items {
+                                infoHash
+                                title
+                                size
+                                seeders
+                                leechers
+                                contentType
+                                content {
+                                    title
+                                    releaseYear
+                                    imdbId
+                                }
+                            }
+                            totalCount
+                        }
+                    }
+                }
+            """,
+            "variables": {
+                "query": query,
+                "contentType": content_type.upper(),
+                "limit": 30
+            }
+        }
+        
+        xbmc.log(f"Bitmagnet search: {query}", xbmc.LOGINFO)
+        
+        # Make GraphQL request
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Orion Kodi Addon/3.0'
+        }
+        
+        req = urllib.request.Request(
+            graphql_url,
+            data=json.dumps(graphql_query).encode('utf-8'),
+            headers=headers,
+            method='POST'
+        )
+        
+        with urllib.request.urlopen(req, context=SSL_CONTEXT, timeout=20) as response:
+            data = json.loads(response.read().decode('utf-8'))
+        
+        if not data or 'data' not in data:
+            return results
+        
+        items = data.get('data', {}).get('torrentContent', {}).get('search', {}).get('items', [])
+        
+        for item in items:
+            try:
+                info_hash = item.get('infoHash', '')
+                if not info_hash:
+                    continue
+                
+                title = item.get('title', 'Unknown')
+                size_bytes = item.get('size', 0)
+                seeds = item.get('seeders', 0)
+                
+                # Format size
+                if size_bytes > 1073741824:
+                    size = f"{size_bytes / 1073741824:.1f} GB"
+                elif size_bytes > 1048576:
+                    size = f"{size_bytes / 1048576:.0f} MB"
+                else:
+                    size = ''
+                
+                quality = _detect_quality(title)
+                magnet = _create_magnet(info_hash, title)
+                
+                results.append({
+                    'name': title,
+                    'magnet': magnet,
+                    'quality': quality,
+                    'size': size,
+                    'seeds': seeds,
+                    'source': 'Bitmagnet',
+                    'source_type': 'bitmagnet',
+                    'debrid': True
+                })
+                
+            except Exception as e:
+                xbmc.log(f"Error parsing Bitmagnet result: {e}", xbmc.LOGWARNING)
+                continue
+        
+        xbmc.log(f"Bitmagnet found {len(results)} results", xbmc.LOGINFO)
+        
+    except Exception as e:
+        xbmc.log(f"Bitmagnet search error: {e}", xbmc.LOGERROR)
+    
+    return results
 
 def _parse_1337x(html, search_title):
     """Parse 1337x results"""
@@ -648,10 +864,38 @@ def search_movie(title, year='', tmdb_id=None, progress=None):
         # 4. Jackettio
         if ADDON.getSetting('jackettio_enabled') == 'true' and imdb_id:
             if progress:
-                progress.update(70, "Searching Jackettio...")
+                progress.update(55, "Searching Jackettio...")
             
             jk_results = _search_jackettio(imdb_id, 'movie')
             for r in jk_results:
+                hash_match = re.search(r'btih:([a-fA-F0-9]{40})', r.get('magnet', ''), re.IGNORECASE)
+                if hash_match:
+                    h = hash_match.group(1).upper()
+                    if h not in seen_hashes:
+                        seen_hashes.add(h)
+                        results.append(r)
+        
+        # 5. Meteor
+        if ADDON.getSetting('meteor_enabled') == 'true' and imdb_id:
+            if progress:
+                progress.update(65, "Searching Meteor...")
+            
+            meteor_results = _search_meteor(imdb_id, 'movie')
+            for r in meteor_results:
+                hash_match = re.search(r'btih:([a-fA-F0-9]{40})', r.get('magnet', ''), re.IGNORECASE)
+                if hash_match:
+                    h = hash_match.group(1).upper()
+                    if h not in seen_hashes:
+                        seen_hashes.add(h)
+                        results.append(r)
+        
+        # 6. Bitmagnet
+        if ADDON.getSetting('bitmagnet_enabled') == 'true':
+            if progress:
+                progress.update(75, "Searching Bitmagnet...")
+            
+            bitmagnet_results = _search_bitmagnet(search_query, 'movie', imdb_id)
+            for r in bitmagnet_results:
                 hash_match = re.search(r'btih:([a-fA-F0-9]{40})', r.get('magnet', ''), re.IGNORECASE)
                 if hash_match:
                     h = hash_match.group(1).upper()
@@ -793,10 +1037,38 @@ def search_episode(title, season, episode, tmdb_id=None, progress=None):
         # 4. Jackettio
         if ADDON.getSetting('jackettio_enabled') == 'true' and imdb_id:
             if progress:
-                progress.update(70, "Searching Jackettio...")
+                progress.update(55, "Searching Jackettio...")
             
             jk_results = _search_jackettio(imdb_id, 'tv', season, episode)
             for r in jk_results:
+                hash_match = re.search(r'btih:([a-fA-F0-9]{40})', r.get('magnet', ''), re.IGNORECASE)
+                if hash_match:
+                    h = hash_match.group(1).upper()
+                    if h not in seen_hashes:
+                        seen_hashes.add(h)
+                        results.append(r)
+        
+        # 5. Meteor
+        if ADDON.getSetting('meteor_enabled') == 'true' and imdb_id:
+            if progress:
+                progress.update(65, "Searching Meteor...")
+            
+            meteor_results = _search_meteor(imdb_id, 'tv', season, episode)
+            for r in meteor_results:
+                hash_match = re.search(r'btih:([a-fA-F0-9]{40})', r.get('magnet', ''), re.IGNORECASE)
+                if hash_match:
+                    h = hash_match.group(1).upper()
+                    if h not in seen_hashes:
+                        seen_hashes.add(h)
+                        results.append(r)
+        
+        # 6. Bitmagnet
+        if ADDON.getSetting('bitmagnet_enabled') == 'true':
+            if progress:
+                progress.update(75, "Searching Bitmagnet...")
+            
+            bitmagnet_results = _search_bitmagnet(search_query, 'tv', imdb_id)
+            for r in bitmagnet_results:
                 hash_match = re.search(r'btih:([a-fA-F0-9]{40})', r.get('magnet', ''), re.IGNORECASE)
                 if hash_match:
                     h = hash_match.group(1).upper()
@@ -917,6 +1189,10 @@ def filter_sources_by_type(sources, source_type=None):
         return [s for s in sources if s.get('source_type') == 'mediafusion']
     elif source_type == 'jackettio':
         return [s for s in sources if s.get('source_type') == 'jackettio']
+    elif source_type == 'meteor':
+        return [s for s in sources if s.get('source_type') == 'meteor']
+    elif source_type == 'bitmagnet':
+        return [s for s in sources if s.get('source_type') == 'bitmagnet']
     elif source_type == 'coco':
         return [s for s in sources if s.get('source_type') == 'coco']
     

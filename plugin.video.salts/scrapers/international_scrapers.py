@@ -265,7 +265,12 @@ class SubsPleaseScaper(TorrentScraper):
                 return results
             
             data = json.loads(html)
-            
+            # SubsPlease returns a JSON object keyed by slug when there are
+            # results, but returns an empty list `[]` when there are no hits.
+            # Guard against that to prevent the AttributeError seen in logs.
+            if not isinstance(data, dict):
+                return results
+
             for key, item in data.items():
                 if key == 'page':
                     continue

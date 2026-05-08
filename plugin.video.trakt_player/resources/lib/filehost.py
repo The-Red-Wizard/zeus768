@@ -401,11 +401,21 @@ def play_source(source):
         elif source.get('url'):
             url = source['url']
             
+            # Zeus Resolvers first for supported hosts (Streamtape / DDownloads, no debrid)
+            try:
+                from resources.lib.zeus_hook import try_zeus
+                zeus_url = try_zeus(url)
+                if zeus_url:
+                    stream_url = zeus_url
+                    xbmcgui.Dialog().notification("Zeus Resolvers", "Link resolved (no debrid)", xbmcgui.NOTIFICATION_INFO, 1500)
+            except Exception as e:
+                xbmc.log(f'Zeus hook error: {e}', xbmc.LOGWARNING)
+            
             # Check if it's a DoodStream URL
-            if any(domain in url.lower() for domain in ['dood', 'myvidplay', 'ds2play', 'vidply']):
+            if not stream_url and any(domain in url.lower() for domain in ['dood', 'myvidplay', 'ds2play', 'vidply']):
                 xbmcgui.Dialog().notification("Processing", "Resolving DoodStream...", xbmcgui.NOTIFICATION_INFO, 2000)
                 stream_url = resolve_doodstream(url)
-            else:
+            elif not stream_url:
                 stream_url = url
         
         if stream_url:

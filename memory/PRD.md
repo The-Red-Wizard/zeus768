@@ -9,62 +9,55 @@ Fix TorBox account linking/authorization across 4 addons: Orion, Trakt Player, G
 ## Architecture
 ```
 /app/
-├── addons.xml              # Master addon index
-├── addons.xml.md5          # MD5 checksum
-├── plugin.video.genesis/   # Genesis addon
-├── plugin.video.orion/     # Orion addon
-├── plugin.video.salts/     # SALTS addon
-├── plugin.video.trakt_player/ # Trakt Player addon
-├── plugin.video.poseidonplayer/
+├── addons.xml / addons.xml.md5
 ├── plugin.program.theaccountant/
+├── plugin.video.genesis/
+├── plugin.video.orion/
+├── plugin.video.poseidonplayer/
+├── plugin.video.salts/
+├── plugin.video.tinklepad/
+├── plugin.video.trakt_player/
+├── plugin.video.vidscr/
+├── plugin.video.zrtester/
 ├── program.poseidonguide/
 ├── repository.zeus768/
-├── script.genesis.skins/   (on GitHub, not local)
-├── script.module.zeusresolvers/ (on GitHub, not local)
-├── plugin.video.vidscr/    (on GitHub, not local)
-├── plugin.video.tinklepad/ (on GitHub, not local)
-├── plugin.video.zrtester/  (on GitHub, not local)
-└── zips/                   # Packaged addon zips
+├── script.genesis.skins/
+├── script.module.zeusresolvers/
+├── scripts/
+└── zips/
 ```
 
 ## What's Been Implemented
 
-### Completed (May 8, 2026) - TorBox Device Code Auth Fix
-- **Root cause**: TorBox `/user/auth/device/token` endpoint requires JSON POST body, but all 4 addons were sending form-urlencoded POST data → TorBox returned 422 "Input should be a valid dictionary"
-- **Fix applied to all 4 addons**:
-  - Trakt Player v2.5.0: Fixed JSON POST, correct field names (`code` not `user_code`), `expires_at` handling
-  - Orion v3.8.0: Replaced manual API key entry with full device code flow (JSON POST)
-  - SALTS v2.6.1: Replaced manual API key entry with full device code flow (JSON POST)
-  - Genesis v9.5.0: Replaced manual API key entry in resolvers/torbox.py with device code flow
-- Rebuilt all 4 zips, updated addons.xml, regenerated MD5
+### May 8, 2026 - Repo Replaced + TorBox Fix
+- Replaced entire local repo with user's latest GitHub zip
+- Kept Vidscr v1.4.17 (user's latest upload)
+- **Root cause**: TorBox `/user/auth/device/token` requires JSON POST, all addons sent form-urlencoded → HTTP 422
+- **Trakt Player v2.5.0**: Fixed field names (`code` not `user_code`), `expires_at` handling, JSON POST
+- **Orion v3.8.0**: Replaced manual API key with device code flow + JSON POST
+- **SALTS v2.10.0**: Replaced manual API key with device code flow + JSON POST
+- **Genesis v1.6.0**: Fixed poll to use JSON POST (field names/expiry already correct)
+- All 4 zips rebuilt, addons.xml updated with all new versions, MD5 regenerated
 
-### Previously Completed
-- Trakt Player v2.3.0: Fixed Premiumize (response_type), Real-Debrid auth, added TorBox/LinkSnappy
-- Syncher v3.2.0-3.4.0: Music, AI Playlists, Radio, Podcasts, Audiobooks (NOTE: User removed Syncher from repo)
-
-## GitHub Repo Versions (as of May 8, 2026)
-- Genesis: v1.5.3
-- Orion: v3.7.2
-- Trakt Player: v2.4.2
-- SALTS: v2.5.2
-
-## Local Versions (post-fix)
-- Genesis: v9.5.0
-- Orion: v3.8.0
-- Trakt Player: v2.5.0
-- SALTS: v2.6.1
+## Addon Versions (current local)
+| Addon | Version | Status |
+|-------|---------|--------|
+| Trakt Player | 2.5.0 | TorBox fixed |
+| Orion | 3.8.0 | TorBox fixed |
+| Genesis | 1.6.0 | TorBox fixed |
+| SALTS | 2.10.0 | TorBox fixed |
+| Vidscr | 1.4.17 | Latest from user |
+| The Accountant | 3.9.7 | From GitHub |
+| Poseidon Player | 2.3.0 | From GitHub |
+| Poseidon Guide | 1.1.0 | From GitHub |
+| Tinklepad | (from GitHub) | From GitHub |
+| ZR Tester | (from GitHub) | From GitHub |
+| Genesis Skins | 1.1.0 | From GitHub |
+| Zeus Resolvers | (from GitHub) | From GitHub |
 
 ## Key Technical Details
-- TorBox API: `/user/auth/device/start` (GET) → returns `code`, `device_code`, `friendly_verification_url`, `expires_at`
-- TorBox API: `/user/auth/device/token` (POST JSON) → requires `{"device_code": "..."}` as JSON body
-- Kodi Python 3 compatibility: Use `urllib.request`, `urllib.parse`, `urllib.error`
+- TorBox API: `/user/auth/device/start` (GET) → `code`, `device_code`, `friendly_verification_url`, `expires_at`
+- TorBox API: `/user/auth/device/token` (POST JSON) → `{"device_code": "..."}` required as JSON body
 
 ## Backlog
-- P1: Remove Syncher from local repo (user deleted from GitHub)
-- P1: Sync local repo fully with GitHub (missing addons: vidscr, tinklepad, zrtester, zeusresolvers)
 - P2: IPTV/Live TV section (user requested on backburner)
-
-## 3rd Party Integrations
-- Trakt API, TMDB API
-- Real-Debrid, Premiumize, AllDebrid, TorBox, LinkSnappy
-- Emergent LLM Key (for AI features in Syncher - now defunct)

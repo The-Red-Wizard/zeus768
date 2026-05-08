@@ -24,42 +24,44 @@ class X1337Scraper(TorrentScraper):
         'https://1337x.gd'
     ]
     
-    def __init__(self, timeout=30):
+    def __init__(self, timeout=15):
         super().__init__(timeout)
-        self._find_working_domain()
-    
-    def _find_working_domain(self):
-        """Find a working mirror"""
-        for mirror in self.MIRRORS:
-            try:
-                response = self.session.get(mirror, timeout=5)
-                if response.status_code == 200:
-                    self.BASE_URL = mirror
-                    return
-            except:
-                continue
+        # Mirror probing on __init__ used to call self.session.get which does
+        # not exist in the native-urllib base class - that raised AttributeError
+        # for every Stream-All-The-Sources run, killing 1337x before search().
+        # We now lazily fall through MIRRORS inside search() instead.
     
     def search(self, query, media_type='movie'):
-        """Search 1337x for torrents"""
+        """Search 1337x for torrents (with automatic mirror fallback)"""
         results = []
         
-        try:
-            # Category based on media type
-            if media_type == 'movie':
-                category = 'Movies'
-            elif media_type == 'tvshow':
-                category = 'TV'
-            else:
-                category = ''
-            
-            search_url = f'{self.BASE_URL}/search/{quote_plus(query)}/1/'
+        # Category based on media type
+        if media_type == 'movie':
+            category = 'Movies'
+        elif media_type == 'tvshow':
+            category = 'TV'
+        else:
+            category = ''
+
+        html = ''
+        working_mirror = None
+        for mirror in self.MIRRORS:
             if category:
-                search_url = f'{self.BASE_URL}/category-search/{quote_plus(query)}/{category}/1/'
-            
-            html = self._http_get(search_url, cache_limit=1)
-            if not html:
-                return results
-            
+                search_url = f'{mirror}/category-search/{quote_plus(query)}/{category}/1/'
+            else:
+                search_url = f'{mirror}/search/{quote_plus(query)}/1/'
+            try:
+                html = self._http_get(search_url, cache_limit=1)
+            except Exception:
+                html = ''
+            if html and 'table-list' in html:
+                working_mirror = mirror
+                break
+        if not html or not working_mirror:
+            return results
+        self.BASE_URL = working_mirror
+
+        try:
             soup = BeautifulSoup(html, 'html.parser')
             
             # Find torrent rows

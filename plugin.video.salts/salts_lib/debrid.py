@@ -635,7 +635,6 @@ class TorBox:
         try:
             xbmc.log('TorBox: Requesting device code...', xbmc.LOGINFO)
 
-            # Step 1: Get device code
             status, result = _get(f'{self.BASE_URL}/user/auth/device/start')
 
             if not isinstance(result, dict) or not result.get('success'):
@@ -645,29 +644,30 @@ class TorBox:
             data = result.get('data', {})
             device_code = data.get('device_code', '')
             user_code = data.get('code') or data.get('user_code') or ''
-            verify_url = data.get('friendly_verification_url') or data.get('verification_url') or 'https://torbox.app/devices'
-            interval = data.get('interval', 5)
-            # TorBox returns expires_at (ISO timestamp), not expires_in
-            expires_in = 600
-            exp_at = data.get('expires_at')
-            if exp_at:
-                try:
-                    from datetime import datetime, timezone as tz
-                    ts = exp_at.replace('Z', '+00:00')
-                    exp_dt = datetime.fromisoformat(ts)
-                    if exp_dt.tzinfo is None:
-                        exp_dt = exp_dt.replace(tzinfo=tz.utc)
-                    expires_in = max(60, int(exp_dt.timestamp() - time.time()))
-                except Exception:
-                    pass
+            verify_url = (data.get('friendly_verification_url')
+                          or data.get('verification_url')
+                          or 'https://torbox.app/devices')
+            interval = int(data.get('interval', 5) or 5)
+            expires_in = int(data.get('expires_in', 0) or 0)
+            if not expires_in:
+                exp_at = data.get('expires_at')
+                if exp_at:
+                    try:
+                        from datetime import datetime, timezone as tz
+                        ts = exp_at.replace('Z', '+00:00')
+                        exp_dt = datetime.fromisoformat(ts)
+                        if exp_dt.tzinfo is None:
+                            exp_dt = exp_dt.replace(tzinfo=tz.utc)
+                        expires_in = max(60, int(exp_dt.timestamp() - time.time()))
+                    except Exception:
+                        expires_in = 600
+                else:
+                    expires_in = 600
 
             if not device_code or not user_code:
                 xbmcgui.Dialog().notification('TorBox', 'Invalid device code response', xbmcgui.NOTIFICATION_ERROR)
                 return False
 
-            xbmc.log(f'TorBox: Got device code, user_code: {user_code}', xbmc.LOGINFO)
-
-            # Step 2: Show code and poll
             dialog = xbmcgui.DialogProgress()
             dialog.create(
                 'TorBox Authorization',
@@ -693,30 +693,25 @@ class TorBox:
                     f'Time remaining: {int(remaining)} seconds'
                 )
 
-                try:
-                    # TorBox requires JSON POST for token endpoint
-                    token_url = f'{self.BASE_URL}/user/auth/device/token'
-                    poll_status, poll_result = _post(
-                        token_url,
-                        data=json.dumps({"device_code": device_code}),
-                        headers={'Content-Type': 'application/json'}
-                    )
+                # TorBox requires JSON POST for token endpoint
+                poll_status, poll_result = _post(
+                    f'{self.BASE_URL}/user/auth/device/token',
+                    data=json.dumps({"device_code": device_code}),
+                    headers={'Content-Type': 'application/json'}
+                )
 
-                    xbmc.log(f'TorBox poll: status={poll_status}, result={poll_result}', xbmc.LOGDEBUG)
-
-                    if isinstance(poll_result, dict) and poll_result.get('success'):
-                        token_data = poll_result.get('data', {})
-                        api_key = token_data.get('access_token') or token_data.get('api_key') or token_data.get('token') or ''
-                        if api_key:
-                            self.token = api_key
-                            ADDON.setSetting('torbox_token', api_key)
-                            ADDON.setSetting('torbox_enabled', 'true')
-                            dialog.close()
-                            xbmcgui.Dialog().notification('TorBox', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
-                            xbmc.log('TorBox: Authorization successful', xbmc.LOGINFO)
-                            return True
-                except Exception as poll_err:
-                    xbmc.log(f'TorBox poll: {poll_err}', xbmc.LOGDEBUG)
+                if isinstance(poll_result, dict) and poll_result.get('success'):
+                    token_data = poll_result.get('data', {})
+                    api_key = (token_data.get('access_token')
+                               or token_data.get('api_key')
+                               or token_data.get('token') or '')
+                    if api_key:
+                        self.token = api_key
+                        ADDON.setSetting('torbox_token', api_key)
+                        ADDON.setSetting('torbox_enabled', 'true')
+                        dialog.close()
+                        xbmcgui.Dialog().notification('TorBox', 'Authorization successful!', xbmcgui.NOTIFICATION_INFO)
+                        return True
 
             dialog.close()
             xbmcgui.Dialog().notification('TorBox', 'Authorization timed out', xbmcgui.NOTIFICATION_WARNING)

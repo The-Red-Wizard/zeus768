@@ -1,62 +1,18 @@
-Genesis Changelog
-==================
+v1.5.4 (2026-04-24) - TORBOX DEVICE CODE FIX
+=============================================
+FIX:
+- "Get code for TorBox not working / get code error"
+- Root cause: TorBox device-code response shape differs
+  from Real-Debrid. The addon was reading 'user_code' and
+  'expires_in' but TorBox returns 'code' and 'expires_at'
+  (ISO-8601 timestamp). User therefore saw an empty/blank
+  code screen and polling never confirmed.
+- Fix: read 'code' (or 'user_code' as fallback for future
+  API changes), compute expires_in from 'expires_at' ISO
+  string when needed, and prefer the 'friendly_verification_url'
+  (the shorter URL that fits better on TV screens) when
+  TorBox provides one.
+- Expanded the "pending" marker list so variant error
+  codes ('slow_down', 'wait', 'expired_not_yet', upper/
+  lower case) do not abort the polling loop.
 
-Version 9.4.1 (February 2026 - Debrid & Trakt Auth Fix)
-- FIXED: All debrid authorization dialogs (Real-Debrid, Premiumize, AllDebrid, TorBox) now show pairing codes
-- FIXED: Trakt authorization dialog now shows device code properly
-- FIXED: Root cause was Kodi 21 progressDialog.create() only accepts 2 args (heading, message), not 3+
-- FIXED: All source scraping progress dialogs updated for Kodi 19+ single-message API
-- FIXED: Settings focus navigation corrected for Debrid Services category (was pointing to wrong tab)
-
-Version 9.4.0 (February 2026 - TMDB/Trakt Migration - Categories Fixed)
-- FIXED: All movie categories now load (Popular, Trending, Box Office, Genres, Years, etc.)
-- FIXED: All TV show categories now load (Popular, Trending, Genres, Years, Networks, etc.)
-- FIXED: Migrated from broken IMDB HTML scraping to Trakt API for all browsing
-- FIXED: Metadata enrichment migrated from dead OMDB API to TMDB API
-- FIXED: Genre slugs updated for Trakt compatibility (sci_fi → science-fiction, etc.)
-- FIXED: All remaining api-v2launch.trakt.tv URLs updated to api.trakt.tv
-- ADDED: TMDB poster, fanart, and backdrop artwork for movies and TV shows
-- ADDED: Full cast and director info from TMDB credits API
-- ADDED: TMDB-powered person search and popular actors browsing
-- ADDED: Updated TV Networks list with modern streaming services (Disney+, Apple TV+, Paramount+, Peacock, Hulu)
-- ADDED: Movie certifications browsing (G, PG, PG-13, R, NC-17)
-
-Version 9.3.0 (April 2026 - Python 3 Overhaul + External Scrapers)
-- FIXED: default.py Python 3 crash (import urlparse → from urllib.parse import parse_qsl)
-- FIXED: Trakt auth URL updated from http://api-v2launch.trakt.tv to https://api.trakt.tv
-- FIXED: Real-Debrid auth Python 3 compatibility (urllib.urlencode → urlparse.urlencode)
-- FIXED: Premiumize auth Python 3 compatibility
-- FIXED: AllDebrid auth Python 3 compatibility
-- FIXED: TorBox auth Python 3 compatibility
-- FIXED: player.py unicode() calls replaced with Python 3 bytes.decode()
-- FIXED: All 9 torrent/streaming scrapers patched for Python 3 (urllib/urlparse imports)
-- FIXED: All 90+ legacy resolvers patched for Python 3 (urllib/urlparse imports)
-- FIXED: Missing genre/menu icons now fall back to addon icon when theme image not found
-- ADDED: CocoScrapers external provider support (script.module.cocoscrapers)
-- ADDED: Gears Scrapers external provider support (script.module.gears)
-- ADDED: External Scrapers settings category (enable/disable each provider)
-- ADDED: Both scraper modules listed as optional dependencies in addon.xml
-
-Version 9.2.6 (January 2026 - Critical Python 3 Fixes)
-- Fixed "a bytes-like object is required, not 'str'" error in urllib2.Request POST data
-- Fixed StringIO.StringIO to use BytesIO for handling binary zip data in episodes.py
-- Added proper bytes-to-string decoding for TVDB XML data
-- Fixed NoneType error in movies.py when IMDB list returns None
-- All menus and categories should now load properly
-
-Version 9.2.5 (January 2026 - IMDB/TMDB Menu Fix)
-- Fixed critical Python 3 bug: str.decode() called on string objects causing menus to fail
-- Fixed _ensure_str() in client.py to properly decode bytes to strings
-- Added isinstance(result, bytes) checks before .decode('iso-8859-1') calls
-
-Version 9.2.4 (Kodi 21+ Compatibility Update)
-- Fixed Python 3 compatibility issues for Kodi 21 Omega and above
-- Fixed base64.b64encode() bytes/string encoding issues
-- Fixed xrange compatibility for Python 3
-- Fixed yesnoDialog deprecated API for Kodi 19+
-
-Version 9.2.3-fixed
-- Initial attempted fixes
-
-Version 9.2.2
-- Original release

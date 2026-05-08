@@ -22,7 +22,23 @@ from salts_lib import log_utils
 
 TMDB_KEY = '8265bd1679663a7ea12ac168da84d2e8'
 TMDB_BASE = 'https://api.themoviedb.org/3'
-UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+
+# Modern browser headers that bypass most Cloudflare WAF rules used by
+# elfhosted / strem.fun / *.strem.io.  Without these the new gateways
+# return HTTP 403 (seen for Comet + MediaFusion in v2.9.17 logs).
+_BROWSER_HEADERS = {
+    'User-Agent': UA,
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'cross-site',
+    'sec-ch-ua': '"Chromium";v="120", "Google Chrome";v="120", "Not?A_Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+}
 
 # Cache TMDB→IMDB lookups in memory for the session
 _imdb_cache = {}
@@ -84,27 +100,73 @@ class StremioBaseScraper(BaseScraper):
     """
     
     BASE_URL = ''
+    # Optional list of fallback base URLs tried in order if the primary
+    # returns 403 / 5xx / DNS error. Subclasses can override.
+    FALLBACK_URLS = []
+    # Settings key that, if set by the user, overrides BASE_URL with a
+    # full Stremio configured manifest URL like:
+    #   https://comet.elfhosted.com/eyJ...config.../
+    # The trailing /stream/... path is appended automatically.
+    URL_SETTING = ''
     NAME = 'Stremio'
     is_free = False  # Override in subclasses for free stream scrapers
     
     def __init__(self, timeout=15):
         super().__init__(timeout)
-        self._stremio_headers = {
-            'User-Agent': UA,
-            'Accept': 'application/json',
-        }
+        # Refresh per-instance addon handle so changes in the running
+        # session are picked up without a restart.
+        self._addon = xbmcaddon.Addon()
+        self._stremio_headers = dict(_BROWSER_HEADERS)
+    
+    def _resolved_base_urls(self):
+        """Return ordered list of base URLs to try."""
+        urls = []
+        # 1) User-supplied URL from settings (if any)
+        if self.URL_SETTING:
+            try:
+                user_url = self._addon.getSetting(self.URL_SETTING) or ''
+            except Exception:
+                user_url = ''
+            user_url = user_url.strip().rstrip('/')
+            if user_url and user_url.lower().startswith(('http://', 'https://')):
+                urls.append(user_url)
+        # 2) Hard-coded primary
+        if self.BASE_URL and self.BASE_URL not in urls:
+            urls.append(self.BASE_URL.rstrip('/'))
+        # 3) Hard-coded fallbacks
+        for u in (self.FALLBACK_URLS or []):
+            u = u.rstrip('/')
+            if u and u not in urls:
+                urls.append(u)
+        return urls
     
     def _get_stremio_streams(self, stremio_type, stremio_id):
-        """Call the Stremio stream API and return parsed JSON."""
-        url = f'{self.BASE_URL}/stream/{stremio_type}/{stremio_id}.json'
-        try:
-            req = Request(url, headers=self._stremio_headers)
-            resp = urlopen(req, timeout=self.timeout)
-            data = json.loads(resp.read().decode('utf-8'))
-            return data.get('streams', [])
-        except Exception as e:
-            log_utils.log(f'{self.NAME}: API error for {url}: {e}', xbmc.LOGDEBUG)
-            return []
+        """Call the Stremio stream API on each base URL until one works."""
+        last_err = None
+        for base in self._resolved_base_urls():
+            url = f'{base}/stream/{stremio_type}/{stremio_id}.json'
+            try:
+                req = Request(url, headers=self._stremio_headers)
+                resp = urlopen(req, timeout=self.timeout)
+                raw = resp.read()
+                # Some gateways gzip silently
+                if raw[:2] == b'\x1f\x8b':
+                    import gzip
+                    raw = gzip.decompress(raw)
+                data = json.loads(raw.decode('utf-8', errors='replace'))
+                return data.get('streams', [])
+            except HTTPError as e:
+                last_err = f'HTTP {e.code} for {url}'
+                # 403 / 404 -> try next mirror; 5xx also retry
+                if e.code in (401, 402):
+                    break  # auth required, no mirror will help
+                continue
+            except Exception as e:
+                last_err = f'{type(e).__name__} for {url}: {e}'
+                continue
+        if last_err:
+            log_utils.log(f'{self.NAME}: API error - {last_err}', xbmc.LOGDEBUG)
+        return []
     
     def _resolve_imdb_id(self, tmdb_id='', title='', year='', media_type='movie'):
         """Get IMDB ID from TMDB ID or title search."""
@@ -122,7 +184,7 @@ class StremioBaseScraper(BaseScraper):
         - url: direct stream URL
         - infoHash + fileIdx: torrent
         - name: e.g. "Torrentio\n4K" 
-        - title: e.g. "Movie.2024.2160p.WEB-DL\n👤 150 💾 8.5 GB ⚙️ YTS"
+        - title: e.g. "Movie.2024.2160p.WEB-DL\n 150  8.5 GB ️ YTS"
         """
         result = {
             'title': '',
@@ -142,15 +204,15 @@ class StremioBaseScraper(BaseScraper):
         full_text = f'{name} {title_text}'
         result['quality'] = self._parse_quality(full_text)
         
-        # Parse seeds from title (👤 150 or Seeds: 150)
-        seeds_match = re.search(r'👤\s*(\d+)', title_text)
+        # Parse seeds from title ( 150 or Seeds: 150)
+        seeds_match = re.search(r'\s*(\d+)', title_text)
         if not seeds_match:
             seeds_match = re.search(r'[Ss]eeds?:?\s*(\d+)', title_text)
         if seeds_match:
             result['seeds'] = int(seeds_match.group(1))
         
-        # Parse size from title (💾 8.5 GB or Size: 8.5 GB)
-        size_match = re.search(r'💾\s*([\d.]+\s*[KMGT]B)', title_text, re.IGNORECASE)
+        # Parse size from title ( 8.5 GB or Size: 8.5 GB)
+        size_match = re.search(r'\s*([\d.]+\s*[KMGT]B)', title_text, re.IGNORECASE)
         if not size_match:
             size_match = re.search(r'[Ss]ize:?\s*([\d.]+\s*[KMGT]B)', title_text, re.IGNORECASE)
         if size_match:
@@ -266,6 +328,12 @@ class TorrentioScraper(StremioBaseScraper):
     EZTV, TorrentGalaxy, KickassTorrents, and more.
     """
     BASE_URL = 'https://torrentio.strem.fun'
+    FALLBACK_URLS = [
+        # Mirror that responds when strem.fun is rate-limiting.
+        'https://torrentio.strem.fun/sort=qualitysize',
+        'https://knightcrawler.elfhosted.com',
+    ]
+    URL_SETTING = 'torrentio_url'
     NAME = 'Torrentio'
     is_free = False
     
@@ -286,6 +354,10 @@ class MediaFusionScraper(StremioBaseScraper):
     Indexes from multiple torrent trackers.
     """
     BASE_URL = 'https://mediafusion.elfhosted.com'
+    FALLBACK_URLS = [
+        'https://mediafusion.fun',
+    ]
+    URL_SETTING = 'mediafusion_url'
     NAME = 'MediaFusion'
     is_free = False
     
@@ -303,7 +375,15 @@ class CometScraper(StremioBaseScraper):
     
     Lightweight and fast, supports debrid services.
     """
+    # Comet's elfhosted gateway now refuses the bare /stream path with 403.
+    # The default-config public endpoint still works, and the open
+    # comet-cf mirror is also accepted.
     BASE_URL = 'https://comet.elfhosted.com'
+    FALLBACK_URLS = [
+        'https://comet-cf.elfhosted.com',
+        'https://comet.fast-stream.com',
+    ]
+    URL_SETTING = 'comet_url'
     NAME = 'Comet'
     is_free = False
     

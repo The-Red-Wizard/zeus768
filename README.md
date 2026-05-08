@@ -15,28 +15,6 @@ The official Kodi addon repository by **zeus768** and **The Red Wizard**. All ad
 
 ## Addons
 
-### Genesis
-<img src="plugin.video.genesis/icon.png" width="120" align="left" style="margin-right:15px">
-
-**Stream Movies and TV Shows** | `plugin.video.genesis` | v9.2.6
-
-Your ultimate streaming addon for Movies and TV Shows with torrent support. Features Meteor, Streamthru, Torz, and Webstreamr scrapers. Includes Trakt integration, TMDB metadata, search, favourites, and custom skins. Fully compatible with Kodi 21 Omega and above (Python 3).
-
-<br clear="both">
-
----
-
-### Genesis Themepak
-<img src="script.genesis.media/icon.png" width="120" align="left" style="margin-right:15px">
-
-**Themes for Genesis** | `script.genesis.media` | v9.2.4
-
-Required dependency for Genesis. Provides custom themes, artwork, and skin assets used by the Genesis video addon. Compatible with Kodi 21 Omega and above.
-
-<br clear="both">
-
----
-
 ### SALTS - Stream All The Sources
 <img src="plugin.video.salts/icon.png" width="120" align="left" style="margin-right:15px">
 
@@ -48,10 +26,32 @@ The legendary SALTS addon, revived and modernized for Kodi 21+. 35+ scrapers run
 
 ---
 
+### Genesis
+<img src="plugin.video.genesis/icon.png" width="120" align="left" style="margin-right:15px">
+
+**Stream Movies and TV Shows** | `plugin.video.genesis` | v1.5.3
+
+Complete media addon with 10 torrent scrapers, Real-Debrid, Premiumize, AllDebrid, TorBox support. 24 Live Channels with TMDB-powered EPG. Cloud storage browsing (Dropbox, Google Drive, OneDrive). Plex and Emby server integration. Trakt sync with scrobbling, watchlists, calendar, recommendations, friends activity, and custom lists. Full anime section with MAL integration, seasonal anime, and manga browsing. Free links via ResolveURL. Source picker with quality/codec/HDR info and cached badge. Genesis Skins theme support.
+
+<br clear="both">
+
+---
+
+### Genesis Skins
+<img src="script.genesis.skins/icon.png" width="80" align="left" style="margin-right:15px">
+
+**Theme Pack** | `script.genesis.skins` | v1.1.0
+
+Icon theme pack for Genesis. Includes Classic (3D movie-poster style) and Anime themes with 160+ category icons.
+
+<br clear="both">
+
+---
+
 ### Trakt Player
 <img src="plugin.video.trakt_player/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Click and Play** | `plugin.video.trakt_player` | v2.1.3
+**Click and Play** | `plugin.video.trakt_player` | v2.4.2
 
 Superpowered Trakt addon. Click any movie or episode and it plays instantly via Debrid. Features: Click-and-Play (auto 1080p), Trakt Scrobbling, Up Next, Continue Watching, Discovery Feed (trailer scroll with 6 modes), AI Vibe Marathons, Personalized Recommendations, My Calendar, Watch History, Friends Activity Feed, User Stats Dashboard, Custom Lists, Popular Community Lists, Cached Torrent Indicator, Rate on Trakt, and Debrid Account Status. Supports Real-Debrid, Premiumize, AllDebrid, and TorBox.
 
@@ -62,9 +62,9 @@ Superpowered Trakt addon. Click any movie or episode and it plays instantly via 
 ### Orion
 <img src="plugin.video.orion/icon.png" width="120" align="left" style="margin-right:15px">
 
-**Media Explorer** | `plugin.video.orion` | v3.2.5
+**Media Explorer** | `plugin.video.orion` | v3.7.2
 
-Complete media addon with multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support. Trakt integration with scrobbling, watchlists and liked lists. ResolveURL support, watch history, favorites, Kids Zone, and auto-play next episode.
+Complete media addon with Netflix-style interface. Portrait poster carousels, BIG poster grid view, cyan (#00D4FF) theme throughout. Netflix-style search, History, Favorites, Continue Watching, and Settings panel. Season dropdown and episode grid for TV shows. Up Next auto-play with 15s countdown. Trakt scrobbling and watch progress sync. Master skin toggle to switch between Netflix and classic Kodi list view. Multiple torrent scrapers (Torrentio, MediaFusion, Jackettio, Orionoid), Real-Debrid, Premiumize, AllDebrid, TorBox support.
 
 <br clear="both">
 

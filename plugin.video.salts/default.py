@@ -86,7 +86,7 @@ def show_kofi_qr():
         xbmc.sleep(300)
     except:
         pass
-    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\n[COLOR cyan]https://ko-fi.com/zeus768[/COLOR]')
+    xbmcgui.Dialog().ok('Support zeus768', 'Scan QR or visit:\nhttps://ko-fi.com/zeus768')
     try:
         xbmc.executebuiltin('Action(Back)')
     except:
@@ -105,12 +105,30 @@ def main_menu():
         {'title': '[B]Search[/B]', 'mode': 'search_menu'},
         {'title': '[B]AI Search[/B]', 'mode': 'ai_search_menu'},
         {'title': '[B]Trakt[/B]', 'mode': 'trakt_menu'},
+        {'title': '[B]PunchPlay[/B] [COLOR grey][BETA][/COLOR]', 'mode': 'punchplay_menu'},
         {'title': 'Scrapers', 'mode': 'scrapers_menu'},
         {'title': 'Debrid Services', 'mode': 'debrid_menu'},
         {'title': 'Tools', 'mode': 'tools_menu'},
         {'title': 'Settings', 'mode': 'addon_settings'},
-        {'title': '[COLOR orange]Buy Me a Beer[/COLOR]', 'mode': 'buy_beer'},
+        {'title': 'Buy Me a Beer', 'mode': 'buy_beer'},
     ]
+
+    # Continue Watching (PunchPlay /api/playback) - only shown when the endpoint
+    # responds 200. Probe is cached for 60s so this does not slow the menu.
+    try:
+        if _punchplay_playback_available():
+            items.insert(0, {'title': '[B][COLOR orange]Continue Watching[/COLOR][/B] [COLOR grey][BETA][/COLOR]',
+                             'mode': 'continue_watching'})
+    except Exception:
+        pass
+
+    # One-shot beta notice the first time a user lands on the main menu after
+    # enabling PunchPlay. Gated behind punchplay_enabled so non-users never see it.
+    try:
+        if xbmcaddon.Addon().getSetting('punchplay_enabled') == 'true':
+            _punchplay_beta_notice()
+    except Exception:
+        pass
     
     for item in items:
         li = xbmcgui.ListItem(item['title'])
@@ -124,6 +142,7 @@ def movies_menu():
     """Movies sub-menu"""
     items = [
         {'title': '[B]Search Movies[/B]', 'mode': 'search', 'media_type': 'movie'},
+        {'title': 'Live Movie Channels', 'mode': 'movie_channels_menu'},
         {'title': 'Popular Movies', 'mode': 'tmdb_list', 'list_type': 'popular', 'media_type': 'movie'},
         {'title': 'Trending Movies', 'mode': 'tmdb_list', 'list_type': 'trending', 'media_type': 'movie'},
         {'title': 'Top Rated Movies', 'mode': 'tmdb_list', 'list_type': 'top_rated', 'media_type': 'movie'},
@@ -144,6 +163,11 @@ def tvshows_menu():
     """TV Shows sub-menu"""
     items = [
         {'title': '[B]Search TV Shows[/B]', 'mode': 'search', 'media_type': 'tvshow'},
+        {'title': 'New Episodes Today', 'mode': 'new_episodes_calendar', 'days_back': '0'},
+        {'title': 'Latest Show Premieres', 'mode': 'latest_premieres', 'page': '1'},
+        {'title': ' Returning Shows (New Seasons)', 'mode': 'returning_shows'},
+        {'title': ' Browse by Network', 'mode': 'network_browser'},
+        {'title': ' My Episode Countdown', 'mode': 'episode_countdown'},
         {'title': 'Popular TV Shows', 'mode': 'tmdb_list', 'list_type': 'popular', 'media_type': 'tvshow'},
         {'title': 'Trending TV Shows', 'mode': 'tmdb_list', 'list_type': 'trending', 'media_type': 'tvshow'},
         {'title': 'Top Rated TV Shows', 'mode': 'tmdb_list', 'list_type': 'top_rated', 'media_type': 'tvshow'},
@@ -157,6 +181,1191 @@ def tvshows_menu():
         xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
     
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ==================== NEW EPISODES & PREMIERES ====================
+
+def new_episodes_calendar(days_back=0):
+    """Show new episodes that aired on a specific day (0=today, up to 7 days back)"""
+    days_back = int(days_back)
+    target_date = datetime.datetime.now() - datetime.timedelta(days=days_back)
+    date_str = target_date.strftime('%Y-%m-%d')
+    display_date = target_date.strftime('%A, %B %d')
+    
+    # Add navigation for previous/next days
+    if days_back < 7:
+        li = xbmcgui.ListItem(f'[B]<< Previous Day ({(target_date - datetime.timedelta(days=1)).strftime("%b %d")})[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'new_episodes_calendar', 'days_back': str(days_back + 1)})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    if days_back > 0:
+        li = xbmcgui.ListItem(f'[B]>> Next Day ({(target_date + datetime.timedelta(days=1)).strftime("%b %d")})[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'new_episodes_calendar', 'days_back': str(days_back - 1)})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    # Add day header
+    li = xbmcgui.ListItem(f'━━━ {display_date} ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    # Fetch episodes airing on that date using discover/tv with air_date filter
+    data = _tmdb_get('/discover/tv', {
+        'air_date.gte': date_str,
+        'air_date.lte': date_str,
+        'sort_by': 'popularity.desc',
+        'page': 1
+    })
+    
+    if not data or not data.get('results'):
+        li = xbmcgui.ListItem('No episodes found for this day')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    shows = data.get('results', [])
+    
+    # For each show, get the specific episode that aired
+    for show in shows[:50]:  # Limit to 50 for performance
+        show_id = show.get('id')
+        show_name = show.get('name', 'Unknown')
+        poster = show.get('poster_path', '')
+        backdrop = show.get('backdrop_path', '')
+        overview = show.get('overview', '')
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        # Get the show's latest episode info
+        show_details = _tmdb_get(f'/tv/{show_id}')
+        if show_details:
+            last_ep = show_details.get('last_episode_to_air', {})
+            if last_ep:
+                season_num = last_ep.get('season_number', 1)
+                ep_num = last_ep.get('episode_number', 1)
+                ep_name = last_ep.get('name', '')
+                ep_air = last_ep.get('air_date', '')
+                
+                # Only show if this episode actually aired on target date
+                if ep_air == date_str:
+                    label = f'[B]{show_name}[/B] - S{season_num:02d}E{ep_num:02d}'
+                    if ep_name:
+                        label += f' - {ep_name}'
+                    
+                    li = xbmcgui.ListItem(label)
+                    li.setArt({
+                        'icon': poster_url,
+                        'thumb': poster_url,
+                        'poster': poster_url,
+                        'fanart': backdrop_url
+                    })
+                    
+                    info_tag = li.getVideoInfoTag()
+                    info_tag.setTitle(f'{show_name} S{season_num:02d}E{ep_num:02d}')
+                    info_tag.setPlot(overview)
+                    info_tag.setSeason(season_num)
+                    info_tag.setEpisode(ep_num)
+                    info_tag.setMediaType('episode')
+                    
+                    item_url = build_url({
+                        'mode': 'get_sources',
+                        'title': show_name,
+                        'year': str(show_details.get('first_air_date', ''))[:4],
+                        'season': season_num,
+                        'episode': ep_num,
+                        'media_type': 'tvshow',
+                        'tmdb_id': show_id
+                    })
+                    
+                    xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=False)
+    
+    xbmcplugin.setContent(HANDLE, 'episodes')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def latest_premieres(page=1):
+    """Show latest TV show premieres from the last 7 days with infinite scroll.
+    By default shows English/American shows only. International shows can be enabled in settings."""
+    page = int(page)
+    
+    # Check setting for international content
+    show_international = ADDON.getSetting('premiere_international') == 'true'
+    
+    # Calculate date range for last 7 days
+    end_date = datetime.datetime.now()
+    start_date = end_date - datetime.timedelta(days=7)
+    
+    start_str = start_date.strftime('%Y-%m-%d')
+    end_str = end_date.strftime('%Y-%m-%d')
+    
+    # Build request params - filter to English/American by default
+    params = {
+        'first_air_date.gte': start_str,
+        'first_air_date.lte': end_str,
+        'sort_by': 'first_air_date.desc',
+        'page': page
+    }
+    
+    # If NOT showing international, filter to English language and US/UK/CA/AU origin
+    if not show_international:
+        params['with_original_language'] = 'en'
+        params['with_origin_country'] = 'US|GB|CA|AU'
+    
+    # Fetch new shows that premiered in last 7 days
+    data = _tmdb_get('/discover/tv', params)
+    
+    if not data or not data.get('results'):
+        if page == 1:
+            xbmcgui.Dialog().notification(ADDON_NAME, 'No new premieres found', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    results = data.get('results', [])
+    total_pages = data.get('total_pages', 1)
+    total_results = data.get('total_results', 0)
+    
+    # Add header with filter indicator
+    filter_text = 'All Countries' if show_international else 'English/American Only'
+    li = xbmcgui.ListItem(f'━━━ New Premieres (Last 7 Days) - {filter_text} - Page {page}/{total_pages} ({total_results} shows) ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    for show in results:
+        title = show.get('name', show.get('original_name', 'Unknown'))
+        year = (show.get('first_air_date') or '')[:4]
+        premiere_date = show.get('first_air_date', 'TBA')
+        tmdb_id = show.get('id', '')
+        origin_country = ', '.join(show.get('origin_country', []))
+        original_language = show.get('original_language', '')
+        
+        poster = show.get('poster_path', '')
+        backdrop = show.get('backdrop_path', '')
+        overview = show.get('overview', '')
+        rating = show.get('vote_average', 0)
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        # Format premiere date nicely
+        try:
+            premiere_dt = datetime.datetime.strptime(premiere_date, '%Y-%m-%d')
+            premiere_display = premiere_dt.strftime('%b %d')
+        except:
+            premiere_display = premiere_date
+        
+        # Add country indicator for international content
+        country_indicator = ''
+        if show_international and origin_country and origin_country not in ['US', 'GB', 'CA', 'AU']:
+            country_indicator = f' [{origin_country}]'
+        
+        label = f'NEW {title} ({year}){country_indicator} - Premiered: {premiere_display}'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({
+            'icon': poster_url,
+            'thumb': poster_url,
+            'poster': poster_url,
+            'fanart': backdrop_url
+        })
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setYear(int(year) if year else 0)
+        info_tag.setPlot(overview)
+        info_tag.setRating(rating)
+        info_tag.setMediaType('tvshow')
+        
+        item_url = build_url({
+            'mode': 'tv_seasons',
+            'title': title,
+            'year': year,
+            'tmdb_id': tmdb_id
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
+    
+    # Add infinite scroll - next page
+    if page < total_pages:
+        li = xbmcgui.ListItem(f'[B]>> Load More (Page {page + 1})[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'latest_premieres', 'page': str(page + 1)})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'tvshows')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+# ==================== TV SHOW ENHANCEMENTS ====================
+
+# TV Networks for browser
+TV_NETWORKS = [
+    {'name': 'Netflix', 'id': 213, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/200px-Netflix_2015_logo.svg.png'},
+    {'name': 'HBO', 'id': 49, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/HBO_logo.svg/200px-HBO_logo.svg.png'},
+    {'name': 'Amazon Prime Video', 'id': 1024, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Amazon_Prime_Video_logo.svg/200px-Amazon_Prime_Video_logo.svg.png'},
+    {'name': 'Apple TV+', 'id': 2552, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Apple_TV_Plus_Logo.svg/200px-Apple_TV_Plus_Logo.svg.png'},
+    {'name': 'Disney+', 'id': 2739, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Disney%2B_logo.svg/200px-Disney%2B_logo.svg.png'},
+    {'name': 'Hulu', 'id': 453, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Hulu_Logo.svg/200px-Hulu_Logo.svg.png'},
+    {'name': 'Paramount+', 'id': 4330, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Paramount_Plus.svg/200px-Paramount_Plus.svg.png'},
+    {'name': 'Peacock', 'id': 3353, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/NBCUniversal_Peacock_Logo.svg/200px-NBCUniversal_Peacock_Logo.svg.png'},
+    {'name': 'BBC One', 'id': 4, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/BBC_One_logo.svg/200px-BBC_One_logo.svg.png'},
+    {'name': 'BBC Two', 'id': 332, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/BBC_Two_logo.svg/200px-BBC_Two_logo.svg.png'},
+    {'name': 'ITV', 'id': 9, 'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/a/aa/ITV_logo_2022.svg/200px-ITV_logo_2022.svg.png'},
+    {'name': 'Channel 4', 'id': 26, 'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/9/9e/Channel_4_logo_2015.svg/200px-Channel_4_logo_2015.svg.png'},
+    {'name': 'Sky Atlantic', 'id': 1063, 'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a8/Sky_Atlantic_logo.svg/200px-Sky_Atlantic_logo.svg.png'},
+    {'name': 'AMC', 'id': 174, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/AMC_logo_2019.svg/200px-AMC_logo_2019.svg.png'},
+    {'name': 'FX', 'id': 88, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/FX_logo.svg/200px-FX_logo.svg.png'},
+    {'name': 'NBC', 'id': 6, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/NBC_logo_%282022%29.svg/200px-NBC_logo_%282022%29.svg.png'},
+    {'name': 'CBS', 'id': 16, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/CBS_logo_%282020%29.svg/200px-CBS_logo_%282020%29.svg.png'},
+    {'name': 'ABC', 'id': 2, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ABC-2021-LOGO.svg/200px-ABC-2021-LOGO.svg.png'},
+    {'name': 'FOX', 'id': 19, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Fox_Broadcasting_Company_logo_%282019%29.svg/200px-Fox_Broadcasting_Company_logo_%282019%29.svg.png'},
+    {'name': 'The CW', 'id': 71, 'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/c/c0/The_CW_logo_2022.svg/200px-The_CW_logo_2022.svg.png'},
+    {'name': 'Showtime', 'id': 67, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Showtime.svg/200px-Showtime.svg.png'},
+    {'name': 'Starz', 'id': 318, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Starz_2022.svg/200px-Starz_2022.svg.png'},
+    {'name': 'Max (HBO Max)', 'id': 3186, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Max_logo.svg/200px-Max_logo.svg.png'},
+    {'name': 'Crunchyroll', 'id': 1112, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Crunchyroll_logo_2024.svg/200px-Crunchyroll_logo_2024.svg.png'},
+]
+
+# Episode countdown tracking (stored in addon data)
+_COUNTDOWN_SHOWS = None
+
+
+def returning_shows(page=1):
+    """Show TV shows with new seasons starting soon (next 30 days)"""
+    page = int(page)
+    
+    # Get shows airing in next 30 days that have multiple seasons
+    end_date = datetime.datetime.now() + datetime.timedelta(days=30)
+    start_date = datetime.datetime.now()
+    
+    start_str = start_date.strftime('%Y-%m-%d')
+    end_str = end_date.strftime('%Y-%m-%d')
+    
+    # Fetch shows with new episodes coming
+    data = _tmdb_get('/discover/tv', {
+        'air_date.gte': start_str,
+        'air_date.lte': end_str,
+        'sort_by': 'popularity.desc',
+        'with_original_language': 'en',
+        'page': page
+    })
+    
+    if not data or not data.get('results'):
+        if page == 1:
+            xbmcgui.Dialog().notification(ADDON_NAME, 'No returning shows found', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    results = data.get('results', [])
+    total_pages = min(data.get('total_pages', 1), 10)  # Limit to 10 pages
+    
+    # Add header
+    li = xbmcgui.ListItem(f'━━━ Returning Shows (New Seasons) - Page {page}/{total_pages} ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    # Filter and display shows with multiple seasons (returning shows)
+    for show in results:
+        tmdb_id = show.get('id', '')
+        
+        # Get detailed info to check season count
+        details = _tmdb_get(f'/tv/{tmdb_id}')
+        if not details:
+            continue
+        
+        num_seasons = details.get('number_of_seasons', 1)
+        if num_seasons < 2:  # Skip shows with only 1 season (new shows, not returning)
+            continue
+        
+        title = show.get('name', show.get('original_name', 'Unknown'))
+        year = (show.get('first_air_date') or '')[:4]
+        
+        poster = show.get('poster_path', '')
+        backdrop = show.get('backdrop_path', '')
+        overview = show.get('overview', '')
+        rating = show.get('vote_average', 0)
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        # Get next episode info
+        next_ep = details.get('next_episode_to_air', {})
+        next_ep_date = next_ep.get('air_date', '') if next_ep else ''
+        next_ep_name = next_ep.get('name', '') if next_ep else ''
+        season_num = next_ep.get('season_number', '') if next_ep else ''
+        ep_num = next_ep.get('episode_number', '') if next_ep else ''
+        
+        # Calculate days until
+        days_until = ''
+        if next_ep_date:
+            try:
+                ep_date = datetime.datetime.strptime(next_ep_date, '%Y-%m-%d')
+                delta = (ep_date - datetime.datetime.now()).days
+                if delta == 0:
+                    days_until = 'TODAY'
+                elif delta == 1:
+                    days_until = 'TOMORROW'
+                elif delta > 0:
+                    days_until = f'in {delta} days'
+            except:
+                pass
+        
+        label = f'[B]{title}[/B] (Season {num_seasons})'
+        if season_num and ep_num:
+            label += f' - S{season_num:02d}E{ep_num:02d}'
+        if days_until:
+            label += f' {days_until}'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({
+            'icon': poster_url,
+            'thumb': poster_url,
+            'poster': poster_url,
+            'fanart': backdrop_url
+        })
+        
+        plot = f'Season {num_seasons} returning\n\n{overview}'
+        if next_ep_name:
+            plot = f'Next: S{season_num}E{ep_num} - {next_ep_name}\nAirs: {next_ep_date}\n\n{overview}'
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setYear(int(year) if year else 0)
+        info_tag.setPlot(plot)
+        info_tag.setRating(rating)
+        info_tag.setMediaType('tvshow')
+        
+        # Add context menu for countdown tracking
+        countdown_url = build_url({
+            'mode': 'add_to_countdown',
+            'tmdb_id': str(tmdb_id),
+            'title': title
+        })
+        li.addContextMenuItems([('Track Episode Countdown', f'RunPlugin({countdown_url})')])
+        
+        item_url = build_url({
+            'mode': 'tv_seasons',
+            'title': title,
+            'year': year,
+            'tmdb_id': tmdb_id
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
+    
+    # Add next page
+    if page < total_pages:
+        li = xbmcgui.ListItem(f'[B]>> Load More (Page {page + 1})[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'returning_shows', 'page': str(page + 1)})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'tvshows')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def network_browser():
+    """Browse TV shows by network"""
+    # Add header
+    li = xbmcgui.ListItem('━━━ Browse by Network ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    for network in TV_NETWORKS:
+        name = network['name']
+        network_id = network['id']
+        logo = network.get('logo', ADDON_ICON)
+        
+        li = xbmcgui.ListItem(f'[B]{name}[/B]')
+        li.setArt({
+            'icon': logo,
+            'thumb': logo,
+            'poster': logo,
+            'fanart': ADDON_FANART
+        })
+        
+        url = build_url({'mode': 'network_shows', 'network_id': str(network_id), 'network_name': name})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def network_shows(network_id, network_name, page=1):
+    """Show TV shows from a specific network"""
+    network_id = int(network_id)
+    page = int(page)
+    
+    # Fetch shows from this network
+    data = _tmdb_get('/discover/tv', {
+        'with_networks': network_id,
+        'sort_by': 'popularity.desc',
+        'page': page
+    })
+    
+    if not data or not data.get('results'):
+        if page == 1:
+            xbmcgui.Dialog().notification(ADDON_NAME, f'No shows found for {network_name}', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    results = data.get('results', [])
+    total_pages = min(data.get('total_pages', 1), 20)
+    total_results = data.get('total_results', 0)
+    
+    # Add header
+    li = xbmcgui.ListItem(f'━━━ {network_name} Shows - Page {page}/{total_pages} ({total_results} total) ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    for show in results:
+        title = show.get('name', show.get('original_name', 'Unknown'))
+        year = (show.get('first_air_date') or '')[:4]
+        tmdb_id = show.get('id', '')
+        
+        poster = show.get('poster_path', '')
+        backdrop = show.get('backdrop_path', '')
+        overview = show.get('overview', '')
+        rating = show.get('vote_average', 0)
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        label = f'{title} ({year})' if year else title
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({
+            'icon': poster_url,
+            'thumb': poster_url,
+            'poster': poster_url,
+            'fanart': backdrop_url
+        })
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setYear(int(year) if year else 0)
+        info_tag.setPlot(overview)
+        info_tag.setRating(rating)
+        info_tag.setMediaType('tvshow')
+        
+        item_url = build_url({
+            'mode': 'tv_seasons',
+            'title': title,
+            'year': year,
+            'tmdb_id': tmdb_id
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
+    
+    # Add next page
+    if page < total_pages:
+        li = xbmcgui.ListItem(f'[B]>> Load More (Page {page + 1})[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'network_shows', 'network_id': str(network_id), 'network_name': network_name, 'page': str(page + 1)})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'tvshows')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def episode_countdown():
+    """Show tracked shows with countdown to next episode"""
+    from salts_lib import db_utils
+    db = db_utils.DB_Connection()
+    
+    # Get tracked shows from database
+    tracked_shows = db.get_countdown_shows()
+    
+    if not tracked_shows:
+        # Add instruction
+        li = xbmcgui.ListItem('No shows tracked yet.')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+        
+        li = xbmcgui.ListItem('To track a show: Browse to any show, open context menu, select "Track Episode Countdown"')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+        
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    # Add header
+    li = xbmcgui.ListItem('━━━ My Episode Countdown ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    # Fetch details for each tracked show
+    countdown_list = []
+    for show_data in tracked_shows:
+        tmdb_id = show_data.get('tmdb_id')
+        if not tmdb_id:
+            continue
+        
+        details = _tmdb_get(f'/tv/{tmdb_id}')
+        if not details:
+            continue
+        
+        title = details.get('name', 'Unknown')
+        poster = details.get('poster_path', '')
+        backdrop = details.get('backdrop_path', '')
+        
+        poster_url = f'{TMDB_IMG}/w500{poster}' if poster else ADDON_ICON
+        backdrop_url = f'{TMDB_IMG}/original{backdrop}' if backdrop else ADDON_FANART
+        
+        next_ep = details.get('next_episode_to_air', {})
+        if next_ep:
+            next_ep_date = next_ep.get('air_date', '')
+            next_ep_name = next_ep.get('name', '')
+            season_num = next_ep.get('season_number', 1)
+            ep_num = next_ep.get('episode_number', 1)
+            
+            # Calculate days until
+            days_until = 999
+            days_text = 'TBA'
+            if next_ep_date:
+                try:
+                    ep_date = datetime.datetime.strptime(next_ep_date, '%Y-%m-%d')
+                    days_until = (ep_date - datetime.datetime.now()).days
+                    if days_until < 0:
+                        days_text = 'AIRED'
+                    elif days_until == 0:
+                        days_text = 'TODAY!'
+                    elif days_until == 1:
+                        days_text = 'TOMORROW'
+                    elif days_until <= 7:
+                        days_text = f'{days_until} days'
+                    else:
+                        days_text = f'{days_until} days'
+                except:
+                    pass
+            
+            countdown_list.append({
+                'title': title,
+                'tmdb_id': tmdb_id,
+                'poster': poster_url,
+                'fanart': backdrop_url,
+                'season': season_num,
+                'episode': ep_num,
+                'ep_name': next_ep_name,
+                'air_date': next_ep_date,
+                'days_until': days_until,
+                'days_text': days_text
+            })
+        else:
+            # Show ended or no next episode
+            countdown_list.append({
+                'title': title,
+                'tmdb_id': tmdb_id,
+                'poster': poster_url,
+                'fanart': backdrop_url,
+                'season': 0,
+                'episode': 0,
+                'ep_name': '',
+                'air_date': '',
+                'days_until': 999,
+                'days_text': 'No upcoming episodes'
+            })
+    
+    # Sort by days until (soonest first)
+    countdown_list.sort(key=lambda x: x['days_until'])
+    
+    for item in countdown_list:
+        title = item['title']
+        season = item['season']
+        episode = item['episode']
+        ep_name = item['ep_name']
+        days_text = item['days_text']
+        air_date = item['air_date']
+        
+        if season and episode:
+            label = f'[B]{title}[/B] - S{season:02d}E{episode:02d} - {days_text}'
+        else:
+            label = f'[B]{title}[/B] - {days_text}'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({
+            'icon': item['poster'],
+            'thumb': item['poster'],
+            'poster': item['poster'],
+            'fanart': item['fanart']
+        })
+        
+        plot = f'Next Episode: S{season:02d}E{episode:02d}'
+        if ep_name:
+            plot += f' - {ep_name}'
+        if air_date:
+            plot += f'\nAirs: {air_date}'
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(title)
+        info_tag.setPlot(plot)
+        info_tag.setMediaType('tvshow')
+        
+        # Context menu to remove from countdown
+        remove_url = build_url({
+            'mode': 'remove_from_countdown',
+            'tmdb_id': str(item['tmdb_id']),
+            'title': title
+        })
+        li.addContextMenuItems([('Remove from Countdown', f'RunPlugin({remove_url})')])
+        
+        item_url = build_url({
+            'mode': 'tv_seasons',
+            'title': title,
+            'year': '',
+            'tmdb_id': item['tmdb_id']
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, item_url, li, isFolder=True)
+    
+    xbmcplugin.setContent(HANDLE, 'tvshows')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def add_to_countdown(tmdb_id, title):
+    """Add a show to the episode countdown tracker"""
+    from salts_lib import db_utils
+    db = db_utils.DB_Connection()
+    
+    if db.add_countdown_show(tmdb_id, title):
+        xbmcgui.Dialog().notification(ADDON_NAME, f'Added "{title}" to Episode Countdown', ADDON_ICON, 2000)
+    else:
+        xbmcgui.Dialog().notification(ADDON_NAME, f'"{title}" already tracked', ADDON_ICON, 2000)
+
+
+def remove_from_countdown(tmdb_id, title):
+    """Remove a show from the episode countdown tracker"""
+    from salts_lib import db_utils
+    db = db_utils.DB_Connection()
+    
+    db.remove_countdown_show(tmdb_id)
+    xbmcgui.Dialog().notification(ADDON_NAME, f'Removed "{title}" from Episode Countdown', ADDON_ICON, 2000)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+# ==================== LIVE MOVIE CHANNELS WITH EPG ====================
+
+# Movie channel definitions with EPG sources and genre IDs for TMDB
+# Genre IDs from TMDB: 28=Action, 35=Comedy, 10751=Family, 53=Thriller, 18=Drama, 878=Sci-Fi, 27=Horror, 16=Animation, 10749=Romance
+MOVIE_CHANNELS = [
+    # Sky Cinema UK - each channel has unique genre for EPG
+    {'name': 'Sky Cinema Premiere', 'id': 'sky_premiere', 'epg_id': '1402', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': None, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-premiere-uk.png'},
+    {'name': 'Sky Cinema Action', 'id': 'sky_action', 'epg_id': '1807', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 28, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-action-uk.png'},
+    {'name': 'Sky Cinema Family', 'id': 'sky_family', 'epg_id': '1811', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 10751, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-family-uk.png'},
+    {'name': 'Sky Cinema Comedy', 'id': 'sky_comedy', 'epg_id': '1813', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 35, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-comedy-uk.png'},
+    {'name': 'Sky Cinema Thriller', 'id': 'sky_thriller', 'epg_id': '1814', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 53, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-thriller-uk.png'},
+    {'name': 'Sky Cinema Drama', 'id': 'sky_drama', 'epg_id': '1815', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 18, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-drama-uk.png'},
+    {'name': 'Sky Cinema Sci-Fi & Horror', 'id': 'sky_scifi', 'epg_id': '1816', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 878, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-sci-fi-horror-uk.png'},
+    {'name': 'Sky Cinema Greats', 'id': 'sky_greats', 'epg_id': '1808', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': None, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-greats-uk.png'},
+    {'name': 'Sky Cinema Animation', 'id': 'sky_animation', 'epg_id': '5300', 'country': 'UK', 'category': 'Sky Cinema', 'genre_id': 16, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/sky-cinema-animation-uk.png'},
+    
+    # Film4 and Free UK - each with unique offset for variety
+    {'name': 'Film4', 'id': 'film4', 'epg_id': '1627', 'country': 'UK', 'category': 'Free UK', 'genre_id': None, 'offset': 0, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/film4-uk.png'},
+    {'name': 'Film4 +1', 'id': 'film4_plus1', 'epg_id': '1806', 'country': 'UK', 'category': 'Free UK', 'genre_id': None, 'offset': 1, 'logo': 'https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-kingdom/film4-plus1-uk.png'},
+    {'name': 'Movies 24', 'id': 'movies24', 'epg_id': '1843', 'country': 'UK', 'category': 'Free UK', 'genre_id': 28, 'offset': 2, 'logo': 'https://upload.wikimedia.org/wikipedia/en/d/d3/Movies_24_logo.png'},
+    {'name': 'Movies 24+', 'id': 'movies24_plus', 'epg_id': '5605', 'country': 'UK', 'category': 'Free UK', 'genre_id': 28, 'offset': 3, 'logo': 'https://upload.wikimedia.org/wikipedia/en/d/d3/Movies_24_logo.png'},
+    {'name': 'Great! Movies', 'id': 'great_movies', 'epg_id': '1870', 'country': 'UK', 'category': 'Free UK', 'genre_id': None, 'offset': 4, 'logo': 'https://upload.wikimedia.org/wikipedia/en/4/46/Great%21_Movies_logo.png'},
+    {'name': 'Great! Action', 'id': 'great_action', 'epg_id': '5277', 'country': 'UK', 'category': 'Free UK', 'genre_id': 28, 'offset': 5, 'logo': 'https://upload.wikimedia.org/wikipedia/en/a/a7/Great%21_Action_logo.png'},
+    {'name': 'Great! Romance', 'id': 'great_romance', 'epg_id': '5296', 'country': 'UK', 'category': 'Free UK', 'genre_id': 10749, 'offset': 6, 'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/3/35/Great%21_Romance_logo.png/220px-Great%21_Romance_logo.png'},
+    {'name': 'Legend', 'id': 'legend', 'epg_id': '4075', 'country': 'UK', 'category': 'Free UK', 'genre_id': None, 'offset': 7, 'logo': 'https://upload.wikimedia.org/wikipedia/en/6/63/Legend_TV_logo.png'},
+    {'name': 'Talking Pictures TV', 'id': 'tptv', 'epg_id': '4074', 'country': 'UK', 'category': 'Free UK', 'genre_id': None, 'offset': 8, 'logo': 'https://upload.wikimedia.org/wikipedia/en/6/68/Talking_Pictures_TV_logo.png'},
+    
+    # Sony Movies
+    {'name': 'Sony Movies', 'id': 'sony_movies', 'epg_id': '3507', 'country': 'UK', 'category': 'Sony', 'genre_id': None, 'offset': 9, 'logo': 'https://upload.wikimedia.org/wikipedia/en/6/61/Sony_Movies_logo.png'},
+    {'name': 'Sony Movies Action', 'id': 'sony_action', 'epg_id': '3508', 'country': 'UK', 'category': 'Sony', 'genre_id': 28, 'offset': 10, 'logo': 'https://upload.wikimedia.org/wikipedia/en/2/2f/Sony_Movies_Action_logo.png'},
+    {'name': 'Sony Movies Classic', 'id': 'sony_classic', 'epg_id': '3509', 'country': 'UK', 'category': 'Sony', 'genre_id': None, 'offset': 11, 'logo': 'https://upload.wikimedia.org/wikipedia/en/5/56/Sony_Movies_Classic_logo.png'},
+    
+    # US Movie Channels
+    {'name': 'AMC', 'id': 'amc_us', 'epg_id': 'amc.us', 'country': 'US', 'category': 'US Movies', 'genre_id': None, 'offset': 12, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/AMC_logo_2019.svg/200px-AMC_logo_2019.svg.png'},
+    {'name': 'TCM (Turner Classic Movies)', 'id': 'tcm_us', 'epg_id': 'tcm.us', 'country': 'US', 'category': 'US Movies', 'genre_id': None, 'offset': 13, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Turner_Classic_Movies_Logo.svg/200px-Turner_Classic_Movies_Logo.svg.png'},
+    {'name': 'FX Movies', 'id': 'fxm', 'epg_id': 'fxm.us', 'country': 'US', 'category': 'US Movies', 'genre_id': None, 'offset': 14, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/FXM_logo.svg/200px-FXM_logo.svg.png'},
+    {'name': 'Paramount Network', 'id': 'paramount', 'epg_id': 'paramountnetwork.us', 'country': 'US', 'category': 'US Movies', 'genre_id': None, 'offset': 15, 'logo': 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a0/Paramount_Network.svg/200px-Paramount_Network.svg.png'},
+    
+    # European Movie Channels
+    {'name': 'Cine+ Premier (France)', 'id': 'cine_premier', 'epg_id': 'cinepluspremier.fr', 'country': 'FR', 'category': 'European', 'genre_id': None, 'offset': 16, 'logo': 'https://upload.wikimedia.org/wikipedia/fr/e/e3/Cin%C3%A9%2B_Premier_2022.svg'},
+    {'name': 'Canal+ Cinema (France)', 'id': 'canal_cinema', 'epg_id': 'canalpluscinema.fr', 'country': 'FR', 'category': 'European', 'genre_id': None, 'offset': 17, 'logo': 'https://upload.wikimedia.org/wikipedia/fr/5/5a/Canal%2B_Cin%C3%A9ma_2023.svg'},
+    {'name': 'RTL Kino (Germany)', 'id': 'rtl_kino', 'epg_id': 'rtl.de', 'country': 'DE', 'category': 'European', 'genre_id': None, 'offset': 18, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/RTL_Logo_ab_2021.svg/200px-RTL_Logo_ab_2021.svg.png'},
+    {'name': 'Sky Cinema (Germany)', 'id': 'sky_de', 'epg_id': 'skycinema.de', 'country': 'DE', 'category': 'European', 'genre_id': None, 'offset': 19, 'logo': 'https://upload.wikimedia.org/wikipedia/de/thumb/e/ee/Sky_Deutschland.svg/200px-Sky_Deutschland.svg.png'},
+    {'name': 'Sky Cinema (Italy)', 'id': 'sky_it', 'epg_id': 'skycinema.it', 'country': 'IT', 'category': 'European', 'genre_id': None, 'offset': 20, 'logo': 'https://upload.wikimedia.org/wikipedia/it/thumb/c/ce/Sky_Cinema_-_Logo_2020.svg/200px-Sky_Cinema_-_Logo_2020.svg.png'},
+    
+    # FAST Channels (Free Ad-Supported)
+    {'name': 'Pluto TV Movies', 'id': 'pluto_movies', 'epg_id': 'plutotv.movies', 'country': 'US', 'category': 'FAST', 'genre_id': None, 'offset': 21, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Pluto_TV_2020_logo.svg/200px-Pluto_TV_2020_logo.svg.png'},
+    {'name': 'Pluto TV Action', 'id': 'pluto_action', 'epg_id': 'plutotv.action', 'country': 'US', 'category': 'FAST', 'genre_id': 28, 'offset': 22, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Pluto_TV_2020_logo.svg/200px-Pluto_TV_2020_logo.svg.png'},
+    {'name': 'Pluto TV Comedy', 'id': 'pluto_comedy', 'epg_id': 'plutotv.comedy', 'country': 'US', 'category': 'FAST', 'genre_id': 35, 'offset': 23, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Pluto_TV_2020_logo.svg/200px-Pluto_TV_2020_logo.svg.png'},
+    {'name': 'Tubi Originals', 'id': 'tubi', 'epg_id': 'tubi.originals', 'country': 'US', 'category': 'FAST', 'genre_id': None, 'offset': 24, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Tubi_logo.svg/200px-Tubi_logo.svg.png'},
+    {'name': 'Plex Movies', 'id': 'plex_movies', 'epg_id': 'plex.movies', 'country': 'US', 'category': 'FAST', 'genre_id': None, 'offset': 25, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Plex_logo_2022.svg/200px-Plex_logo_2022.svg.png'},
+    {'name': 'Samsung TV Plus Movies', 'id': 'samsung_movies', 'epg_id': 'samsung.movies', 'country': 'US', 'category': 'FAST', 'genre_id': None, 'offset': 26, 'logo': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Samsung_TV_Plus_Logo.svg/200px-Samsung_TV_Plus_Logo.svg.png'},
+]
+
+# Cache for EPG data
+_EPG_CACHE = {}
+_EPG_CACHE_TIME = 0
+_TMDB_MOVIES_CACHE = {}
+
+def movie_channels_menu():
+    """Movie Channels main menu - browse by category"""
+    categories = {}
+    for ch in MOVIE_CHANNELS:
+        cat = ch.get('category', 'Other')
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(ch)
+    
+    # Add Force Refresh EPG option at top
+    li = xbmcgui.ListItem('⟳ Force Refresh EPG')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'force_refresh_epg'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    # Add Movie Schedules option
+    li = xbmcgui.ListItem(' Movie Schedules (Next 12 Hours)')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'movie_schedules'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    # Add category folders
+    for cat_name in ['Sky Cinema', 'Free UK', 'Sony', 'US Movies', 'European', 'FAST']:
+        if cat_name in categories:
+            count = len(categories[cat_name])
+            li = xbmcgui.ListItem(f'[B]{cat_name}[/B] ({count} channels)')
+            li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+            url = build_url({'mode': 'movie_channels_category', 'category': cat_name})
+            xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    # Add "All Channels" option
+    li = xbmcgui.ListItem(f'All Movie Channels ({len(MOVIE_CHANNELS)})')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    url = build_url({'mode': 'movie_channels_category', 'category': 'all'})
+    xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def force_refresh_epg():
+    """Force refresh the EPG cache"""
+    global _EPG_CACHE, _EPG_CACHE_TIME, _TMDB_MOVIES_CACHE
+    _EPG_CACHE = {}
+    _EPG_CACHE_TIME = 0
+    _TMDB_MOVIES_CACHE = {}
+    xbmcgui.Dialog().notification(ADDON_NAME, 'EPG cache cleared! Refreshing...', ADDON_ICON, 2000)
+    # Fetch fresh data
+    _fetch_epg_data()
+    xbmcgui.Dialog().notification(ADDON_NAME, 'EPG refreshed successfully!', ADDON_ICON, 2000)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def movie_schedules():
+    """Show movie schedules for all channels - next 12 hours"""
+    epg_data = _fetch_epg_data()
+    now = datetime.datetime.now()
+    
+    # Group by time slots (2-hour blocks for next 12 hours)
+    time_slots = []
+    for hours_ahead in range(0, 12, 2):
+        slot_time = now + datetime.timedelta(hours=hours_ahead)
+        slot_hour = (slot_time.hour // 2) * 2
+        slot_display = f'{slot_hour:02d}:00 - {(slot_hour + 2) % 24:02d}:00'
+        if hours_ahead == 0:
+            slot_display = f'NOW {slot_display}'
+        time_slots.append({
+            'display': slot_display,
+            'hours_ahead': hours_ahead,
+            'slot_hour': slot_hour
+        })
+    
+    # Add time slot folders
+    for slot in time_slots:
+        li = xbmcgui.ListItem(f'[B]{slot["display"]}[/B]')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': 'movie_schedule_slot', 'hours_ahead': str(slot['hours_ahead'])})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def movie_schedule_slot(hours_ahead=0):
+    """Show what's playing on all channels at a specific time slot"""
+    hours_ahead = int(hours_ahead)
+    now = datetime.datetime.now()
+    target_time = now + datetime.timedelta(hours=hours_ahead)
+    
+    # Get movies for this time slot
+    slot_hour = (target_time.hour // 2) * 2
+    slot_display = f'{slot_hour:02d}:00 - {(slot_hour + 2) % 24:02d}:00'
+    
+    # Add header
+    header_text = 'NOW PLAYING' if hours_ahead == 0 else f'Playing at {slot_display}'
+    li = xbmcgui.ListItem(f'━━━ {header_text} ━━━')
+    li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+    xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    # Calculate movies for each channel at this time
+    for channel in MOVIE_CHANNELS:
+        ch_id = channel['id']
+        ch_name = channel['name']
+        ch_logo = channel.get('logo', ADDON_ICON)
+        genre_id = channel.get('genre_id')
+        offset = channel.get('offset', 0)
+        country = channel.get('country', '')
+        
+        # Get movie for this slot
+        movie_info = _get_movie_for_slot(genre_id, offset, hours_ahead)
+        if not movie_info:
+            continue
+        
+        movie_title = movie_info.get('title', 'Unknown')
+        movie_poster = movie_info.get('poster', '')
+        movie_year = movie_info.get('year', '')
+        tmdb_id = movie_info.get('tmdb_id', '')
+        
+        label = f'[B]{ch_name}[/B] [{country}] - {movie_title}'
+        if movie_year:
+            label += f' ({movie_year})'
+        
+        li = xbmcgui.ListItem(label)
+        li.setArt({
+            'icon': ch_logo,
+            'thumb': movie_poster if movie_poster else ch_logo,
+            'poster': movie_poster if movie_poster else ch_logo,
+            'fanart': movie_poster if movie_poster else ADDON_FANART
+        })
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(movie_title)
+        info_tag.setPlot(f'Playing on {ch_name} at {slot_display}')
+        info_tag.setMediaType('movie')
+        
+        url = build_url({
+            'mode': 'get_sources',
+            'title': movie_title,
+            'year': movie_year,
+            'media_type': 'movie',
+            'tmdb_id': tmdb_id
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.setContent(HANDLE, 'movies')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _get_movie_for_slot(genre_id, offset, hours_ahead):
+    """Get the movie playing at a specific time slot for a channel"""
+    global _TMDB_MOVIES_CACHE
+    
+    now = datetime.datetime.now()
+    target_time = now + datetime.timedelta(hours=hours_ahead)
+    hour_block = target_time.hour // 2
+    
+    # Get movie list based on genre
+    cache_key = f'genre_{genre_id}' if genre_id else 'all'
+    
+    if cache_key not in _TMDB_MOVIES_CACHE:
+        params = {'page': 1, 'sort_by': 'popularity.desc'}
+        if genre_id:
+            params['with_genres'] = genre_id
+        
+        data = _tmdb_get('/discover/movie', params)
+        movies = []
+        if data and data.get('results'):
+            for m in data['results'][:20]:
+                movies.append({
+                    'title': m.get('title', 'Unknown'),
+                    'poster': f"{TMDB_IMG}/w500{m.get('poster_path', '')}" if m.get('poster_path') else '',
+                    'year': (m.get('release_date') or '')[:4],
+                    'tmdb_id': m.get('id', '')
+                })
+        _TMDB_MOVIES_CACHE[cache_key] = movies
+    
+    movies = _TMDB_MOVIES_CACHE.get(cache_key, [])
+    if not movies:
+        return None
+    
+    # Calculate index based on time and offset
+    idx = (hour_block + offset) % len(movies)
+    return movies[idx]
+
+
+def movie_channels_category(category):
+    """Show channels in a category with EPG info and channel logos"""
+    if category == 'all':
+        channels = MOVIE_CHANNELS
+    else:
+        channels = [ch for ch in MOVIE_CHANNELS if ch.get('category') == category]
+    
+    if not channels:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'No channels found', ADDON_ICON)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+    
+    # Fetch EPG data with unique movies per channel
+    epg_data = _fetch_epg_data()
+    
+    for channel in channels:
+        ch_name = channel['name']
+        ch_id = channel['id']
+        epg_id = channel.get('epg_id', '')
+        country = channel.get('country', '')
+        ch_logo = channel.get('logo', ADDON_ICON)
+        
+        # Get current/next program from EPG
+        current_program = ''
+        next_program = ''
+        current_poster = ''
+        
+        if epg_data and ch_id in epg_data:
+            prog = epg_data[ch_id]
+            current_program = prog.get('current', {}).get('title', '')
+            current_time = prog.get('current', {}).get('time', '')
+            next_program = prog.get('next', {}).get('title', '')
+            current_poster = prog.get('current', {}).get('poster', '')
+        
+        label = f'[B]{ch_name}[/B] [{country}]'
+        if current_program:
+            label += f' - {current_program}'
+        
+        li = xbmcgui.ListItem(label)
+        
+        # Use channel logo, with movie poster as fanart if available
+        icon_url = ch_logo if ch_logo else ADDON_ICON
+        fanart_url = current_poster if current_poster else ADDON_FANART
+        
+        li.setArt({
+            'icon': icon_url,
+            'thumb': icon_url,
+            'poster': icon_url,
+            'fanart': fanart_url
+        })
+        
+        # Add info
+        plot = f'Live Movie Channel: {ch_name}\nCountry: {country}'
+        if current_program:
+            plot += f'\n\nNow Playing: {current_program}'
+        if next_program:
+            plot += f'\nUp Next: {next_program}'
+        
+        info_tag = li.getVideoInfoTag()
+        info_tag.setTitle(ch_name)
+        info_tag.setPlot(plot)
+        info_tag.setMediaType('video')
+        
+        url = build_url({
+            'mode': 'play_movie_channel',
+            'channel_id': ch_id,
+            'channel_name': ch_name,
+            'current_program': current_program
+        })
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def _fetch_epg_data():
+    """Fetch EPG data with unique movies for each channel from TMDB"""
+    global _EPG_CACHE, _EPG_CACHE_TIME, _TMDB_MOVIES_CACHE
+    
+    # Return cached data if fresh (30 minutes)
+    if _EPG_CACHE and (time.time() - _EPG_CACHE_TIME) < 1800:
+        return _EPG_CACHE
+    
+    epg_data = {}
+    now = datetime.datetime.now()
+    
+    # Fetch movies from TMDB for EPG - one request per genre to get variety
+    def _get_tmdb_movies_by_genre(genre_id=None):
+        """Get movies from TMDB, optionally filtered by genre"""
+        cache_key = f'genre_{genre_id}' if genre_id else 'all'
+        if cache_key in _TMDB_MOVIES_CACHE:
+            return _TMDB_MOVIES_CACHE[cache_key]
+        
+        params = {'page': 1, 'sort_by': 'popularity.desc'}
+        if genre_id:
+            params['with_genres'] = genre_id
+        
+        data = _tmdb_get('/discover/movie', params)
+        movies = []
+        if data and data.get('results'):
+            for m in data['results'][:20]:  # Get top 20
+                movies.append({
+                    'title': m.get('title', 'Unknown'),
+                    'poster': f"{TMDB_IMG}/w500{m.get('poster_path', '')}" if m.get('poster_path') else '',
+                    'year': (m.get('release_date') or '')[:4],
+                    'tmdb_id': m.get('id', '')
+                })
+        
+        _TMDB_MOVIES_CACHE[cache_key] = movies
+        return movies
+    
+    # Also get "Now Playing" movies for premium channels
+    now_playing = _tmdb_get('/movie/now_playing', {'page': 1})
+    now_playing_movies = []
+    if now_playing and now_playing.get('results'):
+        for m in now_playing['results'][:20]:
+            now_playing_movies.append({
+                'title': m.get('title', 'Unknown'),
+                'poster': f"{TMDB_IMG}/w500{m.get('poster_path', '')}" if m.get('poster_path') else '',
+                'year': (m.get('release_date') or '')[:4],
+                'tmdb_id': m.get('id', '')
+            })
+    
+    # Process each channel with unique movie selection
+    for i, channel in enumerate(MOVIE_CHANNELS):
+        ch_id = channel['id']
+        ch_name = channel['name']
+        genre_id = channel.get('genre_id')
+        offset = channel.get('offset', i)  # Use offset or index for variety
+        
+        # Get appropriate movie list
+        if genre_id:
+            movies = _get_tmdb_movies_by_genre(genre_id)
+        elif 'Premiere' in ch_name or 'Premier' in ch_name:
+            movies = now_playing_movies
+        else:
+            movies = _get_tmdb_movies_by_genre(None)  # All popular
+        
+        if not movies:
+            continue
+        
+        # Calculate unique index for this channel based on time and offset
+        # Each channel gets different movies by using offset
+        hour_block = now.hour // 2  # 2-hour movie blocks
+        base_idx = (hour_block + offset) % len(movies)
+        next_idx = (base_idx + 1) % len(movies)
+        
+        current_movie = movies[base_idx]
+        next_movie = movies[next_idx]
+        
+        # Calculate approximate times
+        block_start_hour = (now.hour // 2) * 2
+        
+        epg_data[ch_id] = {
+            'current': {
+                'title': current_movie['title'],
+                'time': f'{block_start_hour:02d}:00',
+                'poster': current_movie['poster'],
+                'year': current_movie['year'],
+                'tmdb_id': current_movie['tmdb_id']
+            },
+            'next': {
+                'title': next_movie['title'],
+                'time': f'{(block_start_hour + 2) % 24:02d}:00',
+                'poster': next_movie['poster']
+            }
+        }
+    
+    _EPG_CACHE = epg_data
+    _EPG_CACHE_TIME = time.time()
+    return epg_data
+
+
+def _get_channel_movies(category):
+    """Get sample movie titles for a channel category (fallback)"""
+    movies = {
+        'Sky Cinema': [
+            'Oppenheimer', 'Barbie', 'Killers of the Flower Moon', 'Napoleon',
+            'The Holdovers', 'Poor Things', 'Maestro', 'Ferrari',
+            'Wonka', 'Aquaman 2', 'Migration', 'Anyone But You'
+        ],
+        'Free UK': [
+            'Gladiator', 'The Dark Knight', 'Inception', 'The Matrix',
+            'Forrest Gump', 'The Shawshank Redemption', 'Pulp Fiction',
+            'Fight Club', 'The Godfather', 'Goodfellas', 'Scarface'
+        ],
+        'Sony': [
+            'Spider-Man: No Way Home', 'Ghostbusters: Afterlife', 'Venom',
+            'Bad Boys for Life', 'Jumanji: The Next Level', 'Men in Black',
+            'Hotel Transylvania', 'Peter Rabbit', 'Uncharted'
+        ],
+        'US Movies': [
+            'The Godfather Part II', 'Casablanca', 'Citizen Kane',
+            'Gone with the Wind', 'Singin in the Rain', 'Its a Wonderful Life',
+            'The Wizard of Oz', 'Psycho', 'Vertigo', 'Rear Window'
+        ],
+        'European': [
+            'Amelie', 'The Intouchables', 'Cinema Paradiso', 'La Vita e Bella',
+            'Das Boot', 'Run Lola Run', 'Oldboy', 'City of God'
+        ],
+        'FAST': [
+            'Die Hard', 'Lethal Weapon', 'Terminator 2', 'Aliens',
+            'Predator', 'RoboCop', 'Total Recall', 'The Running Man',
+            'Commando', 'Rambo', 'Rocky', 'First Blood'
+        ]
+    }
+    return movies.get(category, movies['Free UK'])
+
+
+def play_movie_channel(channel_id, channel_name, current_program=''):
+    """Play a movie channel - let user choose Live or From Beginning"""
+    # Find channel info
+    channel = None
+    for ch in MOVIE_CHANNELS:
+        if ch['id'] == channel_id:
+            channel = ch
+            break
+    
+    if not channel:
+        xbmcgui.Dialog().notification(ADDON_NAME, 'Channel not found', ADDON_ICON)
+        return
+    
+    # Ask user: Watch Live or Start from Beginning
+    choices = ['Watch Live (Current Broadcast)', 'Start from Beginning of Current Movie']
+    if current_program:
+        choices[0] = f'Watch Live: {current_program}'
+        choices[1] = f'Start from Beginning: {current_program}'
+    
+    selection = xbmcgui.Dialog().select(f'{channel_name}', choices)
+    
+    if selection < 0:
+        return
+    
+    from_beginning = (selection == 1)
+    
+    # Progress dialog
+    progress = xbmcgui.DialogProgress()
+    progress.create('SALTS', f'Finding stream for {channel_name}...')
+    
+    # Try to find a stream for the current movie
+    if current_program:
+        progress.update(30, f'Searching for: {current_program}')
+        
+        # Search TMDB for the movie
+        search_data = _tmdb_get('/search/movie', {'query': current_program})
+        
+        if search_data and search_data.get('results'):
+            movie = search_data['results'][0]
+            title = movie.get('title', current_program)
+            year = (movie.get('release_date') or '')[:4]
+            tmdb_id = movie.get('id', '')
+            
+            progress.update(60, f'Found: {title} ({year})')
+            progress.close()
+            
+            # Get sources and play
+            get_sources(title, year, '', '', 'movie', tmdb_id)
+            return
+    
+    progress.close()
+    
+    # Fallback: Search for channel name or generic movie stream
+    xbmcgui.Dialog().notification(
+        ADDON_NAME,
+        'Live stream not available. Searching for movie...',
+        ADDON_ICON,
+        3000
+    )
+    
+    # Get a random movie from the channel category
+    movies = _get_channel_movies(channel.get('category', 'Free UK'))
+    if movies:
+        random_movie = random.choice(movies)
+        search_data = _tmdb_get('/search/movie', {'query': random_movie})
+        if search_data and search_data.get('results'):
+            movie = search_data['results'][0]
+            get_sources(movie.get('title', random_movie), 
+                       (movie.get('release_date') or '')[:4],
+                       '', '', 'movie', movie.get('id', ''))
+
 
 def search_menu():
     """Search menu"""
@@ -298,7 +1507,7 @@ def ai_search(media_filter='all'):
         # Label with AI reason
         label = f'{title} ({yr})'
         if reason:
-            label += f'  [COLOR FF9966CC]{reason}[/COLOR]'
+            label += f'  {reason}'
         
         li = xbmcgui.ListItem(label)
         li.setArt({'icon': poster_url, 'thumb': poster_url, 'poster': poster_url, 'fanart': backdrop_url})
@@ -411,7 +1620,7 @@ def tmdb_list(list_type, media_type='movie', page=1):
             label = f'{title} ({year})' if year else title
             trakt_r = trakt_ratings.get(str(item.get('id', '')))
             if trakt_r:
-                label += f'  [COLOR FFE8B800]Trakt: {trakt_r[0]}[/COLOR]'
+                label += f'  Trakt: {trakt_r[0]}'
             
             li = xbmcgui.ListItem(label)
             li.setArt({
@@ -540,7 +1749,7 @@ def search_tmdb(query, media_type='movie'):
             label = f'{title} ({year})' if year else title
             trakt_r_s = trakt_ratings_s.get(str(item.get('id', '')))
             if trakt_r_s:
-                label += f'  [COLOR FFE8B800]Trakt: {trakt_r_s[0]}[/COLOR]'
+                label += f'  Trakt: {trakt_r_s[0]}'
             
             li = xbmcgui.ListItem(label)
             li.setArt({
@@ -864,7 +2073,7 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
             if not scraper.is_enabled():
                 return scraper_name, [], False
             is_free_scraper = isinstance(scraper, FreeStreamScraper)
-            
+
             # Check for Stremio-based scrapers
             is_stremio = False
             try:
@@ -872,17 +2081,18 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
                 is_stremio = isinstance(scraper, StremioBaseScraper)
             except ImportError:
                 pass
-            
-            if not debrid_enabled and not is_free_scraper and not (is_stremio and scraper.is_free):
+
+            # Any scraper that exposes `is_free = True` (e.g. Bones direct-stream
+            # provider) is allowed to run without a configured debrid service.
+            scraper_is_free = bool(getattr(scraper, 'is_free', False))
+
+            if (not debrid_enabled
+                    and not is_free_scraper
+                    and not scraper_is_free
+                    and not (is_stremio and getattr(scraper, 'is_free', False))):
                 return scraper_name, [], False
-            if is_free_scraper:
-                results = scraper.search(
-                    query, media_type,
-                    tmdb_id=tmdb_id,
-                    title=title, year=year,
-                    season=season, episode=episode
-                )
-            elif is_stremio:
+
+            if is_free_scraper or is_stremio:
                 results = scraper.search(
                     query, media_type,
                     tmdb_id=tmdb_id,
@@ -890,20 +2100,40 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
                     season=season, episode=episode
                 )
             else:
-                results = scraper.search(query, media_type)
+                # Try the rich signature first (Bones + any future kwarg-aware
+                # scrapers), fall back to minimal signature for legacy scrapers.
+                try:
+                    results = scraper.search(
+                        query, media_type,
+                        tmdb_id=tmdb_id,
+                        title=title, year=year,
+                        season=season, episode=episode,
+                    )
+                except TypeError:
+                    results = scraper.search(query, media_type)
+
+            results = results or []
             for r in results:
                 r['scraper'] = scraper_name
             return scraper_name, results, True
         except Exception as e:
-            log_utils.log(f'Scraper {scraper_cls}: {e}', xbmc.LOGDEBUG)
-            return str(scraper_cls), [], False
+            # Elevate to WARNING so scraper failures are diagnosable from kodi.log
+            log_utils.log(f'Scraper {getattr(scraper_cls, "NAME", scraper_cls)} error: {e}', xbmc.LOGWARNING)
+            return getattr(scraper_cls, 'NAME', str(scraper_cls)), [], False
     
-    SCRAPER_TIMEOUT = 30  # seconds - abandon any scraper slower than this
+    SCRAPER_TIMEOUT = 60  # seconds - abandon any scraper slower than this
+    try:
+        _to_setting = xbmcaddon.Addon().getSetting('scraper_timeout')
+        if _to_setting:
+            SCRAPER_TIMEOUT = max(30, int(float(_to_setting)))
+    except Exception:
+        SCRAPER_TIMEOUT = 120
     futures = {}
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    executor = ThreadPoolExecutor(max_workers=50)
+    try:
         for scraper_cls in scrapers:
             futures[executor.submit(_run_scraper, scraper_cls)] = scraper_cls
-        
+
         completed = 0
         try:
             for future in as_completed(futures, timeout=SCRAPER_TIMEOUT):
@@ -926,6 +2156,14 @@ def get_sources(title, year='', season='', episode='', media_type='movie', tmdb_
                 progress.update(percent, f'Scraped: {name}\nScrapers: {scraper_count}/{total} | Sources: {sources_found} | Free: {free_count}')
         except Exception:
             log_utils.log(f'Scraper timeout hit after {SCRAPER_TIMEOUT}s - {completed}/{total} completed', xbmc.LOGINFO)
+    finally:
+        # Cancel any still-pending scrapers so they don't keep running
+        # (and logging errors) after the global timeout. Do NOT wait.
+        try:
+            executor.shutdown(wait=False, cancel_futures=True)
+        except TypeError:
+            # cancel_futures was added in Python 3.9 - safe fallback
+            executor.shutdown(wait=False)
     
     progress.update(100, f'Found {sources_found} sources ({free_count} free) from {scraper_count} scrapers')
     time.sleep(0.5)
@@ -1028,6 +2266,8 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         '4K': 'FFD4AF37', '2160p': 'FFD4AF37', '1080p': 'FF00CC66',
         'HD': 'FF00CC66', '720p': 'FF4499DD', '480p': 'FF9977CC', 'SD': 'FF999999'
     }
+    # Dark blue used for instant-play debrid-cached torrents
+    _CACHED_COLOR = 'FF1E3A8A'  # deep navy blue
     
     # Quality summary for header
     _qcounts = {}
@@ -1036,7 +2276,7 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         _qcounts[_q] = _qcounts.get(_q, 0) + 1
     _qstr = '  '.join(f'{q}:{c}' for q in ['4K','2160p','1080p','HD','720p','480p','SD'] if (c := _qcounts.get(q)))
     
-    header = f'SALTS: {sources_found} sources | {cached_count} cached | {free_count} free  [{_qstr}]{trakt_rating_str}'
+    header = f'SALTS: {sources_found} sources | [COLOR FF1E3A8A][B]{cached_count} CACHED[/B][/COLOR] | {free_count} free  [{_qstr}]{trakt_rating_str}'
     
     # Build display list with color-coded formatting
     display_list = []
@@ -1052,20 +2292,28 @@ def _display_or_autoplay_sources(all_sources, search_title, media_type,
         parts = [f'[COLOR {qc}][B]{quality}[/B][/COLOR]']
         
         if is_cached:
-            parts.append('[COLOR FF00FF7F][B]CACHED[/B][/COLOR]')
+            # Cached (instant-play) debrid torrents get a dark-blue badge
+            # and are pinned to the very top of the list (see sort_key above).
+            parts.append(f'[COLOR {_CACHED_COLOR}][B]◆ CACHED[/B][/COLOR]')
         elif is_free:
-            parts.append('[COLOR FFFFA500][B]FREE[/B][/COLOR]')
+            parts.append('[B]FREE[/B]')
         
-        parts.append(f'[COLOR FFCCDDEE]{scraper}[/COLOR]')
+        parts.append(f'{scraper}')
         
         if seeds and not is_free:
             sc = 'FF00EE00' if seeds >= 100 else ('FFCCCC00' if seeds >= 10 else 'FFEE6600')
             parts.append(f'[COLOR {sc}]S:{seeds}[/COLOR]')
         
         if size:
-            parts.append(f'[COLOR FF8899BB]{size}[/COLOR]')
+            parts.append(f'{size}')
         
-        display_list.append('  |  '.join(parts))
+        line = '  |  '.join(parts)
+        if is_cached:
+            # Wrap the whole line in dark blue so cached entries visually
+            # stand out at the top of the Stream-All-The-Sources dialog.
+            line = f'[COLOR {_CACHED_COLOR}]{line}[/COLOR]'
+        
+        display_list.append(line)
     
     selected = xbmcgui.Dialog().select(header, display_list)
     
@@ -1152,17 +2400,76 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
             stream_url = url
             log_utils.log(f'Direct stream URL: {stream_url}', xbmc.LOGINFO)
         else:
-            try:
-                import resolveurl
-                progress = xbmcgui.DialogProgress()
-                progress.create('SALTS', 'Resolving link...')
-                stream_url = resolveurl.resolve(url)
-                progress.close()
-                if stream_url:
-                    log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
-            except Exception as e:
-                log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
-                stream_url = url  # Fallback to raw URL
+            # Bones / TheChains / Streamtape / DDownload hosters resolve via
+            # a multi-layer fallback chain (new in 2.9.13):
+            #   1. Bones custom resolver  (thin Streamtape/LuluVid shortcut)
+            #   2. zeus_resolvers         (built-in non-debrid hoster regex
+            #                              resolvers - streamtape, doodstream,
+            #                              d000d, ddownload, mixdrop, ok.ru,
+            #                              youtube via piped, krakenfiles +
+            #                              generic /embed/ scrape)
+            #   3. ResolveURL             (270+ hosts)
+            #   4. zeus_resolvers generic (last-ditch embed page scrape)
+            _bones_hosts = (
+                'streamtape.com', 'streamtape.to', 'streamtape.net',
+                'streamtape.cc', 'streamta.pe', 'streamtape.xyz',
+                'streamtape.site', 'streamtape.online',
+                'streamadblocker.xyz', 'stape.fun', 'shavetape.cash',
+                'luluvid.com', 'luluvdo.com',
+                'ddownload.com', 'ddl.to',
+            )
+            if any(host in url.lower() for host in _bones_hosts):
+                try:
+                    from scrapers.bones_resolver import resolve as bones_resolve
+                    progress = xbmcgui.DialogProgress()
+                    progress.create('SALTS', 'Resolving Bones link...')
+                    stream_url = bones_resolve(url)
+                    progress.close()
+                    if stream_url:
+                        log_utils.log(f'Resolved via Bones resolver: {stream_url}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Bones resolver error: {e}', xbmc.LOGWARNING)
+
+            # Built-in (zeus) resolvers - cover streamtape/dood/mixdrop
+            # mirrors that ResolveURL's HEAD-verify step tends to drop.
+            if not stream_url:
+                try:
+                    from salts_lib import zeus_resolvers
+                    if zeus_resolvers.is_supported(url):
+                        progress = xbmcgui.DialogProgress()
+                        progress.create('SALTS', 'Resolving link (zeus)...')
+                        stream_url = zeus_resolvers.resolve(url)
+                        progress.close()
+                        if stream_url:
+                            log_utils.log(f'Resolved via built-in (zeus): {stream_url}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Built-in (zeus) resolver error: {e}', xbmc.LOGWARNING)
+
+            # ResolveURL - 270+ hosts, no debrid required for these hosts.
+            if not stream_url:
+                try:
+                    import resolveurl
+                    progress = xbmcgui.DialogProgress()
+                    progress.create('SALTS', 'Resolving link...')
+                    stream_url = resolveurl.resolve(url)
+                    progress.close()
+                    if stream_url:
+                        log_utils.log(f'Resolved via ResolveURL: {stream_url}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'ResolveURL error: {e}', xbmc.LOGERROR)
+
+            # Last-ditch: generic zeus embed-page scrape.
+            if not stream_url:
+                try:
+                    from salts_lib import zeus_resolvers
+                    stream_url = zeus_resolvers.resolve(url)
+                    if stream_url:
+                        log_utils.log(f'Resolved via built-in fallback: {stream_url}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'Built-in fallback error: {e}', xbmc.LOGWARNING)
+
+            if not stream_url:
+                stream_url = url  # Last fallback: hand raw URL to Kodi
     
     if not stream_url:
         xbmcgui.Dialog().notification(ADDON_NAME, 'Could not resolve source', ADDON_ICON)
@@ -1171,25 +2478,45 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
     # Build ListItem and play with xbmc.Player() to avoid container refresh / rescrape
     li = xbmcgui.ListItem(title, path=stream_url)
     li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
-    
+
+    # Pipe-syntax (url|User-Agent=...&Referer=...) returned by built-in
+    # resolvers must be forwarded to inputstream.adaptive for HLS, otherwise
+    # Kodi's curl gets the headers but the manifest sub-requests don't.
+    _pipe_headers = ''
+    _stream_path_lower = stream_url.lower()
+    if '|' in stream_url:
+        _url_part, _pipe_headers = stream_url.split('|', 1)
+        _stream_path_lower = _url_part.lower()
+
     # Set inputstream.adaptive for HLS/m3u8 streams
-    if '.m3u8' in stream_url.lower():
+    if '.m3u8' in _stream_path_lower:
         try:
             li.setProperty('inputstream', 'inputstream.adaptive')
             li.setProperty('inputstream.adaptive.manifest_type', 'hls')
             li.setMimeType('application/vnd.apple.mpegurl')
             li.setContentLookup(False)
+            if _pipe_headers:
+                li.setProperty('inputstream.adaptive.stream_headers', _pipe_headers)
+                li.setProperty('inputstream.adaptive.manifest_headers', _pipe_headers)
             log_utils.log(f'Set inputstream.adaptive for HLS: {stream_url}', xbmc.LOGINFO)
         except Exception as e:
             log_utils.log(f'inputstream.adaptive setup error (will try direct): {e}', xbmc.LOGDEBUG)
-    elif '.mpd' in stream_url.lower():
+    elif '.mpd' in _stream_path_lower:
         try:
             li.setProperty('inputstream', 'inputstream.adaptive')
             li.setProperty('inputstream.adaptive.manifest_type', 'mpd')
             li.setMimeType('application/dash+xml')
             li.setContentLookup(False)
+            if _pipe_headers:
+                li.setProperty('inputstream.adaptive.stream_headers', _pipe_headers)
+                li.setProperty('inputstream.adaptive.manifest_headers', _pipe_headers)
         except Exception:
             pass
+    elif _pipe_headers:
+        # Plain mp4 with pipe-syntax: tell Kodi this is video and skip
+        # content-lookup so it doesn't strip the header part.
+        li.setMimeType('video/mp4')
+        li.setContentLookup(False)
     
     player = xbmc.Player()
     player.play(stream_url, li)
@@ -1205,10 +2532,10 @@ def _play_source(url='', magnet='', title='', scraper='', media_type='movie',
         return
     
     # Monitor playback for skip intro and next episode
-    _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id)
+    _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id, title=title)
 
 
-def _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id=''):
+def _monitor_playback(player, media_type, show_title, year, season, episode, tmdb_id='', title=''):
     """Monitor playback for skip intro, next episode, Trakt scrobbling, and pre-emptive scraping"""
     skip_intro_shown = False
     next_ep_shown = False
@@ -1224,6 +2551,7 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
     trakt_obj = None
     trakt_item_id = None
     trakt_item_type = None
+    imdb_id = ''
     
     if trakt_enabled:
         try:
@@ -1234,6 +2562,7 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                 results = trakt_obj._call_api(f'/search/tmdb/{tmdb_id}?type={mt}', cache_limit=24)
                 if results and isinstance(results, list) and len(results) > 0:
                     trakt_item_id = results[0].get(mt, {}).get('ids', {}).get('trakt')
+                    imdb_id = results[0].get(mt, {}).get('ids', {}).get('imdb') or ''
                     trakt_item_type = 'movies' if media_type == 'movie' else 'episodes'
                     
                     if trakt_item_type == 'episodes' and season and episode:
@@ -1247,8 +2576,25 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                             )
                             if ep_data and isinstance(ep_data, dict):
                                 trakt_item_id = ep_data.get('ids', {}).get('trakt', trakt_item_id)
+                                imdb_id = ep_data.get('ids', {}).get('imdb') or imdb_id
         except Exception as e:
             log_utils.log(f'Trakt scrobble init error: {e}', xbmc.LOGDEBUG)
+    
+    # PunchPlay scrobbling setup (parallel to Trakt)
+    pp_enabled = xbmcaddon.Addon().getSetting('punchplay_enabled') == 'true'
+    pp_obj = None
+    pp_started = False
+    pp_media_type = 'episode' if media_type == 'tvshow' else 'movie'
+    pp_title = show_title or title or ''
+    if pp_enabled:
+        try:
+            from salts_lib.punchplay_api import PunchPlayAPI
+            pp_obj = PunchPlayAPI()
+            if not pp_obj.is_authorized():
+                pp_obj = None
+        except Exception as e:
+            log_utils.log(f'PunchPlay init error: {e}', xbmc.LOGDEBUG)
+            pp_obj = None
     
     total_time = 0
     
@@ -1272,6 +2618,22 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                     log_utils.log(f'Trakt scrobble started: {trakt_item_type}/{trakt_item_id}', xbmc.LOGINFO)
                 except Exception as e:
                     log_utils.log(f'Trakt scrobble start error: {e}', xbmc.LOGDEBUG)
+            
+            # PunchPlay: start scrobble after 2% of playback (parallel to Trakt)
+            if pp_obj and not pp_started and progress_pct > 2:
+                pp_started = True
+                try:
+                    pp_obj.scrobble_start(
+                        pp_media_type, pp_title, year, tmdb_id, imdb_id,
+                        progress=progress_pct / 100.0,
+                        duration_seconds=total_time,
+                        position_seconds=current_time,
+                        season=season if pp_media_type == 'episode' else None,
+                        episode=episode if pp_media_type == 'episode' else None,
+                    )
+                    log_utils.log(f'PunchPlay scrobble started: {pp_media_type}/{pp_title}', xbmc.LOGINFO)
+                except Exception as e:
+                    log_utils.log(f'PunchPlay scrobble start error: {e}', xbmc.LOGDEBUG)
             
             # Skip Intro: show during first N seconds of TV episodes
             if (skip_intro_enabled and media_type == 'tvshow' and not skip_intro_shown
@@ -1316,6 +2678,19 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                                 trakt_obj.scrobble_stop(trakt_item_type, trakt_item_id, progress_pct)
                             except Exception:
                                 pass
+                        if pp_obj and pp_started:
+                            try:
+                                pp_obj.scrobble_stop(
+                                    pp_media_type, pp_title, year, tmdb_id, imdb_id,
+                                    progress=progress_pct / 100.0,
+                                    duration_seconds=total_time,
+                                    position_seconds=current_time,
+                                    season=season if pp_media_type == 'episode' else None,
+                                    episode=episode if pp_media_type == 'episode' else None,
+                                    watched=(progress_pct > 80),
+                                )
+                            except Exception:
+                                pass
                         player.stop()
                         xbmc.sleep(500)
                         get_sources(show_title, year, season, str(next_ep), 'tvshow')
@@ -1346,6 +2721,24 @@ def _monitor_playback(player, media_type, show_title, year, season, episode, tmd
                     log_utils.log(f'Trakt mark watched error: {e}', xbmc.LOGDEBUG)
         except Exception as e:
             log_utils.log(f'Trakt scrobble stop error: {e}', xbmc.LOGDEBUG)
+
+    # Playback ended - PunchPlay scrobble stop + mark watched (parallel to Trakt)
+    if pp_obj and pp_started:
+        try:
+            final_pct = progress_pct if progress_pct > 0 else 100
+            pp_watched_thresh = xbmcaddon.Addon().getSetting('punchplay_mark_watched') == 'true'
+            pp_obj.scrobble_stop(
+                pp_media_type, pp_title, year, tmdb_id, imdb_id,
+                progress=final_pct / 100.0,
+                duration_seconds=total_time,
+                position_seconds=int((final_pct / 100.0) * (total_time or 0)),
+                season=season if pp_media_type == 'episode' else None,
+                episode=episode if pp_media_type == 'episode' else None,
+                watched=(pp_watched_thresh and final_pct > 80),
+            )
+            log_utils.log(f'PunchPlay scrobble stopped at {final_pct:.0f}%', xbmc.LOGINFO)
+        except Exception as e:
+            log_utils.log(f'PunchPlay scrobble stop error: {e}', xbmc.LOGDEBUG)
 
 
 def _preemptive_scrape(title, year, season, episode):
@@ -1404,7 +2797,7 @@ def scrapers_menu():
             name = scraper.get_name()
             enabled = scraper.is_enabled()
             
-            status = '[COLOR lime]ON[/COLOR]' if enabled else '[COLOR red]OFF[/COLOR]'
+            status = 'ON' if enabled else 'OFF'
             label = f'{name} - {status}'
             
             li = xbmcgui.ListItem(label)
@@ -1443,11 +2836,11 @@ def debrid_menu():
         authorized = ADDON.getSetting(f'{service}_token') != ''
         
         if enabled and authorized:
-            status = '[COLOR lime]Authorized[/COLOR]'
+            status = 'Authorized'
         elif enabled:
-            status = '[COLOR yellow]Not Authorized[/COLOR]'
+            status = 'Not Authorized'
         else:
-            status = '[COLOR red]Disabled[/COLOR]'
+            status = 'Disabled'
         
         label = f"{item['title']} - {status}"
         
@@ -1663,7 +3056,7 @@ def quality_presets_menu():
         quality = settings.get('min_quality', 'Any')
         autoplay = 'Autoplay' if settings.get('auto_play') == 'true' else 'Manual'
         
-        label = f'{name} - [COLOR cyan]{quality}[/COLOR] / [COLOR yellow]{autoplay}[/COLOR]'
+        label = f'{name} - {quality} / {autoplay}'
         
         li = xbmcgui.ListItem(label)
         li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
@@ -1755,7 +3148,7 @@ def scraper_priority_menu():
     scraper_list.sort(key=lambda x: x[1])
     
     for i, (name, priority, enabled) in enumerate(scraper_list):
-        status = '[COLOR lime]ON[/COLOR]' if enabled else '[COLOR red]OFF[/COLOR]'
+        status = 'ON' if enabled else 'OFF'
         label = f'{i+1}. {name} - {status} (Priority: {priority})'
         
         li = xbmcgui.ListItem(label)
@@ -1805,10 +3198,10 @@ def trakt_menu():
     is_auth = trakt.is_authorized()
     
     if is_auth:
-        auth_status = '[COLOR lime]Authorized[/COLOR]'
+        auth_status = 'Authorized'
         auth_action = 'Re-Authorize Trakt'
     else:
-        auth_status = '[COLOR red]Not Authorized[/COLOR]'
+        auth_status = 'Not Authorized'
         auth_action = 'Authorize Trakt'
     
     items = [
@@ -1818,7 +3211,7 @@ def trakt_menu():
     
     # Add revoke option if authorized
     if is_auth:
-        items.append({'title': '[COLOR red]Revoke Authorization[/COLOR]', 'mode': 'trakt_revoke'})
+        items.append({'title': 'Revoke Authorization', 'mode': 'trakt_revoke'})
     
     items.extend([
         {'title': 'My Watchlist (Movies)', 'mode': 'trakt_watchlist', 'media_type': 'movies'},
@@ -1849,11 +3242,11 @@ def trakt_status():
         try:
             user_info = trakt.get_user_settings()
             username = user_info.get('user', {}).get('username', 'Unknown')
-            xbmcgui.Dialog().ok('Trakt Status', f'Authorized as: [COLOR lime]{username}[/COLOR]')
+            xbmcgui.Dialog().ok('Trakt Status', f'Authorized as: {username}')
         except Exception:
             xbmcgui.Dialog().ok('Trakt Status', 'Authorized (unable to fetch username)')
     else:
-        xbmcgui.Dialog().ok('Trakt Status', '[COLOR red]Not Authorized[/COLOR]\n\nSelect "Authorize Trakt" to connect your account.')
+        xbmcgui.Dialog().ok('Trakt Status', 'Not Authorized\n\nSelect "Authorize Trakt" to connect your account.')
 
 def trakt_auth():
     """Authorize Trakt"""
@@ -1979,7 +3372,6 @@ def trakt_list(list_id):
     """Show items in a Trakt list"""
     from salts_lib.trakt_api import TraktAPI, TraktError, TransientTraktError
     trakt = TraktAPI()
-    
     try:
         items = trakt.get_list(list_id)
     except (TraktError, TransientTraktError) as e:
@@ -2097,7 +3489,7 @@ def _show_trakt_items(items, media_type, key=None):
             
             # Watched indicator
             is_watched = trakt_id in watched_set
-            watched_tag = '[COLOR FF00CC66]W[/COLOR] ' if is_watched else ''
+            watched_tag = 'W ' if is_watched else ''
             label = f'{watched_tag}{title} ({year})' if year else f'{watched_tag}{title}'
             
             # Fetch TMDB poster/fanart
@@ -2165,6 +3557,138 @@ def _show_trakt_items(items, media_type, key=None):
     
     xbmcplugin.setContent(HANDLE, 'movies' if media_type == 'movies' else 'tvshows')
     xbmcplugin.endOfDirectory(HANDLE)
+
+
+
+# ==================== PunchPlay Functions ====================
+
+def punchplay_menu():
+    """PunchPlay.tv menu (Trakt alternative - scrobbling only)"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    pp = PunchPlayAPI()
+    is_auth = pp.is_authorized()
+    enabled = xbmcaddon.Addon().getSetting('punchplay_enabled') == 'true'
+
+    status = 'Authorized' if is_auth else 'Not Authorized'
+    action_label = 'Re-Authorize PunchPlay' if is_auth else 'Authorize PunchPlay'
+    toggle_label = 'Disable PunchPlay Scrobbling' if enabled else 'Enable PunchPlay Scrobbling'
+
+    items = [
+        {'title': '[COLOR grey][BETA] PunchPlay is in beta - rough edges expected[/COLOR]', 'mode': 'punchplay_menu'},
+        {'title': f'Status: {status}', 'mode': 'punchplay_status'},
+        {'title': f'Scrobbling: {"ON" if enabled else "OFF"} (toggle)', 'mode': 'punchplay_toggle'},
+        {'title': action_label, 'mode': 'punchplay_auth'},
+    ]
+    if is_auth:
+        items.append({'title': 'Revoke Authorization', 'mode': 'punchplay_revoke'})
+    items.append({'title': 'Open PunchPlay website', 'mode': 'punchplay_open_site'})
+
+    # Fire the one-shot beta toast the first time a user opens the menu directly
+    # (covers people who land here before flipping the Enable toggle).
+    try:
+        _punchplay_beta_notice()
+    except Exception:
+        pass
+
+    for item in items:
+        li = xbmcgui.ListItem(item['title'])
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        url = build_url({'mode': item['mode']})
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def punchplay_status():
+    """Show PunchPlay authorization status"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    pp = PunchPlayAPI()
+    if pp.is_authorized():
+        me = None
+        try:
+            me = pp.get_me()
+        except Exception:
+            pass
+        username = ''
+        if isinstance(me, dict):
+            username = me.get('username') or me.get('name') or ''
+        if username:
+            xbmcgui.Dialog().ok('PunchPlay Status', f'Authorized as: {username}')
+        else:
+            xbmcgui.Dialog().ok('PunchPlay Status', 'Authorized.')
+    else:
+        xbmcgui.Dialog().ok(
+            'PunchPlay Status',
+            'Not Authorized.\n\nOpen the PunchPlay menu and select "Authorize PunchPlay".'
+        )
+
+
+def punchplay_auth():
+    """Start PunchPlay device-code authorization"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    pp = PunchPlayAPI()
+    pp.authorize()
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def punchplay_revoke():
+    """Revoke PunchPlay authorization"""
+    from salts_lib.punchplay_api import PunchPlayAPI
+    confirm = xbmcgui.Dialog().yesno(
+        'Revoke PunchPlay',
+        'Are you sure you want to revoke PunchPlay authorization?'
+    )
+    if confirm:
+        pp = PunchPlayAPI()
+        pp.clear_authorization()
+        xbmcgui.Dialog().notification('PunchPlay', 'Authorization revoked', xbmcgui.NOTIFICATION_INFO)
+        xbmc.executebuiltin('Container.Refresh')
+
+
+def punchplay_toggle():
+    """Flip the punchplay_enabled setting"""
+    addon = xbmcaddon.Addon()
+    current = addon.getSetting('punchplay_enabled') == 'true'
+    addon.setSetting('punchplay_enabled', 'false' if current else 'true')
+    new_state = 'disabled' if current else 'enabled'
+    xbmcgui.Dialog().notification('PunchPlay', f'Scrobbling {new_state}', ADDON_ICON)
+    xbmc.executebuiltin('Container.Refresh')
+
+
+def punchplay_open_site():
+    """Show the PunchPlay web URL"""
+    xbmcgui.Dialog().ok(
+        'PunchPlay',
+        'Visit https://punchplay.tv on any browser to manage your profile,\n'
+        'lists, and watch history.'
+    )
+
+
+def _punchplay_mark_watched(media_type, tmdb_id, imdb_id='', title='', year='',
+                             season=None, episode=None):
+    """Helper: mirror a Trakt mark_watched action onto PunchPlay.
+
+    Called from places in default.py where SALTS explicitly marks an item
+    watched on Trakt. Honors the 'punchplay_mirror_trakt' setting.
+    """
+    try:
+        addon = xbmcaddon.Addon()
+        if addon.getSetting('punchplay_enabled') != 'true':
+            return
+        if addon.getSetting('punchplay_mirror_trakt') != 'true':
+            return
+        from salts_lib.punchplay_api import PunchPlayAPI
+        pp = PunchPlayAPI()
+        if not pp.is_authorized():
+            return
+        pp.mark_watched(
+            'episode' if media_type in ('tvshow', 'episode', 'episodes', 'shows') else 'movie',
+            title, year, tmdb_id, imdb_id,
+            season=season, episode=episode,
+        )
+    except Exception as e:
+        log_utils.log(f'PunchPlay mirror mark_watched error: {e}', xbmc.LOGDEBUG)
+
 
 
 # ==================== FRANCHISES ====================
@@ -3126,7 +4650,8 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
         except Exception:
             return []
     
-    with ThreadPoolExecutor(max_workers=15) as executor:
+    executor = ThreadPoolExecutor(max_workers=15)
+    try:
         futures = [executor.submit(_run_scraper, cls) for cls in scraper_classes]
         try:
             for future in as_completed(futures, timeout=20):
@@ -3140,6 +4665,11 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
                     continue
         except Exception:
             pass
+    finally:
+        try:
+            executor.shutdown(wait=False, cancel_futures=True)
+        except TypeError:
+            executor.shutdown(wait=False)
     
     if not all_sources:
         return None
@@ -3183,6 +4713,188 @@ def _channel_get_stream(title, year='', tmdb_id='', season='', episode='', media
             continue
     
     return None
+
+
+def _punchplay_beta_notice():
+    """One-shot toast informing the user that PunchPlay is still in beta.
+
+    Fires at most once per install (flag stored in addon_data). Silent no-op
+    on any failure so it never blocks menu rendering.
+    """
+    try:
+        flag_file = os.path.join(ADDON_DATA, 'punchplay_beta_seen.json')
+        if os.path.exists(flag_file):
+            return
+        if not os.path.isdir(ADDON_DATA):
+            os.makedirs(ADDON_DATA, exist_ok=True)
+        xbmcgui.Dialog().notification(
+            'PunchPlay (Beta)',
+            'PunchPlay integration is in beta - expect rough edges. Continue Watching lights up when the API goes live.',
+            ADDON_ICON,
+            7000,
+            False,
+        )
+        with open(flag_file, 'w') as f:
+            json.dump({'shown_at': time.time(), 'version': ADDON_VERSION}, f)
+    except Exception as e:
+        log_utils.log(f'PunchPlay beta notice failed: {e}', xbmc.LOGDEBUG)
+
+
+def _punchplay_playback_available():
+    """Cached probe for /api/playback availability.
+
+    Returns True if:
+      * PunchPlay is enabled AND authorized, AND
+      * The Continue Watching UI is toggled on (default: true), AND
+      * GET /api/playback returned HTTP 200 within the last PROBE_TTL seconds.
+
+    Result is cached in addon_data/punchplay_probe.json (60s TTL) so the main
+    menu does not issue a network call on every render. Any failure => False,
+    which makes the row disappear silently (matches the "hide entirely until
+    endpoint responds 200" product decision).
+    """
+    PROBE_TTL = 60  # seconds
+    try:
+        addon = xbmcaddon.Addon()
+        if addon.getSetting('punchplay_enabled') != 'true':
+            return False
+        if addon.getSetting('punchplay_continue_watching') == 'false':
+            return False
+    except Exception:
+        return False
+
+    probe_file = os.path.join(ADDON_DATA, 'punchplay_probe.json')
+    now = time.time()
+    try:
+        if os.path.exists(probe_file):
+            with open(probe_file, 'r') as f:
+                cached = json.load(f)
+            if now - float(cached.get('checked_at', 0)) < PROBE_TTL:
+                return bool(cached.get('available', False))
+    except Exception:
+        pass
+
+    available = False
+    try:
+        from salts_lib.punchplay_api import PunchPlayAPI
+        pp = PunchPlayAPI()
+        if pp.is_authorized():
+            available = pp.is_playback_api_available()
+    except Exception as e:
+        log_utils.log(f'PunchPlay probe error: {e}', xbmc.LOGDEBUG)
+
+    try:
+        if not os.path.isdir(ADDON_DATA):
+            os.makedirs(ADDON_DATA, exist_ok=True)
+        with open(probe_file, 'w') as f:
+            json.dump({'available': available, 'checked_at': now}, f)
+    except Exception:
+        pass
+
+    return available
+
+
+def continue_watching_menu():
+    """List in-progress items pulled from PunchPlay /api/playback.
+
+    Clicking a movie routes to get_sources (same as search results). Clicking
+    an episode routes to get_sources with season/episode params. Position /
+    duration are surfaced as ResumeTime / TotalTime so Kodi shows a progress
+    bar in the default skin. Actual seek-on-play requires threading position
+    through play() - tracked as a follow-up.
+    """
+    try:
+        from salts_lib.punchplay_api import PunchPlayAPI
+        pp = PunchPlayAPI()
+        items = pp.get_continue_watching(limit=30)
+    except Exception as e:
+        log_utils.log(f'Continue Watching fetch failed: {e}', xbmc.LOGWARNING)
+        items = []
+
+    if not items:
+        li = xbmcgui.ListItem('Nothing in progress on PunchPlay')
+        li.setArt({'icon': ADDON_ICON, 'fanart': ADDON_FANART})
+        xbmcplugin.addDirectoryItem(HANDLE, build_url({'mode': 'punchplay_menu'}), li, isFolder=True)
+        xbmcplugin.endOfDirectory(HANDLE)
+        return
+
+    for it in items:
+        media_type = it.get('type') or 'movie'
+        title = it.get('title') or 'Unknown'
+        year = str(it.get('year') or '')
+        tmdb_id = str(it.get('tmdb_id') or '')
+        position = float(it.get('position') or 0)
+        duration = float(it.get('duration') or 0)
+        pct = int((position / duration) * 100) if duration > 0 else 0
+
+        poster = it.get('poster') or ''
+        if poster and not poster.startswith('http'):
+            poster = f'{TMDB_IMG}/w500{poster}'
+        fanart = it.get('fanart') or ''
+        if fanart and not fanart.startswith('http'):
+            fanart = f'{TMDB_IMG}/original{fanart}'
+
+        if media_type == 'episode':
+            season = it.get('season') or 0
+            episode = it.get('episode') or 0
+            label = f'{title} - S{int(season):02d}E{int(episode):02d}  [{pct}%]'
+            query = {
+                'mode': 'get_sources',
+                'title': title,
+                'year': year,
+                'tmdb_id': tmdb_id,
+                'season': str(season),
+                'episode': str(episode),
+                'media_type': 'tv',
+            }
+        else:
+            label = f'{title} ({year})  [{pct}%]' if year else f'{title}  [{pct}%]'
+            query = {
+                'mode': 'get_sources',
+                'title': title,
+                'year': year,
+                'tmdb_id': tmdb_id,
+                'media_type': 'movie',
+            }
+
+        li = xbmcgui.ListItem(label)
+        art = {'icon': poster or ADDON_ICON, 'thumb': poster or ADDON_ICON,
+               'poster': poster or ADDON_ICON, 'fanart': fanart or ADDON_FANART}
+        li.setArt(art)
+
+        info = {'title': title, 'plot': it.get('overview') or ''}
+        try:
+            if year:
+                info['year'] = int(year)
+        except Exception:
+            pass
+        if media_type == 'episode':
+            info['mediatype'] = 'episode'
+            try:
+                info['season'] = int(it.get('season') or 0)
+                info['episode'] = int(it.get('episode') or 0)
+                info['tvshowtitle'] = title
+            except Exception:
+                pass
+        else:
+            info['mediatype'] = 'movie'
+        try:
+            li.setInfo('video', info)
+        except Exception:
+            pass
+
+        if duration > 0:
+            try:
+                li.setProperty('TotalTime', str(int(duration)))
+                li.setProperty('ResumeTime', str(int(position)))
+            except Exception:
+                pass
+
+        li.setProperty('IsPlayable', 'false')
+        xbmcplugin.addDirectoryItem(HANDLE, build_url(query), li, isFolder=True)
+
+    xbmcplugin.setContent(HANDLE, 'videos')
+    xbmcplugin.endOfDirectory(HANDLE)
 
 
 def router(params):
@@ -3302,6 +5014,21 @@ def router(params):
         trakt_lists()
     elif mode == 'trakt_list':
         trakt_list(params.get('list_id', ''))
+    # PunchPlay modes
+    elif mode == 'punchplay_menu':
+        punchplay_menu()
+    elif mode == 'punchplay_auth':
+        punchplay_auth()
+    elif mode == 'punchplay_status':
+        punchplay_status()
+    elif mode == 'punchplay_revoke':
+        punchplay_revoke()
+    elif mode == 'punchplay_toggle':
+        punchplay_toggle()
+    elif mode == 'punchplay_open_site':
+        punchplay_open_site()
+    elif mode == 'continue_watching':
+        continue_watching_menu()
     # Franchise modes
     elif mode == 'franchises_menu':
         franchises_menu()
@@ -3341,6 +5068,50 @@ def router(params):
         channel_play_genre(params.get('genre_id', ''), params.get('name', ''))
     elif mode == 'channel_ai_vibe':
         channel_ai_vibe()
+    # New Episodes & Premieres modes
+    elif mode == 'new_episodes_calendar':
+        new_episodes_calendar(int(params.get('days_back', 0)))
+    elif mode == 'latest_premieres':
+        latest_premieres(int(params.get('page', 1)))
+    # Movie Channels modes
+    elif mode == 'movie_channels_menu':
+        movie_channels_menu()
+    elif mode == 'movie_channels_category':
+        movie_channels_category(params.get('category', 'all'))
+    elif mode == 'play_movie_channel':
+        play_movie_channel(
+            params.get('channel_id', ''),
+            params.get('channel_name', ''),
+            params.get('current_program', '')
+        )
+    elif mode == 'force_refresh_epg':
+        force_refresh_epg()
+    elif mode == 'movie_schedules':
+        movie_schedules()
+    elif mode == 'movie_schedule_slot':
+        movie_schedule_slot(int(params.get('hours_ahead', 0)))
+    elif mode == 'returning_shows':
+        returning_shows(int(params.get('page', 1)))
+    elif mode == 'network_browser':
+        network_browser()
+    elif mode == 'network_shows':
+        network_shows(
+            params.get('network_id', ''),
+            params.get('network_name', ''),
+            int(params.get('page', 1))
+        )
+    elif mode == 'episode_countdown':
+        episode_countdown()
+    elif mode == 'add_to_countdown':
+        add_to_countdown(
+            params.get('tmdb_id', ''),
+            params.get('title', '')
+        )
+    elif mode == 'remove_from_countdown':
+        remove_from_countdown(
+            params.get('tmdb_id', ''),
+            params.get('title', '')
+        )
     elif mode == 'buy_beer':
         show_kofi_qr()
     else:

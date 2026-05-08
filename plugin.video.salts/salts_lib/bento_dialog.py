@@ -73,30 +73,30 @@ def show_bento_source_dialog(sources, title='Source Selection'):
         
         # Cached / Free tag
         if is_cached:
-            parts.append('[COLOR FF00FF7F][B]CACHED[/B][/COLOR]')
+            parts.append('[B]CACHED[/B]')
         elif is_free:
-            parts.append('[COLOR FFFFA500][B]FREE[/B][/COLOR]')
+            parts.append('[B]FREE[/B]')
         
         # Scraper name
-        parts.append(f'[COLOR FFCCDDEE]{scraper}[/COLOR]')
+        parts.append(f'{scraper}')
         
         # Seeds (torrent only)
         if seeds and not is_free:
             if seeds >= 100:
-                parts.append(f'[COLOR FF00EE00]S:{seeds}[/COLOR]')
+                parts.append(f'S:{seeds}')
             elif seeds >= 10:
-                parts.append(f'[COLOR FFCCCC00]S:{seeds}[/COLOR]')
+                parts.append(f'S:{seeds}')
             else:
-                parts.append(f'[COLOR FFEE6600]S:{seeds}[/COLOR]')
+                parts.append(f'S:{seeds}')
         
         # Size
         if size:
-            parts.append(f'[COLOR FF8899BB]{size}[/COLOR]')
+            parts.append(f'{size}')
         
         # Source title (truncated)
         if source_title:
             clean_title = source_title[:60]
-            parts.append(f'[COLOR FF778899]{clean_title}[/COLOR]')
+            parts.append(f'{clean_title}')
         
         label = '  |  '.join(parts)
         display_list.append(label)

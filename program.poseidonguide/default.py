@@ -29,7 +29,24 @@ PLAYER_ADDON_ID = 'plugin.video.poseidonplayer'
 
 CACHE_CHANNELS = os.path.join(ADDON_DATA, 'channels_cache.json')
 CACHE_EPG = os.path.join(ADDON_DATA, 'epg_cache.json')
-CACHE_MAX_AGE = 1800
+
+def _cache_max_age():
+    """User-controlled cache lifetime (Settings -> Display -> Grid Options).
+
+    Returns seconds. Allowed values: 4 / 6 / 8 / 10 hours.  Falls back to 6h
+    if the setting is unset or somehow invalid.
+    """
+    try:
+        hours = int(xbmcaddon.Addon().getSetting('cache_hours') or '6')
+    except (ValueError, TypeError):
+        hours = 6
+    if hours not in (4, 6, 8, 10):
+        hours = 6
+    return hours * 3600
+
+# Kept as a module-level fallback for any legacy reference; live calls below
+# always read the freshest setting via _cache_max_age().
+CACHE_MAX_AGE = 21600
 
 if not xbmcvfs.exists(ADDON_DATA):
     xbmcvfs.mkdirs(ADDON_DATA)
@@ -67,7 +84,7 @@ def load_cache(filepath):
         if os.path.exists(filepath):
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                if data.get('timestamp', 0) > time.time() - CACHE_MAX_AGE:
+                if data.get('timestamp', 0) > time.time() - _cache_max_age():
                     return data.get('data')
     except:
         pass
@@ -108,14 +125,31 @@ def create_texture(filename, r, g, b):
     except:
         return ''
 
+def _is_canada(name):
+    """True when the category clearly belongs to Canada."""
+    return ('CANADA' in name
+            or 'CA |' in name
+            or 'CA-' in name
+            or name.startswith('CA ')
+            or name.startswith('CAN '))
+
+
 def get_category_priority(cat_name):
     """
     Returns priority for sorting categories.
     Lower number = higher priority (appears first)
+
+    Bands:
+        0- 99   UK groups          (legacy default first)
+      100-199   USA groups
+      200-249   Canada groups
+      250-299   Live / PPV / events
+      300+      International / other
     """
     name = cat_name.upper()
-    
-    # UK Categories (priority 0-99)
+
+    # UK Categories (priority 0-99) - matched first so "UK" doesn't get
+    # mis-classified into another bucket.
     if 'UK' in name:
         if 'ENTERTAINMENT' in name or 'GENERAL' in name:
             return 1
@@ -135,7 +169,7 @@ def get_category_priority(cat_name):
             return 8
         else:
             return 10
-    
+
     # USA Categories (priority 100-199)
     elif 'USA' in name or 'US |' in name or 'US-' in name or name.startswith('US '):
         if 'ENTERTAINMENT' in name or 'GENERAL' in name:
@@ -150,14 +184,75 @@ def get_category_priority(cat_name):
             return 105
         else:
             return 110
-    
-    # Live/PPV events (priority 200-299)
+
+    # Canada categories (priority 200-249)
+    elif _is_canada(name):
+        if 'ENTERTAINMENT' in name or 'GENERAL' in name:
+            return 201
+        elif 'SPORT' in name:
+            return 202
+        elif 'MOVIE' in name or 'FILM' in name:
+            return 203
+        elif 'NEWS' in name:
+            return 204
+        elif 'KIDS' in name:
+            return 205
+        else:
+            return 210
+
+    # Live/PPV events (priority 250-299)
     elif 'LIVE' in name or 'PPV' in name or 'EVENT' in name:
-        return 200 + (0 if 'UK' in name else 50)
-    
-    # International (priority 300+)
+        return 250 + (0 if 'UK' in name else 25)
+
+    # International / other (priority 300+)
     else:
         return 300
+
+
+def reorder_for_skin(channels, skin):
+    """Re-sort the channel list based on the active skin's regional bias.
+
+    The cached priority on each channel was assigned with UK first, then
+    USA, then Canada (the legacy default).  The DirecTV and Spectrum
+    skins are North-American products, so when the user picks either we
+    re-band the sort so that channels appear in the order:
+    USA -> Canada -> UK -> everything else.
+
+    Original bands:
+      *   0- 99  -> UK groups
+      * 100-199  -> USA groups
+      * 200-249  -> Canada groups
+      * 250+     -> Live / PPV / International
+
+    Re-mapped DirecTV / Spectrum bands:
+      *   0- 99  -> USA  (was 100-199, shifted -100)
+      * 100-149  -> Canada (was 200-249, shifted -100)
+      * 200-299  -> UK   (was 0-99, shifted +200)
+      * 300+     -> Live / PPV / International (untouched)
+
+    Returns a *new* list - the original is not mutated, so the global cache
+    keeps its canonical order.
+    """
+    if not channels:
+        return channels
+    if skin not in ('directv', 'spectrum'):
+        return channels
+
+    def _key(ch):
+        pri = ch.get('category_priority', 999)
+        if 0 <= pri < 100:
+            # UK -> push to the back of the prioritised section
+            pri += 200
+        elif 100 <= pri < 200:
+            # USA -> top
+            pri -= 100
+        elif 200 <= pri < 250:
+            # Canada -> just after USA
+            pri -= 100
+        # 250+ (Live/PPV/International) is left alone
+        return (pri, ch.get('num', 0), ch.get('channel_order', 0))
+
+    return sorted(channels, key=_key)
 
 class PoseidonBridge:
     def __init__(self):
@@ -167,28 +262,242 @@ class PoseidonBridge:
             self.addon = xbmcaddon.Addon(PLAYER_ADDON_ID)
         except:
             pass
-    
+
     def installed(self):
         return self.addon is not None
-    
+
+    def mode(self):
+        """v1.2.0: returns 'xtream' or 'mac' based on player addon's setting."""
+        if not self.addon:
+            return 'xtream'
+        return self.addon.getSetting('portal_mode') or 'xtream'
+
     def get_creds(self):
         if not self.addon:
+            return None
+        if self.mode() == 'mac':
+            portal = self.addon.getSetting('portal_url')
+            mac = self.addon.getSetting('mac_address')
+            if portal and mac:
+                self.creds = {
+                    'mode': 'mac',
+                    'portal_url': portal.rstrip('/'),
+                    'mac_address': mac.upper(),
+                }
+                return self.creds
             return None
         dns = self.addon.getSetting('dns')
         user = self.addon.getSetting('username')
         pwd = self.addon.getSetting('password')
         if dns and user and pwd:
-            self.creds = {'dns': dns.rstrip('/'), 'user': user, 'pwd': pwd}
+            self.creds = {
+                'mode': 'xtream',
+                'dns': dns.rstrip('/'),
+                'user': user,
+                'pwd': pwd,
+            }
             return self.creds
         return None
-    
+
     def valid(self):
         return self.get_creds() is not None
 
+
+# ------------------------------------------------------------------
+# v1.2.0 - MAC / Stalker portal adapter
+# ------------------------------------------------------------------
+# Lightweight in-process state so we reuse the handshake across calls.
+_MAC_STATE = {
+    'portal': None,       # resolved portal URL (with /portal.php etc.)
+    'token': None,
+    'mac': None,
+    'channels': [],
+    'genres': [],
+    'cmd_by_id': {},
+    'fetched_at': 0,
+}
+
+_MAC_PATHS = (
+    '/portal.php',
+    '/stalker_portal/server/load.php',
+    '/server/load.php',
+    '/c/portal.php',
+)
+_MAC_UA = ('Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 '
+           '(KHTML, like Gecko) MAG200 stbapp ver: 4 rev: 250 Safari/533.3')
+
+
+def _mac_headers(mac, token=None):
+    h = {
+        'User-Agent': _MAC_UA,
+        'Cookie': f'mac={mac};stb_lang=en;timezone=Europe/London',
+        'X-User-Agent': 'Model: MAG254; Link: WiFi',
+        'Accept': 'application/json',
+    }
+    if token:
+        h['Authorization'] = f'Bearer {token}'
+    return h
+
+
+def _mac_get(url, headers):
+    try:
+        r = requests.get(url, headers=headers, timeout=25, verify=False)
+        if r.status_code != 200:
+            return None
+        try:
+            return r.json()
+        except Exception:
+            try:
+                return json.loads(r.text)
+            except Exception:
+                return None
+    except Exception:
+        return None
+
+
+def _mac_handshake(creds):
+    base = creds['portal_url'].rstrip('/')
+    for suffix in ('/portal.php', '/stalker_portal/server/load.php', '/c', '/c/'):
+        if base.endswith(suffix):
+            base = base[:-len(suffix)].rstrip('/')
+    mac = creds['mac_address']
+    for path in _MAC_PATHS:
+        url = f'{base}{path}?type=stb&action=handshake&JsHttpRequest=1-xml'
+        data = _mac_get(url, _mac_headers(mac))
+        if data and isinstance(data, dict) and data.get('js', {}).get('token'):
+            _MAC_STATE['portal'] = f'{base}{path}'
+            _MAC_STATE['token'] = data['js']['token']
+            _MAC_STATE['mac'] = mac
+            return True
+    return False
+
+
+def _mac_ensure(creds):
+    if _MAC_STATE['token'] and _MAC_STATE['mac'] == creds['mac_address']:
+        return True
+    return _mac_handshake(creds)
+
+
+def _mac_fetch_channels(creds):
+    if _MAC_STATE['channels'] and (time.time() - _MAC_STATE['fetched_at']) < 1800:
+        return _MAC_STATE['channels']
+    if not _mac_ensure(creds):
+        return []
+    all_ch = []
+    page = 1
+    while True:
+        url = (f'{_MAC_STATE["portal"]}?type=itv&action=get_all_channels'
+               f'&p={page}&JsHttpRequest=1-xml')
+        data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+        if not data:
+            break
+        js = data.get('js', {})
+        batch = js.get('data') if isinstance(js, dict) else None
+        if not batch:
+            break
+        all_ch.extend(batch)
+        total_items = js.get('total_items') if isinstance(js, dict) else None
+        if not total_items or len(all_ch) >= int(total_items):
+            break
+        page += 1
+        if page > 50:
+            break
+    _MAC_STATE['channels'] = all_ch
+    _MAC_STATE['fetched_at'] = time.time()
+    _MAC_STATE['cmd_by_id'] = {str(c.get('id', '')): c.get('cmd', '') for c in all_ch}
+    return all_ch
+
+
+def _mac_get_categories(creds):
+    if not _mac_ensure(creds):
+        return []
+    if _MAC_STATE['genres']:
+        return _MAC_STATE['genres']
+    url = f'{_MAC_STATE["portal"]}?type=itv&action=get_genres&JsHttpRequest=1-xml'
+    data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+    if not data:
+        return []
+    raw = data.get('js', data) or []
+    genres = []
+    for g in raw:
+        gid = str(g.get('id', ''))
+        if gid and gid != '*':
+            genres.append({'category_id': gid,
+                           'category_name': g.get('title') or g.get('alias') or f'Genre {gid}'})
+    _MAC_STATE['genres'] = genres
+    return genres
+
+
+def _mac_get_streams(creds, cat_id):
+    channels = _mac_fetch_channels(creds)
+    out = []
+    for c in channels:
+        gid = str(c.get('tv_genre_id', ''))
+        if cat_id and gid != str(cat_id):
+            continue
+        out.append({
+            'stream_id': str(c.get('id', '')),
+            'name': c.get('name', ''),
+            'stream_icon': c.get('logo', '') or '',
+            'epg_channel_id': c.get('xmltv_id', '') or str(c.get('id', '')),
+            'category_id': gid,
+            'num': c.get('number', ''),
+        })
+    return out
+
+
+def _mac_get_epg(creds, stream_id, limit=15):
+    if not _mac_ensure(creds):
+        return []
+    url = (f'{_MAC_STATE["portal"]}?type=itv&action=get_short_epg'
+           f'&ch_id={stream_id}&size={int(limit)}&JsHttpRequest=1-xml')
+    data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+    if not data:
+        return []
+    raw = data.get('js', []) or []
+    out = []
+    for p in raw:
+        out.append({
+            'title': p.get('name', ''),
+            'description': p.get('descr', ''),
+            'start': p.get('start_timestamp', 0),
+            'end': p.get('stop_timestamp', 0),
+            'start_timestamp': p.get('start_timestamp', 0),
+            'stop_timestamp': p.get('stop_timestamp', 0),
+        })
+    return out
+
+
 def api_call(bridge, action, params='', timeout=25):
+    """v1.2.0: transparently routes to MAC adapter when portal_mode=mac."""
     c = bridge.get_creds()
     if not c:
         return None
+
+    if c.get('mode') == 'mac':
+        # Translate a limited set of player_api actions into Stalker calls.
+        if action == 'get_live_categories':
+            return _mac_get_categories(c)
+        if action == 'get_live_streams':
+            # params like "&category_id=123"
+            cat_id = ''
+            for p in params.split('&'):
+                if p.startswith('category_id='):
+                    cat_id = p.split('=', 1)[1]
+                    break
+            return _mac_get_streams(c, cat_id)
+        if action == 'get_short_epg':
+            stream_id = ''
+            for p in params.split('&'):
+                if p.startswith('stream_id='):
+                    stream_id = p.split('=', 1)[1]
+                    break
+            listings = _mac_get_epg(c, stream_id)
+            return {'epg_listings': listings} if listings else None
+        # Unknown action in MAC mode - just return None.
+        log(f'MAC adapter: unsupported action {action}', xbmc.LOGWARNING)
+        return None
+
     url = f"{c['dns']}/player_api.php?username={c['user']}&password={c['pwd']}&action={action}{params}"
     try:
         r = requests.get(url, timeout=timeout, headers={'User-Agent': 'Kodi/20.0'})
@@ -282,8 +591,8 @@ def get_all_epg(bridge, channels, progress=None, force_refresh=False):
     
     epg_data = {}
     
-    priority_channels = [ch for ch in channels if ch.get('category_priority', 999) < 200]
-    other_channels = [ch for ch in channels if ch.get('category_priority', 999) >= 200]
+    priority_channels = [ch for ch in channels if ch.get('category_priority', 999) < 250]
+    other_channels = [ch for ch in channels if ch.get('category_priority', 999) >= 250]
     
     epg_channels = priority_channels[:150] + other_channels[:50]
     total = len(epg_channels)
@@ -987,9 +1296,260 @@ class GuideManager:
             else:
                 self.running = False
 
+def _resolve_stream_url(bridge, stream_id):
+    """Return a playable URL for the given stream_id, mode-aware."""
+    c = bridge.get_creds()
+    if not c:
+        return None
+    if c.get('mode') == 'mac':
+        if not _mac_ensure(c):
+            return None
+        _mac_fetch_channels(c)
+        cmd = _MAC_STATE['cmd_by_id'].get(str(stream_id))
+        if not cmd:
+            return None
+        import urllib.parse as _up
+        encoded = _up.quote(cmd, safe='')
+        url = (f'{_MAC_STATE["portal"]}?type=itv&action=create_link&cmd={encoded}'
+               f'&forced_storage=undefined&disable_ad=0&download=0'
+               f'&JsHttpRequest=1-xml')
+        data = _mac_get(url, _mac_headers(_MAC_STATE['mac'], _MAC_STATE['token']))
+        js = (data or {}).get('js', {})
+        raw = js.get('cmd') or js.get('url') or ''
+        for pref in ('ffmpeg ', 'ffrt ', 'ffrt3 ', 'auto '):
+            if raw.startswith(pref):
+                raw = raw[len(pref):]
+                break
+        return raw.strip() or None
+    fmt = 'm3u8'
+    return f"{c['dns']}/live/{c['user']}/{c['pwd']}/{stream_id}.{fmt}"
+
+
+def _collect_channels_for_window(bridge, progress=None, max_channels=300,
+                                 initial_epg=50):
+    """Gather all channels + their short EPG, ready for the Sky/Virgin window.
+
+    The number of channels we synchronously fetch EPG for is now driven by
+    the user-controlled ``epg_channel_count`` setting (default 200, range
+    50-1000). The remaining channels' EPG is filled in by a background
+    daemon thread that mutates ``epg_map`` in place, so rows display data
+    as the user scrolls.
+    """
+    # Honour the user setting (with a sensible fallback if it's missing).
+    try:
+        user_count = int(xbmcaddon.Addon().getSetting('epg_channel_count') or '200')
+    except Exception:
+        user_count = 200
+    user_count = max(50, min(1000, user_count))
+    initial_epg = user_count
+    max_channels = max(max_channels, user_count)
+
+    channels = get_all_channels(bridge, progress=progress)
+    if not channels:
+        return [], {}
+    channels = channels[:max_channels]
+    epg_map = {}
+    head = channels[:initial_epg]
+    tail = channels[initial_epg:]
+    total = max(1, len(head))
+    for i, ch in enumerate(head):
+        if progress:
+            try:
+                progress.update(
+                    min(95, int((i / total) * 95)),
+                    f"Loading EPG {i + 1}/{total}",
+                )
+                if progress.iscanceled():
+                    break
+            except Exception:
+                pass
+        sid = str(ch.get('stream_id'))
+        progs = get_epg(bridge, sid, limit=15) or []
+        epg_map[sid] = progs
+
+    if tail:
+        def _bg():
+            for ch in tail:
+                try:
+                    sid = str(ch.get('stream_id'))
+                    if sid in epg_map:
+                        continue
+                    progs = get_epg(bridge, sid, limit=15) or []
+                    epg_map[sid] = progs
+                except Exception:
+                    continue
+        import threading as _t
+        t = _t.Thread(target=_bg, daemon=True)
+        t.start()
+
+    return channels, epg_map
+
+
+def launch_skin_window(bridge, favourites_only=False):
+    """Open the Sky/Virgin/Classic full-screen EPG window.
+
+    When ``favourites_only`` is True, the channel list is filtered down to
+    the user's pinned favourites before the window is shown.
+    """
+    addon = xbmcaddon.Addon()
+    theme = addon.getSetting('guide_skin') or 'sky'
+    if theme == 'classic':
+        # Classic = directory view (original behaviour). Drop straight through.
+        return False
+    pip_enabled = addon.getSetting('pip_enabled').lower() != 'false'
+    pip_autoplay = addon.getSetting('pip_autoplay').lower() != 'false'
+    layout = addon.getSetting('guide_layout') or 'grid'
+
+    progress = xbmcgui.DialogProgress()
+    progress.create('Poseidon Guide', 'Preparing TV guide...')
+    channels, epg_map = _collect_channels_for_window(bridge, progress=progress)
+    progress.close()
+
+    # The DirecTV skin reorders the channel list so all USA categories take
+    # priority over the UK ones (matches the layout reference image).
+    channels = reorder_for_skin(channels, theme)
+
+    if favourites_only:
+        from resources.lib.favourites import filter_channels as _fav_filter
+        channels = _fav_filter(channels)
+
+    if not channels:
+        msg = ('No favourites pinned yet - press C on any channel'
+               if favourites_only else 'No channels available')
+        xbmcgui.Dialog().notification(
+            'Poseidon Guide', msg, xbmcgui.NOTIFICATION_WARNING, 3000)
+        return True
+
+    from resources.lib.guide_window import open_guide_window, open_grid_window
+
+    # Toggle between list and grid views if the user pressed Info inside.
+    home = xbmcgui.Window(10000)
+    # Keep the unfiltered list so the FAVOURITES button can toggle back.
+    all_channels = list(channels)
+    show_favs = bool(favourites_only)
+    while True:
+        home.clearProperty('pg_switch_to_list')
+        home.clearProperty('pg_switch_to_grid')
+        home.clearProperty('pg_open_favourites')
+        # Surface current favourite count + current mode so the skin can
+        # label the FAVOURITES button ("FAVOURITES (4)" / "ALL CHANNELS").
+        try:
+            from resources.lib.favourites import count as _fav_count
+            fav_n = _fav_count()
+        except Exception:
+            fav_n = 0
+        home.setProperty('pg_fav_count', str(fav_n))
+        home.setProperty('pg_fav_mode', '1' if show_favs else '0')
+        home.setProperty(
+            'pg_fav_label',
+            'ALL CHANNELS' if show_favs else f'FAVOURITES ({fav_n})'
+        )
+        opener = open_grid_window if layout == 'grid' else open_guide_window
+        opener(
+            theme=theme,
+            channels=channels,
+            epg_map=epg_map,
+            play_resolver=lambda sid: _resolve_stream_url(bridge, sid),
+            pip_enabled=pip_enabled,
+            pip_autoplay=pip_autoplay,
+        )
+        if home.getProperty('pg_switch_to_grid') == '1':
+            layout = 'grid'
+            continue
+        if home.getProperty('pg_switch_to_list') == '1':
+            layout = 'list'
+            continue
+        if home.getProperty('pg_open_favourites') == '1':
+            # User pressed the FAVOURITES button inside the guide -> toggle
+            # between the full channel list and the pinned-favourites view.
+            if show_favs:
+                # Currently showing favourites only -> go back to full list.
+                channels = list(all_channels)
+                show_favs = False
+                continue
+            from resources.lib.favourites import filter_channels as _fav_filter
+            favs = _fav_filter(all_channels)
+            if not favs:
+                xbmcgui.Dialog().notification(
+                    'Poseidon Guide',
+                    'No favourites pinned yet - press C on any channel',
+                    xbmcgui.NOTIFICATION_WARNING, 3000)
+                continue
+            channels = favs
+            show_favs = True
+            continue
+        break
+    home.clearProperty('pg_fav_count')
+    home.clearProperty('pg_fav_mode')
+    home.clearProperty('pg_fav_label')
+    return True
+
+
 def main():
-    log("Poseidon Guide v1.1.0")
+    log("Poseidon Guide v1.3.2")
+    bridge = PoseidonBridge()
+    if not bridge.valid():
+        xbmcgui.Dialog().ok('Poseidon Guide',
+                            'Open Poseidon Player first and enter your credentials.')
+        return
+
+    # Allow ?action=settings to jump straight to settings
+    params = {}
+    try:
+        if len(sys.argv) > 1:
+            import urllib.parse as _up
+            q = sys.argv[1] if sys.argv[1].startswith('?') else ''
+            if q:
+                params = dict(_up.parse_qsl(q.lstrip('?')))
+    except Exception:
+        pass
+    if params.get('action') == 'settings':
+        xbmcaddon.Addon().openSettings()
+        return
+
+    # Launcher menu - lets the user reach settings without right-clicking
+    # the addon. Skin choice + skin layout + cache controls all live in here.
+    skin_label = (xbmcaddon.Addon().getSetting('guide_skin') or 'sky').capitalize()
+    layout_label = (xbmcaddon.Addon().getSetting('guide_layout') or 'list').capitalize()
+    from resources.lib.favourites import count as _fav_count
+    fav_n = _fav_count()
+    options = [
+        f'Open Guide  ({skin_label} skin / {layout_label} layout)',
+        f'Favourites  ({fav_n} saved)' if fav_n
+            else 'Favourites  (none yet - press C in the guide to pin a channel)',
+        'Settings  (skin, layout, PiP, grid hours)',
+        'Refresh EPG cache now',
+    ]
+    choice = xbmcgui.Dialog().select('Poseidon Guide', options)
+    if choice < 0:
+        return
+    if choice == 1:
+        # Favourites view: launch_skin_window with the favourites filter active.
+        if fav_n == 0:
+            notify('Open the guide and press C on a channel to pin it')
+            return
+        if launch_skin_window(bridge, favourites_only=True):
+            return
+        GuideManager().run()
+        return
+    if choice == 2:
+        xbmcaddon.Addon().openSettings()
+        return
+    if choice == 3:
+        # Wipe caches so the next load forces a fresh fetch
+        for f in (CACHE_CHANNELS, CACHE_EPG):
+            try:
+                if os.path.exists(f):
+                    os.remove(f)
+            except Exception:
+                pass
+        notify('EPG cache cleared - opening guide')
+
+    # Respect the user's skin choice.
+    if launch_skin_window(bridge):
+        return
     GuideManager().run()
+
 
 if __name__ == '__main__':
     main()

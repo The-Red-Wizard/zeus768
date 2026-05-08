@@ -263,8 +263,8 @@ class TraktAPI:
             dialog = xbmcgui.DialogProgress()
             dialog.create(
                 'Trakt Authorization',
-                f'Visit: [COLOR cyan]{verification_url}[/COLOR]\n\n'
-                f'Enter Code: [COLOR lime][B]{user_code}[/B][/COLOR]\n\n'
+                f'Visit: {verification_url}\n\n'
+                f'Enter Code: [B]{user_code}[/B]\n\n'
                 'Waiting for authorization...'
             )
             
@@ -284,8 +284,8 @@ class TraktAPI:
                 percent = int((elapsed / expires_in) * 100)
                 dialog.update(
                     percent,
-                    f'Visit: [COLOR cyan]{verification_url}[/COLOR]\n\n'
-                    f'Enter Code: [COLOR lime][B]{user_code}[/B][/COLOR]\n\n'
+                    f'Visit: {verification_url}\n\n'
+                    f'Enter Code: [B]{user_code}[/B]\n\n'
                     f'Time remaining: {int(remaining)} seconds'
                 )
                 
@@ -322,7 +322,7 @@ class TraktAPI:
                             username = user_info.get('user', {}).get('username', 'User')
                             xbmcgui.Dialog().ok(
                                 'Trakt Authorization',
-                                f'Success! Authorized as: [COLOR lime]{username}[/COLOR]'
+                                f'Success! Authorized as: {username}'
                             )
                         except Exception:
                             xbmcgui.Dialog().ok(

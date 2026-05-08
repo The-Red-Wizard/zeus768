@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="Icon Theme">
+        <setting id="icon_theme" type="text" label="Current Theme" default="classic" enable="false"/>
+        <setting type="lsep" label="Themes are auto-detected from media folder"/>
+        <setting id="select_theme" type="action" label="[COLOR yellow]Select Icon Theme[/COLOR]" action="RunScript(script.genesis.skins)"/>
+    </category>
+    
+    <category label="Service Logos">
+        <setting type="lsep" label="Networks, Studios, Torrent Sites &amp; Debrid services"/>
+        <setting type="lsep" label="use REAL logos fetched from official sources"/>
+        <setting id="prefetch_logos" type="action" label="[COLOR cyan]Download All Service Logos[/COLOR]" action="RunScript(script.genesis.skins,prefetch)"/>
+        <setting id="clear_cache" type="action" label="[COLOR red]Clear Logo Cache[/COLOR]" action="RunScript(script.genesis.skins,clear_cache)"/>
+    </category>
+    
+    <category label="How to Add Themes">
+        <setting type="lsep" label="1. Navigate to script.genesis.skins/resources/media/"/>
+        <setting type="lsep" label="2. Create a new folder with your theme name"/>
+        <setting type="lsep" label="3. Add PNG icons using the same filenames"/>
+        <setting type="lsep" label="4. Your theme will auto-appear in the selector"/>
+        <setting id="list_icons" type="action" label="View All Icon Names" action="RunScript(script.genesis.skins,list_icons)"/>
+    </category>
+</settings>

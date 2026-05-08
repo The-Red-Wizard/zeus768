@@ -789,9 +789,11 @@ class Premiumize:
     """Premiumize API integration with file-based token storage"""
     
     BASE_URL = "https://www.premiumize.me/api"
-    TOKEN_URL = "https://www.premiumize.me/token"
+    TOKEN_URL = "https://www.premiumize.me/token"  # OAuth token endpoint (NOT /api/token)
     DEVICE_URL = "https://www.premiumize.me/device"
-    CLIENT_ID = "855400527"  # Public client ID
+    # Public client credentials for device auth
+    CLIENT_ID = "662875953"
+    CLIENT_SECRET = "xmg33m74n6t6x8phun"
     
     def __init__(self):
         self._load_from_file()
@@ -830,27 +832,35 @@ class Premiumize:
         return bool(self.token)
     
     def authorize(self):
-        """OAuth device authorization"""
+        """OAuth device authorization - using correct Premiumize.me OAuth flow"""
         try:
             xbmc.log('Premiumize: Requesting device code...', xbmc.LOGINFO)
             
+            # Step 1: Request device code using response_type=device_code
+            # Important: Use TOKEN_URL (www.premiumize.me/token), NOT /api/token
             status, result = _post(
-                f"{self.TOKEN_URL}",
-                data={"response_type": "device_code", "client_id": self.CLIENT_ID}
+                self.TOKEN_URL,
+                data={
+                    "client_id": self.CLIENT_ID,
+                    "response_type": "device_code"
+                }
             )
             
+            xbmc.log(f'Premiumize: Device code response - Status: {status}, Result: {result}', xbmc.LOGDEBUG)
+            
             if not isinstance(result, dict) or not result.get('device_code'):
-                xbmc.log(f'Premiumize: Failed to get device code - {result}', xbmc.LOGERROR)
+                error_msg = result.get('error', 'Unknown error') if isinstance(result, dict) else str(result)
+                xbmc.log(f'Premiumize: Failed to get device code - {error_msg}', xbmc.LOGERROR)
                 xbmcgui.Dialog().notification('Error', 'Failed to get device code', xbmcgui.NOTIFICATION_ERROR)
                 return False
             
             device_code = result.get('device_code')
             user_code = result.get('user_code')
             verification_url = result.get('verification_uri', self.DEVICE_URL)
-            expires_in = result.get('expires_in', 600)
-            interval = result.get('interval', 5)
+            expires_in = int(result.get('expires_in', 600))
+            interval = int(result.get('interval', 5))
             
-            xbmc.log(f'Premiumize: Got device code, user_code: {user_code}', xbmc.LOGINFO)
+            xbmc.log(f'Premiumize: Got device code, user_code: {user_code}, verification_uri: {verification_url}', xbmc.LOGINFO)
             
             dialog = xbmcgui.DialogProgress()
             dialog.create(
@@ -861,14 +871,16 @@ class Premiumize:
             )
             
             start = time.time()
-            while time.time() - start < expires_in:
+            token_ttl = expires_in
+            
+            while token_ttl > 0:
                 if dialog.iscanceled():
                     dialog.close()
                     return False
                 
                 elapsed = time.time() - start
                 remaining = expires_in - elapsed
-                progress = int((elapsed / expires_in) * 100)
+                progress = int(100 - (elapsed / expires_in) * 100)
                 dialog.update(
                     progress,
                     f"Go to: [B][COLOR skyblue]{verification_url}[/COLOR][/B]\n\n"
@@ -876,24 +888,39 @@ class Premiumize:
                     f"Time remaining: {int(remaining)} seconds"
                 )
                 
+                # Wait for interval before polling
                 time.sleep(interval)
+                token_ttl -= interval
                 
+                # Step 2: Poll for token using grant_type=device_code and code parameter
                 check_status, check_result = _post(
-                    f"{self.TOKEN_URL}",
+                    self.TOKEN_URL,
                     data={
-                        "grant_type": "device_code",
                         "client_id": self.CLIENT_ID,
-                        "code": device_code
+                        "code": device_code,
+                        "grant_type": "device_code"
                     }
                 )
                 
-                if isinstance(check_result, dict) and check_result.get('access_token'):
-                    self.token = check_result.get('access_token')
-                    self._save_to_file()
-                    dialog.close()
-                    xbmcgui.Dialog().notification("Success!", "Premiumize linked!", xbmcgui.NOTIFICATION_INFO)
-                    xbmc.log('Premiumize: Authorization successful', xbmc.LOGINFO)
-                    return True
+                xbmc.log(f'Premiumize: Poll response - Status: {check_status}, Result: {check_result}', xbmc.LOGDEBUG)
+                
+                if isinstance(check_result, dict):
+                    # Check for access token (success)
+                    if check_result.get('access_token'):
+                        self.token = check_result.get('access_token')
+                        self._save_to_file()
+                        dialog.close()
+                        xbmcgui.Dialog().notification("Success!", "Premiumize linked!", xbmcgui.NOTIFICATION_INFO)
+                        xbmc.log('Premiumize: Authorization successful', xbmc.LOGINFO)
+                        return True
+                    
+                    # Check for errors
+                    error = check_result.get('error', '')
+                    if error == 'access_denied':
+                        dialog.close()
+                        xbmcgui.Dialog().notification('Denied', 'Authorization was denied', xbmcgui.NOTIFICATION_WARNING)
+                        return False
+                    # If error is 'authorization_pending' or similar, continue polling
             
             dialog.close()
             xbmcgui.Dialog().notification('Timeout', 'Authorization timed out', xbmcgui.NOTIFICATION_WARNING)
@@ -1002,226 +1029,307 @@ class Premiumize:
         return {}
 
 
-class TorBox:
-    """TorBox debrid service - device code auth"""
-    BASE_URL = 'https://api.torbox.app/v1/api'
-    DEVICE_START = 'https://api.torbox.app/v1/api/user/auth/device/start'
-    DEVICE_TOKEN = 'https://api.torbox.app/v1/api/user/auth/device/token'
-
+class Torbox:
+    """Torbox API integration with device code authentication"""
+    
+    BASE_URL = "https://api.torbox.app/v1/api"
+    DEVICE_URL = "https://torbox.app/devices"
+    
     def __init__(self):
+        self._load_from_file()
+    
+    def _load_from_file(self):
+        """Load token from file"""
+        _ensure_data_path()
         self.token = ''
-        self._load_token()
-
-    def _load_token(self):
-        addon = get_addon()
-        self.token = addon.getSetting('tb_api_key') or ''
-        if not self.token and os.path.exists(TB_TOKEN_FILE):
+        
+        if os.path.exists(TB_TOKEN_FILE):
             try:
                 with open(TB_TOKEN_FILE, 'r') as f:
                     data = json.load(f)
-                    self.token = data.get('api_key', '')
+                    self.token = data.get('access_token', '')
                     if self.token:
-                        addon.setSetting('tb_api_key', self.token)
+                        xbmc.log('Torbox: Loaded token from file', xbmc.LOGDEBUG)
             except:
                 pass
-
-    def _save_token(self, api_key):
-        self.token = api_key
-        addon = get_addon()
-        addon.setSetting('tb_api_key', api_key)
-        addon.setSetting('tb_auth_done', 'true')
+        
+        if not self.token:
+            self.token = get_addon().getSetting('tb_api_key')
+    
+    def _save_to_file(self):
+        """Save token to file"""
+        _ensure_data_path()
         try:
-            os.makedirs(os.path.dirname(TB_TOKEN_FILE), exist_ok=True)
             with open(TB_TOKEN_FILE, 'w') as f:
-                json.dump({'api_key': api_key}, f)
+                json.dump({'access_token': self.token, 'created_at': time.time()}, f)
+            addon = get_addon()
+            addon.setSetting('tb_api_key', self.token)
+            addon.setSetting('tb_auth_done', 'true')
         except:
             pass
-
+    
     def _auth_headers(self):
-        return {'Authorization': f'Bearer {self.token}', 'User-Agent': 'TraktPlayer/2.3.0'}
-
-    def authorize(self):
-        """TorBox device code authorization (JSON POST required by API)"""
-        try:
-            xbmc.log('TorBox: Requesting device code...', xbmc.LOGINFO)
-
-            # Step 1: Get device code
-            status, result = _get(self.DEVICE_START)
-            if not isinstance(result, dict) or not result.get('success'):
-                xbmcgui.Dialog().ok('TorBox', 'Failed to get device code. Try again.')
-                return
-
-            data = result.get('data', {})
-            device_code = data.get('device_code', '')
-            user_code = data.get('code') or data.get('user_code') or ''
-            verify_url = data.get('friendly_verification_url') or data.get('verification_url') or 'https://torbox.app/devices'
-            interval = data.get('interval', 5)
-            # TorBox returns expires_at (ISO timestamp), not expires_in
-            expires_in = 600
-            exp_at = data.get('expires_at')
-            if exp_at:
-                try:
-                    from datetime import datetime, timezone as tz
-                    ts = exp_at.replace('Z', '+00:00')
-                    exp_dt = datetime.fromisoformat(ts)
-                    if exp_dt.tzinfo is None:
-                        exp_dt = exp_dt.replace(tzinfo=tz.utc)
-                    expires_in = max(60, int(exp_dt.timestamp() - time.time()))
-                except Exception:
-                    pass
-
-            if not device_code or not user_code:
-                xbmcgui.Dialog().ok('TorBox', 'No device code received.')
-                return
-
-            xbmc.log(f'TorBox: Got device code, user_code: {user_code}', xbmc.LOGINFO)
-
-            # Step 2: Show code and poll
-            progress = xbmcgui.DialogProgress()
-            progress.create('TorBox Authorization',
-                            f'Go to: [COLOR skyblue]{verify_url}[/COLOR]\n'
-                            f'Enter code: [COLOR gold][B]{user_code}[/B][/COLOR]')
-
-            start = time.time()
-            while time.time() - start < expires_in:
-                if progress.iscanceled():
-                    break
-
-                xbmc.sleep(interval * 1000)
-                elapsed = time.time() - start
-                remaining = max(0, expires_in - elapsed)
-                pct = int((elapsed / expires_in) * 100)
-                progress.update(pct,
-                                f'Go to: [COLOR skyblue]{verify_url}[/COLOR]\n'
-                                f'Enter code: [COLOR gold][B]{user_code}[/B][/COLOR]\n'
-                                f'Time remaining: {int(remaining)}s')
-
-                try:
-                    # TorBox requires JSON POST (not form-encoded)
-                    poll_status, poll_result = _post(
-                        self.DEVICE_TOKEN,
-                        data=json.dumps({"device_code": device_code}),
-                        headers={'Content-Type': 'application/json'}
-                    )
-                    xbmc.log(f'TorBox poll: status={poll_status}, result={poll_result}', xbmc.LOGDEBUG)
-
-                    if isinstance(poll_result, dict) and poll_result.get('success'):
-                        token_data = poll_result.get('data', {})
-                        api_key = token_data.get('access_token') or token_data.get('api_key') or token_data.get('token') or ''
-                        if api_key:
-                            self._save_token(api_key)
-                            progress.close()
-                            xbmcgui.Dialog().notification('TorBox', 'Authorized!', xbmcgui.NOTIFICATION_INFO)
-                            return
-                except Exception as poll_err:
-                    xbmc.log(f'TorBox poll error: {poll_err}', xbmc.LOGDEBUG)
-
-            progress.close()
-            xbmcgui.Dialog().notification('TorBox', 'Auth timed out', xbmcgui.NOTIFICATION_WARNING)
-
-        except Exception as e:
-            xbmc.log(f'TorBox auth error: {e}', xbmc.LOGERROR)
-            xbmcgui.Dialog().notification('TorBox', f'Auth error: {e}', xbmcgui.NOTIFICATION_ERROR)
-
+        return {'Authorization': f'Bearer {self.token}'}
+    
     def is_authorized(self):
-        if not self.token:
+        return bool(self.token)
+    
+    def authorize(self):
+        """Device code authorization for Torbox"""
+        try:
+            xbmc.log('Torbox: Starting device code authorization...', xbmc.LOGINFO)
+            
+            # Step 1: Start device code authorization
+            status, result = _get(f"{self.BASE_URL}/user/auth/device/start")
+            
+            xbmc.log(f'Torbox: Device start response - Status: {status}, Result: {result}', xbmc.LOGDEBUG)
+            
+            if not isinstance(result, dict) or not result.get('success'):
+                error_msg = result.get('detail', 'Unknown error') if isinstance(result, dict) else str(result)
+                xbmc.log(f'Torbox: Failed to start device auth - {error_msg}', xbmc.LOGERROR)
+                xbmcgui.Dialog().notification('Error', 'Failed to start device auth', xbmcgui.NOTIFICATION_ERROR)
+                return False
+            
+            data = result.get('data', {})
+            device_code = data.get('device_code')
+            # TorBox returns user code as 'code', not 'user_code'
+            user_code = data.get('code') or data.get('user_code')
+            # Prefer friendly (shorter) URL for TV screens
+            verification_url = (data.get('friendly_verification_url')
+                                or data.get('verification_url')
+                                or self.DEVICE_URL)
+            # TorBox returns expires_at (ISO timestamp), not expires_in
+            expires_in = int(data.get('expires_in', 0) or 0)
+            if not expires_in:
+                exp_at = data.get('expires_at')
+                if exp_at:
+                    try:
+                        from datetime import datetime, timezone
+                        ts = exp_at.replace('Z', '+00:00')
+                        exp_dt = datetime.fromisoformat(ts)
+                        if exp_dt.tzinfo is None:
+                            exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+                        expires_in = max(60, int(exp_dt.timestamp() - time.time()))
+                    except Exception:
+                        expires_in = 600
+                else:
+                    expires_in = 600
+            interval = int(data.get('interval', 5) or 5)
+            
+            if not device_code or not user_code:
+                xbmcgui.Dialog().notification('Error', 'Invalid device code response', xbmcgui.NOTIFICATION_ERROR)
+                return False
+            
+            xbmc.log(f'Torbox: Got device code, user_code: {user_code}', xbmc.LOGINFO)
+            
+            dialog = xbmcgui.DialogProgress()
+            dialog.create(
+                "Torbox Authorization",
+                f"Go to: [B][COLOR skyblue]{verification_url}[/COLOR][/B]\n\n"
+                f"Enter Code: [B][COLOR yellow]{user_code}[/COLOR][/B]\n\n"
+                f"Waiting for authorization..."
+            )
+            
+            start = time.time()
+            token_ttl = expires_in
+            
+            while token_ttl > 0:
+                if dialog.iscanceled():
+                    dialog.close()
+                    return False
+                
+                elapsed = time.time() - start
+                remaining = expires_in - elapsed
+                progress = int(100 - (elapsed / expires_in) * 100)
+                dialog.update(
+                    progress,
+                    f"Go to: [B][COLOR skyblue]{verification_url}[/COLOR][/B]\n\n"
+                    f"Enter Code: [B][COLOR yellow]{user_code}[/COLOR][/B]\n\n"
+                    f"Time remaining: {int(remaining)} seconds"
+                )
+                
+                time.sleep(interval)
+                token_ttl -= interval
+                
+                # Step 2: Poll for token (TorBox requires JSON POST)
+                check_status, check_result = _post(
+                    f"{self.BASE_URL}/user/auth/device/token",
+                    data=json.dumps({"device_code": device_code}),
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                xbmc.log(f'Torbox: Poll response - Status: {check_status}, Result: {check_result}', xbmc.LOGDEBUG)
+                
+                if isinstance(check_result, dict) and check_result.get('success'):
+                    token_data = check_result.get('data', {})
+                    access_token = token_data.get('access_token') or token_data.get('token')
+                    
+                    if access_token:
+                        self.token = access_token
+                        self._save_to_file()
+                        dialog.close()
+                        xbmcgui.Dialog().notification("Success!", "Torbox linked!", xbmcgui.NOTIFICATION_INFO)
+                        xbmc.log('Torbox: Authorization successful', xbmc.LOGINFO)
+                        return True
+                
+                # Check for errors
+                if isinstance(check_result, dict):
+                    error = check_result.get('error', '')
+                    if error and error not in ['authorization_pending', 'slow_down']:
+                        dialog.close()
+                        xbmcgui.Dialog().notification('Error', check_result.get('detail', 'Auth failed'), xbmcgui.NOTIFICATION_WARNING)
+                        return False
+            
+            dialog.close()
+            xbmcgui.Dialog().notification('Timeout', 'Authorization timed out', xbmcgui.NOTIFICATION_WARNING)
             return False
-        try:
-            status, result = _get(f'{self.BASE_URL}/user/me', headers=self._auth_headers())
-            if status == 200 and isinstance(result, dict) and result.get('success'):
-                return True
-        except:
-            pass
-        return False
-
-    def unrestrict_link(self, link):
-        """Create a web download and get the link"""
-        if not self.token:
-            return None
-        try:
-            status, result = _post(
-                f'{self.BASE_URL}/webdl/createwebdownload',
-                headers=self._auth_headers(),
-                data={'url': link}
-            )
-            if isinstance(result, dict) and result.get('success'):
-                dl_url = result.get('data', {}).get('download_url')
-                if dl_url:
-                    return dl_url
-                # If no direct URL, request download link
-                dl_id = result.get('data', {}).get('id')
-                if dl_id:
-                    xbmc.sleep(2000)
-                    s2, r2 = _get(
-                        f'{self.BASE_URL}/webdl/requestdl?token={self.token}&web_id={dl_id}',
-                        headers=self._auth_headers()
-                    )
-                    if isinstance(r2, dict) and r2.get('data'):
-                        return r2['data']
+            
         except Exception as e:
-            xbmc.log(f'TorBox unrestrict error: {e}', xbmc.LOGERROR)
-        return None
-
-    def add_magnet(self, magnet, check_cache_first=True):
-        """Add a magnet and get download link"""
-        if not self.token:
-            return None
-        try:
-            status, result = _post(
-                f'{self.BASE_URL}/torrents/createtorrent',
-                headers=self._auth_headers(),
-                data={'magnet': magnet}
-            )
-            if isinstance(result, dict) and result.get('success'):
-                torrent_id = result.get('data', {}).get('torrent_id')
-                if torrent_id:
-                    xbmc.sleep(3000)
-                    s2, r2 = _get(
-                        f'{self.BASE_URL}/torrents/requestdl?token={self.token}&torrent_id={torrent_id}&file_id=0',
-                        headers=self._auth_headers()
-                    )
-                    if isinstance(r2, dict) and r2.get('data'):
-                        return r2['data']
-        except Exception as e:
-            xbmc.log(f'TorBox magnet error: {e}', xbmc.LOGERROR)
-        return None
-
+            xbmc.log(f"Torbox auth error: {str(e)}", xbmc.LOGERROR)
+            xbmcgui.Dialog().notification('Error', f'Auth failed: {str(e)}', xbmcgui.NOTIFICATION_ERROR)
+            return False
+    
     def check_cache(self, hashes):
-        """Check which hashes are cached on TorBox"""
-        if not self.token or not hashes:
+        """Check if torrents are cached on Torbox"""
+        if not self.is_authorized() or not hashes:
             return {}
+        
         try:
-            hash_str = ','.join(hashes[:100])
-            status, result = _get(
-                f'{self.BASE_URL}/torrents/checkcached?hash={hash_str}',
-                headers=self._auth_headers()
+            # Torbox uses POST /torrents/checkcached with hash list
+            status, result = _post(
+                f"{self.BASE_URL}/torrents/checkcached",
+                headers=self._auth_headers(),
+                data={"hashes": hashes[:100]}
             )
-            if isinstance(result, dict) and result.get('data'):
+            
+            if isinstance(result, dict) and result.get('success'):
+                data = result.get('data', {})
                 cached = {}
-                for item in result['data']:
-                    if isinstance(item, str):
-                        cached[item.lower()] = True
-                    elif isinstance(item, dict) and item.get('hash'):
-                        cached[item['hash'].lower()] = True
+                for h in hashes:
+                    h_lower = h.lower()
+                    if data.get(h_lower) or data.get(h):
+                        cached[h_lower] = True
                 return cached
         except Exception as e:
-            xbmc.log(f'TorBox cache check error: {e}', xbmc.LOGERROR)
+            xbmc.log(f'Torbox cache check error: {e}', xbmc.LOGERROR)
+        
         return {}
-
+    
+    def unrestrict_link(self, link):
+        """Unrestrict a link through Torbox (web downloads)"""
+        if not self.is_authorized():
+            return None
+        try:
+            # Create web download
+            status, result = _post(
+                f"{self.BASE_URL}/webdl/createwebdownload",
+                headers=self._auth_headers(),
+                data={"link": link}
+            )
+            
+            if isinstance(result, dict) and result.get('success'):
+                data = result.get('data', {})
+                download_id = data.get('webdownload_id') or data.get('id')
+                
+                if download_id:
+                    # Request download link
+                    dl_status, dl_result = _get(
+                        f"{self.BASE_URL}/webdl/requestdl",
+                        params={"id": download_id, "file_id": "0"},
+                        headers=self._auth_headers()
+                    )
+                    
+                    if isinstance(dl_result, dict) and dl_result.get('success'):
+                        return dl_result.get('data')
+        except Exception as e:
+            xbmc.log(f'Torbox unrestrict error: {e}', xbmc.LOGERROR)
+        return None
+    
+    def add_magnet(self, magnet, check_cache_first=True):
+        """Add magnet and get download link"""
+        if not self.is_authorized():
+            return None
+        
+        try:
+            # Create torrent from magnet
+            status, result = _post(
+                f"{self.BASE_URL}/torrents/createtorrent",
+                headers=self._auth_headers(),
+                data={"magnet": magnet}
+            )
+            
+            xbmc.log(f'Torbox: Create torrent response - {result}', xbmc.LOGDEBUG)
+            
+            if not isinstance(result, dict) or not result.get('success'):
+                xbmc.log(f'Torbox: Failed to add magnet - {result}', xbmc.LOGERROR)
+                return None
+            
+            data = result.get('data', {})
+            torrent_id = data.get('torrent_id') or data.get('id')
+            
+            if not torrent_id:
+                return None
+            
+            # Wait for torrent to be ready
+            for _ in range(30):
+                list_status, list_result = _get(
+                    f"{self.BASE_URL}/torrents/mylist",
+                    params={"id": torrent_id},
+                    headers=self._auth_headers()
+                )
+                
+                if isinstance(list_result, dict) and list_result.get('success'):
+                    torrent_data = list_result.get('data', {})
+                    
+                    # Handle both single torrent and list response
+                    if isinstance(torrent_data, list) and torrent_data:
+                        torrent_data = torrent_data[0]
+                    
+                    status_str = torrent_data.get('download_state', '')
+                    
+                    if status_str in ['completed', 'cached', 'uploading', 'seeding']:
+                        # Get download link for first file
+                        files = torrent_data.get('files', [])
+                        file_id = files[0].get('id', 0) if files else 0
+                        
+                        dl_status, dl_result = _get(
+                            f"{self.BASE_URL}/torrents/requestdl",
+                            params={"torrent_id": torrent_id, "file_id": file_id},
+                            headers=self._auth_headers()
+                        )
+                        
+                        if isinstance(dl_result, dict) and dl_result.get('success'):
+                            return dl_result.get('data')
+                        break
+                    
+                    elif status_str in ['error', 'failed']:
+                        xbmc.log(f'Torbox: Torrent failed - {status_str}', xbmc.LOGERROR)
+                        return None
+                
+                time.sleep(2)
+            
+            return None
+            
+        except Exception as e:
+            xbmc.log(f'Torbox magnet error: {e}', xbmc.LOGERROR)
+            return None
+    
     def revoke(self):
+        """Clear Torbox authentication"""
         if os.path.exists(TB_TOKEN_FILE):
             try:
                 os.remove(TB_TOKEN_FILE)
             except:
                 pass
+        
         addon = get_addon()
         addon.setSetting('tb_api_key', '')
         addon.setSetting('tb_auth_done', 'false')
         self.token = ''
-        xbmcgui.Dialog().notification('TorBox', 'Account unlinked', xbmcgui.NOTIFICATION_INFO)
+        xbmcgui.Dialog().notification("Torbox", "Account unlinked", xbmcgui.NOTIFICATION_INFO)
 
     def account_info(self):
-        """Get TorBox account info"""
+        """Get Torbox account info"""
         if not self.token:
             return {}
         try:
@@ -1505,10 +1613,10 @@ def get_debrid_services():
         services.append(('Premiumize', pm))
         xbmc.log('Debrid: Premiumize is authorized', xbmc.LOGINFO)
     
-    tb = TorBox()
+    tb = Torbox()
     if tb.is_authorized():
-        services.append(('TorBox', tb))
-        xbmc.log('Debrid: TorBox is authorized', xbmc.LOGINFO)
+        services.append(('Torbox', tb))
+        xbmc.log('Debrid: Torbox is authorized', xbmc.LOGINFO)
     
     ls = LinkSnappy()
     if ls.is_authorized():
@@ -1653,14 +1761,14 @@ def get_all_account_info():
     except Exception as e:
         accounts.append({'name': 'Premiumize', 'configured': True, 'error': str(e)})
     
-    # TorBox
+    # Torbox
     try:
-        tb = TorBox()
+        tb = Torbox()
         if tb.token:
             info = tb.account_info()
             if info:
                 accounts.append({
-                    'name': 'TorBox',
+                    'name': 'Torbox',
                     'configured': True,
                     'username': info.get('username', ''),
                     'email': info.get('email', ''),
@@ -1670,12 +1778,12 @@ def get_all_account_info():
                     'days_left': info.get('days_left', 0),
                 })
             else:
-                accounts.append({'name': 'TorBox', 'configured': True,
+                accounts.append({'name': 'Torbox', 'configured': True,
                                  'error': 'Could not fetch account info - try re-authorizing'})
         else:
-            accounts.append({'name': 'TorBox', 'configured': False})
+            accounts.append({'name': 'Torbox', 'configured': False})
     except Exception as e:
-        accounts.append({'name': 'TorBox', 'configured': True, 'error': str(e)})
+        accounts.append({'name': 'Torbox', 'configured': True, 'error': str(e)})
     
     # LinkSnappy
     try:
@@ -1701,3 +1809,546 @@ def get_all_account_info():
         accounts.append({'name': 'LinkSnappy', 'configured': True, 'error': str(e)})
     
     return accounts
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ██████  DEBRID CLOUD BROWSER  ████████████████████████████████████████████████
+# ══════════════════════════════════════════════════════════════════════════════
+
+def get_cloud_services():
+    """Get list of authorized debrid services that support cloud browsing"""
+    services = []
+    
+    rd = RealDebrid()
+    if rd.is_authorized():
+        services.append(('Real-Debrid', rd, 'rd'))
+    
+    pm = Premiumize()
+    if pm.is_authorized():
+        services.append(('Premiumize', pm, 'pm'))
+    
+    tb = Torbox()
+    if tb.is_authorized():
+        services.append(('Torbox', tb, 'tb'))
+    
+    ad = AllDebrid()
+    if ad.is_authorized():
+        services.append(('AllDebrid', ad, 'ad'))
+    
+    return services
+
+
+def rd_get_torrents():
+    """Get list of torrents/downloads from Real-Debrid cloud"""
+    rd = RealDebrid()
+    if not rd.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{rd.BASE_URL}/torrents",
+            headers=rd._auth_headers()
+        )
+        
+        if status == 200 and isinstance(result, list):
+            items = []
+            for item in result:
+                torrent_id = item.get('id', '')
+                filename = item.get('filename', 'Unknown')
+                status_str = item.get('status', '')
+                progress = item.get('progress', 0)
+                bytes_size = item.get('bytes', 0)
+                
+                # Format size
+                if bytes_size > 1073741824:  # GB
+                    size_str = f"{bytes_size / 1073741824:.2f} GB"
+                elif bytes_size > 1048576:  # MB
+                    size_str = f"{bytes_size / 1048576:.1f} MB"
+                else:
+                    size_str = f"{bytes_size / 1024:.0f} KB"
+                
+                items.append({
+                    'id': torrent_id,
+                    'name': filename,
+                    'status': status_str,
+                    'progress': progress,
+                    'size': size_str,
+                    'bytes': bytes_size,
+                    'service': 'rd'
+                })
+            return items
+    except Exception as e:
+        xbmc.log(f'RD cloud list error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def rd_get_torrent_files(torrent_id):
+    """Get files inside a Real-Debrid torrent"""
+    rd = RealDebrid()
+    if not rd.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{rd.BASE_URL}/torrents/info/{torrent_id}",
+            headers=rd._auth_headers()
+        )
+        
+        if status == 200 and isinstance(result, dict):
+            files = []
+            links = result.get('links', [])
+            file_list = result.get('files', [])
+            
+            # Match links to files
+            for i, link in enumerate(links):
+                # Try to get filename from files list
+                filename = f"File {i+1}"
+                filesize = 0
+                
+                for f in file_list:
+                    if f.get('selected') == 1:
+                        filename = f.get('path', '').split('/')[-1] or filename
+                        filesize = f.get('bytes', 0)
+                        break
+                
+                # Format size
+                if filesize > 1073741824:
+                    size_str = f"{filesize / 1073741824:.2f} GB"
+                elif filesize > 1048576:
+                    size_str = f"{filesize / 1048576:.1f} MB"
+                else:
+                    size_str = f"{filesize / 1024:.0f} KB" if filesize > 0 else ""
+                
+                files.append({
+                    'name': filename,
+                    'link': link,
+                    'size': size_str,
+                    'bytes': filesize,
+                    'service': 'rd'
+                })
+            
+            return files
+    except Exception as e:
+        xbmc.log(f'RD torrent files error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def rd_get_downloads():
+    """Get download history from Real-Debrid"""
+    rd = RealDebrid()
+    if not rd.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{rd.BASE_URL}/downloads",
+            params={"limit": 50},
+            headers=rd._auth_headers()
+        )
+        
+        if status == 200 and isinstance(result, list):
+            items = []
+            for item in result:
+                filename = item.get('filename', 'Unknown')
+                download_link = item.get('download', '')
+                filesize = item.get('filesize', 0)
+                generated = item.get('generated', '')
+                
+                # Format size
+                if filesize > 1073741824:
+                    size_str = f"{filesize / 1073741824:.2f} GB"
+                elif filesize > 1048576:
+                    size_str = f"{filesize / 1048576:.1f} MB"
+                else:
+                    size_str = f"{filesize / 1024:.0f} KB"
+                
+                # Check if it's a video file
+                video_exts = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.m4v', '.webm']
+                is_video = any(filename.lower().endswith(ext) for ext in video_exts)
+                
+                items.append({
+                    'name': filename,
+                    'link': download_link,
+                    'size': size_str,
+                    'bytes': filesize,
+                    'date': generated[:10] if generated else '',
+                    'is_video': is_video,
+                    'service': 'rd'
+                })
+            return items
+    except Exception as e:
+        xbmc.log(f'RD downloads error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def pm_get_cloud_files(folder_id=None):
+    """Get files/folders from Premiumize cloud"""
+    pm = Premiumize()
+    if not pm.is_authorized():
+        return []
+    
+    try:
+        params = {}
+        if folder_id:
+            params['id'] = folder_id
+        
+        status, result = _get(
+            f"{pm.BASE_URL}/folder/list",
+            params=params,
+            headers={"Authorization": f"Bearer {pm.token}"}
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('status') == 'success':
+            items = []
+            content = result.get('content', [])
+            
+            for item in content:
+                item_type = item.get('type', '')
+                name = item.get('name', 'Unknown')
+                item_id = item.get('id', '')
+                size = item.get('size', 0)
+                link = item.get('link', '')
+                
+                # Format size
+                if size > 1073741824:
+                    size_str = f"{size / 1073741824:.2f} GB"
+                elif size > 1048576:
+                    size_str = f"{size / 1048576:.1f} MB"
+                else:
+                    size_str = f"{size / 1024:.0f} KB" if size > 0 else ""
+                
+                # Check if it's a video
+                video_exts = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.m4v', '.webm']
+                is_video = any(name.lower().endswith(ext) for ext in video_exts)
+                
+                items.append({
+                    'id': item_id,
+                    'name': name,
+                    'type': item_type,  # 'folder' or 'file'
+                    'link': link,
+                    'size': size_str,
+                    'bytes': size,
+                    'is_video': is_video,
+                    'service': 'pm'
+                })
+            
+            return items
+    except Exception as e:
+        xbmc.log(f'PM cloud list error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def pm_get_transfers():
+    """Get active transfers from Premiumize"""
+    pm = Premiumize()
+    if not pm.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{pm.BASE_URL}/transfer/list",
+            headers={"Authorization": f"Bearer {pm.token}"}
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('status') == 'success':
+            items = []
+            transfers = result.get('transfers', [])
+            
+            for item in transfers:
+                name = item.get('name', 'Unknown')
+                status_str = item.get('status', '')
+                progress = item.get('progress', 0)
+                folder_id = item.get('folder_id', '')
+                file_id = item.get('file_id', '')
+                
+                items.append({
+                    'id': folder_id or file_id,
+                    'name': name,
+                    'status': status_str,
+                    'progress': int(progress * 100) if progress < 1 else int(progress),
+                    'service': 'pm'
+                })
+            
+            return items
+    except Exception as e:
+        xbmc.log(f'PM transfers error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def tb_get_torrents():
+    """Get torrents from Torbox cloud"""
+    tb = Torbox()
+    if not tb.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{tb.BASE_URL}/torrents/mylist",
+            headers=tb._auth_headers()
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('success'):
+            items = []
+            data = result.get('data', [])
+            
+            if isinstance(data, dict):
+                data = [data]
+            
+            for item in data:
+                torrent_id = item.get('id', '')
+                name = item.get('name', 'Unknown')
+                status_str = item.get('download_state', '')
+                progress = item.get('progress', 0)
+                size = item.get('size', 0)
+                
+                # Format size
+                if size > 1073741824:
+                    size_str = f"{size / 1073741824:.2f} GB"
+                elif size > 1048576:
+                    size_str = f"{size / 1048576:.1f} MB"
+                else:
+                    size_str = f"{size / 1024:.0f} KB"
+                
+                items.append({
+                    'id': torrent_id,
+                    'name': name,
+                    'status': status_str,
+                    'progress': int(progress * 100) if progress <= 1 else int(progress),
+                    'size': size_str,
+                    'bytes': size,
+                    'service': 'tb'
+                })
+            
+            return items
+    except Exception as e:
+        xbmc.log(f'TB cloud list error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def tb_get_torrent_files(torrent_id):
+    """Get files inside a Torbox torrent"""
+    tb = Torbox()
+    if not tb.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{tb.BASE_URL}/torrents/mylist",
+            params={"id": torrent_id},
+            headers=tb._auth_headers()
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('success'):
+            files = []
+            data = result.get('data', {})
+            
+            if isinstance(data, list) and data:
+                data = data[0]
+            
+            file_list = data.get('files', [])
+            
+            for f in file_list:
+                file_id = f.get('id', 0)
+                name = f.get('name', '').split('/')[-1] or f"File {file_id}"
+                size = f.get('size', 0)
+                
+                # Format size
+                if size > 1073741824:
+                    size_str = f"{size / 1073741824:.2f} GB"
+                elif size > 1048576:
+                    size_str = f"{size / 1048576:.1f} MB"
+                else:
+                    size_str = f"{size / 1024:.0f} KB"
+                
+                # Check if video
+                video_exts = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.m4v', '.webm']
+                is_video = any(name.lower().endswith(ext) for ext in video_exts)
+                
+                files.append({
+                    'id': file_id,
+                    'torrent_id': torrent_id,
+                    'name': name,
+                    'size': size_str,
+                    'bytes': size,
+                    'is_video': is_video,
+                    'service': 'tb'
+                })
+            
+            return files
+    except Exception as e:
+        xbmc.log(f'TB torrent files error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def tb_get_download_link(torrent_id, file_id):
+    """Get download link for a Torbox file"""
+    tb = Torbox()
+    if not tb.is_authorized():
+        return None
+    
+    try:
+        status, result = _get(
+            f"{tb.BASE_URL}/torrents/requestdl",
+            params={"torrent_id": torrent_id, "file_id": file_id},
+            headers=tb._auth_headers()
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('success'):
+            return result.get('data')
+    except Exception as e:
+        xbmc.log(f'TB download link error: {e}', xbmc.LOGERROR)
+    
+    return None
+
+
+def ad_get_magnets():
+    """Get magnets/torrents from AllDebrid"""
+    ad = AllDebrid()
+    if not ad.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{ad.BASE_URL}/magnet/status",
+            params={"agent": ad.AGENT, "apikey": ad.token}
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('status') == 'success':
+            items = []
+            magnets = result.get('data', {}).get('magnets', [])
+            
+            for item in magnets:
+                magnet_id = item.get('id', '')
+                filename = item.get('filename', 'Unknown')
+                status_str = item.get('status', '')
+                size = item.get('size', 0)
+                
+                # Format size
+                if size > 1073741824:
+                    size_str = f"{size / 1073741824:.2f} GB"
+                elif size > 1048576:
+                    size_str = f"{size / 1048576:.1f} MB"
+                else:
+                    size_str = f"{size / 1024:.0f} KB"
+                
+                items.append({
+                    'id': magnet_id,
+                    'name': filename,
+                    'status': status_str,
+                    'size': size_str,
+                    'bytes': size,
+                    'service': 'ad'
+                })
+            
+            return items
+    except Exception as e:
+        xbmc.log(f'AD magnets list error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def ad_get_magnet_files(magnet_id):
+    """Get files inside an AllDebrid magnet"""
+    ad = AllDebrid()
+    if not ad.is_authorized():
+        return []
+    
+    try:
+        status, result = _get(
+            f"{ad.BASE_URL}/magnet/status",
+            params={"agent": ad.AGENT, "apikey": ad.token, "id": magnet_id}
+        )
+        
+        if status == 200 and isinstance(result, dict) and result.get('status') == 'success':
+            files = []
+            magnet_data = result.get('data', {}).get('magnets', {})
+            links = magnet_data.get('links', [])
+            
+            for link_info in links:
+                filename = link_info.get('filename', 'Unknown')
+                link = link_info.get('link', '')
+                size = link_info.get('size', 0)
+                
+                # Format size
+                if size > 1073741824:
+                    size_str = f"{size / 1073741824:.2f} GB"
+                elif size > 1048576:
+                    size_str = f"{size / 1048576:.1f} MB"
+                else:
+                    size_str = f"{size / 1024:.0f} KB"
+                
+                # Check if video
+                video_exts = ['.mkv', '.mp4', '.avi', '.mov', '.wmv', '.m4v', '.webm']
+                is_video = any(filename.lower().endswith(ext) for ext in video_exts)
+                
+                files.append({
+                    'name': filename,
+                    'link': link,
+                    'size': size_str,
+                    'bytes': size,
+                    'is_video': is_video,
+                    'service': 'ad'
+                })
+            
+            return files
+    except Exception as e:
+        xbmc.log(f'AD magnet files error: {e}', xbmc.LOGERROR)
+    
+    return []
+
+
+def delete_cloud_item(service, item_id):
+    """Delete an item from debrid cloud"""
+    try:
+        if service == 'rd':
+            rd = RealDebrid()
+            if rd.is_authorized():
+                status, _ = _http(
+                    f"{rd.BASE_URL}/torrents/delete/{item_id}",
+                    method='DELETE',
+                    headers=rd._auth_headers()
+                )
+                return status == 204 or status == 200
+        
+        elif service == 'pm':
+            pm = Premiumize()
+            if pm.is_authorized():
+                status, result = _post(
+                    f"{pm.BASE_URL}/item/delete",
+                    data={"id": item_id},
+                    headers={"Authorization": f"Bearer {pm.token}"}
+                )
+                return status == 200 and isinstance(result, dict) and result.get('status') == 'success'
+        
+        elif service == 'tb':
+            tb = Torbox()
+            if tb.is_authorized():
+                status, result = _http(
+                    f"{tb.BASE_URL}/torrents/controltorrent",
+                    method='POST',
+                    data={"torrent_id": item_id, "operation": "delete"},
+                    headers=tb._auth_headers()
+                )
+                return isinstance(result, dict) and result.get('success')
+        
+        elif service == 'ad':
+            ad = AllDebrid()
+            if ad.is_authorized():
+                status, result = _get(
+                    f"{ad.BASE_URL}/magnet/delete",
+                    params={"agent": ad.AGENT, "apikey": ad.token, "id": item_id}
+                )
+                return isinstance(result, dict) and result.get('status') == 'success'
+    
+    except Exception as e:
+        xbmc.log(f'Delete cloud item error: {e}', xbmc.LOGERROR)
+    
+    return False

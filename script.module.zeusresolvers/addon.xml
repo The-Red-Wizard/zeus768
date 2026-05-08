@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.module.zeusresolvers" name="Zeus Resolvers" version="1.0.3" provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+    </requires>
+    <extension point="xbmc.python.module" library="lib"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Debrid-free URL resolver for Streamtape and DDownloads</summary>
+        <description lang="en_GB">Zeus Resolvers is a lightweight Kodi Python module that resolves direct playable streams from selected file hosters (Streamtape, DDownloads) without requiring a Debrid subscription. Acts as a drop-in primary resolver with automatic fallback to ResolveURL for any other host.</description>
+        <platform>all</platform>
+        <license>GPL-3.0</license>
+        <forum></forum>
+        <website></website>
+        <source>https://github.com/Zeus768</source>
+        <news>
+v1.0.3
+- Streamtape: rewritten to yt-dlp / ResolveURL conservative style. Only
+  the authoritative `ideoooolink` / `norobotlink` elements are matched,
+  using the exact `'PART1' + ('PART2').substring(N)` form. The page's
+  `botlink` / `robotlink` honeypots that produce trap URLs (e.g.
+  `streamtape.cddcom/...`, `streamtape.com/streamtape.com/get_videod?...`)
+  are now ignored.
+- Streamtape + DDownloads: every resolved URL is validated against a
+  strict pattern before return. Anything that doesn't match (double host,
+  `cdd` injection, missing media extension, etc.) returns `None` so the
+  caller falls through cleanly to ResolveURL.
+v1.0.2
+- Streamtape: extended JS string evaluator to also handle .replace(),
+  .split().join(), .slice() and .trim(). Streamtape injects a 3-char
+  marker (e.g. 'cdd') into the host string and strips it back out via
+  one of those calls; without this, resolved URLs hit a bogus host
+  (streamtape.cddcom -> 404)
+- New regression tests covering all three obfuscation patterns from
+  reported kodi.log
+v1.0.1
+- Streamtape: proper JS substring evaluation for the obfuscated token
+  (was producing the wrong token -> 403 from CDN)
+- Streamtape + DDownloads: append Kodi `|User-Agent=...&Referer=...` to
+  the resolved URL so the player passes the headers the CDN expects
+v1.0.0
+- Initial release
+- Streamtape resolver (norobotlink/ideoooolink token extraction)
+- DDownloads resolver (two-step form POST + redirect capture)
+- Public API: zeusresolvers.resolve(url), zeusresolvers.can_resolve(url)
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

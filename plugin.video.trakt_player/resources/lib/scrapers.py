@@ -25,6 +25,20 @@ QUALITY_PATTERNS = {
 QUALITY_ORDER = ['2160p', '1080p', '720p', '480p', '360p']
 
 
+def extract_hash(magnet):
+    """Extract info hash from magnet link"""
+    if not magnet:
+        return ''
+    match = re.search(r'btih:([a-fA-F0-9]{40})', magnet)
+    if match:
+        return match.group(1).lower()
+    # Also support base32 encoded hashes (32 chars)
+    match = re.search(r'btih:([a-zA-Z2-7]{32})', magnet)
+    if match:
+        return match.group(1).lower()
+    return ''
+
+
 def _http_get(url, headers=None, timeout=10):
     """HTTP GET request using urllib, returns response text or None"""
     hdrs = {'User-Agent': USER_AGENT}
@@ -264,6 +278,118 @@ class TorrentGalaxy:
         return results
 
 
+class L337xScraper:
+    """1337x torrent scraper"""
+    
+    # Multiple mirrors for redundancy
+    MIRRORS = [
+        "https://1337x.to",
+        "https://1337x.st",
+        "https://x1337x.ws",
+        "https://1337x.gd"
+    ]
+    
+    def __init__(self):
+        self.enabled = ADDON.getSetting('enable_1337x') == 'true'
+    
+    def search(self, query):
+        """Search 1337x for torrents"""
+        if not self.enabled:
+            return []
+        
+        results = []
+        
+        for mirror in self.MIRRORS:
+            try:
+                # 1337x search URL format
+                search_url = f"{mirror}/search/{quote_plus(query)}/1/"
+                html = _http_get(search_url, timeout=15)
+                
+                if not html:
+                    continue
+                
+                # Parse search results - get torrent page links
+                # Pattern: /torrent/123456/torrent-name/
+                torrent_links = re.findall(r'href="(/torrent/\d+/[^"]+)"', html)
+                
+                # Also try to extract seeds from search results
+                # Pattern: <td class="coll-2 seeds">123</td>
+                seeds_matches = re.findall(r'class="coll-2 seeds">(\d+)</td>', html)
+                
+                # Pattern for names from search results
+                name_matches = re.findall(r'class="coll-1 name"[^>]*>.*?<a href="/torrent/[^"]+">([^<]+)</a>', html, re.DOTALL)
+                
+                if not torrent_links:
+                    xbmc.log(f"1337x: No results from {mirror}", xbmc.LOGDEBUG)
+                    continue
+                
+                xbmc.log(f"1337x: Found {len(torrent_links)} results from {mirror}", xbmc.LOGINFO)
+                
+                # Limit to first 15 results to avoid too many requests
+                for i, link in enumerate(torrent_links[:15]):
+                    try:
+                        # Get the torrent page to extract magnet link
+                        torrent_url = f"{mirror}{link}"
+                        torrent_html = _http_get(torrent_url, timeout=10)
+                        
+                        if not torrent_html:
+                            continue
+                        
+                        # Extract magnet link
+                        magnet_match = re.search(r'href="(magnet:\?xt=urn:btih:[^"]+)"', torrent_html)
+                        if not magnet_match:
+                            continue
+                        
+                        magnet = magnet_match.group(1)
+                        
+                        # Extract title from page
+                        title_match = re.search(r'<title>([^<]+)', torrent_html)
+                        if title_match:
+                            title = title_match.group(1).replace(' | 1337x', '').replace('Download ', '').strip()
+                        elif i < len(name_matches):
+                            title = name_matches[i].strip()
+                        else:
+                            title = link.split('/')[-2].replace('-', ' ')
+                        
+                        # Get seeds
+                        seeds = 0
+                        if i < len(seeds_matches):
+                            try:
+                                seeds = int(seeds_matches[i])
+                            except:
+                                pass
+                        
+                        # Also try to get seeds from torrent page
+                        if seeds == 0:
+                            seeds_page_match = re.search(r'Seeders.*?<span[^>]*>(\d+)</span>', torrent_html, re.DOTALL)
+                            if seeds_page_match:
+                                try:
+                                    seeds = int(seeds_page_match.group(1))
+                                except:
+                                    pass
+                        
+                        results.append({
+                            'title': title,
+                            'magnet': magnet,
+                            'seeds': seeds,
+                            'quality': detect_quality(title),
+                            'source': '1337x'
+                        })
+                        
+                    except Exception as e:
+                        xbmc.log(f"1337x: Error parsing torrent page: {e}", xbmc.LOGDEBUG)
+                        continue
+                
+                if results:
+                    break  # Success, no need to try other mirrors
+                    
+            except Exception as e:
+                xbmc.log(f"1337x mirror {mirror} failed: {str(e)}", xbmc.LOGWARNING)
+                continue
+        
+        return results
+
+
 def search_all(query, preferred_quality='1080p'):
     """Search all enabled scrapers and return sorted results"""
     all_results = []
@@ -271,7 +397,8 @@ def search_all(query, preferred_quality='1080p'):
     scrapers = [
         PirateBayScraper(),
         Rarbg(),
-        TorrentGalaxy()
+        TorrentGalaxy(),
+        L337xScraper()
     ]
     
     for scraper in scrapers:

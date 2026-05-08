@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window type="dialog">
+    <coordinates><left>360</left><top>200</top></coordinates>
+    <controls>
+        <control type="image"><width>1200</width><height>700</height><texture>fanart.jpg</texture></control>
+        <control type="label"><top>20</top><width>1200</width><label>TINKLEPAD SELECT SOURCE</label><align>center</align><textcolor>FFFFD700</textcolor></control>
+        <control type="list" id="1000">
+            <left>50</left><top>100</top><width>1100</width><height>550</height>
+            <itemlayout height="60"><control type="label"><label>$INFO[ListItem.Label]</label></control></itemlayout>
+            <focusedlayout height="60"><control type="label"><label>$INFO[ListItem.Label]</label><textcolor>FFFFD700</textcolor></control></focusedlayout>
+        </control>
+    </controls>
+</window>

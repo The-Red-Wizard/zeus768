@@ -2,10 +2,12 @@
 <addon id="plugin.video.trakt_player" name="Trakt Player" version="2.5.0" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.zeusresolvers" version="1.0.0" optional="true"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="main.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Superpowered Trakt Player - Click and Play with Debrid, AI Vibes, Discovery Feed</summary>
         <description lang="en">Trakt Player v2.3.0 - Click-and-Play via 5 Debrid services (Real-Debrid, AllDebrid, Premiumize, TorBox, LinkSnappy). Real account info with expiry tracking. AI Vibes, Discovery Feed, Trakt Scrobbling, Recommendations, Calendar, Friends, Stats, Custom Lists. Created by zeus768.
@@ -62,8 +64,44 @@ v1.0.8 - Initial Release
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <news>
+v2.4.3 (2026)
+- FIXED: Wrong posters in mixed Trakt lists (watchlists, popular lists,
+  custom lists, history, friend activity, continue watching).
+  * Each item's actual type (movie/show/episode) is now detected from
+    Trakt's own 'type' field instead of a hard-coded default.
+  * Posters now fetched from the correct TMDB namespace (movie vs tv),
+    fixing random/unrelated artwork being shown for TV shows.
+  * Episode entries (history, playback progress) now correctly use the
+    parent show's poster.
+  * Image batch limit increased from 30 to 100 so long lists also get
+    posters for every item.
+
+v2.4.2 (2026)
+- NEW: 1337x Scraper - reliable torrent source with multiple mirrors
+- NEW: Debrid Cloud Browser - browse and play files from your debrid cloud
+  * Real-Debrid: View torrents, files, download history
+  * Premiumize: Browse cloud files and folders, view transfers
+  * Torbox: View torrents and files
+  * AllDebrid: Browse magnets and files
+- Delete items from cloud via context menu
+- Direct playback from cloud without re-searching
+
+v2.4.1 (2026)
+- FIXED: Critical playback bug - added missing extract_hash() function
+- Links now resolve and play correctly via debrid services
+- Hash extraction supports both hex (40-char) and base32 (32-char) formats
+
+v2.4.0 (2026)
+- NEW: Episode Notifications - Get alerts when new episodes drop for your watchlist shows
+- NEW: Pre-Cache Next Episode - Auto-adds next episode to debrid while watching
+- Background service for notifications and pre-cache monitoring
+- New settings categories for notifications and pre-cache options
+
+v2.3.1 (2026)
+- FIXED: Premiumize authorization (ported working OAuth flow from v2.1.8)
+- FIXED: Torbox authorization (ported working device code auth from v2.1.8)
+
 v2.3.0 (2026)
-- FIXED: Premiumize auth code not showing (response_type fix)
 - FIXED: Real-Debrid false "expired" errors (token refresh fallback)
 - ADDED: TorBox debrid (device code auth, cache check, magnet resolve)
 - ADDED: LinkSnappy debrid (login auth, 30+ file host link generation)

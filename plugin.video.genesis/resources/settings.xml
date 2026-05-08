@@ -1,132 +1,129 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-    <category label="30800">
-        <setting id="appearance" type="select" label="30801" values="-|4orbs|Clean|Embossed|GOne|Metro" default="GOne" />
-        <setting id="fanart" type="bool" label="30802" default="true" />
-        <setting id="infoLang" visible="false" type="select" label="30803" values="bg|cs|da|de|el|en|es|fi|fr|he|hr|hu|it|ja|ko|nl|no|pl|pt|ru|sl|sv|tr|zh" default="en" />
-        <setting type="sep" />
-        <setting id="sources_timeout_40" type="slider" label="30804" default="30" range="10,60" option="int" />
-        <setting type="sep" />
-        <setting type="lsep" label="30805" />
-        <setting id="movie_widget" type="enum" label="30806" lvalues="30807|30808|30809|30810" default="1" />
-        <setting id="tv_alt_widget" type="enum" label="30811" lvalues="30812|30813|30814|30815|30816" default="3" visible="!eq(-1,)+!eq(-2,)" />
-        <setting id="tv_widget" type="enum" label="30811" lvalues="30812|30813|30814" default="1" visible="eq(-2,)|eq(-3,)" />
-        <setting id="calendar_widget" type="enum" label="30817" lvalues="30818|30819" default="0" />
-    </category>
-    <category label="30830">
-        <setting id="playback_quality" type="enum" label="30831" values="1080p|720p|HQ|MQ|LQ" default="0" />
-        <setting id="host_select" type="enum" label="30832" lvalues="30833|30834" default="1" enable="eq(6,false)" />
-        <setting type="lsep" label="30835" />
-        <setting id="playback_captcha_hosts" type="bool" label="30836" default="true" />
-        <setting id="playback_1080p_hosts" type="bool" label="30837" default="true" />
-        <setting id="playback_720p_hosts" type="bool" label="30838" default="true" />
-        <setting type="lsep" label="30839" />
-        <setting id="autoplay" type="bool" label="30840" default="false" />
-        <setting id="autoplay_library" type="bool" label="30841" default="false" />
-        <setting id="playback_auto_sd" type="bool" label="30842" default="false" />
-        <setting type="lsep" label="30843" />
-        <setting id="resume_playback" type="bool" label="30844" default="true" />
-        <setting id="playback_info" type="bool" label="30845" default="false" />
+    <!-- Icon Theme Section -->
+    <category label="Appearance">
+        <setting type="lsep" label="Icon Theme Settings (via Genesis Skins)"/>
+        <setting id="use_genesis_skins" type="bool" label="Use Genesis Skins Icons" default="true"/>
+        <setting id="select_icon_theme" type="action" label="[COLOR yellow]Select Icon Theme[/COLOR]" action="RunScript(script.genesis.skins)" enable="eq(-1,true)"/>
+        <setting type="lsep" label="Themes: Classic, Futuristic, Anime, Water"/>
+        <setting type="lsep" label="Add your own themes in script.genesis.skins/resources/media/"/>
     </category>
     
-    <!-- Torrent Scrapers - Movies -->
-    <category label="Torrent Scrapers (Movies)">
-        <setting type="lsep" label="Torrent Sources" />
-        <setting id="torrent_1337x" type="bool" label="1337x" default="true" />
-        <setting id="torrent_tgx" type="bool" label="TorrentGalaxy" default="true" />
-        <setting id="torrent_yts" type="bool" label="YTS" default="true" />
-        <setting id="torrent_tpb" type="bool" label="ThePirateBay" default="true" />
+    <!-- Accounts Section -->
+    <category label="Accounts">
+        <setting id="tmdb_api_key" type="text" label="TMDB API Key" default=""/>
+        <setting id="tmdb_key_prompted" type="bool" label="" default="false" visible="false"/>
+        
+        <!-- OMDB API Key for multi-source ratings -->
+        <setting id="omdb_api_key" type="text" label="OMDB API Key (for ratings)" default=""/>
+        <setting type="lsep" label="Get free OMDB key at omdbapi.com"/>
+        
+        <!-- Trakt -->
+        <setting id="trakt_auth_done" type="bool" label="Trakt Authenticated" default="false" enable="false"/>
+        <setting id="trakt_access_token" type="text" label="" default="" visible="false"/>
+        <setting id="trakt_refresh_token" type="text" label="" default="" visible="false"/>
+        <setting id="trakt_expires" type="text" label="" default="0" visible="false"/>
+        <setting id="auth_trakt" type="action" label="[COLOR yellow]Authorize Trakt Account[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_trakt)"/>
+        <setting id="revoke_trakt" type="action" label="[COLOR red]Revoke Trakt Authorization[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_trakt)" enable="eq(-4,true)"/>
     </category>
     
-    <!-- Torrent Scrapers - TV Shows -->
-    <category label="Torrent Scrapers (TV)">
-        <setting type="lsep" label="Torrent Sources" />
-        <setting id="torrent_1337x_tv" type="bool" label="1337x" default="true" />
-        <setting id="torrent_tgx_tv" type="bool" label="TorrentGalaxy" default="true" />
-        <setting id="torrent_eztv_tv" type="bool" label="EZTV" default="true" />
-        <setting id="torrent_tpb_tv" type="bool" label="ThePirateBay" default="true" />
+    <!-- Plex Server Section -->
+    <category label="Plex Server">
+        <setting type="lsep" label="Plex Media Server Integration"/>
+        <setting id="plex_enabled" type="bool" label="Plex Server Enabled" default="false" enable="false"/>
+        <setting id="plex_url" type="text" label="Server URL" default="http://192.168.1.100:32400"/>
+        <setting id="plex_token" type="text" label="Plex Token" default="" option="hidden"/>
+        <setting type="lsep" label="Get token from: plex.tv/claim or Settings > Privacy"/>
+        <setting id="plex_configure" type="action" label="[COLOR orange]Configure Plex Server[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=plex_configure)"/>
+        <setting id="plex_disable" type="action" label="[COLOR red]Disable Plex[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=plex_disable)" enable="eq(-5,true)"/>
     </category>
-
-    <!-- Debrid & Torrent Services -->
+    
+    <!-- Emby Server Section -->
+    <category label="Emby Server">
+        <setting type="lsep" label="Emby Media Server Integration"/>
+        <setting id="emby_enabled" type="bool" label="Emby Server Enabled" default="false" enable="false"/>
+        <setting id="emby_url" type="text" label="Server URL" default="http://192.168.1.100:8096"/>
+        <setting id="emby_token" type="text" label="API Key" default="" option="hidden"/>
+        <setting id="emby_user_id" type="text" label="User ID" default="" visible="false"/>
+        <setting id="emby_username" type="text" label="Username" default="" enable="false"/>
+        <setting type="lsep" label="Get API Key: Dashboard > Advanced > Security"/>
+        <setting id="emby_configure" type="action" label="[COLOR purple]Configure Emby Server[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=emby_configure)"/>
+        <setting id="emby_disable" type="action" label="[COLOR red]Disable Emby[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=emby_disable)" enable="eq(-6,true)"/>
+    </category>
+    
+    <!-- Debrid Services Section -->
     <category label="Debrid Services">
-        <setting type="lsep" label="Trakt" />
-        <setting id="trakt.user" type="action" label="30142" option="close" action="RunPlugin(plugin://plugin.video.genesis/?action=authTrakt)" />
-        <setting id="trakt.token" type="text" option="hidden" visible="false" label="" default="" />
-        <setting id="trakt.refresh" type="text" option="hidden" visible="false" label="" default="" />
+        <!-- Real-Debrid -->
+        <setting id="rd_auth_done" type="bool" label="Real-Debrid Authenticated" default="false" enable="false"/>
+        <setting id="rd_access_token" type="text" label="" default="" visible="false"/>
+        <setting id="rd_refresh_token" type="text" label="" default="" visible="false"/>
+        <setting id="rd_client_id" type="text" label="" default="" visible="false"/>
+        <setting id="rd_client_secret" type="text" label="" default="" visible="false"/>
+        <setting id="rd_expires" type="text" label="" default="0" visible="false"/>
+        <setting id="auth_rd" type="action" label="[COLOR yellow]Authorize Real-Debrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_rd)"/>
+        <setting id="revoke_rd" type="action" label="[COLOR red]Revoke Real-Debrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_rd)" enable="eq(-6,true)"/>
         
-        <setting type="lsep" label="Real-Debrid (PIN Auth)" />
-        <setting id="realdebrid_auth" label="Authorize Real-Debrid" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=realdebridauth)" option="close" visible="True"/>
-        <setting id="realdebrid_token" visible="false" type="text" default=""/>
-        <setting id="realdebrid_refresh" visible="false" type="text" default=""/>
-        <setting id="realdebrid_client_id" visible="false" type="text" default=""/>
-        <setting id="realdebrid_client_secret" visible="false" type="text" default=""/>
-        <setting id="realdebrid_tokenExpireIn" type="text" visible="false" default="" />
+        <!-- AllDebrid -->
+        <setting id="ad_auth_done" type="bool" label="AllDebrid Authenticated" default="false" enable="false"/>
+        <setting id="ad_api_key" type="text" label="" default="" visible="false"/>
+        <setting id="auth_ad" type="action" label="[COLOR yellow]Authorize AllDebrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_ad)"/>
+        <setting id="revoke_ad" type="action" label="[COLOR red]Revoke AllDebrid[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_ad)" enable="eq(-3,true)"/>
         
-        <setting type="lsep" label="Premiumize (PIN Auth)" />
-        <setting id="premiumize_auth" label="Authorize Premiumize" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=premiumizeauth)" option="close" visible="True"/>
-        <setting id="premiumize_token" visible="false" type="text" default=""/>
-        <setting id="premiumize_user" visible="false" type="text" default=""/>
-        
-        <setting type="lsep" label="AllDebrid (PIN Auth)" />
-        <setting id="alldebrid_auth" label="Authorize AllDebrid" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=alldebridauth)" option="close" visible="True"/>
-        <setting id="alldebrid_api_key" visible="false" type="text" default=""/>
-        <setting id="alldebrid_username" visible="false" type="text" default=""/>
-        
-        <setting type="lsep" label="TorBox (API Key Auth)" />
-        <setting id="torbox_auth" label="Authorize TorBox" type="action" action="RunPlugin(plugin://plugin.video.genesis/?action=torboxauth)" option="close" visible="True"/>
-        <setting id="torbox_api_key" visible="false" type="text" default=""/>
-        
-        <setting type="lsep" label="IMDb" />
-        <setting id="imdb_user" type="number" label="30911" default="" />
+        <!-- Premiumize -->
+        <setting id="pm_auth_done" type="bool" label="Premiumize Authenticated" default="false" enable="false"/>
+        <setting id="pm_access_token" type="text" label="" default="" visible="false"/>
+        <setting id="auth_pm" type="action" label="[COLOR yellow]Authorize Premiumize[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_pm)"/>
+        <setting id="revoke_pm" type="action" label="[COLOR red]Revoke Premiumize[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_pm)" enable="eq(-3,true)"/>
     </category>
-
-    <!-- External Scraper Providers -->
-    <category label="External Scrapers">
-        <setting type="lsep" label="CocoScrapers (script.module.cocoscrapers)" />
-        <setting id="cocoscrapers_enabled" type="bool" label="Enable CocoScrapers" default="true" />
-        <setting id="cocoscrapers" type="bool" label="CocoScrapers (Movies &amp; TV)" default="true" visible="false" />
-        <setting type="lsep" label="[CR]Install CocoScrapers from: cocojoe2411.github.io" />
+    
+    <!-- TorBox -->
+    <category label="TorBox">
+        <setting id="tb_auth_done" type="bool" label="TorBox Authorized" default="false" enable="false"/>
+        <setting id="tb_api_key" type="text" label="API Key (auto-filled)" default="" enable="false"/>
+        <setting id="auth_tb" type="action" label="[COLOR yellow]Authorize TorBox (Device Code)[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_tb)"/>
+        <setting id="revoke_tb" type="action" label="[COLOR red]Revoke TorBox[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_tb)" enable="eq(-3,true)"/>
+    </category>
+    
+    <!-- LinkSnappy -->
+    <category label="LinkSnappy">
+        <setting id="ls_auth_done" type="bool" label="LinkSnappy Authorized" default="false" enable="false"/>
+        <setting id="ls_username" type="text" label="Username" default="" enable="false"/>
+        <setting id="ls_password" type="text" label="Password" default="" visible="false"/>
+        <setting id="ls_cookie" type="text" label="Cookie" default="" visible="false"/>
+        <setting id="auth_ls" type="action" label="[COLOR yellow]Login to LinkSnappy[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=auth_ls)"/>
+        <setting id="revoke_ls" type="action" label="[COLOR red]Unlink LinkSnappy[/COLOR]" action="RunPlugin(plugin://plugin.video.genesis/?action=revoke_ls)" enable="eq(-5,true)"/>
+    </category>
+    
+    <!-- Playback Settings -->
+    <category label="Playback">
+        <setting id="preferred_quality" type="select" label="Preferred Quality" default="1" values="4K/2160p|1080p|720p|480p"/>
+        <setting id="quality_fallback" type="bool" label="Show Lower Quality as Fallback" default="true"/>
+        <setting type="lsep" label="Source Picker Settings"/>
+        <setting id="show_all_sources" type="bool" label="Show All Sources in Picker" default="true"/>
+        <setting id="cache_priority" type="bool" label="Prioritize Cached Sources" default="true"/>
+    </category>
+    
+    <!-- Scraper Settings -->
+    <category label="Scrapers">
+        <setting type="lsep" label="General Torrent Sites (10 Total)"/>
+        <setting id="enable_1337x" type="bool" label="Enable 1337x" default="true"/>
+        <setting id="enable_piratebay" type="bool" label="Enable The Pirate Bay" default="true"/>
+        <setting id="enable_yts" type="bool" label="Enable YTS (YIFY)" default="true"/>
+        <setting id="enable_eztv" type="bool" label="Enable EZTV" default="true"/>
+        <setting id="enable_limetorrents" type="bool" label="Enable LimeTorrents" default="true"/>
+        <setting id="enable_torrentgalaxy" type="bool" label="Enable TorrentGalaxy" default="true"/>
+        <setting id="enable_nyaa" type="bool" label="Enable Nyaa (Anime)" default="true"/>
+        <setting id="enable_magnetdl" type="bool" label="Enable Magnetdl" default="true"/>
+        <setting id="enable_solidtorrents" type="bool" label="Enable SolidTorrents" default="true"/>
+        <setting id="enable_bitsearch" type="bool" label="Enable BitSearch" default="true"/>
         
-        <setting type="lsep" label="Gears Scrapers (script.module.gears)" />
-        <setting id="gears_enabled" type="bool" label="Enable Gears Scrapers" default="true" />
-        <setting id="gears" type="bool" label="Gears (Movies &amp; TV)" default="true" visible="false" />
-        <setting type="lsep" label="[CR]Install Gears from: unhingedthemes.github.io (Chains Repo)" />
+        <setting type="lsep" label="Anime Torrent Sites (7 Total)"/>
+        <setting id="enable_subsplease" type="bool" label="Enable SubsPlease (Daily Subs)" default="true"/>
+        <setting id="enable_animetosho" type="bool" label="Enable AnimeTosho (Ad-Free)" default="true"/>
+        <setting id="enable_tokyotosho" type="bool" label="Enable TokyoTosho" default="true"/>
+        <setting id="enable_anidex" type="bool" label="Enable AniDex (Multi-Lang)" default="true"/>
+        <setting id="enable_erairaws" type="bool" label="Enable Erai-Raws" default="true"/>
+        <setting id="enable_shanaproject" type="bool" label="Enable ShanaProject" default="true"/>
+        <setting id="enable_bakabt" type="bool" label="Enable BakaBT (Private)" default="false"/>
     </category>
-
-    <category label="30920">
-        <setting id="movie_library" type="folder" label="30922" default="special://userdata/addon_data/plugin.video.genesis/Movies" />
-        <setting id="tv_library" type="folder" label="30923" default="special://userdata/addon_data/plugin.video.genesis/TVShows" />
-        <setting type="lsep" label="30921" />
-        <setting type="sep" />
-        <setting id="service_update" type="bool" label="30924" default="true" />
-        <setting id="service_notification" type="bool" label="30925" default="true" />
-        <setting type="sep" />
-        <setting id="update_library" type="bool" label="30926" default="true" />
-        <setting id="check_library" type="bool" label="30927" default="true" />
-        <setting type="sep" />
-        <setting id="check_movie_link" type="bool" label="30928" default="false" />
-        <setting id="check_episode_link" type="bool" label="30929" default="false" />
-    </category>
-    <category label="30950">
-        <setting id="movie_downloads" type="folder" label="30951" default="" />
-        <setting id="tv_downloads" type="folder" label="30952" default="" />
-    </category>
-    <category label="30940">
-        <setting id="subtitles" type="bool" label="30943" default="false" />
-        <setting type="sep" />
-        <setting id="autoconvert_utf8" type="bool" label="30944" enable="!eq(-2,false)" default="false" />
-        <setting type="sep" />
-        <setting id="sublang1" type="select" label="30945" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-4,false)" default="English" />
-        <setting id="sublang2" type="select" label="30946" values="Afrikaans|Albanian|Arabic|Armenian|Basque|Bengali|Bosnian|Breton|Bulgarian|Burmese|Catalan|Chinese|Croatian|Czech|Danish|Dutch|English|Esperanto|Estonian|Finnish|French|Galician|Georgian|German|Greek|Hebrew|Hindi|Hungarian|Icelandic|Indonesian|Italian|Japanese|Kazakh|Khmer|Korean|Latvian|Lithuanian|Luxembourgish|Macedonian|Malay|Malayalam|Manipuri|Mongolian|Montenegrin|Norwegian|Occitan|Persian|Polish|Portuguese|Portuguese(Brazil)|Romanian|Russian|Serbian|Sinhalese|Slovak|Slovenian|Spanish|Swahili|Swedish|Syriac|Tagalog|Tamil|Telugu|Thai|Turkish|Ukrainian|Urdu" enable="!eq(-5,false)" default="English" />
-        <setting type="sep" />
-        <setting id="OSuser" type="text" label="32006" default=""/>
-        <setting id="OSpass" type="text" option = "hidden" label="32007" default=""/>
-        <setting type="sep" />
-        <setting type="lsep" label="[CR]" />
-        <setting type="lsep" label="30941" />
-        <setting type="lsep" label="30942" />
-    </category>
-
-    <setting id="current_ua" type="text" visible="false"/>
-    <setting id="last_ua_create" type="number" default="0" visible="false"/>
 </settings>

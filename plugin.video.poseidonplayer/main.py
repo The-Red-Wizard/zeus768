@@ -2,10 +2,11 @@
 """
 Poseidon Player - Premium IPTV Addon
 Author: poseidon12
-Version: 2.3.0
+Version: 2.5.0
 Features: Live TV, EPG Guide, Poseidon Guide (EPG Grid), VOD with Genres, Series, Favorites, Search, Recently Watched, Catch-up, Reminders
 IPTV Manager Integration for Full TV Guide
-FIXED: Metadata for VOD/Series, Seasons/Episodes loading, TV Guide popup options
+NEW: Background service for keep-alive streams & reminder notifications
+FIXED: Persistent login state, Stream stability with HLS/m3u8 + inputstream.adaptive
 """
 
 import sys
@@ -84,58 +85,155 @@ def format_duration(start, end):
     except:
         return ''
 
+def _portal_mode():
+    """Current portal protocol: 'xtream' or 'mac'."""
+    return ADDON.getSetting('portal_mode') or 'xtream'
+
+
+def get_stream_format():
+    """Get preferred stream format from settings (default: m3u8 for better stability)"""
+    return ADDON.getSetting('stream_format') or 'm3u8'
+
+def build_live_stream_url(stream_id):
+    """Build live stream URL with configured format.
+
+    v2.6.0: Mode-aware. Xtream builds a direct HLS URL; MAC portals resolve
+    the channel via Stalker's create_link API which returns a transient URL.
+    """
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            return stalker.create_link(stream_id)
+        except Exception as e:
+            log(f'create_link failed: {e}', xbmc.LOGERROR)
+            return None
+    if not SESSION.is_valid():
+        return None
+    stream_format = get_stream_format()
+    return f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.{stream_format}"
+
+def build_live_listitem(stream_url, title, icon='', fanart=''):
+    """Build a ListItem for live stream playback with inputstream.adaptive support"""
+    li = xbmcgui.ListItem(label=title, path=stream_url)
+    li.setArt({
+        'thumb': icon,
+        'icon': icon,
+        'fanart': fanart or os.path.join(ADDON_PATH, 'fanart.jpg')
+    })
+    li.setProperty('IsPlayable', 'true')
+    
+    # Use inputstream.adaptive for m3u8 streams for better buffering
+    stream_format = get_stream_format()
+    if stream_format == 'm3u8':
+        li.setProperty('inputstream', 'inputstream.adaptive')
+        li.setProperty('inputstream.adaptive.manifest_type', 'hls')
+    
+    return li
+
+def play_live_stream(stream_id, title='Live TV', icon=''):
+    """Play a live stream with proper inputstream handling"""
+    stream_url = build_live_stream_url(stream_id)
+    if not stream_url:
+        notify("Cannot play stream - not authenticated", icon=xbmcgui.NOTIFICATION_ERROR)
+        return
+    
+    li = build_live_listitem(stream_url, title, icon)
+    
+    # Add to history
+    add_to_history('live', stream_id, title, icon)
+    
+    xbmc.Player().play(stream_url, li)
+    log(f"Playing live stream: {title} ({stream_id}) - Format: {get_stream_format()}")
+
 # ============================================================================
 # SESSION STORAGE (SAVED - Credentials persisted in addon settings)
 # ============================================================================
 class SessionManager:
-    """Manages session credentials - SAVED to addon settings"""
+    """Manages session credentials - SAVED to addon settings with persistent auth state"""
     _instance = None
     
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.authenticated = False
             cls._instance.user_info = None
             cls._instance.server_info = None
             cls._instance._load_saved_credentials()
         return cls._instance
     
     def _load_saved_credentials(self):
-        """Load credentials from Kodi addon settings"""
+        """Load credentials from Kodi addon settings (both modes)."""
+        self.mode = ADDON.getSetting('portal_mode') or 'xtream'
+        # Xtream fields
         self.dns = ADDON.getSetting('dns').rstrip('/') or None
         self.username = ADDON.getSetting('username') or None
         self.password = ADDON.getSetting('password') or None
+        # MAC fields
+        self.portal_url = (ADDON.getSetting('portal_url') or '').rstrip('/') or None
+        self.mac_address = (ADDON.getSetting('mac_address') or '').upper() or None
+    
+    @property
+    def authenticated(self):
+        """Check authenticated state from settings (persistent across addon restarts)"""
+        return ADDON.getSetting('authenticated') == 'true'
+    
+    @authenticated.setter
+    def authenticated(self, value):
+        """Store authenticated state in settings"""
+        ADDON.setSetting('authenticated', 'true' if value else 'false')
     
     def set_credentials(self, dns, username, password):
-        """Set and SAVE credentials to addon settings"""
+        """Set and SAVE Xtream credentials to addon settings"""
+        self.mode = 'xtream'
         self.dns = dns.rstrip('/')
         self.username = username
         self.password = password
         self.authenticated = False
-        
+
+        ADDON.setSetting('portal_mode', 'xtream')
         ADDON.setSetting('dns', self.dns)
         ADDON.setSetting('username', self.username)
         ADDON.setSetting('password', self.password)
-        log(f"Credentials saved for user: {self.username}")
-    
+        log(f"Xtream credentials saved for user: {self.username}")
+
+    def set_mac_credentials(self, portal_url, mac_address):
+        """Set and SAVE MAC portal credentials to addon settings (v2.6.0)"""
+        self.mode = 'mac'
+        self.portal_url = portal_url.rstrip('/')
+        self.mac_address = mac_address.upper()
+        self.authenticated = False
+
+        ADDON.setSetting('portal_mode', 'mac')
+        ADDON.setSetting('portal_url', self.portal_url)
+        ADDON.setSetting('mac_address', self.mac_address)
+        log(f"MAC credentials saved: {self.mac_address} @ {self.portal_url}")
+
     def clear(self):
         """Clear credentials from memory AND settings"""
         self.dns = None
         self.username = None
         self.password = None
+        self.portal_url = None
+        self.mac_address = None
         self.authenticated = False
         self.user_info = None
         self.server_info = None
-        
+
         ADDON.setSetting('dns', '')
         ADDON.setSetting('username', '')
         ADDON.setSetting('password', '')
-    
+        ADDON.setSetting('portal_url', '')
+        ADDON.setSetting('mac_address', '')
+        ADDON.setSetting('authenticated', 'false')
+
     def is_valid(self):
+        if self.mode == 'mac':
+            return bool(self.portal_url and self.mac_address)
         return all([self.dns, self.username, self.password])
-    
+
     def has_saved_credentials(self):
-        """Check if credentials are saved in settings"""
+        """Check if credentials are saved in settings (mode-aware)."""
+        if ADDON.getSetting('portal_mode') == 'mac':
+            return bool(ADDON.getSetting('portal_url') and ADDON.getSetting('mac_address'))
         return bool(ADDON.getSetting('dns') and ADDON.getSetting('username') and ADDON.getSetting('password'))
 
 SESSION = SessionManager()
@@ -324,15 +422,33 @@ def api_request(action, extra_params=None, timeout=30):
     return None
 
 def authenticate():
-    """Authenticate with Xtream Codes server"""
+    """Authenticate with the configured portal (Xtream or MAC)."""
     if not SESSION.is_valid():
         return False
-    
+
+    # ---- MAC / Stalker ----
+    if SESSION.mode == 'mac':
+        try:
+            from resources.lib import stalker
+            if stalker.authenticate(SESSION.portal_url, SESSION.mac_address):
+                SESSION.authenticated = True
+                SESSION.user_info = stalker.account_info()
+                SESSION.server_info = {'url': SESSION.portal_url}
+                return True
+            notify("Portal handshake failed. Check MAC / URL.",
+                   icon=xbmcgui.NOTIFICATION_ERROR)
+            return False
+        except Exception as e:
+            log(f"MAC auth error: {e}", xbmc.LOGERROR)
+            notify("Failed to reach portal.", icon=xbmcgui.NOTIFICATION_ERROR)
+            return False
+
+    # ---- Xtream Codes ----
     try:
         url = f"{SESSION.dns}/player_api.php?username={SESSION.username}&password={SESSION.password}"
         response = requests.get(url, timeout=15)
         data = response.json()
-        
+
         if data.get('user_info', {}).get('auth') == 1:
             SESSION.authenticated = True
             SESSION.user_info = data.get('user_info', {})
@@ -347,24 +463,57 @@ def authenticate():
         return False
 
 def get_live_categories_cached():
-    """Get live categories with caching"""
+    """Get live categories with caching (mode-aware v2.6.0)."""
+    # MAC / Stalker path
+    if _portal_mode() == 'mac':
+        if not EPG_CACHE.is_categories_stale():
+            cached = EPG_CACHE.get_categories('live')
+            if cached:
+                return cached
+        try:
+            from resources.lib import stalker
+            cats = stalker.get_genres()
+        except Exception as e:
+            log(f'stalker.get_genres failed: {e}', xbmc.LOGERROR)
+            cats = []
+        if cats:
+            EPG_CACHE.set_categories(cats, 'live')
+        return cats or []
+
+    # Xtream path (unchanged)
     if not EPG_CACHE.is_categories_stale():
         cached = EPG_CACHE.get_categories('live')
         if cached:
             return cached
-    
+
     categories = api_request("get_live_categories")
     if categories:
         EPG_CACHE.set_categories(categories, 'live')
     return categories or []
 
 def get_live_streams_cached(cat_id):
-    """Get live streams with caching"""
+    """Get live streams with caching (mode-aware v2.6.0)."""
+    if _portal_mode() == 'mac':
+        if not EPG_CACHE.is_channels_stale():
+            cached = EPG_CACHE.get_channels(cat_id)
+            if cached:
+                return cached
+        try:
+            from resources.lib import stalker
+            streams = stalker.get_channels_for_category(cat_id)
+        except Exception as e:
+            log(f'stalker.get_channels_for_category failed: {e}', xbmc.LOGERROR)
+            streams = []
+        if streams:
+            EPG_CACHE.set_channels(streams, cat_id)
+        return streams or []
+
+    # Xtream path (unchanged)
     if not EPG_CACHE.is_channels_stale():
         cached = EPG_CACHE.get_channels(cat_id)
         if cached:
             return cached
-    
+
     streams = api_request("get_live_streams", f"&category_id={cat_id}")
     if streams:
         EPG_CACHE.set_channels(streams, cat_id)
@@ -385,12 +534,23 @@ def get_all_live_streams_cached():
     return all_streams
 
 def get_epg_for_stream(stream_id, limit=10):
-    """Get EPG data for a specific stream with caching"""
+    """Get EPG data for a specific stream with caching (mode-aware v2.6.0)."""
     if not EPG_CACHE.is_epg_stale():
         cached = EPG_CACHE.get_epg(stream_id)
         if cached:
             return cached
-    
+
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            listings = stalker.get_short_epg(stream_id, limit=limit)
+        except Exception as e:
+            log(f'stalker.get_short_epg failed: {e}', xbmc.LOGERROR)
+            listings = []
+        if listings:
+            EPG_CACHE.set_epg(stream_id, listings)
+        return listings or []
+
     data = api_request("get_short_epg", f"&stream_id={stream_id}&limit={limit}")
     if data and 'epg_listings' in data:
         EPG_CACHE.set_epg(stream_id, data['epg_listings'])
@@ -398,7 +558,14 @@ def get_epg_for_stream(stream_id, limit=10):
     return []
 
 def get_full_epg(stream_id):
-    """Get full EPG data for a stream"""
+    """Get full EPG data for a stream (mode-aware v2.6.0)."""
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            return stalker.get_short_epg(stream_id, limit=50) or []
+        except Exception as e:
+            log(f'stalker full epg failed: {e}', xbmc.LOGERROR)
+            return []
     data = api_request("get_simple_data_table", f"&stream_id={stream_id}")
     if data and 'epg_listings' in data:
         return data['epg_listings']
@@ -449,7 +616,8 @@ class IPTVManager:
                 icon = stream.get('stream_icon', '')
                 epg_id = stream.get('epg_channel_id', str(stream_id))
                 
-                play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
+                stream_format = get_stream_format()
+                play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.{stream_format}"
                 
                 channels.append({
                     'name': name,
@@ -517,80 +685,165 @@ def iptv_manager_epg():
 # ============================================================================
 # FORCE LOGIN DIALOG
 # ============================================================================
-def force_login():
-    """Force user to login before accessing main menu"""
+def _prompt_portal_mode():
+    """Ask user to pick Xtreme Codes vs STB MAC. Persists choice to settings.
+    Returns the chosen mode string."""
     dialog = xbmcgui.Dialog()
-    
+    pick = dialog.select(
+        "Poseidon Player - Choose Portal Type",
+        ["Xtreme Codes  (URL + username + password)",
+         "STB MAC / Stalker Portal  (URL + MAC address)"],
+    )
+    if pick < 0:
+        return None
+    mode = 'xtream' if pick == 0 else 'mac'
+    ADDON.setSetting('portal_mode', mode)
+    SESSION.mode = mode
+    return mode
+
+
+def _collect_mac_credentials():
+    """Prompt for portal URL + MAC. Returns True if credentials were set."""
+    from resources.lib import stalker
+    dialog = xbmcgui.Dialog()
+
+    portal = dialog.input("Enter Portal URL (e.g. http://portal.tld/c/)",
+                          type=xbmcgui.INPUT_ALPHANUM)
+    if not portal:
+        return False
+    if not portal.startswith('http://') and not portal.startswith('https://'):
+        portal = 'http://' + portal
+
+    # Offer to generate a random MAG-style MAC if the user doesn't have one.
+    choice = dialog.select("MAC Address", [
+        "Enter my MAC address",
+        "Generate a random MAC (00:1A:79:XX:XX:XX)",
+    ])
+    if choice < 0:
+        return False
+    if choice == 1:
+        mac = stalker.suggest_random_mac()
+        if not dialog.yesno("Generated MAC", f"{mac}\n\nUse this MAC?"):
+            return False
+    else:
+        mac = dialog.input("Enter MAC Address (AA:BB:CC:DD:EE:FF)",
+                           type=xbmcgui.INPUT_ALPHANUM)
+        if not mac or len(mac.replace(':', '').strip()) < 12:
+            notify("Invalid MAC address", icon=xbmcgui.NOTIFICATION_ERROR)
+            return False
+
+    SESSION.set_mac_credentials(portal, mac)
+    return True
+
+
+def _collect_xtream_credentials():
+    """Original Xtreme Codes login prompts."""
+    dialog = xbmcgui.Dialog()
+    dns = dialog.input("Enter Server URL (e.g., http://server.com:8080)",
+                       type=xbmcgui.INPUT_ALPHANUM)
+    if not dns:
+        return False
+    if not dns.startswith('http://') and not dns.startswith('https://'):
+        dns = 'http://' + dns
+
+    username = dialog.input("Enter Username", type=xbmcgui.INPUT_ALPHANUM)
+    if not username:
+        return False
+
+    password = dialog.input("Enter Password", type=xbmcgui.INPUT_ALPHANUM,
+                            option=xbmcgui.ALPHANUM_HIDE_INPUT)
+    if not password:
+        return False
+
+    SESSION.set_credentials(dns, username, password)
+    return True
+
+
+def force_login(silent=False):
+    """Force user to login before accessing main menu.
+
+    v2.6.0: Shows portal-type picker when no mode has been chosen yet.
+    """
+    dialog = xbmcgui.Dialog()
+
+    # If we have saved credentials for the current mode, try auto-auth.
     if SESSION.has_saved_credentials():
         SESSION._load_saved_credentials()
+
+        if SESSION.authenticated and SESSION.is_valid():
+            log("Session already authenticated, skipping login dialog")
+            return True
+
         progress = xbmcgui.DialogProgress()
         progress.create("Poseidon Player", "Logging in with saved credentials...")
-        
         if authenticate():
             progress.close()
-            exp_date = SESSION.user_info.get('exp_date', '')
-            if exp_date:
-                try:
-                    exp_str = datetime.fromtimestamp(int(exp_date)).strftime('%Y-%m-%d')
-                    notify(f"Welcome back! Account expires: {exp_str}")
-                except:
+            if not silent:
+                exp_date = (SESSION.user_info or {}).get('exp_date', '')
+                if exp_date:
+                    try:
+                        exp_str = datetime.fromtimestamp(int(exp_date)).strftime('%Y-%m-%d')
+                        notify(f"Welcome back! Account expires: {exp_str}")
+                    except Exception:
+                        notify("Welcome back!")
+                else:
                     notify("Welcome back!")
-            else:
-                notify("Welcome back!")
             return True
-        else:
-            progress.close()
-            dialog.ok(
-                "Poseidon Player",
-                "Saved credentials are invalid or expired.\n\n"
-                "Please enter new credentials."
-            )
+        progress.close()
+        SESSION.authenticated = False
+        dialog.ok(
+            "Poseidon Player",
+            "Saved credentials are invalid or expired.\n\n"
+            "Please enter new credentials.",
+        )
+
+    # No saved creds - pick portal type (or reuse the stored one silently if
+    # user has explicitly set it in settings.xml).
+    stored_mode = ADDON.getSetting('portal_mode')
+    if not stored_mode or not SESSION.has_saved_credentials():
+        mode = _prompt_portal_mode()
+        if not mode:
+            return False
+    else:
+        mode = stored_mode
+
+    if mode == 'mac':
+        dialog.ok(
+            "Poseidon Player",
+            "STB MAC portal\n\n"
+            "Please enter your portal URL and MAC address.\n"
+            "Your details will be saved for next time.",
+        )
+        if not _collect_mac_credentials():
+            return False
     else:
         dialog.ok(
             "Poseidon Player",
             "Welcome to Poseidon Player!\n\n"
-            "Please enter your Xtream Codes credentials.\n"
-            "Your login will be saved for next time."
+            "Please enter your Xtreme Codes credentials.\n"
+            "Your login will be saved for next time.",
         )
-    
-    # Get DNS/Server URL
-    dns = dialog.input("Enter Server URL (e.g., http://server.com:8080)", type=xbmcgui.INPUT_ALPHANUM)
-    if not dns:
-        return False
-    
-    if not dns.startswith('http://') and not dns.startswith('https://'):
-        dns = 'http://' + dns
-    
-    username = dialog.input("Enter Username", type=xbmcgui.INPUT_ALPHANUM)
-    if not username:
-        return False
-    
-    password = dialog.input("Enter Password", type=xbmcgui.INPUT_ALPHANUM, option=xbmcgui.ALPHANUM_HIDE_INPUT)
-    if not password:
-        return False
-    
-    SESSION.set_credentials(dns, username, password)
-    
+        if not _collect_xtream_credentials():
+            return False
+
     progress = xbmcgui.DialogProgress()
     progress.create("Poseidon Player", "Authenticating...")
-    
     success = authenticate()
     progress.close()
-    
+
     if success:
-        exp_date = SESSION.user_info.get('exp_date', '')
+        exp_date = (SESSION.user_info or {}).get('exp_date', '')
         if exp_date:
             try:
                 exp_str = datetime.fromtimestamp(int(exp_date)).strftime('%Y-%m-%d')
                 notify(f"Welcome! Account expires: {exp_str}")
-            except:
+            except Exception:
                 notify("Login successful!")
         else:
             notify("Login successful!")
         return True
-    else:
-        SESSION.clear()
-        return False
+    SESSION.clear()
+    return False
 
 # ============================================================================
 # MAIN MENU
@@ -745,8 +998,8 @@ class PoseidonGuideWindow(xbmcgui.WindowXML):
         if selected:
             stream_id = selected.getProperty('stream_id')
             if stream_id and SESSION.is_valid():
-                play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
-                li = xbmcgui.ListItem(path=play_url)
+                play_url = build_live_stream_url(stream_id)
+                li = build_live_listitem(play_url, selected.getLabel(), selected.getArt('thumb'))
                 xbmc.Player().play(play_url, li)
     
     def show_context_menu(self):
@@ -893,8 +1146,8 @@ def show_poseidon_guide_dialog(channels, epg_data):
         action = xbmcgui.Dialog().contextmenu(options)
         
         if action == 0:  # Play
-            play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
-            li = xbmcgui.ListItem(path=play_url)
+            play_url = build_live_stream_url(stream_id)
+            li = build_live_listitem(play_url, channel_name, icon)
             xbmc.Player().play(play_url, li)
             break
         elif action == 1:  # Set Reminder
@@ -987,15 +1240,21 @@ def list_reminders():
         li = xbmcgui.ListItem(label=f"{label}\n{label2}")
         li.setArt({'icon': os.path.join(ADDON_PATH, 'icon.png')})
         
+        stream_format = get_stream_format()
+        play_url = build_live_stream_url(stream_id)
         context = [
             ("Remove Reminder", f"RunPlugin({build_url({'action': 'remove_reminder', 'reminder_id': reminder_id})})"),
-            ("Play Channel Now", f"PlayMedia({SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts)"),
+            ("Play Channel Now", f"PlayMedia({SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.{stream_format})"),
         ]
         li.addContextMenuItems(context)
         
         # Clicking plays the channel
-        play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
         li.setProperty('IsPlayable', 'true')
+        
+        # Set inputstream.adaptive for m3u8 format
+        if stream_format == 'm3u8':
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
         
         xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
     
@@ -1097,6 +1356,7 @@ def show_epg_category(cat_id):
 def display_channels_with_epg(channels):
     """Display channels with their current/next EPG info"""
     now = time.time()
+    stream_format = get_stream_format()
     
     for ch in channels:
         stream_id = ch.get('stream_id')
@@ -1142,6 +1402,7 @@ def display_channels_with_epg(channels):
             label = f"[COLOR white]{num}[/COLOR] [COLOR gold]{name}[/COLOR]"
             label2 = "[COLOR gray]No EPG data available[/COLOR]"
         
+        play_url = build_live_stream_url(stream_id)
         li = xbmcgui.ListItem(label=label, label2=label2)
         li.setArt({'thumb': icon, 'icon': icon, 'fanart': os.path.join(ADDON_PATH, 'fanart.jpg')})
         
@@ -1149,6 +1410,11 @@ def display_channels_with_epg(channels):
         info.setTitle(name)
         if current_prog:
             info.setPlot(current_prog.get('description', ''))
+        
+        # Set inputstream.adaptive for m3u8 format for better buffering
+        if stream_format == 'm3u8':
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
         
         context = [
             ("Add to Favorites", f"RunPlugin({build_url({'action': 'add_favorite', 'type': 'live', 'id': stream_id, 'name': name, 'icon': icon})})"),
@@ -1158,7 +1424,6 @@ def display_channels_with_epg(channels):
         ]
         li.addContextMenuItems(context)
         
-        play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
         li.setProperty('IsPlayable', 'true')
         
         xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
@@ -1299,6 +1564,7 @@ def list_live_streams(cat_id):
         return
     
     now = time.time()
+    stream_format = get_stream_format()
     
     for s in streams:
         stream_id = s.get('stream_id')
@@ -1321,11 +1587,17 @@ def list_live_streams(cat_id):
         else:
             label = f"[COLOR white]{num}[/COLOR] {name}"
         
+        play_url = build_live_stream_url(stream_id)
         li = xbmcgui.ListItem(label=label)
         li.setArt({'thumb': icon, 'icon': icon, 'fanart': os.path.join(ADDON_PATH, 'fanart.jpg')})
         
         info = li.getVideoInfoTag()
         info.setTitle(name)
+        
+        # Set inputstream.adaptive for m3u8 format for better buffering
+        if stream_format == 'm3u8':
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
         
         context = [
             ("Add to Favorites", f"RunPlugin({build_url({'action': 'add_favorite', 'type': 'live', 'id': stream_id, 'name': name, 'icon': icon})})"),
@@ -1335,7 +1607,6 @@ def list_live_streams(cat_id):
         ]
         li.addContextMenuItems(context)
         
-        play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
         li.setProperty('IsPlayable', 'true')
         
         xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
@@ -2079,6 +2350,8 @@ def list_favorites():
         xbmcplugin.endOfDirectory(HANDLE)
         return
     
+    stream_format = get_stream_format()
+    
     for fav in favorites:
         fav_type = fav.get('type')
         fav_id = fav.get('id')
@@ -2087,7 +2360,7 @@ def list_favorites():
         
         if fav_type == 'live':
             label = f"[COLOR cyan]{name}[/COLOR]"
-            play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{fav_id}.ts"
+            play_url = build_live_stream_url(fav_id)
             is_folder = False
         elif fav_type == 'vod':
             label = f"[COLOR orange]{name}[/COLOR]"
@@ -2105,6 +2378,10 @@ def list_favorites():
         
         if not is_folder:
             li.setProperty('IsPlayable', 'true')
+            # Set inputstream.adaptive for m3u8 live streams
+            if fav_type == 'live' and stream_format == 'm3u8':
+                li.setProperty('inputstream', 'inputstream.adaptive')
+                li.setProperty('inputstream.adaptive.manifest_type', 'hls')
         
         context = [
             ("Remove from Favorites", f"RunPlugin({build_url({'action': 'remove_favorite', 'type': fav_type, 'id': fav_id})})"),
@@ -2154,6 +2431,8 @@ def list_recently_watched():
         xbmcplugin.endOfDirectory(HANDLE)
         return
     
+    stream_format = get_stream_format()
+    
     for item in history:
         item_type = item.get('type')
         item_id = item.get('id')
@@ -2162,7 +2441,7 @@ def list_recently_watched():
         
         if item_type == 'live':
             label = f"[COLOR cyan]{name}[/COLOR]"
-            play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{item_id}.ts"
+            play_url = build_live_stream_url(item_id)
         elif item_type == 'vod':
             label = f"[COLOR orange]{name}[/COLOR]"
             play_url = f"{SESSION.dns}/movie/{SESSION.username}/{SESSION.password}/{item_id}.mp4"
@@ -2175,6 +2454,11 @@ def list_recently_watched():
         li = xbmcgui.ListItem(label=label)
         li.setArt({'thumb': icon, 'icon': icon})
         li.setProperty('IsPlayable', 'true')
+        
+        # Set inputstream.adaptive for m3u8 live streams
+        if item_type == 'live' and stream_format == 'm3u8':
+            li.setProperty('inputstream', 'inputstream.adaptive')
+            li.setProperty('inputstream.adaptive.manifest_type', 'hls')
         
         xbmcplugin.addDirectoryItem(HANDLE, play_url, li, False)
     
@@ -2267,12 +2551,14 @@ def search_content(content_type):
         r_type = result['type']
         data = result['data']
         
+        stream_format = get_stream_format()
+        
         if r_type == 'live':
             stream_id = data.get('stream_id')
             name = data.get('name', 'Unknown')
             icon = data.get('stream_icon', '')
             label = f"[COLOR cyan][LIVE][/COLOR] {name}"
-            play_url = f"{SESSION.dns}/live/{SESSION.username}/{SESSION.password}/{stream_id}.ts"
+            play_url = build_live_stream_url(stream_id)
             is_folder = False
         elif r_type == 'vod':
             stream_id = data.get('stream_id')
@@ -2297,6 +2583,10 @@ def search_content(content_type):
         
         if not is_folder:
             li.setProperty('IsPlayable', 'true')
+            # Set inputstream.adaptive for m3u8 live streams
+            if r_type == 'live' and stream_format == 'm3u8':
+                li.setProperty('inputstream', 'inputstream.adaptive')
+                li.setProperty('inputstream.adaptive.manifest_type', 'hls')
         
         xbmcplugin.addDirectoryItem(HANDLE, play_url, li, is_folder)
     
@@ -2360,47 +2650,52 @@ def list_catchup_channels(cat_id):
     xbmcplugin.endOfDirectory(HANDLE)
 
 def list_channel_catchup(stream_id, channel_name):
-    """List past programs for catch-up"""
-    epg = get_full_epg(stream_id)
-    if not epg:
-        epg = get_epg_for_stream(stream_id, limit=100)
-    
-    if not epg:
-        notify("No EPG data available for catch-up")
-        xbmcplugin.endOfDirectory(HANDLE)
-        return
-    
-    now = time.time()
-    
-    # Filter to past programs
-    past_programs = [p for p in epg if int(p.get('stop_timestamp', 0)) < now]
-    
+    """List past programs for catch-up (mode-aware v2.6.1)."""
+    # MAC / Stalker path - use dedicated catchup endpoint for best accuracy.
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            past_programs = stalker.get_catchup_programs(stream_id)
+        except Exception as e:
+            log(f'stalker catchup failed: {e}', xbmc.LOGERROR)
+            past_programs = []
+    else:
+        epg = get_full_epg(stream_id)
+        if not epg:
+            epg = get_epg_for_stream(stream_id, limit=100)
+        if not epg:
+            notify("No EPG data available for catch-up")
+            xbmcplugin.endOfDirectory(HANDLE)
+            return
+        now = time.time()
+        past_programs = [p for p in epg if int(p.get('stop_timestamp', 0)) < now]
+
     if not past_programs:
         notify("No past programs available")
         xbmcplugin.endOfDirectory(HANDLE)
         return
-    
+
     # Sort by start time, most recent first
     past_programs.sort(key=lambda x: x.get('start_timestamp', 0), reverse=True)
-    
+
     for prog in past_programs[:50]:
         title = prog.get('title', 'Unknown Program')
         desc = prog.get('description', '')
         start = int(prog.get('start_timestamp', 0))
         end = int(prog.get('stop_timestamp', 0))
-        
+
         start_str = format_date(start)
         duration = format_duration(start, end)
-        
+
         label = f"[COLOR purple]{start_str}[/COLOR] - [COLOR gold]{title}[/COLOR] ({duration})"
-        
+
         li = xbmcgui.ListItem(label=label)
         li.setArt({'fanart': os.path.join(ADDON_PATH, 'fanart.jpg')})
-        
+
         info = li.getVideoInfoTag()
         info.setTitle(title)
         info.setPlot(desc)
-        
+
         catchup_url = build_url({
             'action': 'play_catchup',
             'stream_id': stream_id,
@@ -2408,20 +2703,36 @@ def list_channel_catchup(stream_id, channel_name):
             'end': end
         })
         li.setProperty('IsPlayable', 'true')
-        
+
         xbmcplugin.addDirectoryItem(HANDLE, catchup_url, li, False)
-    
+
     xbmcplugin.endOfDirectory(HANDLE)
 
+
 def play_catchup(stream_id, start, end):
-    """Play catch-up content"""
-    if not SESSION.is_valid():
-        notify("Not logged in", icon=xbmcgui.NOTIFICATION_ERROR)
-        return
-    
-    # Build timeshift URL
-    play_url = f"{SESSION.dns}/timeshift/{SESSION.username}/{SESSION.password}/{end - start}/{start}/{stream_id}.ts"
-    
+    """Play catch-up content (mode-aware v2.6.1)."""
+    if _portal_mode() == 'mac':
+        try:
+            from resources.lib import stalker
+            play_url = stalker.create_link(stream_id, epg_start=start)
+        except Exception as e:
+            log(f'stalker archive create_link failed: {e}', xbmc.LOGERROR)
+            play_url = None
+        if not play_url:
+            notify("Catch-up stream unavailable", icon=xbmcgui.NOTIFICATION_ERROR)
+            xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+            return
+    else:
+        if not SESSION.is_valid():
+            notify("Not logged in", icon=xbmcgui.NOTIFICATION_ERROR)
+            return
+        try:
+            duration = int(end) - int(start)
+        except (TypeError, ValueError):
+            duration = 3600
+        # Build timeshift URL
+        play_url = f"{SESSION.dns}/timeshift/{SESSION.username}/{SESSION.password}/{duration}/{start}/{stream_id}.ts"
+
     li = xbmcgui.ListItem(path=play_url)
     xbmcplugin.setResolvedUrl(HANDLE, True, li)
 
@@ -2501,10 +2812,10 @@ def router():
         iptv_manager_epg()
         return
     
-    # Check if authenticated
+    # Check if authenticated - main menu shows notification on first login only
     if not action:
         if not SESSION.authenticated:
-            if force_login():
+            if force_login(silent=False):  # Show welcome notification on first login
                 main_menu()
         else:
             main_menu()
@@ -2514,8 +2825,9 @@ def router():
         logout()
         return
     
+    # For navigation actions, use silent login to avoid repeated notifications
     if not SESSION.authenticated:
-        if not force_login():
+        if not force_login(silent=True):  # Silent - no notification on navigation
             return
     
     # Route actions
@@ -2610,9 +2922,109 @@ def router():
         )
     elif action == 'account_info':
         show_account_info()
+    elif action == 'service':
+        run_background_service()
     else:
         log(f"Unknown action: {action}", xbmc.LOGWARNING)
         main_menu()
+
+# ============================================================================
+# BACKGROUND SERVICE - KEEP-ALIVE & REMINDERS
+# ============================================================================
+class PoseidonService(xbmc.Monitor):
+    """Background service for stream keep-alive and reminder notifications"""
+    
+    def __init__(self):
+        super().__init__()
+        self.player = xbmc.Player()
+        self.keep_alive_interval = 60  # Check every 60 seconds
+        self.reminder_check_interval = 30  # Check reminders every 30 seconds
+        self.last_keep_alive = 0
+        self.last_reminder_check = 0
+        log("Poseidon Background Service started")
+    
+    def check_reminders(self):
+        """Check for upcoming reminders and notify user"""
+        try:
+            reminders = REMINDERS.get_all()
+            now = time.time()
+            reminder_advance = int(ADDON.getSetting('reminder_advance') or 5) * 60  # Convert to seconds
+            
+            for reminder in reminders:
+                start_ts = int(reminder.get('start_timestamp', 0))
+                reminder_id = reminder.get('id', '')
+                
+                # Check if reminder should trigger (within advance notice window)
+                time_until_start = start_ts - now
+                if 0 < time_until_start <= reminder_advance:
+                    # Check if we already notified for this reminder
+                    notified_key = f"notified_{reminder_id}"
+                    if not ADDON.getSetting(notified_key):
+                        program = reminder.get('program_title', 'Unknown')
+                        channel = reminder.get('channel_name', 'Unknown')
+                        mins = int(time_until_start / 60)
+                        
+                        notify(
+                            f"{program} starts in {mins} min on {channel}",
+                            title="Poseidon Reminder",
+                            icon=xbmcgui.NOTIFICATION_INFO,
+                            time=10000
+                        )
+                        ADDON.setSetting(notified_key, 'true')
+                        log(f"Reminder triggered: {program} on {channel}")
+                
+                # Clean up old reminder notifications
+                elif time_until_start < -300:  # 5 minutes past
+                    notified_key = f"notified_{reminder_id}"
+                    if ADDON.getSetting(notified_key):
+                        ADDON.setSetting(notified_key, '')
+        except Exception as e:
+            log(f"Reminder check error: {e}", xbmc.LOGERROR)
+    
+    def keep_alive_check(self):
+        """Monitor active playback and refresh connection if needed"""
+        try:
+            if self.player.isPlaying():
+                # Check if it's a live stream from our addon
+                playing_file = self.player.getPlayingFile()
+                if SESSION.dns and SESSION.dns in playing_file and '/live/' in playing_file:
+                    # Log keep-alive activity
+                    log("Keep-alive: Live stream active", xbmc.LOGDEBUG)
+                    
+                    # Optionally refresh auth token if server supports it
+                    if SESSION.is_valid() and not SESSION.authenticated:
+                        log("Keep-alive: Re-authenticating session")
+                        authenticate()
+        except Exception as e:
+            log(f"Keep-alive check error: {e}", xbmc.LOGERROR)
+    
+    def run(self):
+        """Main service loop"""
+        log("Poseidon Service: Running background tasks")
+        
+        while not self.abortRequested():
+            current_time = time.time()
+            
+            # Keep-alive check
+            if current_time - self.last_keep_alive >= self.keep_alive_interval:
+                self.keep_alive_check()
+                self.last_keep_alive = current_time
+            
+            # Reminder check
+            if current_time - self.last_reminder_check >= self.reminder_check_interval:
+                self.check_reminders()
+                self.last_reminder_check = current_time
+            
+            # Sleep for 10 seconds before next check
+            if self.waitForAbort(10):
+                break
+        
+        log("Poseidon Background Service stopped")
+
+def run_background_service():
+    """Entry point for background service"""
+    service = PoseidonService()
+    service.run()
 
 # ============================================================================
 # ENTRY POINT

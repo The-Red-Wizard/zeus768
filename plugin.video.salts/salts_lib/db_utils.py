@@ -12,6 +12,9 @@ import xbmcvfs
 ADDON = xbmcaddon.Addon()
 ADDON_DATA = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
 
+# Sentinel used by cache_sources sanitizer to mark non-JSON-serializable values
+_DROP = object()
+
 class DB_Connection:
     def __init__(self):
         if not os.path.exists(ADDON_DATA):
@@ -169,11 +172,29 @@ class DB_Connection:
     
     def cache_sources(self, cache_key, sources):
         """Cache scraped sources for a title"""
+        # Defensive sanitize: drop any values that aren't JSON serializable
+        # (e.g. scraper class instances accidentally placed inside source dicts).
+        def _sanitize(obj):
+            if isinstance(obj, dict):
+                clean = {}
+                for k, v in obj.items():
+                    sv = _sanitize(v)
+                    if sv is _DROP:
+                        continue
+                    clean[k] = sv
+                return clean
+            if isinstance(obj, (list, tuple)):
+                return [s for s in (_sanitize(v) for v in obj) if s is not _DROP]
+            if isinstance(obj, (str, int, float, bool)) or obj is None:
+                return obj
+            return _DROP
+
+        safe_sources = _sanitize(sources)
         conn = self._get_connection()
         cursor = conn.cursor()
         cursor.execute(
             'INSERT OR REPLACE INTO source_cache (cache_key, sources, timestamp) VALUES (?, ?, ?)',
-            (cache_key, json.dumps(sources), time.time())
+            (cache_key, json.dumps(safe_sources), time.time())
         )
         conn.commit()
         conn.close()
@@ -462,3 +483,55 @@ class DB_Connection:
         results = cursor.fetchall()
         conn.close()
         return [r[0] for r in results]
+    
+    # ==================== Episode Countdown ====================
+    
+    def _ensure_countdown_table(self):
+        """Ensure countdown table exists"""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS countdown_shows (
+                tmdb_id TEXT PRIMARY KEY,
+                title TEXT,
+                timestamp REAL
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    
+    def add_countdown_show(self, tmdb_id, title):
+        """Add a show to the countdown tracker"""
+        self._ensure_countdown_table()
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                'INSERT INTO countdown_shows (tmdb_id, title, timestamp) VALUES (?, ?, ?)',
+                (str(tmdb_id), title, time.time())
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.IntegrityError:
+            conn.close()
+            return False  # Already exists
+    
+    def remove_countdown_show(self, tmdb_id):
+        """Remove a show from the countdown tracker"""
+        self._ensure_countdown_table()
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM countdown_shows WHERE tmdb_id = ?', (str(tmdb_id),))
+        conn.commit()
+        conn.close()
+    
+    def get_countdown_shows(self):
+        """Get all tracked shows for countdown"""
+        self._ensure_countdown_table()
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT tmdb_id, title, timestamp FROM countdown_shows ORDER BY timestamp DESC')
+        results = cursor.fetchall()
+        conn.close()
+        return [{'tmdb_id': r[0], 'title': r[1], 'timestamp': r[2]} for r in results]

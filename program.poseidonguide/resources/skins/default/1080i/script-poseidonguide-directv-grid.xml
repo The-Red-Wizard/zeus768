@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Poseidon Guide - DirecTV-style EPG (LIST view)
+    Layout matches the on-screen DirecTV reference:
+      * Top bar: evenly-spaced 4 slots across 1840px:
+          [DIRECTV logo] | [Clock] | [FAVORITES: Press (0) hint] | [Press (-) Search hint]
+        Each slot is 460px wide so nothing overlaps the next.
+      * Hero: Picture-in-Picture on the LEFT, programme poster + title +
+              meta + synopsis to the right of it.
+      * Time strip: Thu DD/MM   5 visible 30-min slots   >> +12hrs.
+      * Channel rows: number + widened callsign cell on the left, programme
+              cells on the right.  Focus pill = blue, only on the focused row.
+-->
+<window type="window" id="6100">
+    <defaultcontrol always="true">9000</defaultcontrol>
+    <coordinates><system>1</system><posx>0</posx><posy>0</posy></coordinates>
+    <controls>
+        <!-- Solid deep-navy background -->
+        <control type="image">
+            <posx>0</posx><posy>0</posy>
+            <width>1920</width><height>1080</height>
+            <texture>white.png</texture>
+            <colordiffuse>$INFO[Skin.String(PG_BG)]</colordiffuse>
+        </control>
+
+        <!-- ============================ TOP BAR ============================ -->
+        <!-- Four evenly-spaced slots across 40..1880 (each 460px wide) -->
+
+        <!-- SLOT 1 (40..500): DIRECTV wordmark -->
+        <control type="image">
+            <posx>40</posx><posy>30</posy>
+            <width>220</width><height>72</height>
+            <aspectratio>keep</aspectratio>
+            <texture>$INFO[Skin.String(PG_SkyLogo)]</texture>
+        </control>
+
+        <!-- Pipe separator between slot 1 and 2 -->
+        <control type="label">
+            <posx>490</posx><posy>40</posy>
+            <width>20</width><height>50</height>
+            <font>font30_title</font>
+            <textcolor>FF7E8AA0</textcolor>
+            <label>|</label>
+            <align>center</align><aligny>center</aligny>
+        </control>
+
+        <!-- SLOT 2 (500..960): Clock (12-hour DirecTV style: 9:50 AM) -->
+        <control type="label">
+            <posx>510</posx><posy>40</posy>
+            <width>440</width><height>50</height>
+            <font>font30_title</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>$INFO[System.Time(h:mm xx)]</label>
+            <align>center</align><aligny>center</aligny>
+        </control>
+
+        <!-- Pipe separator between slot 2 and 3 -->
+        <control type="label">
+            <posx>950</posx><posy>40</posy>
+            <width>20</width><height>50</height>
+            <font>font30_title</font>
+            <textcolor>FF7E8AA0</textcolor>
+            <label>|</label>
+            <align>center</align><aligny>center</aligny>
+        </control>
+
+        <!-- SLOT 3 (960..1420): FAVORITES change hint -->
+        <control type="label">
+            <posx>970</posx><posy>40</posy>
+            <width>440</width><height>50</height>
+            <font>font13_title</font>
+            <textcolor>FFB8C2D1</textcolor>
+            <align>center</align><aligny>center</aligny>
+            <label>FAVORITES: Press [COLOR FFFFFFFF][B]( 0 )[/B][/COLOR] to Change</label>
+        </control>
+
+        <!-- Pipe separator between slot 3 and 4 -->
+        <control type="label">
+            <posx>1410</posx><posy>40</posy>
+            <width>20</width><height>50</height>
+            <font>font30_title</font>
+            <textcolor>FF7E8AA0</textcolor>
+            <label>|</label>
+            <align>center</align><aligny>center</aligny>
+        </control>
+
+        <!-- SLOT 4 (1420..1880): Search hint -->
+        <control type="label">
+            <posx>1430</posx><posy>40</posy>
+            <width>450</width><height>50</height>
+            <font>font13_title</font>
+            <textcolor>FFB8C2D1</textcolor>
+            <align>center</align><aligny>center</aligny>
+            <label>Press [COLOR FFFFFFFF][B]( - )[/B][/COLOR] to Search</label>
+        </control>
+
+        <!-- ======================= HERO: PiP (LEFT) =====================-->
+        <!-- PiP container - LEFT side, per the DirecTV reference image. -->
+        <control type="group" visible="!Skin.String(PG_PiP_Hidden,true)">
+            <!-- Blue accent ring around the PiP frame -->
+            <control type="image">
+                <posx>36</posx><posy>146</posy>
+                <width>396</width><height>238</height>
+                <texture>white.png</texture>
+                <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse>
+                <visible>!IsEmpty(Window.Property(pip_channel))</visible>
+            </control>
+            <control type="image">
+                <posx>40</posx><posy>150</posy>
+                <width>388</width><height>230</height>
+                <texture>white.png</texture>
+                <colordiffuse>FF000000</colordiffuse>
+            </control>
+            <control type="videowindow">
+                <posx>44</posx><posy>154</posy>
+                <width>380</width><height>222</height>
+            </control>
+        </control>
+
+        <!-- ====================== HERO: POSTER (next to PiP) ============ -->
+        <control type="image">
+            <posx>460</posx><posy>150</posy>
+            <width>168</width><height>230</height>
+            <aspectratio>keep</aspectratio>
+            <texture>$INFO[Window.Property(hero_logo)]</texture>
+        </control>
+
+        <!-- ====================== HERO: TEXT BLOCK ====================== -->
+        <!-- Programme title -->
+        <control type="label">
+            <posx>660</posx><posy>150</posy>
+            <width>1220</width><height>56</height>
+            <font>font45</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>$INFO[Window.Property(selected_title)]</label>
+            <aligny>center</aligny>
+        </control>
+        <!-- Season/episode line  e.g.  S11 E3  |  Kentucky Home -->
+        <control type="label">
+            <posx>660</posx><posy>215</posy>
+            <width>1220</width><height>30</height>
+            <font>font13_title</font>
+            <textcolor>FFB8C2D1</textcolor>
+            <label>$INFO[Window.Property(selected_episode)]</label>
+        </control>
+        <!-- Time/Rating/Genre line  e.g. 9:00a-10:00a | TV-G | Reality -->
+        <control type="label">
+            <posx>660</posx><posy>250</posy>
+            <width>1220</width><height>30</height>
+            <font>font13_title</font>
+            <textcolor>FFB8C2D1</textcolor>
+            <label>$INFO[Window.Property(selected_meta)]</label>
+        </control>
+        <!-- Synopsis -->
+        <control type="textbox">
+            <posx>660</posx><posy>295</posy>
+            <width>1220</width><height>80</height>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>$INFO[Window.Property(selected_desc)]</label>
+        </control>
+
+        <!-- ============================ TIME RULER ============================ -->
+        <!-- Date pill aligned with the wider channel-name column (40..420) -->
+        <control type="label">
+            <posx>40</posx><posy>440</posy>
+            <width>380</width><height>50</height>
+            <font>font13_title</font>
+            <textcolor>FFB8C2D1</textcolor>
+            <label>$INFO[System.Date(ddd D/M)]</label>
+            <aligny>center</aligny>
+        </control>
+        <!-- 5 time slots, aligned to the 5 EPG cells below -->
+        <control type="label"><posx>420</posx><posy>440</posy><width>284</width><height>50</height>
+            <font>font13_title</font><textcolor>FFB8C2D1</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window.Property(slot1)]</label></control>
+        <control type="label"><posx>704</posx><posy>440</posy><width>284</width><height>50</height>
+            <font>font13_title</font><textcolor>FFB8C2D1</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window.Property(slot2)]</label></control>
+        <control type="label"><posx>988</posx><posy>440</posy><width>284</width><height>50</height>
+            <font>font13_title</font><textcolor>FFB8C2D1</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window.Property(slot3)]</label></control>
+        <control type="label"><posx>1272</posx><posy>440</posy><width>284</width><height>50</height>
+            <font>font13_title</font><textcolor>FFB8C2D1</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window.Property(slot4)]</label></control>
+        <control type="label"><posx>1556</posx><posy>440</posy><width>200</width><height>50</height>
+            <font>font13_title</font><textcolor>FFB8C2D1</textcolor>
+            <align>left</align><aligny>center</aligny>
+            <label>$INFO[Window.Property(slot5)]</label></control>
+        <!-- "+12hrs" jump indicator at the far-right -->
+        <control type="label">
+            <posx>1760</posx><posy>440</posy>
+            <width>120</width><height>50</height>
+            <font>font13_title</font>
+            <textcolor>FFB8C2D1</textcolor>
+            <align>right</align>
+            <aligny>center</aligny>
+            <label>>>  +12hrs</label>
+        </control>
+
+        <!-- "Now" indicator vertical line -->
+        <control type="image" visible="!IsEmpty(Window.Property(now_x))">
+            <posx>$INFO[Window.Property(now_x)]</posx>
+            <posy>490</posy>
+            <width>2</width><height>540</height>
+            <texture>white.png</texture>
+            <colordiffuse>FFFFFFFF</colordiffuse>
+        </control>
+
+        <!-- ============================ CHANNEL ROWS LIST ===================== -->
+        <!-- Channel-info column widened from 320 to 410 so country prefix
+             plus full channel name (e.g. "UK | BBC TWO HD") fits without
+             being truncated. EPG cells shifted right accordingly. -->
+        <control type="list" id="9000">
+            <posx>40</posx><posy>500</posy>
+            <width>1840</width><height>530</height>
+            <onleft>9000</onleft>
+            <onright>9000</onright>
+            <onup>9100</onup>
+            <ondown>9100</ondown>
+            <scrolltime>120</scrolltime>
+
+            <itemlayout height="65" width="1840">
+                <!-- Faint divider band behind the row -->
+                <control type="image">
+                    <posx>0</posx><posy>62</posy><width>1840</width><height>1</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>30FFFFFF</colordiffuse>
+                </control>
+                <!-- Channel cell: number (right aligned) + callsign (wider) -->
+                <control type="label">
+                    <posx>10</posx><posy>0</posy><width>70</width><height>61</height>
+                    <font>font13_title</font>
+                    <textcolor>FFB8C2D1</textcolor>
+                    <align>right</align><aligny>center</aligny>
+                    <label>$INFO[ListItem.Property(num)]</label>
+                </control>
+                <control type="label">
+                    <posx>90</posx><posy>0</posy><width>320</width><height>61</height>
+                    <font>font13_title</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <!-- 5 EPG tabs (no fill = blends with background, DirecTV style) -->
+                <control type="label"><posx>420</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>$INFO[ListItem.Property(b1t)]</label></control>
+                <control type="label"><posx>704</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>$INFO[ListItem.Property(b2t)]</label></control>
+                <control type="label"><posx>988</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>$INFO[ListItem.Property(b3t)]</label></control>
+                <control type="label"><posx>1272</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>$INFO[ListItem.Property(b4t)]</label></control>
+                <control type="label"><posx>1556</posx><posy>0</posy><width>284</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>$INFO[ListItem.Property(b5t)]</label></control>
+            </itemlayout>
+
+            <focusedlayout height="65" width="1840">
+                <!-- Faint divider band behind the row -->
+                <control type="image">
+                    <posx>0</posx><posy>62</posy><width>1840</width><height>1</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>30FFFFFF</colordiffuse>
+                </control>
+                <!-- Channel cell highlighted (widened to 410) -->
+                <control type="image">
+                    <posx>0</posx><posy>2</posy><width>410</width><height>59</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse>
+                </control>
+                <control type="label">
+                    <posx>10</posx><posy>0</posy><width>70</width><height>61</height>
+                    <font>font13_title</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>right</align><aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Property(num)][/B]</label>
+                </control>
+                <control type="label">
+                    <posx>90</posx><posy>0</posy><width>320</width><height>61</height>
+                    <font>font13_title</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Label][/B]</label>
+                </control>
+                <!-- 5 EPG tabs - all highlighted blue (the DirecTV "row pill") -->
+                <control type="image"><posx>410</posx><posy>2</posy><width>290</width><height>59</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse></control>
+                <control type="label"><posx>420</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Property(b1t)][/B]</label></control>
+
+                <control type="image"><posx>694</posx><posy>2</posy><width>290</width><height>59</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse></control>
+                <control type="label"><posx>704</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Property(b2t)][/B]</label></control>
+
+                <control type="image"><posx>978</posx><posy>2</posy><width>290</width><height>59</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse></control>
+                <control type="label"><posx>988</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Property(b3t)][/B]</label></control>
+
+                <control type="image"><posx>1262</posx><posy>2</posy><width>290</width><height>59</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse></control>
+                <control type="label"><posx>1272</posx><posy>0</posy><width>280</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Property(b4t)][/B]</label></control>
+
+                <control type="image"><posx>1546</posx><posy>2</posy><width>294</width><height>59</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>$INFO[Skin.String(PG_Accent)]</colordiffuse></control>
+                <control type="label"><posx>1556</posx><posy>0</posy><width>284</width><height>61</height>
+                    <font>font13_title</font><textcolor>FFFFFFFF</textcolor>
+                    <aligny>center</aligny>
+                    <label>[B]$INFO[ListItem.Property(b5t)][/B]</label></control>
+            </focusedlayout>
+        </control>
+
+        <!-- Footer hint -->
+        <control type="label">
+            <posx>40</posx><posy>1045</posy>
+            <width>1840</width><height>28</height>
+            <font>font10</font>
+            <align>center</align>
+            <textcolor>FFB8C2D1</textcolor>
+            <label>OK once: preview in PiP   |   OK twice: full screen   |   left/right: pan time   |   up/down: channel   |   I: grid view   |   C: pin to favourites</label>
+        </control>
+        <!-- FAVOURITES button (v1.7.2) - focusable, D-pad reachable
+             via onup/ondown on the channel list.  Label flips between
+             "FAVOURITES (N)" and "ALL CHANNELS" so the same button
+             toggles the view. -->
+        <control type="button" id="9100">
+            <posx>1580</posx><posy>990</posy>
+            <width>300</width><height>44</height>
+            <label>[B]$INFO[Window(Home).Property(pg_fav_label)][/B]</label>
+            <font>font13_title</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <focusedcolor>FFFFFFFF</focusedcolor>
+            <align>center</align><aligny>center</aligny>
+            <texturefocus colordiffuse="$INFO[Skin.String(PG_Accent)]" border="2">white.png</texturefocus>
+            <texturenofocus colordiffuse="AA1E2530" border="2">white.png</texturenofocus>
+            <onleft>9000</onleft>
+            <onright>9100</onright>
+            <onup>9000</onup>
+            <ondown>9000</ondown>
+        </control>
+    </controls>
+</window>

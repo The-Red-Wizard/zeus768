@@ -301,6 +301,25 @@ class TraktAPI:
         key = 'movies' if media_type == 'movie' else 'shows'
         data = {key: [{'ids': ids}]}
         return self._request('/sync/watchlist/remove', data, method='POST')
+
+    def remove_from_collection(self, media_type, ids):
+        """Remove item from collection"""
+        key = 'movies' if media_type == 'movie' else 'shows'
+        data = {key: [{'ids': ids}]}
+        return self._request('/sync/collection/remove', data, method='POST')
+
+    def remove_from_history(self, media_type, ids):
+        """Remove item from watched history"""
+        key = 'movies' if media_type == 'movie' else 'shows'
+        data = {key: [{'ids': ids}]}
+        return self._request('/sync/history/remove', data, method='POST')
+
+    def remove_from_list(self, username, list_id, media_type, ids):
+        """Remove item from a custom user list"""
+        key = 'movies' if media_type == 'movie' else 'shows'
+        data = {key: [{'ids': ids}]}
+        endpoint = f"/users/{username}/lists/{list_id}/items/remove"
+        return self._request(endpoint, data, method='POST')
     
     def mark_watched(self, media_type, ids):
         """Mark item as watched"""

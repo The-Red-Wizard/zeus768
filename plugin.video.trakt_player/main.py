@@ -65,12 +65,14 @@ def main_menu():
         _menu_item('TV Shows', 'tv_menu'),
         _menu_item('Search', 'search_menu'),
         _menu_item('Continue Watching', 'continue_watching'),
+        _menu_item('Debrid Cloud', 'cloud_menu'),
         _menu_item('Discovery Feed', 'feed_menu'),
         _menu_item('AI Vibes', 'discovery_menu'),
         _menu_item('My Trakt', 'my_trakt'),
         _menu_item('My Stats', 'user_stats', is_folder=False),
         _menu_item('Account Status', 'account_status', is_folder=False),
         _menu_item('Buy Me a Beer', 'donate', is_folder=False),
+        _menu_item('Clear Quality Badge Cache', 'clear_quality_cache', is_folder=False),
         _menu_item('Settings', 'open_settings', is_folder=False),
     ]
     for url, li, is_folder in items:
@@ -86,7 +88,7 @@ def movie_menu():
         _menu_item('Popular', 'trakt_list', extra_params={'path': 'movies/popular', 'media_type': 'movie'}),
         _menu_item('Most Watched (Week)', 'trakt_list', extra_params={'path': 'movies/watched/weekly', 'media_type': 'movie'}),
         _menu_item('Most Watched (All Time)', 'trakt_list', extra_params={'path': 'movies/watched/all', 'media_type': 'movie'}),
-        _menu_item('Box Office', 'trakt_list', extra_params={'path': 'movies/boxoffice', 'media_type': 'movie'}),
+        _menu_item('Box Office', 'tmdb_list', extra_params={'endpoint': 'now_playing', 'media_type': 'movie'}),
         _menu_item('Anticipated', 'anticipated', extra_params={'media_type': 'movie'}),
         _menu_item('Recommended For You', 'recommendations', extra_params={'media_type': 'movie'}),
         _menu_item('Genres', 'list_genres', extra_params={'path': 'movie'}),
@@ -144,6 +146,7 @@ def my_trakt():
         _menu_item('My Calendar', 'calendar', extra_params={'media_type': 'show'}),
         _menu_item('My Custom Lists', 'my_lists'),
         _menu_item('Popular Lists', 'popular_lists'),
+        _menu_item('[COLOR gold]Curated Lists (IMDb / Letterboxd / RT)[/COLOR]', 'curated_lists'),
         _menu_item('Friends', 'friends'),
     ]
     for url, li, is_folder in items:
@@ -248,6 +251,386 @@ def show_account_status():
     xbmcgui.Dialog().textviewer('Account Status', '\n'.join(lines))
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# ██████  DEBRID CLOUD BROWSER  ████████████████████████████████████████████████
+# ══════════════════════════════════════════════════════════════════════════════
+
+def cloud_menu():
+    """Main cloud browser menu - shows available debrid services"""
+    services = debrid.get_cloud_services()
+    
+    if not services:
+        xbmcgui.Dialog().notification('No Debrid', 'Please configure a debrid service first', 
+                                       xbmcgui.NOTIFICATION_WARNING, 4000)
+        return
+    
+    items = []
+    for name, _, svc_code in services:
+        items.append(_menu_item(f'[B]{name}[/B] Cloud', 'cloud_service', 
+                                extra_params={'service': svc_code}))
+    
+    for url, li, is_folder in items:
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_service_menu(service):
+    """Show cloud items for a specific debrid service"""
+    items = []
+    
+    if service == 'rd':
+        # Real-Debrid: Show torrents and download history
+        items.append(_menu_item('[COLOR cyan]📁 My Torrents[/COLOR]', 'cloud_rd_torrents'))
+        items.append(_menu_item('[COLOR cyan]📥 Download History[/COLOR]', 'cloud_rd_downloads'))
+    
+    elif service == 'pm':
+        # Premiumize: Show cloud files and transfers
+        items.append(_menu_item('[COLOR cyan]📁 My Cloud Files[/COLOR]', 'cloud_pm_files'))
+        items.append(_menu_item('[COLOR cyan]📥 Transfers[/COLOR]', 'cloud_pm_transfers'))
+    
+    elif service == 'tb':
+        # Torbox: Show torrents
+        items.append(_menu_item('[COLOR cyan]📁 My Torrents[/COLOR]', 'cloud_tb_torrents'))
+    
+    elif service == 'ad':
+        # AllDebrid: Show magnets
+        items.append(_menu_item('[COLOR cyan]📁 My Magnets[/COLOR]', 'cloud_ad_magnets'))
+    
+    for url, li, is_folder in items:
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_rd_torrents():
+    """List Real-Debrid torrents"""
+    items = debrid.rd_get_torrents()
+    
+    if not items:
+        xbmcgui.Dialog().notification('Real-Debrid', 'No torrents found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for item in items:
+        status = item.get('status', '')
+        progress = item.get('progress', 0)
+        
+        # Format label with status
+        if status == 'downloaded':
+            label = f"[COLOR lime]✓[/COLOR] {item['name']} [{item['size']}]"
+        elif status == 'downloading':
+            label = f"[COLOR yellow]↓ {progress}%[/COLOR] {item['name']}"
+        else:
+            label = f"[COLOR gray]{status}[/COLOR] {item['name']}"
+        
+        url = build_url({'action': 'cloud_rd_torrent_files', 'torrent_id': item['id']})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        # Add context menu for delete
+        li.addContextMenuItems([
+            ('Delete', f"RunPlugin(plugin://plugin.video.trakt_player/?action=cloud_delete&service=rd&item_id={item['id']})")
+        ])
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_rd_torrent_files(torrent_id):
+    """List files in a Real-Debrid torrent"""
+    files = debrid.rd_get_torrent_files(torrent_id)
+    
+    if not files:
+        xbmcgui.Dialog().notification('Real-Debrid', 'No files found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for f in files:
+        label = f"{f['name']}"
+        if f.get('size'):
+            label += f" [{f['size']}]"
+        
+        url = build_url({'action': 'cloud_play_rd', 'link': f['link']})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        li.setProperty('IsPlayable', 'true')
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_rd_downloads():
+    """List Real-Debrid download history"""
+    items = debrid.rd_get_downloads()
+    
+    if not items:
+        xbmcgui.Dialog().notification('Real-Debrid', 'No downloads found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for item in items:
+        label = f"{item['name']} [{item['size']}]"
+        if item.get('date'):
+            label = f"[COLOR gray]{item['date']}[/COLOR] {label}"
+        
+        url = build_url({'action': 'cloud_play_direct', 'link': item['link']})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        if item.get('is_video'):
+            li.setProperty('IsPlayable', 'true')
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_pm_files(folder_id=None):
+    """List Premiumize cloud files"""
+    items = debrid.pm_get_cloud_files(folder_id)
+    
+    if not items:
+        xbmcgui.Dialog().notification('Premiumize', 'No files found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for item in items:
+        if item.get('type') == 'folder':
+            label = f"[COLOR cyan]📁[/COLOR] {item['name']}"
+            url = build_url({'action': 'cloud_pm_files', 'folder_id': item['id']})
+            is_folder = True
+        else:
+            label = f"{item['name']}"
+            if item.get('size'):
+                label += f" [{item['size']}]"
+            url = build_url({'action': 'cloud_play_direct', 'link': item['link']})
+            is_folder = False
+        
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        if not is_folder and item.get('is_video'):
+            li.setProperty('IsPlayable', 'true')
+        
+        # Add context menu for delete
+        li.addContextMenuItems([
+            ('Delete', f"RunPlugin(plugin://plugin.video.trakt_player/?action=cloud_delete&service=pm&item_id={item['id']})")
+        ])
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=is_folder)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_pm_transfers():
+    """List Premiumize transfers"""
+    items = debrid.pm_get_transfers()
+    
+    if not items:
+        xbmcgui.Dialog().notification('Premiumize', 'No active transfers', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for item in items:
+        status = item.get('status', '')
+        progress = item.get('progress', 0)
+        
+        if status == 'finished':
+            label = f"[COLOR lime]✓[/COLOR] {item['name']}"
+        else:
+            label = f"[COLOR yellow]{progress}%[/COLOR] {item['name']} [{status}]"
+        
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        xbmcplugin.addDirectoryItem(HANDLE, '', li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_tb_torrents():
+    """List Torbox torrents"""
+    items = debrid.tb_get_torrents()
+    
+    if not items:
+        xbmcgui.Dialog().notification('Torbox', 'No torrents found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for item in items:
+        status = item.get('status', '')
+        progress = item.get('progress', 0)
+        
+        if status in ['completed', 'cached', 'seeding']:
+            label = f"[COLOR lime]✓[/COLOR] {item['name']} [{item['size']}]"
+        elif status == 'downloading':
+            label = f"[COLOR yellow]↓ {progress}%[/COLOR] {item['name']}"
+        else:
+            label = f"[COLOR gray]{status}[/COLOR] {item['name']}"
+        
+        url = build_url({'action': 'cloud_tb_torrent_files', 'torrent_id': item['id']})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        # Add context menu for delete
+        li.addContextMenuItems([
+            ('Delete', f"RunPlugin(plugin://plugin.video.trakt_player/?action=cloud_delete&service=tb&item_id={item['id']})")
+        ])
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_tb_torrent_files(torrent_id):
+    """List files in a Torbox torrent"""
+    files = debrid.tb_get_torrent_files(torrent_id)
+    
+    if not files:
+        xbmcgui.Dialog().notification('Torbox', 'No files found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for f in files:
+        label = f"{f['name']}"
+        if f.get('size'):
+            label += f" [{f['size']}]"
+        
+        url = build_url({'action': 'cloud_play_tb', 'torrent_id': torrent_id, 'file_id': str(f['id'])})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        if f.get('is_video'):
+            li.setProperty('IsPlayable', 'true')
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_ad_magnets():
+    """List AllDebrid magnets"""
+    items = debrid.ad_get_magnets()
+    
+    if not items:
+        xbmcgui.Dialog().notification('AllDebrid', 'No magnets found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for item in items:
+        status = item.get('status', '')
+        
+        if status == 'Ready':
+            label = f"[COLOR lime]✓[/COLOR] {item['name']} [{item['size']}]"
+        else:
+            label = f"[COLOR yellow]{status}[/COLOR] {item['name']}"
+        
+        url = build_url({'action': 'cloud_ad_magnet_files', 'magnet_id': item['id']})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        # Add context menu for delete
+        li.addContextMenuItems([
+            ('Delete', f"RunPlugin(plugin://plugin.video.trakt_player/?action=cloud_delete&service=ad&item_id={item['id']})")
+        ])
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=True)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_ad_magnet_files(magnet_id):
+    """List files in an AllDebrid magnet"""
+    files = debrid.ad_get_magnet_files(magnet_id)
+    
+    if not files:
+        xbmcgui.Dialog().notification('AllDebrid', 'No files found', 
+                                       xbmcgui.NOTIFICATION_INFO, 3000)
+        return
+    
+    for f in files:
+        label = f"{f['name']}"
+        if f.get('size'):
+            label += f" [{f['size']}]"
+        
+        url = build_url({'action': 'cloud_play_ad', 'link': f['link']})
+        li = xbmcgui.ListItem(label=label)
+        li.setArt({'icon': get_addon_icon(), 'thumb': get_addon_icon()})
+        
+        if f.get('is_video'):
+            li.setProperty('IsPlayable', 'true')
+        
+        xbmcplugin.addDirectoryItem(HANDLE, url, li, isFolder=False)
+    
+    xbmcplugin.endOfDirectory(HANDLE)
+
+
+def cloud_play_rd(link):
+    """Play a Real-Debrid link (unrestrict first)"""
+    rd = debrid.RealDebrid()
+    direct_url = rd.unrestrict_link(link)
+    
+    if direct_url:
+        li = xbmcgui.ListItem(path=direct_url)
+        xbmcplugin.setResolvedUrl(HANDLE, True, li)
+    else:
+        xbmcgui.Dialog().notification('Error', 'Failed to get download link', 
+                                       xbmcgui.NOTIFICATION_ERROR, 3000)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
+def cloud_play_ad(link):
+    """Play an AllDebrid link (unrestrict first)"""
+    ad = debrid.AllDebrid()
+    direct_url = ad.unrestrict_link(link)
+    
+    if direct_url:
+        li = xbmcgui.ListItem(path=direct_url)
+        xbmcplugin.setResolvedUrl(HANDLE, True, li)
+    else:
+        xbmcgui.Dialog().notification('Error', 'Failed to get download link', 
+                                       xbmcgui.NOTIFICATION_ERROR, 3000)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
+def cloud_play_tb(torrent_id, file_id):
+    """Play a Torbox file"""
+    direct_url = debrid.tb_get_download_link(torrent_id, int(file_id))
+    
+    if direct_url:
+        li = xbmcgui.ListItem(path=direct_url)
+        xbmcplugin.setResolvedUrl(HANDLE, True, li)
+    else:
+        xbmcgui.Dialog().notification('Error', 'Failed to get download link', 
+                                       xbmcgui.NOTIFICATION_ERROR, 3000)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
+def cloud_play_direct(link):
+    """Play a direct link"""
+    if link:
+        li = xbmcgui.ListItem(path=link)
+        xbmcplugin.setResolvedUrl(HANDLE, True, li)
+    else:
+        xbmcgui.Dialog().notification('Error', 'No link available', 
+                                       xbmcgui.NOTIFICATION_ERROR, 3000)
+        xbmcplugin.setResolvedUrl(HANDLE, False, xbmcgui.ListItem())
+
+
+def cloud_delete_item(service, item_id):
+    """Delete an item from cloud"""
+    if xbmcgui.Dialog().yesno('Delete', 'Are you sure you want to delete this item?'):
+        success = debrid.delete_cloud_item(service, item_id)
+        if success:
+            xbmcgui.Dialog().notification('Deleted', 'Item removed from cloud', 
+                                           xbmcgui.NOTIFICATION_INFO, 2000)
+            xbmc.executebuiltin('Container.Refresh')
+        else:
+            xbmcgui.Dialog().notification('Error', 'Failed to delete item', 
+                                           xbmcgui.NOTIFICATION_ERROR, 3000)
+
+
 # ── Router ────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
@@ -268,6 +651,18 @@ if __name__ == '__main__':
         my_trakt()
     elif action == 'open_settings':
         get_addon().openSettings()
+    elif action == 'clear_quality_cache':
+        from resources.lib import quality_cache
+        before = quality_cache.size()
+        if quality_cache.clear():
+            xbmcgui.Dialog().notification(
+                'Trakt Player',
+                f'Cleared {before} cached badge(s)',
+                xbmcgui.NOTIFICATION_INFO, 3000
+            )
+        else:
+            xbmcgui.Dialog().notification(
+                'Trakt Player', 'Clear failed', xbmcgui.NOTIFICATION_ERROR)
     elif action == 'donate':
         show_donation()
     elif action == 'account_status':
@@ -279,6 +674,19 @@ if __name__ == '__main__':
     elif action == 'trakt_list':
         page = params.get('page', '1')
         trakt_api.get_list(params.get('path'), params.get('media_type', 'movie'), page)
+    elif action == 'tmdb_list':
+        tmdb.show_tmdb_list(
+            params.get('endpoint', 'now_playing'),
+            params.get('media_type', 'movie'),
+            params.get('page', '1')
+        )
+    elif action == 'tmdb_discover':
+        tmdb.show_genre_discover(
+            params.get('media_type', 'movie'),
+            params.get('genre_id', ''),
+            params.get('label', ''),
+            params.get('page', '1')
+        )
     elif action == 'search_dialog':
         search_dialog(params.get('media_type', 'movie'))
     elif action == 'search_results':
@@ -306,9 +714,41 @@ if __name__ == '__main__':
     elif action == 'continue_watching':
         trakt_api.get_playback_progress()
     elif action == 'rate':
-        trakt_api.rate_item(params.get('media_type', 'movie'), params.get('trakt_id', ''))
+        trakt_api.rate_item(
+            params.get('media_type', 'movie'),
+            trakt_id=params.get('trakt_id') or None,
+            imdb_id=params.get('imdb_id') or None,
+        )
     elif action == 'add_watchlist':
         trakt_api.add_to_watchlist(params.get('media_type', 'movie'), params.get('imdb_id', ''))
+    elif action == 'remove_watchlist':
+        trakt_api.remove_from_watchlist(params.get('media_type', 'movie'),
+                                        params.get('imdb_id', ''))
+    elif action == 'remove_collection':
+        trakt_api.remove_from_collection(params.get('media_type', 'movie'),
+                                         params.get('imdb_id', ''))
+    elif action == 'remove_history':
+        trakt_api.remove_from_history(params.get('media_type', 'movie'),
+                                      params.get('imdb_id', ''))
+    elif action == 'remove_from_list':
+        trakt_api.remove_from_list(
+            params.get('media_type', 'movie'),
+            params.get('imdb_id', ''),
+            params.get('user', 'me'),
+            params.get('list_slug', ''),
+        )
+    elif action == 'play_next_unwatched':
+        trakt_api.play_next_unwatched(
+            params.get('imdb_id', ''),
+            params.get('tmdb_id', ''),
+            params.get('title', ''),
+        )
+    elif action == 'curated_lists':
+        trakt_api.show_curated_lists()
+    elif action == 'open_curated':
+        trakt_api.open_curated_list(params.get('key', ''))
+    elif action == 'refresh_curated':
+        trakt_api.refresh_curated_cache()
 
     # Friends, Stats, Custom Lists
     elif action == 'friends':
@@ -384,10 +824,44 @@ if __name__ == '__main__':
     elif action == 'revoke_pm':
         debrid.Premiumize().revoke()
     elif action == 'auth_tb':
-        debrid.TorBox().authorize()
+        debrid.Torbox().authorize()
     elif action == 'revoke_tb':
-        debrid.TorBox().revoke()
+        debrid.Torbox().revoke()
     elif action == 'auth_ls':
         debrid.LinkSnappy().authorize()
     elif action == 'revoke_ls':
         debrid.LinkSnappy().revoke()
+    
+    # Debrid Cloud Browser
+    elif action == 'cloud_menu':
+        cloud_menu()
+    elif action == 'cloud_service':
+        cloud_service_menu(params.get('service', 'rd'))
+    elif action == 'cloud_rd_torrents':
+        cloud_rd_torrents()
+    elif action == 'cloud_rd_torrent_files':
+        cloud_rd_torrent_files(params.get('torrent_id', ''))
+    elif action == 'cloud_rd_downloads':
+        cloud_rd_downloads()
+    elif action == 'cloud_pm_files':
+        cloud_pm_files(params.get('folder_id'))
+    elif action == 'cloud_pm_transfers':
+        cloud_pm_transfers()
+    elif action == 'cloud_tb_torrents':
+        cloud_tb_torrents()
+    elif action == 'cloud_tb_torrent_files':
+        cloud_tb_torrent_files(params.get('torrent_id', ''))
+    elif action == 'cloud_ad_magnets':
+        cloud_ad_magnets()
+    elif action == 'cloud_ad_magnet_files':
+        cloud_ad_magnet_files(params.get('magnet_id', ''))
+    elif action == 'cloud_play_rd':
+        cloud_play_rd(params.get('link', ''))
+    elif action == 'cloud_play_ad':
+        cloud_play_ad(params.get('link', ''))
+    elif action == 'cloud_play_tb':
+        cloud_play_tb(params.get('torrent_id', ''), params.get('file_id', '0'))
+    elif action == 'cloud_play_direct':
+        cloud_play_direct(params.get('link', ''))
+    elif action == 'cloud_delete':
+        cloud_delete_item(params.get('service', ''), params.get('item_id', ''))

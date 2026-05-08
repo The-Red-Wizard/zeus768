@@ -66,7 +66,7 @@ QUALITY_PATTERNS = {
 }
 
 # Default timeout for HTTP requests
-DEFAULT_TIMEOUT = 30
+DEFAULT_TIMEOUT = 15
 
 # Cache settings
 CACHE_DURATION = 8  # hours

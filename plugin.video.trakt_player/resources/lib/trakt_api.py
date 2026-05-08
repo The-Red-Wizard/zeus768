@@ -27,7 +27,10 @@ CLIENT_ID = 'd2a8e820fec0d46079cbbceaca851648df9431cbc73ede2c10d35dfb1c7a36e2'
 USER_AGENT = 'TraktPlayer Kodi Addon'
 
 # Pagination settings - reduced for faster loading
-ITEMS_PER_PAGE = 30
+# v2.4.5: Bumped from 30 -> 100. Trakt API caps at 100 per page. With 30
+# items + Kodi's alphabetical sort of tvshow directories, users reported
+# "only shows up to R" because a partial A-Z pool gets truncated mid-alphabet.
+ITEMS_PER_PAGE = 100
 
 
 def get_addon_icon():
@@ -83,32 +86,83 @@ def get_headers():
     return headers
 
 
+def _auto_paginate(base_url, headers, max_pages=20, limit=100):
+    """For sync/user endpoints: auto-fetch all pages (bug #2 fix).
+
+    Stops when a page returns fewer than `limit` items or we hit `max_pages`.
+    Returns the combined list.
+    """
+    all_items = []
+    for page in range(1, max_pages + 1):
+        sep = '&' if '?' in base_url else '?'
+        url = f'{base_url}{sep}limit={limit}&page={page}'
+        status, data = _http_get(url, headers=headers)
+        if status != 200 or not isinstance(data, list):
+            break
+        all_items.extend(data)
+        if len(data) < limit:
+            break
+    return all_items
+
+
+def _is_autopaginate_path(path):
+    """Which Trakt endpoints should auto-load all pages at once."""
+    p = path.strip('/').lower()
+    return (p.startswith('sync/') or
+            p.startswith('users/') or
+            p.startswith('lists/'))
+
+
 def get_list(path, media_type='movie', page=1):
-    """Fetch and display a Trakt list with pagination - OPTIMIZED for speed"""
+    """Fetch and display a Trakt list with pagination - OPTIMIZED for speed.
+
+    v2.4.4: For user-specific endpoints (sync/watchlist, sync/collection,
+    sync/watched, sync/history, users/*) we auto-paginate so large watchlists
+    no longer get alphabetically clipped at "R".
+    """
     headers = get_headers()
     handle = int(sys.argv[1])
-    
+
     # Get addon artwork
     addon_icon = get_addon_icon()
     addon_fanart = get_addon_fanart()
-    
+
     # Check if this needs authentication
     needs_auth = 'sync/' in path or 'users/' in path
     if needs_auth and not trakt_auth.is_authorized():
         xbmcgui.Dialog().notification('Trakt', 'Please authorize Trakt first', xbmcgui.NOTIFICATION_WARNING)
         trakt_auth.authorize()
         return
-    
+
     try:
-        # Build URL with pagination
         page = int(page)
+
+        # Auto-paginated path: fetch everything and render in one shot.
+        if _is_autopaginate_path(path) and page == 1:
+            base_url = f'https://api.trakt.tv/{path}?extended=full'
+            xbmc.log(f'Trakt auto-paginate: {base_url}', xbmc.LOGINFO)
+            progress = xbmcgui.DialogProgress()
+            progress.create('Trakt', 'Loading your list...')
+            data = _auto_paginate(base_url, headers, max_pages=20, limit=100)
+            progress.close()
+            if not data:
+                if trakt_auth.refresh_token():
+                    data = _auto_paginate(base_url, get_headers(), max_pages=20, limit=100)
+            if not data:
+                xbmcgui.Dialog().notification('Trakt', 'No results or API error', xbmcgui.NOTIFICATION_INFO)
+                xbmcplugin.endOfDirectory(handle)
+                return
+            _display_list_items(data, media_type, addon_icon, addon_fanart, handle,
+                                path=path, page=None)
+            return
+
+        # Regular paginated path (trending/popular/boxoffice etc.)
         url = f'https://api.trakt.tv/{path}?extended=full&limit={ITEMS_PER_PAGE}&page={page}'
         xbmc.log(f'Trakt API request: {url} (page {page})', xbmc.LOGINFO)
-        
+
         status, data = _http_get(url, headers=headers)
-        
+
         if status == 401:
-            # Token expired, try refresh
             if trakt_auth.refresh_token():
                 headers = get_headers()
                 status, data = _http_get(url, headers=headers)
@@ -116,112 +170,193 @@ def get_list(path, media_type='movie', page=1):
                 xbmcgui.Dialog().notification('Trakt', 'Session expired. Please re-authorize.', xbmcgui.NOTIFICATION_WARNING)
                 trakt_auth.authorize()
                 return
-        
+
         if status != 200 or data is None:
             xbmcgui.Dialog().notification('Trakt', f'API error: {status}', xbmcgui.NOTIFICATION_ERROR)
             return
-        
+
         if not data:
             if page == 1:
                 xbmcgui.Dialog().notification('Trakt', 'No results found', xbmcgui.NOTIFICATION_INFO)
             xbmcplugin.endOfDirectory(handle)
             return
-        
-        # Collect all TMDB IDs for batch fetching (faster)
-        items_data = []
-        for item in data:
-            if media_type == 'show':
-                content = item.get('show', item)
-            else:
-                content = item.get('movie', item)
-            
-            title = content.get('title', 'Unknown')
-            year = content.get('year', '')
-            ids = content.get('ids', {})
-            tmdb_id = ids.get('tmdb')
-            imdb_id = ids.get('imdb', '')
-            overview = content.get('overview', '')
-            rating = content.get('rating', 0)
-            
-            items_data.append({
-                'title': title,
-                'year': year,
-                'tmdb_id': tmdb_id,
-                'imdb_id': imdb_id,
-                'overview': overview,
-                'rating': rating,
-                'media_type': media_type
-            })
-        
-        # Fetch TMDB images in batch (faster than individual calls)
-        tmdb_type = 'movie' if media_type == 'movie' else 'tv'
-        tmdb_ids = [item['tmdb_id'] for item in items_data if item['tmdb_id']]
-        images_cache = tmdb.get_images_batch(tmdb_ids, tmdb_type) if tmdb_ids else {}
-        
-        # Build list items
-        for item in items_data:
-            title = item['title']
-            year = item['year']
-            tmdb_id = item['tmdb_id']
-            imdb_id = item['imdb_id']
-            
-            # Create list item
-            label = f'{title}' if not year else f'{title} ({year})'
-            li = xbmcgui.ListItem(label=label)
-            
-            # Get images from cache or use defaults
-            images = images_cache.get(tmdb_id, {})
-            poster = images.get('poster', '')
-            fanart = images.get('backdrop', '') or addon_fanart
-            
-            li.setArt({
-                'poster': poster or addon_icon,
-                'fanart': fanart,
-                'thumb': poster or addon_icon,
-                'icon': poster or addon_icon,
-                'banner': fanart
-            })
-            
-            # Set info from Trakt data (no extra TMDB call needed)
-            info = {
-                'title': title,
-                'year': year,
-                'plot': item['overview'],
-                'rating': item['rating']
-            }
-            
-            if media_type == 'movie':
-                info['mediatype'] = 'movie'
-                li.setInfo('video', info)
-                li.setProperty('IsPlayable', 'true')
-                
-                play_url = f"{sys.argv[0]}?action=play&title={quote_plus(title)}&year={year}&imdb_id={imdb_id}"
-                xbmcplugin.addDirectoryItem(handle, play_url, li, False)
-            else:
-                info['mediatype'] = 'tvshow'
-                li.setInfo('video', info)
-                
-                show_url = f"{sys.argv[0]}?action=show_seasons&tmdb_id={tmdb_id}&title={quote_plus(title)}"
-                xbmcplugin.addDirectoryItem(handle, show_url, li, True)
-        
-        # Add "Next Page" item for infinite scroll
-        if len(data) >= ITEMS_PER_PAGE:
-            next_page = page + 1
-            next_li = xbmcgui.ListItem(label=f'[B][COLOR yellow]>>> Next Page ({next_page}) >>>[/COLOR][/B]')
-            next_li.setArt({
-                'icon': addon_icon,
-                'thumb': addon_icon,
-                'fanart': addon_fanart
-            })
-            next_url = f"{sys.argv[0]}?action=trakt_list&path={quote_plus(path)}&media_type={media_type}&page={next_page}"
-            xbmcplugin.addDirectoryItem(handle, next_url, next_li, True)
-        
-        xbmcplugin.setContent(handle, 'movies' if media_type == 'movie' else 'tvshows')
-        xbmcplugin.endOfDirectory(handle, cacheToDisc=True)
-        
+
+        _display_list_items(data, media_type, addon_icon, addon_fanart, handle,
+                            path=path, page=page)
+
     except Exception as e:
         xbmc.log(f'Trakt API error: {str(e)}', xbmc.LOGERROR)
         xbmcgui.Dialog().notification('Error', f'Failed to load: {str(e)}', xbmcgui.NOTIFICATION_ERROR)
+
+
+def _build_context_menu(media_type, imdb_id, tmdb_id, title,
+                        list_context=None):
+    """Context menu for a list item.
+
+    v2.4.8: Adds Remove actions. ``list_context`` (optional) tells us which
+    list the item is being shown from so we can offer the right Remove
+    option. Shape::
+
+        {'kind': 'watchlist'}                                # Trakt watchlist
+        {'kind': 'collection'}                               # Collection
+        {'kind': 'history'}                                  # Watched history
+        {'kind': 'custom', 'user': 'me', 'slug': 'fav-90s'}  # Custom list
+    """
+    plugin = 'plugin://plugin.video.trakt_player'
+    ctx = []
+    if not imdb_id:
+        return ctx
+
+    ctx.append((
+        'Add to Watchlist',
+        f"RunPlugin({plugin}/?action=add_watchlist&media_type={media_type}&imdb_id={imdb_id})"
+    ))
+    ctx.append((
+        'Add to Custom List...',
+        f"RunPlugin({plugin}/?action=add_to_list&media_type={media_type}&imdb_id={imdb_id})"
+    ))
+    ctx.append((
+        'Rate on Trakt...',
+        f"RunPlugin({plugin}/?action=rate&media_type={media_type}&imdb_id={imdb_id})"
+    ))
+
+    # v2.4.9: TV-show only - jump straight to the next unwatched episode
+    if media_type == 'show':
+        ctx.append((
+            '[COLOR lime]Play Next Unwatched Episode[/COLOR]',
+            f"RunPlugin({plugin}/?action=play_next_unwatched"
+            f"&imdb_id={imdb_id}&tmdb_id={tmdb_id}&title={quote_plus(title)})"
+        ))
+
+    # Context-aware Remove entries
+    if list_context and isinstance(list_context, dict):
+        kind = list_context.get('kind')
+        if kind == 'watchlist':
+            ctx.append((
+                '[COLOR red]Remove from Watchlist[/COLOR]',
+                f"RunPlugin({plugin}/?action=remove_watchlist&media_type={media_type}&imdb_id={imdb_id})"
+            ))
+        elif kind == 'collection':
+            ctx.append((
+                '[COLOR red]Remove from Collection[/COLOR]',
+                f"RunPlugin({plugin}/?action=remove_collection&media_type={media_type}&imdb_id={imdb_id})"
+            ))
+        elif kind == 'history':
+            ctx.append((
+                '[COLOR red]Remove from History[/COLOR]',
+                f"RunPlugin({plugin}/?action=remove_history&media_type={media_type}&imdb_id={imdb_id})"
+            ))
+        elif kind == 'custom':
+            user = list_context.get('user', 'me')
+            slug = list_context.get('slug', '')
+            if slug:
+                ctx.append((
+                    '[COLOR red]Remove from this List[/COLOR]',
+                    f"RunPlugin({plugin}/?action=remove_from_list"
+                    f"&media_type={media_type}&imdb_id={imdb_id}"
+                    f"&user={quote_plus(user)}&list_slug={quote_plus(slug)})"
+                ))
+    else:
+        # Always offer a generic Remove from Watchlist as a fallback
+        ctx.append((
+            '[COLOR red]Remove from Watchlist[/COLOR]',
+            f"RunPlugin({plugin}/?action=remove_watchlist&media_type={media_type}&imdb_id={imdb_id})"
+        ))
+    return ctx
+
+
+def _list_context_from_path(path):
+    """Map a Trakt API path to a context-menu hint (for sync/* lists)."""
+    if not path:
+        return None
+    p = path.strip('/').lower()
+    if p.startswith('sync/watchlist'):
+        return {'kind': 'watchlist'}
+    if p.startswith('sync/collection'):
+        return {'kind': 'collection'}
+    if p.startswith('sync/watched') or p.startswith('sync/history'):
+        return {'kind': 'history'}
+    return None
+
+
+def _display_list_items(data, media_type, addon_icon, addon_fanart, handle,
+                        path=None, page=None):
+    """Shared renderer for get_list output."""
+    list_context = _list_context_from_path(path)
+    # Collect all TMDB IDs for batch fetching (faster)
+    items_data = []
+    for item in data:
+        if media_type == 'show':
+            content = item.get('show', item)
+        else:
+            content = item.get('movie', item)
+        title = content.get('title', 'Unknown')
+        year = content.get('year', '')
+        ids = content.get('ids', {})
+        tmdb_id = ids.get('tmdb')
+        imdb_id = ids.get('imdb', '')
+        overview = content.get('overview', '')
+        rating = content.get('rating', 0)
+        items_data.append({
+            'title': title, 'year': year, 'tmdb_id': tmdb_id, 'imdb_id': imdb_id,
+            'overview': overview, 'rating': rating, 'media_type': media_type
+        })
+
+    tmdb_type = 'movie' if media_type == 'movie' else 'tv'
+    tmdb_ids = [item['tmdb_id'] for item in items_data if item['tmdb_id']]
+    images_cache = tmdb.get_images_batch(tmdb_ids, tmdb_type) if tmdb_ids else {}
+
+    for item in items_data:
+        title = item['title']
+        year = item['year']
+        tmdb_id = item['tmdb_id']
+        imdb_id = item['imdb_id']
+
+        label = f'{title}' if not year else f'{title} ({year})'
+        # v2.4.5: prepend cached quality badge (empty if not yet known)
+        try:
+            from . import quality_cache
+            label = quality_cache.lookup(imdb_id) + label
+        except Exception:
+            pass
+        li = xbmcgui.ListItem(label=label)
+
+        images = images_cache.get(tmdb_id, {})
+        poster = images.get('poster', '')
+        fanart = images.get('backdrop', '') or addon_fanart
+
+        li.setArt({'poster': poster or addon_icon, 'fanart': fanart,
+                   'thumb': poster or addon_icon, 'icon': poster or addon_icon,
+                   'banner': fanart})
+        info = {'title': title, 'year': year, 'plot': item['overview'], 'rating': item['rating']}
+
+        # NEW 2.4.4: Add context menu (bug #1 fix)
+        # v2.4.8: pass list_context so Remove option appears
+        li.addContextMenuItems(_build_context_menu(
+            media_type, imdb_id, tmdb_id, title, list_context=list_context))
+
+        if media_type == 'movie':
+            info['mediatype'] = 'movie'
+            li.setInfo('video', info)
+            li.setProperty('IsPlayable', 'true')
+            play_url = f"{sys.argv[0]}?action=play&title={quote_plus(title)}&year={year}&imdb_id={imdb_id}"
+            xbmcplugin.addDirectoryItem(handle, play_url, li, False)
+        else:
+            info['mediatype'] = 'tvshow'
+            li.setInfo('video', info)
+            show_url = f"{sys.argv[0]}?action=show_seasons&tmdb_id={tmdb_id}&title={quote_plus(title)}"
+            xbmcplugin.addDirectoryItem(handle, show_url, li, True)
+
+    # Manual Next Page button only when we are on a paginated endpoint
+    if page is not None and len(data) >= ITEMS_PER_PAGE:
+        next_page = page + 1
+        next_li = xbmcgui.ListItem(label=f'[B][COLOR yellow]>>> Next Page ({next_page}) >>>[/COLOR][/B]')
+        next_li.setArt({'icon': addon_icon, 'thumb': addon_icon, 'fanart': addon_fanart})
+        next_url = f"{sys.argv[0]}?action=trakt_list&path={quote_plus(path)}&media_type={media_type}&page={next_page}"
+        xbmcplugin.addDirectoryItem(handle, next_url, next_li, True)
+
+    xbmcplugin.setContent(handle, 'movies' if media_type == 'movie' else 'tvshows')
+    xbmcplugin.endOfDirectory(handle, cacheToDisc=True)
 
 
 def show_seasons(tmdb_id, show_title):
@@ -416,8 +551,16 @@ def _http_post(url, data=None, headers=None, timeout=15):
         return 0, None
 
 
-def _display_items(items, media_type='movie', key=None):
-    """Display Trakt items with TMDB metadata in Kodi directory."""
+def _display_items(items, media_type='movie', key=None, list_context=None):
+    """Display Trakt items with TMDB metadata in Kodi directory.
+
+    FIX: Determines per-item media type (movie/show/episode) from Trakt's
+    own 'type' field so we query the correct TMDB endpoint (movie vs tv).
+    TMDB movie and TV IDs are separate namespaces - using the wrong one
+    returns completely unrelated posters.
+
+    v2.4.8: list_context lets us inject a Remove option in the context menu.
+    """
     handle = int(sys.argv[1])
     addon_icon = get_addon_icon()
     addon_fanart = get_addon_fanart()
@@ -427,60 +570,119 @@ def _display_items(items, media_type='movie', key=None):
         xbmcplugin.endOfDirectory(handle)
         return
     
+    default_is_movie = media_type in ('movie', 'movies')
+    
+    # First pass: parse each item and determine its ACTUAL media type
+    parsed = []
     for item in items:
         if not isinstance(item, dict):
             continue
         
+        # Detect actual per-item type (Trakt returns 'movie', 'show', 'episode', 'season', 'person')
+        item_type = item.get('type')
         data = None
+        actual_type = None
+        
         if key and key in item:
             data = item[key]
-        elif 'movie' in item:
-            data = item['movie']
-        elif 'show' in item:
-            data = item['show']
-        elif 'title' in item:
-            data = item
-        else:
-            continue
+            actual_type = 'show' if key == 'show' else ('movie' if key == 'movie' else None)
+        
+        if data is None:
+            if item_type == 'movie' and isinstance(item.get('movie'), dict):
+                data = item['movie']
+                actual_type = 'movie'
+            elif item_type == 'show' and isinstance(item.get('show'), dict):
+                data = item['show']
+                actual_type = 'show'
+            elif item_type == 'episode' and isinstance(item.get('show'), dict):
+                # Episode entries (history, playback): use show for poster
+                data = item['show']
+                actual_type = 'show'
+            elif isinstance(item.get('movie'), dict):
+                data = item['movie']
+                actual_type = 'movie'
+            elif isinstance(item.get('show'), dict):
+                data = item['show']
+                actual_type = 'show'
+            elif 'title' in item and 'ids' in item:
+                data = item
+                actual_type = 'movie' if default_is_movie else 'show'
+            else:
+                continue
         
         if not data or not isinstance(data, dict):
             continue
         
+        if actual_type is None:
+            actual_type = 'movie' if default_is_movie else 'show'
+        
+        parsed.append({'data': data, 'actual_type': actual_type})
+    
+    if not parsed:
+        xbmcgui.Dialog().notification('Trakt', 'No items found', xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(handle)
+        return
+    
+    # Batch-fetch TMDB images grouped by actual type (much faster than sequential)
+    movie_ids = [str(p['data'].get('ids', {}).get('tmdb') or '')
+                 for p in parsed if p['actual_type'] == 'movie' and p['data'].get('ids', {}).get('tmdb')]
+    show_ids = [str(p['data'].get('ids', {}).get('tmdb') or '')
+                for p in parsed if p['actual_type'] == 'show' and p['data'].get('ids', {}).get('tmdb')]
+    
+    movie_images = tmdb.get_images_batch(movie_ids, 'movie') if movie_ids else {}
+    show_images = tmdb.get_images_batch(show_ids, 'tv') if show_ids else {}
+    
+    # Track what content type to set: mixed lists default to 'videos'
+    has_movie = any(p['actual_type'] == 'movie' for p in parsed)
+    has_show = any(p['actual_type'] == 'show' for p in parsed)
+    
+    for p in parsed:
+        data = p['data']
+        actual_type = p['actual_type']
+        
         title = data.get('title', 'Unknown')
         year = data.get('year', '')
         ids = data.get('ids', {})
-        tmdb_id = str(ids.get('tmdb', '')) if ids else ''
+        tmdb_id_raw = ids.get('tmdb') if ids else None
+        tmdb_id = str(tmdb_id_raw) if tmdb_id_raw else ''
         imdb_id = str(ids.get('imdb', '')) if ids else ''
         
         label = f'{title} ({year})' if year else title
-        
-        # TMDB metadata
-        poster_url = addon_icon
-        backdrop_url = addon_fanart
+        # v2.4.5: prepend quality badge if cached
+        try:
+            from . import quality_cache
+            label = quality_cache.lookup(imdb_id) + label
+        except Exception:
+            pass
         overview = data.get('overview', '')
         
+        # Look up artwork from the correct namespace
+        images = {}
         if tmdb_id:
-            try:
-                search_type = 'movie' if media_type in ('movie', 'movies') else 'tv'
-                meta = tmdb.get_details(int(tmdb_id), search_type)
-                if meta:
-                    if meta.get('poster'):
-                        poster_url = meta['poster']
-                    overview = meta.get('overview', overview)
-            except Exception:
-                pass
+            if actual_type == 'movie':
+                # get_images_batch keys results by the original tmdb_id value type.
+                images = movie_images.get(tmdb_id_raw) or movie_images.get(tmdb_id) or {}
+            else:
+                images = show_images.get(tmdb_id_raw) or show_images.get(tmdb_id) or {}
+        
+        poster_url = images.get('poster') or addon_icon
+        backdrop_url = images.get('backdrop') or addon_fanart
         
         li = xbmcgui.ListItem(label=label)
         li.setArt({
             'icon': poster_url, 'thumb': poster_url,
-            'poster': poster_url, 'fanart': backdrop_url
+            'poster': poster_url, 'fanart': backdrop_url,
+            'banner': backdrop_url
         })
+        # NEW 2.4.4: Add context menu (bug #1 fix)
+        li.addContextMenuItems(_build_context_menu(
+            actual_type, imdb_id, tmdb_id, title, list_context=list_context))
         info_tag = li.getVideoInfoTag()
         info_tag.setTitle(title)
         info_tag.setYear(int(year) if year else 0)
         info_tag.setPlot(overview)
         
-        if media_type in ('movie', 'movies'):
+        if actual_type == 'movie':
             info_tag.setMediaType('movie')
             url = f"{sys.argv[0]}?action=play&title={quote_plus(title)}&year={year}&imdb_id={imdb_id}"
             li.setProperty('IsPlayable', 'true')
@@ -490,7 +692,13 @@ def _display_items(items, media_type='movie', key=None):
             url = f"{sys.argv[0]}?action=show_seasons&tmdb_id={tmdb_id}&title={quote_plus(title)}"
             xbmcplugin.addDirectoryItem(handle, url, li, True)
     
-    content = 'movies' if media_type in ('movie', 'movies') else 'tvshows'
+    # Pick content view based on what we actually have
+    if has_movie and not has_show:
+        content = 'movies'
+    elif has_show and not has_movie:
+        content = 'tvshows'
+    else:
+        content = 'videos'
     xbmcplugin.setContent(handle, content)
     xbmcplugin.endOfDirectory(handle, cacheToDisc=True)
 
@@ -611,13 +819,38 @@ def get_popular_lists():
 
 
 def get_list_items(user, list_slug):
-    """Get items from a specific Trakt list."""
-    headers = get_headers()
-    status, data = _http_get(f'https://api.trakt.tv/users/{user}/lists/{list_slug}/items?limit=50', headers=headers)
-    if status == 200 and data:
-        _display_items(data, 'movie')
-    else:
+    """Get items from a specific Trakt custom list.
+
+    v2.4.8 FIX: previous version had a hardcoded ``limit=50`` which clipped
+    larger lists alphabetically (users reported "only goes up to R"). We now
+    auto-paginate up to 20 pages of 100 items (~2000 max) and pass list
+    context so the Remove-from-list option shows up in the context menu.
+    """
+    if not user or not list_slug:
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+
+    headers = get_headers()
+    base_url = f'https://api.trakt.tv/users/{user}/lists/{list_slug}/items?extended=full'
+    progress = xbmcgui.DialogProgress()
+    progress.create('Trakt', 'Loading list items...')
+    data = _auto_paginate(base_url, headers, max_pages=20, limit=100)
+    progress.close()
+
+    # Retry once on auth failure (token may have just expired)
+    if not data and trakt_auth.is_authorized():
+        if trakt_auth.refresh_token():
+            data = _auto_paginate(base_url, get_headers(),
+                                  max_pages=20, limit=100)
+
+    if not data:
+        xbmcgui.Dialog().notification('Trakt', 'List is empty or could not load',
+                                      xbmcgui.NOTIFICATION_INFO)
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+
+    list_context = {'kind': 'custom', 'user': user, 'slug': list_slug}
+    _display_items(data, 'movie', list_context=list_context)
 
 
 def get_related(media_type, trakt_id):
@@ -642,15 +875,25 @@ def get_playback_progress():
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def rate_item(media_type, trakt_id):
-    """Rate a movie or show on Trakt."""
+def rate_item(media_type, trakt_id=None, imdb_id=None):
+    """Rate a movie or show on Trakt.
+
+    v2.4.4: Accept either trakt_id or imdb_id (context menu passes imdb_id).
+    """
     rating = xbmcgui.Dialog().select('Rate', [f'{i}/10' for i in range(1, 11)])
     if rating < 0:
         return
     rating += 1
     mt = 'movies' if media_type == 'movie' else 'shows'
+    if trakt_id:
+        ids = {'trakt': int(trakt_id)}
+    elif imdb_id:
+        ids = {'imdb': imdb_id}
+    else:
+        xbmcgui.Dialog().notification('Trakt', 'No item ID provided', xbmcgui.NOTIFICATION_ERROR)
+        return
     status, _ = _http_post(f'https://api.trakt.tv/sync/ratings', data={
-        mt: [{'ids': {'trakt': int(trakt_id)}, 'rating': rating}]
+        mt: [{'ids': ids, 'rating': rating}]
     })
     if status in (200, 201):
         xbmcgui.Dialog().notification('Trakt', f'Rated {rating}/10', xbmcgui.NOTIFICATION_INFO)
@@ -834,3 +1077,329 @@ def add_to_list(media_type, imdb_id):
         xbmcgui.Dialog().notification('Trakt', f'Added to {names[idx]}', xbmcgui.NOTIFICATION_INFO)
     else:
         xbmcgui.Dialog().notification('Trakt', 'Failed to add', xbmcgui.NOTIFICATION_ERROR)
+
+
+
+# ---------------------------------------------------------------------------
+# v2.4.8 - Remove actions
+# ---------------------------------------------------------------------------
+def _refresh_container():
+    """Force the current Kodi directory to reload after a Remove action."""
+    try:
+        xbmc.executebuiltin('Container.Refresh')
+    except Exception:
+        pass
+
+
+def _remove_payload(media_type, imdb_id):
+    mt = 'movies' if media_type == 'movie' else 'shows'
+    return mt, {mt: [{'ids': {'imdb': imdb_id}}]}
+
+
+def remove_from_watchlist(media_type, imdb_id):
+    """Remove an item from the Trakt watchlist."""
+    if not imdb_id:
+        return
+    if not xbmcgui.Dialog().yesno('Remove', 'Remove from your Trakt watchlist?'):
+        return
+    _, payload = _remove_payload(media_type, imdb_id)
+    status, _ = _http_post('https://api.trakt.tv/sync/watchlist/remove',
+                           data=payload)
+    if status in (200, 201):
+        xbmcgui.Dialog().notification('Trakt', 'Removed from watchlist',
+                                      xbmcgui.NOTIFICATION_INFO)
+        _refresh_container()
+    else:
+        xbmcgui.Dialog().notification('Trakt', f'Remove failed ({status})',
+                                      xbmcgui.NOTIFICATION_ERROR)
+
+
+def remove_from_collection(media_type, imdb_id):
+    """Remove an item from the Trakt collection."""
+    if not imdb_id:
+        return
+    if not xbmcgui.Dialog().yesno('Remove', 'Remove from your Trakt collection?'):
+        return
+    _, payload = _remove_payload(media_type, imdb_id)
+    status, _ = _http_post('https://api.trakt.tv/sync/collection/remove',
+                           data=payload)
+    if status in (200, 201):
+        xbmcgui.Dialog().notification('Trakt', 'Removed from collection',
+                                      xbmcgui.NOTIFICATION_INFO)
+        _refresh_container()
+    else:
+        xbmcgui.Dialog().notification('Trakt', f'Remove failed ({status})',
+                                      xbmcgui.NOTIFICATION_ERROR)
+
+
+def remove_from_history(media_type, imdb_id):
+    """Remove an item from watched history."""
+    if not imdb_id:
+        return
+    if not xbmcgui.Dialog().yesno('Remove', 'Remove from watched history?'):
+        return
+    _, payload = _remove_payload(media_type, imdb_id)
+    status, _ = _http_post('https://api.trakt.tv/sync/history/remove',
+                           data=payload)
+    if status in (200, 201):
+        xbmcgui.Dialog().notification('Trakt', 'Removed from history',
+                                      xbmcgui.NOTIFICATION_INFO)
+        _refresh_container()
+    else:
+        xbmcgui.Dialog().notification('Trakt', f'Remove failed ({status})',
+                                      xbmcgui.NOTIFICATION_ERROR)
+
+
+def remove_from_list(media_type, imdb_id, user, list_slug):
+    """Remove an item from a custom Trakt list."""
+    if not imdb_id or not list_slug:
+        xbmcgui.Dialog().notification('Trakt', 'Missing list info',
+                                      xbmcgui.NOTIFICATION_ERROR)
+        return
+    if not xbmcgui.Dialog().yesno('Remove', f'Remove from "{list_slug}"?'):
+        return
+    user = user or 'me'
+    _, payload = _remove_payload(media_type, imdb_id)
+    status, _ = _http_post(
+        f'https://api.trakt.tv/users/{user}/lists/{list_slug}/items/remove',
+        data=payload,
+    )
+    if status in (200, 201):
+        xbmcgui.Dialog().notification('Trakt', 'Removed from list',
+                                      xbmcgui.NOTIFICATION_INFO)
+        _refresh_container()
+    else:
+        xbmcgui.Dialog().notification('Trakt', f'Remove failed ({status})',
+                                      xbmcgui.NOTIFICATION_ERROR)
+
+
+# ---------------------------------------------------------------------------
+# v2.4.9 - Play Next Unwatched Episode
+# ---------------------------------------------------------------------------
+def play_next_unwatched(imdb_id, tmdb_id, title):
+    """Resolve the next unwatched episode of a show and play it.
+
+    Strategy:
+    1. Trakt: GET /shows/{imdb_id}/progress/watched -> next_episode
+       (auth required - it's per-user progress).
+    2. If unauthenticated or no next_episode, fall back to S01E01.
+    3. Hand off to player.play_episode() which already handles debrid + scrape.
+    """
+    if not imdb_id and not tmdb_id:
+        xbmcgui.Dialog().notification('Trakt Player', 'Missing show ID',
+                                      xbmcgui.NOTIFICATION_ERROR)
+        return
+
+    season, episode = 1, 1
+    resolved = False
+
+    if trakt_auth.is_authorized() and imdb_id:
+        headers = get_headers()
+        url = f'https://api.trakt.tv/shows/{imdb_id}/progress/watched?hidden=false&specials=false&count_specials=false'
+        status, data = _http_get(url, headers=headers)
+        if status == 401 and trakt_auth.refresh_token():
+            status, data = _http_get(url, headers=get_headers())
+        if status == 200 and isinstance(data, dict):
+            nxt = data.get('next_episode')
+            if isinstance(nxt, dict):
+                season = int(nxt.get('season') or 1)
+                episode = int(nxt.get('number') or 1)
+                resolved = True
+            elif data.get('completed', 0) and data.get('completed') == data.get('aired'):
+                xbmcgui.Dialog().notification(
+                    'Trakt', f'You\u2019re all caught up on {title}!',
+                    xbmcgui.NOTIFICATION_INFO)
+                return
+
+    if not resolved:
+        xbmc.log(f'play_next_unwatched: falling back to S01E01 for {title}',
+                 xbmc.LOGINFO)
+
+    xbmcgui.Dialog().notification(
+        'Trakt Player', f'Next: S{season:02d}E{episode:02d}',
+        xbmcgui.NOTIFICATION_INFO, 2500)
+
+    from . import player
+    player.play_episode(title, str(season), str(episode), imdb_id or '', tmdb_id or '')
+
+
+# ---------------------------------------------------------------------------
+# v2.4.9 - Curated Lists (IMDb / Letterboxd / Rotten Tomatoes)
+# ---------------------------------------------------------------------------
+# Each preset has: a label, a Trakt /search/list query, and a hardcoded
+# fallback (user/slug) in case search misses. The resolver caches the chosen
+# list in addon settings for 7 days so opening the menu is instant.
+import time
+
+CURATED_LISTS = [
+    {
+        'key': 'imdb_movies',
+        'label': '[B]IMDb Top 250 Movies[/B]',
+        'query': 'imdb top 250',
+        'fallback_user': 'zzonde',
+        'fallback_slug': 'imdb-top-250',
+        'media_type': 'movie',
+    },
+    {
+        'key': 'imdb_shows',
+        'label': '[B]IMDb Top 250 TV Shows[/B]',
+        'query': 'imdb top 250 tv shows',
+        'fallback_user': 'tubeman',
+        'fallback_slug': 'imdb-top-250-tv-shows',
+        'media_type': 'show',
+    },
+    {
+        'key': 'letterboxd_movies',
+        'label': '[B]Letterboxd Top 250[/B]',
+        'query': 'letterboxd top 250',
+        'fallback_user': 'jcheng',
+        'fallback_slug': 'letterboxd-top-250',
+        'media_type': 'movie',
+    },
+    {
+        'key': 'rt_movies',
+        'label': '[B]Rotten Tomatoes Best Movies[/B]',
+        'query': 'rotten tomatoes best',
+        'fallback_user': 'lish408',
+        'fallback_slug': 'rotten-tomatoes-best-of-2024',
+        'media_type': 'movie',
+    },
+    {
+        'key': 'rt_shows',
+        'label': '[B]Rotten Tomatoes Certified Fresh TV[/B]',
+        'query': 'certified fresh tv',
+        'fallback_user': 'tbotcotw',
+        'fallback_slug': 'certified-fresh-tv',
+        'media_type': 'show',
+    },
+]
+
+_CURATED_CACHE_TTL = 7 * 24 * 3600  # 7 days
+_CURATED_CACHE_FILE = xbmcvfs.translatePath(
+    f'special://profile/addon_data/{ADDON_ID}/curated_cache.json')
+
+
+def _curated_cache_load():
+    try:
+        if xbmcvfs.exists(_CURATED_CACHE_FILE):
+            with xbmcvfs.File(_CURATED_CACHE_FILE) as f:
+                return json.loads(f.read() or '{}')
+    except Exception:
+        pass
+    return {}
+
+
+def _curated_cache_save(cache):
+    try:
+        d = xbmcvfs.translatePath(f'special://profile/addon_data/{ADDON_ID}/')
+        if not xbmcvfs.exists(d):
+            xbmcvfs.mkdirs(d)
+        with xbmcvfs.File(_CURATED_CACHE_FILE, 'w') as f:
+            f.write(json.dumps(cache))
+    except Exception as e:
+        xbmc.log(f'curated cache save failed: {e}', xbmc.LOGWARNING)
+
+
+def _curated_cache_get(key):
+    entry = _curated_cache_load().get(key)
+    if not entry:
+        return None
+    if time.time() - entry.get('ts', 0) > _CURATED_CACHE_TTL:
+        return None
+    return entry.get('user'), entry.get('slug')
+
+
+def _curated_cache_set(key, user, slug):
+    cache = _curated_cache_load()
+    cache[key] = {'ts': time.time(), 'user': user, 'slug': slug}
+    _curated_cache_save(cache)
+
+
+def _resolve_curated(preset):
+    """Pick the best Trakt list matching ``preset['query']`` and return (user, slug)."""
+    cached = _curated_cache_get(preset['key'])
+    if cached:
+        return cached
+
+    headers = get_headers()
+    query = quote_plus(preset['query'])
+    url = f'https://api.trakt.tv/search/list?query={query}&limit=20&extended=full'
+    status, data = _http_get(url, headers=headers)
+    best = None
+    if status == 200 and isinstance(data, list):
+        for hit in data:
+            lst = hit.get('list') if isinstance(hit, dict) else None
+            if not isinstance(lst, dict):
+                continue
+            name = (lst.get('name') or '').lower()
+            ic = lst.get('item_count') or 0
+            likes = lst.get('likes') or 0
+            # Prefer lists that actually mention the query terms in the name
+            terms = preset['query'].lower().split()
+            score = sum(1 for t in terms if t in name) * 1000 + ic + likes
+            if ic < 20:
+                continue  # ignore tiny lists
+            if best is None or score > best[0]:
+                user = (lst.get('user') or {}).get('username') or ''
+                slug = (lst.get('ids') or {}).get('slug') or ''
+                if user and slug:
+                    best = (score, user, slug)
+    if best:
+        _curated_cache_set(preset['key'], best[1], best[2])
+        return best[1], best[2]
+
+    # Fallback: hardcoded slug
+    return preset['fallback_user'], preset['fallback_slug']
+
+
+def show_curated_lists():
+    """Render the Curated Lists menu (IMDb / Letterboxd / RT)."""
+    handle = int(sys.argv[1])
+    addon_icon = get_addon_icon()
+    addon_fanart = get_addon_fanart()
+
+    for preset in CURATED_LISTS:
+        li = xbmcgui.ListItem(label=preset['label'])
+        li.setArt({'icon': addon_icon, 'thumb': addon_icon, 'fanart': addon_fanart})
+        url = (f"{sys.argv[0]}?action=open_curated&key={preset['key']}")
+        xbmcplugin.addDirectoryItem(handle, url, li, True)
+
+    # Manual cache refresh entry
+    li = xbmcgui.ListItem(label='[COLOR grey]Refresh Curated Lists Cache[/COLOR]')
+    li.setArt({'icon': addon_icon, 'thumb': addon_icon, 'fanart': addon_fanart})
+    xbmcplugin.addDirectoryItem(
+        handle, f"{sys.argv[0]}?action=refresh_curated", li, False)
+
+    xbmcplugin.endOfDirectory(handle, cacheToDisc=True)
+
+
+def open_curated_list(key):
+    """Resolve a preset key to a Trakt list and render its items."""
+    preset = next((p for p in CURATED_LISTS if p['key'] == key), None)
+    if not preset:
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+    user, slug = _resolve_curated(preset)
+    if not user or not slug:
+        xbmcgui.Dialog().notification('Trakt', 'Could not find list',
+                                      xbmcgui.NOTIFICATION_ERROR)
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+    # Reuse the regular custom-list loader (auto-paginates + remove menu)
+    get_list_items(user, slug)
+
+
+def refresh_curated_cache():
+    """Wipe the cached (user, slug) for all presets so next open re-searches."""
+    try:
+        if xbmcvfs.exists(_CURATED_CACHE_FILE):
+            xbmcvfs.delete(_CURATED_CACHE_FILE)
+        xbmcgui.Dialog().notification(
+            'Trakt Player', 'Curated lists cache cleared',
+            xbmcgui.NOTIFICATION_INFO)
+    except Exception:
+        xbmcgui.Dialog().notification(
+            'Trakt Player', 'Cache clear failed',
+            xbmcgui.NOTIFICATION_ERROR)
+    xbmc.executebuiltin('Container.Refresh')
+
