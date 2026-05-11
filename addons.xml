@@ -579,7 +579,7 @@ v1.8.1: Stability fixes</news>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.10" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.11" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.zeusresolvers" version="1.0.0" optional="true"/>
@@ -644,6 +644,28 @@ v1.0.8 - Initial Release
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <news>
+v2.4.11 (2026)
+- TORBOX: Major rewrite of the Torbox integration
+  * Smart file selection: largest video file is now picked from torrents,
+    usenet packs and web downloads, with automatic filtering of samples
+    and other non-content extras
+  * Cached lookup: single-hash and batched cached checks using the official
+    list format, with automatic chunking up to 100 hashes per call
+  * Magnet add now uses seed=3 and disables zip packaging for direct play
+  * Robust polling for torrent / usenet / webdl readiness, with retries
+- TORBOX: Cloud browser expanded
+  * My Torrents (with delete, file listing and direct play)
+  * My Usenet Downloads (browse, play, delete)
+  * My Web Downloads (browse, play, delete)
+- TORBOX: Add-from-anywhere actions in the Torbox cloud menu
+  * Add Web Download (paste a URL, Torbox fetches it)
+  * Add Usenet NZB URL (paste an NZB link, optional name)
+  * Add Magnet (paste a magnet, file ready to stream when complete)
+- TORBOX: Per-file streaming endpoints for torrents / usenet / web,
+  using the Torbox token query parameter as required by the API
+- INTERNAL: Shared video extension and extras filter for cleaner code,
+  size formatter unified across the cloud browser
+
 v2.4.3 (2026)
 - FIXED: Wrong posters in mixed Trakt lists (watchlists, popular lists,
   custom lists, history, friend activity, continue watching).
