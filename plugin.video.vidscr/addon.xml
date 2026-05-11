@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.vidscr"
+       name="Vidscr"
+       version="1.4.18"
+       provider-name="Zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.requests" version="2.22.0"/>
+        <import addon="script.module.resolveurl" version="5.1.0" optional="true"/>
+        <import addon="inputstream.adaptive" version="2.0.0" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <reuselanguageinvoker>true</reuselanguageinvoker>
+        <summary lang="en_GB">Vidscr — Movies &amp; TV via TMDB + Vidsrc (by Zeus768)</summary>
+        <description lang="en_GB">A clean, simple Movies &amp; TV Shows addon. Browse new releases, Oscar nominees, genres, actors, networks and a 7-day premiering calendar. Posters and metadata from TMDB; streams sourced from vidsrcme.ru (with optional vidsrc.xyz / 2embed secondary), built-in resolvers, server sub-picker, per-show quality memory, Trakt scrobbling, watched/resume indicators and 10-second stall auto-fallback.</description>
+        <platform>all</platform>
+        <license>GPL-3.0-or-later</license>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+        <news>v1.4.18 — TRAKT / SIMKL / BINGEBASE TRACKING FIX. Three independent bugs were silently disabling tracking and watched-marking on Kodi 21+: (1) When a title resolved to only ONE stream candidate (common), playback bypassed the VidscrPlayer monitor entirely — so NO scrobble start/pause/stop events fired, NO watched ticks were recorded, and Continue Watching never populated. The pipeline now ALWAYS routes through the player monitor (Kodi still starts via setResolvedUrl; the monitor observes existing playback without restarting it). (2) The SIMKL scrobble_start was never wired into the monitor's start handler — only Trakt + Bingebase fired. SIMKL now scrobbles start/pause/stop alongside the other trackers. (3) Trakt/SIMKL _post returned an empty dict {} (falsy) for endpoints that respond with 200/204 No Content — so bool(add_to_list(...)) evaluated to False even when the API call succeeded, and the context-menu "+ Add to list…" / "− Remove from list…" always showed "Failed". _post now returns True for successful empty bodies. ALSO: KDB.record_progress (local watched store) is now isolated from the tracker try-blocks so a Trakt/SIMKL network blip on stop no longer skips the local watched tick. ALSO: 401 responses on Trakt now wipe the stale token and surface a clear "session expired — please re-authenticate" notification instead of failing silently forever. ALSO: every Trakt/SIMKL non-2xx response now logs the response body (truncated to 300 chars) for diagnosis.</news>
+        <news>v1.4.17 — NEW SOURCE: Vidnest multi-backend (vidnest.fun). Reverse-engineered the site's encrypted JSON envelope and now queries SEVEN independent providers in PARALLEL — MoviesAPI, PurStream, AllMovies, CatFlix, HollyMovieHD, FlixHQ and VidLink — merging every working HLS / MP4 stream into the source list. NEW: live per-source progress dialog. Toggle: Settings -> Sources -> "Enable Vidnest multi-backend" (on by default).</news>
+        <news>v1.4.16 — DEPENDENCY FIX: embedded pure-Python AES-256-GCM and ChaCha20-Poly1305 (resources/lib/purecrypto.py) — verified against NIST AES-GCM and RFC 7539 test vectors. Stigstream now works on every Kodi install regardless of which crypto modules are present.</news>
+        <news>v1.4.14 — NEW SOURCE: Stigstream (stigstream.ru). Reverse-engineered the site's doubly-encrypted JSON API (outer AES-256-GCM, inner ChaCha20-Poly1305, both keyed via HKDF-SHA512 from a 32-byte master extracted from the public JS bundle), then queries 8 of its regional servers IN PARALLEL and merges every working stream into the source list.</news>
+        <news>v1.4.8 — FIX (Trakt / SIMKL / Bingebase OAuth): token is now persisted to BOTH the addon settings (primary) and the local JSON file (backup). HTTP 409 ("code already used") is now handled. New "Show token status" debug actions confirm exactly what is stored.</news>
+        <news>v1.1.0 — Trakt scrobbling, watched / resume indicators, 10s stall auto-fallback. Secondary source toggle, server sub-picker, per-show quality memory.</news>
+    </extension>
+</addon>
