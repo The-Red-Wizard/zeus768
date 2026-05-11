@@ -480,7 +480,7 @@ v2.7.0 (2026-01-10)
     </extension>
 </addon>
 
-<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.3" provider-name="Zeus768">
+<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.4" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.1"/>
@@ -493,7 +493,7 @@ v2.7.0 (2026-01-10)
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">The Golden Eagle of Entertainment</summary>
-        <description lang="en">Tinklepad v1.9.2 - Premiumize Pairing &amp; New Categories
+        <description lang="en">Tinklepad v1.9.4 - Torbox Debrid Support
 
 CUSTOM XML WINDOWS:
 - Beautiful golden-themed search progress window
@@ -515,13 +515,21 @@ FALLBACK DIALOGS:
 - Works on all Kodi versions/skins
 
 DEBRID SUPPORT:
-- Real-Debrid, AllDebrid, Premiumize
+- Real-Debrid, AllDebrid, Premiumize, Torbox
 - Magnet/Torrent cloud downloading
 
 By Zeus768</description>
         <platform>all</platform>
         <license>GPL-3.0</license>
-        <news>v1.9.3 - Movie Networks &amp; Per-Network Icons:
+        <news>v1.9.4 - Torbox Debrid Support:
+- NEW: Integrated Torbox as a debrid provider
+- NEW: Torbox API key authorization flow (simple one-step setup from torbox.app)
+- NEW: Torbox category in addon settings alongside RD/AD/PM
+- NEW: Tools menu shows Torbox status (authorized user / not authorized)
+- NEW: Unified resolver tries Torbox for magnet/torrent sources
+- NEW: Torbox status appears in source list debrid status bar (TB:user)
+
+v1.9.3 - Movie Networks &amp; Per-Network Icons:
 - NEW: Networks menu added to Movies (uses TMDB watch-providers, defaults to US region)
 - NEW: TV Networks now show per-network placeholder icons (Netflix, Prime, Disney+, HBO, etc.)
 - NEW: 'watch_region' setting honored for movie streaming filters
