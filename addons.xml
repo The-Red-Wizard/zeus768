@@ -226,11 +226,12 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.9.20" name="SALTS - Stream All The Sources" provider-name="tknorris, zeus768">
+<addon id="plugin.video.salts" version="2.9.22" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
         <import addon="script.module.beautifulsoup4" version="4.9.0"/>
+        <import addon="script.module.salts_scrapers" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -290,12 +291,28 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
 
 Revived and massively expanded by zeus768 for Kodi 21 Omega and above.
 Original author: tknorris
-Thank you to Mister X and Zaxxon709</description>
+Thank you to Mister X and Zaxxon709
+
+NOTE (v2.9.21): All scrapers now live in a separate Kodi script module,
+"Salts Scrapers - Scrape All The Sources" (script.module.salts_scrapers),
+authored by Zeus768. It is auto-installed as a dependency.</description>
         <platform>all</platform>
         <license>GPL-3.0-only</license>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.9.21 (2026-02) - SCRAPERS EXTRACTED INTO SEPARATE MODULE
+- All 120+ scrapers have been moved out of plugin.video.salts and into
+  their own standalone Kodi script module: script.module.salts_scrapers
+  ("Salts Scrapers - Scrape All The Sources", author Zeus768).
+- plugin.video.salts no longer ships the scrapers/ folder; it now imports
+  every source from the new module. Behaviour is identical for end users -
+  Kodi auto-installs script.module.salts_scrapers as a dependency.
+- Benefit: scrapers can now be updated, forked and re-used independently
+  from the SALTS front-end addon.
+- No settings changes - all per-scraper toggles continue to live in SALTS
+  Settings exactly as before.
+
 v2.9.13 (2026) - ZEUS RESOLVERS + PLANETSCRAPERS + TORRENTS REVIVED
 - Added: zeus_resolvers - built-in non-debrid hoster regex resolvers
   (Streamtape, DoodStream/d000d, DDownload/ddl.to, MixDrop, OK.ru,
