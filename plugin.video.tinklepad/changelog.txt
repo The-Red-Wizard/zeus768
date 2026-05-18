@@ -1,0 +1,186 @@
+v1.9.10 (2026-01-15)
+====================
+- FIX (Torbox): Magnet/torrent links now resolve correctly. Three blocking bugs were patched in resources/lib/debrid.py:
+  • All /torrents/mylist, /webdl/mylist and /usenet/mylist polls now send `bypass_cache=true`. Torbox otherwise serves a ~600s stale cache, so the freshly-added torrent never reported as ready within the 90s polling window — the script silently returned None on every magnet
+  • Added a /torrents/checkcached pre-flight using the BTIH hash extracted from the magnet URI. Uncached torrents (which can take hours to download on Torbox's side) now fail fast instead of looping, letting other debrids or scraper fallbacks pick up the slack
+  • Extended the "ready" detection to include `download_state` values `cached`, `completed`, `uploading` and `seeding`, matching Torbox's documented states
+  • Handle DUPLICATE_ITEM responses from /torrents/createtorrent by re-using the existing torrent_id instead of bailing out
+  • seed parameter changed from "3" (no-seed) to "1" (auto), matching the Torbox default
+- No changes to RD / AD / PM resolvers
+- Bumped to v1.9.10
+
+
+v1.9.9 (2026-05-14)
+====================
+- FIX (critical): The shipped `resources/skins/Default/media/common/black.png` and `common/white.png` were corrupted 70-byte stub files that Kodi silently failed to decode — which is the real reason the v1.9.7 "opaque black background" still showed fanart bleed-through (the texture never loaded, so the rectangle drew nothing)
+- FIX: Regenerated both as proper 8×8 fully opaque RGBA PNGs. The Source Link Search and Select Source dialogs now display a truly solid black background covering the entire screen, exactly as the v1.9.7 XML intended
+- No code changes from v1.9.8; SALTS Scrapers integration is retained
+
+
+v1.9.8 (2026-05-14)
+====================
+- NEW: SALTS Scrapers integration (script.module.salts_scrapers) — 120+ sources covering free streams, Stremio addons, torrent sites, anime, asian drama, international content and aggregators
+- NEW: Tinklepad now auto-detects the SALTS Scrapers module via xbmcaddon.Addon('script.module.salts_scrapers') and via direct `from scrapers import get_all_scrapers` fallback
+- NEW: Setting toggle added under Settings → External Scrapers → "Enable SALTS Scrapers (120+ sources)" (OFF by default — turn it on if you want maximum coverage at the cost of a longer search)
+- NEW: Each SALTS scraper's own is_enabled() flag is respected, so per-scraper toggles inside the SALTS module still work
+- NEW: SALTS results are labelled [SALTS] in the source list, classified as direct/torrent/debrid automatically, and run through Tinklepad's existing unified resolver (RD / AD / PM / Torbox) for torrent and DDL hosts
+- NOTE: Install script.module.salts_scrapers from https://github.com/Zeus768/zeus768 ("Install from zip") before enabling the toggle
+
+
+v1.9.7 (2026-05-14)
+====================
+- FIX: Source Link Search ("link finder") dialog is now fully readable — replaced semi-transparent overlay with a fully OPAQUE black background so the fanart no longer bleeds through and washes out the text
+- FIX: Select Source ("link picker") dialog also rewritten with the same fully opaque black background
+- FIX: Status labels ("Pending…", "Searching…", "Found: N links") no longer overlap with the progress bars on any provider row (FREE STREAMS, DDL SOURCES, TORRENT SOURCES, PREMIUM HOSTS)
+- FIX: Movie title / meta line (rating | runtime | year) / genres under the poster no longer collide with each other
+- FIX: "Source Link Search" subtitle no longer sits on top of the TINKLEPAD logo
+- FIX: Overall progress percentage moved to the right of the bar instead of being drawn on top of it
+- FIX: "5 Sources Found" counter no longer overlaps the "Searching: <provider>" line
+- NEW: Both dialogs now use the requested layout — POSTER on the LEFT with the PLOT / synopsis on the RIGHT, all on a solid black panel framed with the gold accent
+- NEW: Plot text is now shown in BOTH the link search progress window AND the source selection window (uses TMDB plot)
+- NEW: Outer gold-bordered frame on both dialogs for a cleaner, more deliberate look
+- NEW: Legacy select_link.xml fallback dialog also rewritten to match the new opaque-black layout
+
+
+v1.9.6 (2026-05-13)
+====================
+- NEW: Torbox Usenet (NZB) resolution — Tinklepad now feeds NZB links to Torbox via /usenet/createusenetdownload, polls /usenet/mylist, and returns the playable URL from /usenet/requestdl
+- NEW: Unified resolver auto-detects NZB links (extension .nzb, /getnzb/ paths, or nzb= query) and routes to the Usenet flow; falls back to webdl if Torbox rejects the URL as non-NZB
+- Longer poll window for Usenet (~5 minutes) since NZB downloads can take longer than torrent/webdl cached pulls
+
+
+v1.9.5 (2026-05-13)
+====================
+- FIX: Torbox authorization silently failing on Kodi 21 — switched dialog input call to positional args (the ``defaultt`` kwarg was unreliable on some skins/forks)
+- FIX: Torbox API keys pasted with trailing whitespace are now trimmed automatically
+- FIX: Clear, user-facing error messages on 401/403/network errors during Torbox auth (instead of a silent "Auth failed" toast)
+- FIX: Torbox magnet add now uses multipart/form-data which is more reliable across edge proxies & some routers
+- FIX: Torbox torrent polling extended from 60s to ~90s and properly inspects download_present / download_finished / cached
+- NEW: Torbox Web Download support — DDL hosts (Nitroflare, Rapidgator, etc.) can now be resolved through Torbox via /webdl/createwebdownload
+- NEW: Unified resolver now tries Torbox for any URL, not just magnets/torrents
+- NOTE: This addon does NOT ship with a Torbox API key — bring your own from https://torbox.app/settings
+
+
+v1.9.4 (2026-02-XX)
+====================
+- NEW: Integrated Torbox as a debrid provider
+- NEW: Torbox API-key authorization flow (one-step setup from torbox.app/settings)
+- NEW: Dedicated "Torbox" category in addon settings alongside Real-Debrid / AllDebrid / Premiumize
+- NEW: Tools menu now displays Torbox status line (authorized user or "Not Authorized")
+- NEW: Unified debrid resolver tries Torbox for magnet/torrent sources
+- NEW: Torbox status appears in the source list debrid bar (e.g. "TB:user@email")
+- Torbox auto-handles cached magnets and selects the largest video file in the torrent
+- Token storage uses the same on-disk JSON cache used by RD/AD/PM (Kodi 21 Omega safe)
+
+v1.9.3 (2026-01-XX)
+====================
+- NEW: Networks menu for Movies (TMDB watch-providers: Netflix, Prime, Disney+, Hulu, Apple TV+, HBO Max, Paramount+, Peacock, Showtime, AMC+)
+- NEW: TV Networks list now uses per-network placeholder icons (net_netflix.png, net_disney.png, net_hbo.png, etc.)
+- NEW: Reads 'watch_region' from addon settings (defaults to US) for movie streaming filter
+- list_content honors with_watch_providers + watch_region with watch_monetization_types=flatrate
+
+v1.9.2 (2026-01-XX)
+====================
+- FIXED: Premiumize "Get Code" device pairing flow restored
+   * Uses ResolveURL community client_id (522962560) on /token endpoint
+   * Shows code and verification URL (premiumize.me/device), polls until authorized
+- NEW: Authorization dialog lets user choose: Device pairing (recommended) OR API key
+- NEW: pm_resolve / account info now use Bearer token (with apikey fallback)
+- NEW: 5 additional Movies categories: In Theatres, Upcoming, Top Rated, Documentaries, Anime
+- NEW: 5 additional TV Shows categories: Airing Today, On The Air, Top Rated, Documentaries, Anime
+- NEW: Matching golden-eagle themed icons generated for all new categories
+- TMDB list_content supports now_playing / upcoming / top_rated / airing_today / on_the_air endpoints
+- TMDB list_content honors with_keywords/with_origin_country filters for niche genres
+
+v1.9.1 (2026-04-18)
+====================
+- FIXED: Premiumize authorization - replaced broken device code flow with API key method
+- Users now enter their API key directly from premiumize.me/account
+- Key is verified against Premiumize API before saving
+- Removed dependency on invalid OAuth client_id
+
+v1.9.0 (2026-04-12)
+====================
+- NEW: Added EZTV.re scraper for TV shows
+- NEW: Added RARBG mirrors/clones support
+- NEW: Added Nyaa.si scraper for anime content
+- NEW: Added LimeTorrents scraper
+- NEW: Added Torlock scraper
+- NEW: Added Comet scraper (Stremio-style torrent indexer)
+- NEW: CocoScrapers integration - auto-detects if script.module.cocoscrapers is installed
+- NEW: GearsScrapers integration - auto-detects if script.module.gearsscrapers is installed
+- External scraper packs work alongside built-in scrapers
+- Each scraper can be individually enabled/disabled in settings
+- New "External Scrapers" settings category
+- Improved torrent provider organization in settings
+
+v1.8.6 (2026-04-12)
+====================
+- FIX: Submenus now open correctly (Movies, TV Shows, Little Eagles, etc)
+- FIX: Resolved "UnboundLocalError: local variable 'tmdb' referenced before assignment"
+- Removed redundant local import in clear_cache that was causing variable scope conflict
+- All menu navigation now works properly
+
+v1.6.2 (2026-01-XX)
+====================
+- NEW: Movie/TV show synopsis displayed in search dialog
+- Shows title (year) and plot summary while searching for sources
+- Fetches metadata from TMDB for enhanced display
+- Real-time source count updates during search
+- Background progress option with fanart visibility
+
+v1.6.1 (2026-01-XX)
+====================
+- FIX: Hoster unavailable fallback for Nitroflare/Rapidgator
+- When Real-Debrid direct unrestrict fails with hoster_unavailable error,
+  the addon now automatically tries the remote download feature
+- Added progress dialog showing download status in RD cloud
+- Handles RD error codes 23, 24, 25 (hoster_unavailable, hoster_not_free, etc.)
+
+v1.1.0 (2026-01-XX)
+====================
+- MAJOR: Added Real-Debrid, AllDebrid, Premiumize support with proper OAuth/PIN authorization
+- MAJOR: Fixed debrid authorization persistence - tokens now stored correctly in Kodi settings
+- Added new DDL providers:
+  * Tinklepad Provider (http://162.245.85.19)
+  * 1DDL.org
+  * DDLValley.me
+- Added free streaming providers:
+  * JustStream (https://juststream.capital/films-en-stream)
+  * OpenloadMovies (https://www.openloadmovies.ro)
+- Added support for premium hosts via debrid:
+  * NitroFlare
+  * RapidGator
+  * ClicknUpload
+  * UsersDrive
+  * And many more
+- Enhanced TMDB metadata:
+  * Full cast and crew information
+  * Director and writer credits
+  * Runtime, ratings, vote counts
+  * Network information for TV shows
+  * Season and episode counts
+- Added Debrid Accounts menu for easy authorization management
+- Added provider enable/disable toggles
+- Added background service for automatic token refresh
+- Improved source selection dialog with color coding
+- Fixed fanart display issues
+- Various bug fixes and performance improvements
+
+v1.0.2
+======
+- Initial Exodus-style restoration
+- Basic TMDB integration
+- ResolveURL support
+- Golden Eagle themed interface
+
+v1.0.1
+======
+- Fixed label issues
+- Added actors section
+- Improved menu structure
+
+v1.0.0
+======
+- Initial release
+- Basic functionality

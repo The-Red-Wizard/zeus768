@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tinklepad Select Link (legacy fallback) - v1.9.7 readability fix -->
+<!-- Solid black background; poster + plot left, source list right -->
+<window type="dialog">
+    <defaultcontrol always="true">1000</defaultcontrol>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx>
+        <posy>0</posy>
+    </coordinates>
+    <controls>
+
+        <!-- Solid black background -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture>common/black.png</texture>
+        </control>
+
+        <!-- Gold frame -->
+        <control type="image">
+            <posx>30</posx>
+            <posy>30</posy>
+            <width>1860</width>
+            <height>1020</height>
+            <texture border="2" colordiffuse="FFFFD700">common/white.png</texture>
+        </control>
+        <control type="image">
+            <posx>33</posx>
+            <posy>33</posy>
+            <width>1854</width>
+            <height>1014</height>
+            <texture>common/black.png</texture>
+        </control>
+
+        <!-- Header -->
+        <control type="label">
+            <posx>0</posx>
+            <posy>50</posy>
+            <width>1920</width>
+            <height>60</height>
+            <label>[B]TINKLEPAD - SELECT SOURCE[/B]</label>
+            <font>font30</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>center</align>
+            <aligny>center</aligny>
+        </control>
+
+        <control type="image">
+            <posx>60</posx>
+            <posy>120</posy>
+            <width>1800</width>
+            <height>2</height>
+            <texture colordiffuse="55FFD700">common/white.png</texture>
+        </control>
+
+        <!-- Poster + plot left side -->
+        <control type="image">
+            <posx>57</posx>
+            <posy>147</posy>
+            <width>406</width>
+            <height>606</height>
+            <texture colordiffuse="FFFFD700">common/white.png</texture>
+        </control>
+        <control type="image">
+            <posx>60</posx>
+            <posy>150</posy>
+            <width>400</width>
+            <height>600</height>
+            <texture>$INFO[Window.Property(poster)]</texture>
+            <aspectratio>scale</aspectratio>
+        </control>
+
+        <control type="label">
+            <posx>60</posx>
+            <posy>770</posy>
+            <width>400</width>
+            <height>26</height>
+            <label>[B]PLOT[/B]</label>
+            <font>font12</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>left</align>
+        </control>
+        <control type="textbox">
+            <posx>60</posx>
+            <posy>798</posy>
+            <width>400</width>
+            <height>200</height>
+            <font>font12</font>
+            <textcolor>FFEEEEEE</textcolor>
+            <align>left</align>
+            <label>$INFO[Window.Property(plot)]</label>
+        </control>
+
+        <!-- Source list right side -->
+        <control type="image">
+            <posx>500</posx>
+            <posy>150</posy>
+            <width>1360</width>
+            <height>800</height>
+            <texture colordiffuse="55000000">common/black.png</texture>
+            <bordertexture border="2" colordiffuse="44FFD700">common/white.png</bordertexture>
+        </control>
+
+        <control type="list" id="1000">
+            <posx>510</posx>
+            <posy>160</posy>
+            <width>1340</width>
+            <height>780</height>
+            <itemlayout height="60">
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>2</posy>
+                    <width>1320</width>
+                    <height>56</height>
+                    <texture colordiffuse="22FFFFFF">common/white.png</texture>
+                </control>
+                <control type="label">
+                    <posx>20</posx>
+                    <posy>0</posy>
+                    <width>1280</width>
+                    <height>60</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font13</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                </control>
+            </itemlayout>
+            <focusedlayout height="60">
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>2</posy>
+                    <width>1320</width>
+                    <height>56</height>
+                    <texture colordiffuse="55FFD700">common/white.png</texture>
+                    <bordertexture border="2" colordiffuse="FFFFD700">common/white.png</bordertexture>
+                </control>
+                <control type="label">
+                    <posx>20</posx>
+                    <posy>0</posy>
+                    <width>1280</width>
+                    <height>60</height>
+                    <label>$INFO[ListItem.Label]</label>
+                    <font>font13</font>
+                    <textcolor>FFFFD700</textcolor>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                </control>
+            </focusedlayout>
+        </control>
+
+        <!-- Footer hint -->
+        <control type="label">
+            <posx>60</posx>
+            <posy>1010</posy>
+            <width>1800</width>
+            <height>24</height>
+            <label>SELECT to play  •  BACK to cancel</label>
+            <font>font10</font>
+            <textcolor>FF777777</textcolor>
+            <align>center</align>
+        </control>
+    </controls>
+</window>

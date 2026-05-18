@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tinklepad Source Search - Golden Eagle Theme (v1.9.7 readability fix) -->
+<!-- Full opaque black background; poster left, plot right; no overlapping labels -->
+<window type="dialog" id="1100">
+    <defaultcontrol always="true">550</defaultcontrol>
+    <zorder>1</zorder>
+    <animation effect="fade" time="300">WindowOpen</animation>
+    <animation effect="fade" time="200">WindowClose</animation>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx>
+        <posy>0</posy>
+    </coordinates>
+    <controls>
+
+        <!-- ====== FULL OPAQUE BLACK BACKGROUND (covers entire screen) ====== -->
+        <control type="image">
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>1920</width>
+            <height>1080</height>
+            <texture>common/black.png</texture>
+        </control>
+
+        <!-- ====== Outer Gold Frame ====== -->
+        <control type="image">
+            <posx>30</posx>
+            <posy>30</posy>
+            <width>1860</width>
+            <height>1020</height>
+            <texture border="2" colordiffuse="FFFFD700">common/white.png</texture>
+        </control>
+        <control type="image">
+            <posx>33</posx>
+            <posy>33</posy>
+            <width>1854</width>
+            <height>1014</height>
+            <texture>common/black.png</texture>
+        </control>
+
+        <!-- ====== TOP HEADER BAR ====== -->
+        <control type="label">
+            <posx>60</posx>
+            <posy>55</posy>
+            <width>500</width>
+            <height>55</height>
+            <label>[B]TINKLEPAD[/B]</label>
+            <font>font37</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+        </control>
+        <control type="label">
+            <posx>60</posx>
+            <posy>110</posy>
+            <width>500</width>
+            <height>26</height>
+            <label>SOURCE LINK SEARCH</label>
+            <font>font12</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <align>left</align>
+        </control>
+
+        <!-- Centred status header -->
+        <control type="label" id="501">
+            <posx>560</posx>
+            <posy>70</posy>
+            <width>1300</width>
+            <height>50</height>
+            <label>[B]SEARCHING SOURCES FOR LINKS...[/B]</label>
+            <font>font30</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>center</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Header underline -->
+        <control type="image">
+            <posx>60</posx>
+            <posy>150</posy>
+            <width>1800</width>
+            <height>2</height>
+            <texture colordiffuse="55FFD700">common/white.png</texture>
+        </control>
+
+        <!-- ====== LEFT SIDE - POSTER + META ====== -->
+        <!-- Poster border -->
+        <control type="image">
+            <posx>57</posx>
+            <posy>177</posy>
+            <width>406</width>
+            <height>606</height>
+            <texture colordiffuse="FFFFD700">common/white.png</texture>
+        </control>
+        <control type="image" id="200">
+            <posx>60</posx>
+            <posy>180</posy>
+            <width>400</width>
+            <height>600</height>
+            <texture>$INFO[Window.Property(poster)]</texture>
+            <aspectratio>scale</aspectratio>
+        </control>
+
+        <!-- Title under poster -->
+        <control type="label" id="300">
+            <posx>60</posx>
+            <posy>800</posy>
+            <width>400</width>
+            <height>60</height>
+            <label>$INFO[Window.Property(title)]</label>
+            <font>font14</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <align>center</align>
+            <aligny>top</aligny>
+            <wrapmultiline>true</wrapmultiline>
+        </control>
+
+        <!-- Meta line (rating | runtime | year) -->
+        <control type="label" id="301">
+            <posx>60</posx>
+            <posy>870</posy>
+            <width>400</width>
+            <height>30</height>
+            <label>$INFO[Window.Property(meta_line)]</label>
+            <font>font12</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>center</align>
+        </control>
+
+        <!-- Genres -->
+        <control type="label" id="302">
+            <posx>60</posx>
+            <posy>905</posy>
+            <width>400</width>
+            <height>30</height>
+            <label>$INFO[Window.Property(genres)]</label>
+            <font>font10</font>
+            <textcolor>FFAAAAAA</textcolor>
+            <align>center</align>
+        </control>
+
+        <!-- ====== RIGHT SIDE - PLOT + PROVIDERS ====== -->
+
+        <!-- Plot heading -->
+        <control type="label">
+            <posx>500</posx>
+            <posy>180</posy>
+            <width>1360</width>
+            <height>28</height>
+            <label>[B]PLOT[/B]</label>
+            <font>font12</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>left</align>
+        </control>
+
+        <!-- Plot body -->
+        <control type="textbox" id="303">
+            <posx>500</posx>
+            <posy>212</posy>
+            <width>1360</width>
+            <height>200</height>
+            <font>font13</font>
+            <textcolor>FFEEEEEE</textcolor>
+            <align>left</align>
+            <label>$INFO[Window.Property(plot)]</label>
+        </control>
+
+        <!-- Plot divider -->
+        <control type="image">
+            <posx>500</posx>
+            <posy>425</posy>
+            <width>1360</width>
+            <height>2</height>
+            <texture colordiffuse="33FFD700">common/white.png</texture>
+        </control>
+
+        <!-- ===== Providers heading ===== -->
+        <control type="label">
+            <posx>500</posx>
+            <posy>445</posy>
+            <width>1360</width>
+            <height>28</height>
+            <label>[B]PROVIDERS[/B]</label>
+            <font>font12</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>left</align>
+        </control>
+
+        <!-- Provider Row 1: FREE STREAMS -->
+        <control type="group">
+            <posx>500</posx>
+            <posy>485</posy>
+
+            <control type="label">
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>[B]FREE STREAMS[/B]</label>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <align>left</align>
+            </control>
+
+            <!-- Progress Bar Background -->
+            <control type="image">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>700</width>
+                <height>14</height>
+                <texture colordiffuse="33FFFFFF">common/white.png</texture>
+            </control>
+            <!-- Progress Bar Fill -->
+            <control type="image" id="610">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>525</width>
+                <height>14</height>
+                <texture colordiffuse="FFFFD700">common/white.png</texture>
+                <animation effect="slide" start="-525,0" end="0,0" time="1200">WindowOpen</animation>
+            </control>
+
+            <!-- Status Label -->
+            <control type="label" id="611">
+                <posx>1040</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(free_status)]</label>
+                <font>font12</font>
+                <textcolor>FF00FF00</textcolor>
+                <align>right</align>
+            </control>
+        </control>
+
+        <!-- Provider Row 2: DDL SOURCES -->
+        <control type="group">
+            <posx>500</posx>
+            <posy>545</posy>
+
+            <control type="label">
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>[B]DDL SOURCES[/B]</label>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <align>left</align>
+            </control>
+
+            <control type="image">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>700</width>
+                <height>14</height>
+                <texture colordiffuse="33FFFFFF">common/white.png</texture>
+            </control>
+            <control type="image" id="620">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>385</width>
+                <height>14</height>
+                <texture colordiffuse="FFFFD700">common/white.png</texture>
+                <animation effect="slide" start="-385,0" end="0,0" time="1500" delay="200">WindowOpen</animation>
+            </control>
+
+            <control type="label" id="621">
+                <posx>1040</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(ddl_status)]</label>
+                <font>font12</font>
+                <textcolor>FFFFD700</textcolor>
+                <align>right</align>
+            </control>
+        </control>
+
+        <!-- Provider Row 3: TORRENT SOURCES -->
+        <control type="group">
+            <posx>500</posx>
+            <posy>605</posy>
+
+            <control type="label">
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>[B]TORRENT SOURCES[/B]</label>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <align>left</align>
+            </control>
+
+            <control type="image">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>700</width>
+                <height>14</height>
+                <texture colordiffuse="33FFFFFF">common/white.png</texture>
+            </control>
+            <control type="image" id="630">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>262</width>
+                <height>14</height>
+                <texture colordiffuse="FFFFD700">common/white.png</texture>
+                <animation effect="slide" start="-262,0" end="0,0" time="1800" delay="400">WindowOpen</animation>
+            </control>
+
+            <control type="label" id="631">
+                <posx>1040</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(torrent_status)]</label>
+                <font>font12</font>
+                <textcolor>FFFF8800</textcolor>
+                <align>right</align>
+            </control>
+        </control>
+
+        <!-- Provider Row 4: PREMIUM HOSTS -->
+        <control type="group">
+            <posx>500</posx>
+            <posy>665</posy>
+
+            <control type="label">
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>[B]PREMIUM HOSTS[/B]</label>
+                <font>font13</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <align>left</align>
+            </control>
+
+            <control type="image">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>700</width>
+                <height>14</height>
+                <texture colordiffuse="33FFFFFF">common/white.png</texture>
+            </control>
+            <control type="image" id="640">
+                <posx>320</posx>
+                <posy>8</posy>
+                <width>175</width>
+                <height>14</height>
+                <texture colordiffuse="FFFFD700">common/white.png</texture>
+                <animation effect="slide" start="-175,0" end="0,0" time="2100" delay="600">WindowOpen</animation>
+            </control>
+
+            <control type="label" id="641">
+                <posx>1040</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>30</height>
+                <label>$INFO[Window.Property(premium_status)]</label>
+                <font>font12</font>
+                <textcolor>FFAAAAAA</textcolor>
+                <align>right</align>
+            </control>
+        </control>
+
+        <!-- Section divider -->
+        <control type="image">
+            <posx>500</posx>
+            <posy>730</posy>
+            <width>1360</width>
+            <height>2</height>
+            <texture colordiffuse="33FFD700">common/white.png</texture>
+        </control>
+
+        <!-- ====== OVERALL PROGRESS ====== -->
+        <!-- Current provider being searched -->
+        <control type="label" id="502">
+            <posx>500</posx>
+            <posy>750</posy>
+            <width>900</width>
+            <height>32</height>
+            <label>$INFO[Window.Property(current_provider)]</label>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <align>left</align>
+            <aligny>center</aligny>
+            <scroll>true</scroll>
+        </control>
+
+        <!-- Sources Found counter -->
+        <control type="label" id="503">
+            <posx>1410</posx>
+            <posy>750</posy>
+            <width>450</width>
+            <height>32</height>
+            <label>$INFO[Window.Property(sources_found)]</label>
+            <font>font14</font>
+            <textcolor>FF00FF00</textcolor>
+            <align>right</align>
+            <aligny>center</aligny>
+        </control>
+
+        <!-- Main progress bar bg -->
+        <control type="image">
+            <posx>500</posx>
+            <posy>800</posy>
+            <width>1300</width>
+            <height>18</height>
+            <texture colordiffuse="33FFFFFF">common/white.png</texture>
+        </control>
+        <!-- Main progress bar fill -->
+        <control type="image" id="504">
+            <posx>500</posx>
+            <posy>800</posy>
+            <width>0</width>
+            <height>18</height>
+            <texture colordiffuse="FFFFD700">common/white.png</texture>
+        </control>
+        <!-- Percent label (placed to the RIGHT of bar, not overlapping) -->
+        <control type="label" id="505">
+            <posx>1810</posx>
+            <posy>798</posy>
+            <width>60</width>
+            <height>22</height>
+            <label>$INFO[Window.Property(progress_percent)]</label>
+            <font>font12</font>
+            <textcolor>FFFFD700</textcolor>
+            <align>left</align>
+        </control>
+
+        <!-- ====== BOTTOM BUTTONS ====== -->
+        <control type="group">
+            <posx>0</posx>
+            <posy>910</posy>
+
+            <!-- Cancel -->
+            <control type="button" id="550">
+                <posx>620</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>70</height>
+                <label>[B]CANCEL[/B]</label>
+                <font>font14</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>FF000000</focusedcolor>
+                <texturefocus colordiffuse="FFFFD700">common/white.png</texturefocus>
+                <texturenofocus colordiffuse="33FFFFFF">common/white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <onright>551</onright>
+            </control>
+
+            <!-- View Links -->
+            <control type="button" id="551">
+                <posx>1000</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>70</height>
+                <label>[B]VIEW LINKS[/B]</label>
+                <font>font14</font>
+                <textcolor>FF000000</textcolor>
+                <focusedcolor>FF000000</focusedcolor>
+                <texturefocus colordiffuse="FFFFD700">common/white.png</texturefocus>
+                <texturenofocus colordiffuse="AAFFD700">common/white.png</texturenofocus>
+                <align>center</align>
+                <aligny>center</aligny>
+                <onleft>550</onleft>
+            </control>
+        </control>
+
+        <!-- Hidden button -->
+        <control type="button" id="9999">
+            <posx>-100</posx>
+            <posy>-100</posy>
+            <width>1</width>
+            <height>1</height>
+            <visible>false</visible>
+        </control>
+    </controls>
+</window>
