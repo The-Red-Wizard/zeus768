@@ -605,7 +605,7 @@ v1.0.0 (2026-02)
     </extension>
 </addon>
 
-<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.4" provider-name="Zeus768">
+<addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.10" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.requests" version="2.25.1"/>
@@ -646,7 +646,46 @@ DEBRID SUPPORT:
 By Zeus768</description>
         <platform>all</platform>
         <license>GPL-3.0</license>
-        <news>v1.9.4 - Torbox Debrid Support:
+        <news>v1.9.9 - Critical Background PNG Fix:
+- FIX: The shipped common/black.png and common/white.png were corrupted 70-byte stubs that Kodi was silently rejecting, which is why every dialog still showed fanart bleed-through even after v1.9.7's layout rewrite
+- FIX: Regenerated both PNGs as proper opaque 8x8 RGBA textures — the Source Link Search and Select Source dialogs now have a fully solid black background as intended
+- No other changes from v1.9.8 (SALTS Scrapers integration retained)
+
+v1.9.8 - SALTS Scrapers Integration:
+- NEW: Tinklepad now supports SALTS Scrapers (script.module.salts_scrapers, 120+ sources: free streams, Stremio addons, torrent sites, anime, asian drama, international, aggregators)
+- NEW: Auto-detects script.module.salts_scrapers when installed alongside Tinklepad
+- NEW: Toggle "Enable SALTS Scrapers (120+ sources)" under Settings -> External Scrapers (OFF by default to avoid slowing first-run searches)
+- Each SALTS scraper still honours its own is_enabled() flag, so individual scrapers can be tuned inside the SALTS module if it exposes settings
+- Results are tagged [SALTS] in the source list and routed through the existing debrid resolver for torrent / DDL links and played directly for free streams
+- Install: download script.module.salts_scrapers from https://github.com/Zeus768/zeus768 and "Install from zip"
+
+v1.9.7 - Link Picker/Finder Readability Fix:
+- FIX: Source Link Search dialog now has a fully opaque black background so all text is readable (no more fanart bleed-through)
+- FIX: Select Link dialog now has a fully opaque black background
+- FIX: Status labels (Pending / Searching / Found: N links) no longer overlap with progress bars
+- FIX: Title, meta line, genres under poster no longer overlap
+- FIX: Overall progress percent moved out from under the bar
+- NEW: Poster is now shown on the LEFT with plot/synopsis on the RIGHT (both on solid black panel)
+- NEW: Plot text is shown in BOTH the search progress window AND the source selection window
+- NEW: Outer gold frame and unified Golden-Eagle theme across both dialogs
+- NEW: Cleaner provider rows with bar + status label spaced apart
+- Legacy select_link.xml fallback also rewritten with same readable layout
+
+v1.9.6 - Torbox Usenet:
+- NEW: Torbox Usenet (NZB) resolution - .nzb links and indexer URLs are now sent through /usenet/createusenetdownload and resolved via /usenet/requestdl
+- NEW: Unified resolver auto-detects NZB links (extension .nzb, /getnzb/ paths, nzb= query) and routes to the Usenet flow with a graceful webdl fallback
+- Longer Usenet polling window (~5 min) suitable for non-cached posts
+
+v1.9.5 - Torbox Fixes:
+- FIX: Torbox authorization no longer silently fails on Kodi 21 (use positional input dialog args; trim whitespace from pasted API keys)
+- FIX: Clearer error messages on 401/403/network errors during Torbox auth
+- FIX: Torbox magnet add now uses multipart/form-data (more reliable across edge proxies)
+- FIX: Torbox torrent polling extended (45 iterations) and properly inspects download_present/download_finished/cached
+- NEW: Torbox Web Download support - DDL hosts (Nitroflare, Rapidgator, etc.) now resolved through Torbox via /webdl
+- NEW: Unified resolver tries Torbox for any URL, not just magnets
+- NOTE: Bring your own Torbox API key - get it from https://torbox.app/settings
+
+v1.9.4 - Torbox Debrid Support:
 - NEW: Integrated Torbox as a debrid provider
 - NEW: Torbox API key authorization flow (simple one-step setup from torbox.app)
 - NEW: Torbox category in addon settings alongside RD/AD/PM
