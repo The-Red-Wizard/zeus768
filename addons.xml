@@ -235,7 +235,7 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.9.23" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
+<addon id="plugin.video.salts" version="2.9.24" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -310,6 +310,17 @@ authored by Zeus768. It is auto-installed as a dependency.</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.9.24 (2026-05) - TORBOX DEVICE CODE + QR
+- Authorize TorBox now lets you pick how to sign in: "Device Code"
+  (recommended - uses TorBox's official /user/auth/device endpoints,
+  shows a code and optional QR you can scan with your phone) or
+  "API Key" (paste from torbox.app/settings, unchanged).
+- The device-code flow shows a cancellable progress dialog while it
+  polls TorBox, supports the server's interval/expiry, and validates
+  the returned token before saving.
+- Existing TorBox status menu (Plan / Email / Expiry) is preserved -
+  pick "Re-authorize" to switch methods.
+
 v2.9.21 (2026-02) - SCRAPERS EXTRACTED INTO SEPARATE MODULE
 - All 120+ scrapers have been moved out of plugin.video.salts and into
   their own standalone Kodi script module: script.module.salts_scrapers
@@ -505,7 +516,6 @@ v2.7.0 (2026-01-10)
         </assets>
     </extension>
 </addon>
-
     <addon id="script.module.salts_scrapers" name="Salts Scrapers - Scrape All The Sources" version="1.0.3" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
