@@ -743,7 +743,7 @@ v1.8.1: Stability fixes</news>
     <extension point="xbmc.service" library="service.py" start="startup"/>
 </addon>
 
-<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.11" provider-name="zeus768">
+<addon id="plugin.video.trakt_player" name="Trakt Player" version="2.4.12" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.zeusresolvers" version="1.0.0" optional="true"/>
@@ -808,6 +808,25 @@ v1.0.8 - Initial Release
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <news>
+v2.4.12 (2026)
+- TORBOX: Link resolution overhaul
+  * Cache-first check before adding a magnet (instant cached torrents)
+  * Polling now uses 'download_present', 'cached' and progress signals
+    so streams start the moment Torbox can serve them
+  * Robust duplicate-add handling: existing torrent_id is recovered from
+    /torrents/mylist by info-hash if createtorrent doesn't return it
+  * Background progress dialog for uncached torrents (up to 3min wait)
+  * Web download (unrestrict) flow uses the same readiness logic
+- TORBOX: Dual auth - device code OR manual API key
+  * Settings now expose an "Enter API Key Manually" action
+  * Pasted API key is validated against /user/me before saving
+  * tb_api_key setting is editable; takes priority over file token
+- NEW: Gofile.io anonymous re-upload
+  * After resolving a Torbox magnet, optionally re-upload the stream to
+    Gofile and get a shareable link
+  * Right-click any Torbox cloud torrent file -> "Upload to Gofile"
+  * Last Gofile link is saved in settings and copyable via action
+
 v2.4.11 (2026)
 - TORBOX: Major rewrite of the Torbox integration
   * Smart file selection: largest video file is now picked from torrents,
@@ -895,7 +914,6 @@ v2.1.5 (2026)
         </assets>
     </extension>
 </addon>
-
 <addon id="plugin.video.vidscr"
        name="Vidscr"
        version="1.4.17"
