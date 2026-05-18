@@ -20,7 +20,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.genesis" name="Genesis" version="1.5.8" provider-name="zeus768">
+<addon id="plugin.video.genesis" name="Genesis" version="1.5.9" provider-name="zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.genesis.skins" version="1.1.0"/>
@@ -92,6 +92,15 @@ Created by zeus768.</description>
         <platform>all</platform>
         <license>GPL-2.0-only</license>
         <news>
+v1.5.9 (2026)
+- TorBox: dual authorization - choose at link time:
+  * Get Code (device-code flow via tor.box/link)
+  * Manual API key entry
+- TorBox: fixed cloud-browser playback (requestdl now sends
+  the required `token` query parameter)
+- Settings: "Authorize TorBox (Code or API Key)" replaces the
+  old API-key-only label
+
 v1.5.8 (2026)
 - TorBox: rewritten provider integration
   - Manual API key authorization (paste key from torbox.app/settings)
