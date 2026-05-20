@@ -295,12 +295,12 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.9.24" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
+<addon id="plugin.video.salts" version="2.9.31" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
         <import addon="script.module.beautifulsoup4" version="4.9.0"/>
-        <import addon="script.module.salts_scrapers" version="1.0.0"/>
+        <import addon="script.module.salts_scrapers" version="1.0.4"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -353,7 +353,7 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
 - Returning Shows (New Seasons)
 - AI-Powered Natural Language Search
 - Trakt Integration with Scrobbling
-- Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox
+- Debrid Services: Real-Debrid, Premiumize, AllDebrid, TorBox, Put.io
 - Jackett/Prowlarr Integration
 - Pre-scrape on Hover
 - Source Caching
@@ -370,6 +370,99 @@ authored by Zeus768. It is auto-installed as a dependency.</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.9.31 (2026-01) - QR DIALOG FULL-SCREEN BACKDROP
+- Fix: black backdrop on the TorBox auth dialog and Buy Me a Beer
+  (Ko-fi) dialog now truly fills the whole screen on every skin
+  (was leaving the underlying view visible around the edges).
+
+v2.9.30 (2026-01) - QR DIALOG FIXES
+- TorBox auth dialog now renders on a solid-black PNG backdrop
+  (no more transparency / poster bleed-through behind the QR).
+- Buy Me a Beer (Ko-fi) is now a compact split-pane dialog with
+  the QR on the right and text on the left, on a black backdrop.
+- Bundled art/black.png + art/white.png for reliable rendering
+  across all skins.
+
+v2.9.29 (2026-01) - PUT.IO DEBRID SERVICE
+- Added: Put.io as a 5th debrid backend, alongside Real-Debrid,
+  Premiumize, AllDebrid and TorBox. Magnet links submitted from the
+  source dialog can now resolve to a direct streaming URL via your
+  Put.io account.
+    * New settings under Settings -> Debrid Services -> Put.io:
+        - "Enable Put.io"
+        - "OAuth Token" (paste from https://app.put.io/oauth ->
+          Settings -> API -> Create application -> copy OAuth Token)
+        - "Keep resolved torrents in Put.io cloud" (default OFF -
+          the transfer + file are deleted from your Put.io drive
+          once playback has started, mirroring the TorBox behaviour)
+        - "Auto-play uncached torrents on Put.io" (default ON) +
+          "Max wait for uncached torrents (minutes)" slider (1..30,
+          default 10) - if the magnet isn't cached on Put.io, SALTS
+          shows a background progress dialog with percent / speed /
+          seeds while Put.io fetches the torrent, then plays it.
+    * New "Put.io" entry in the SALTS Debrid Services menu - opens
+      a status dialog (User / Email / Plan expiry / disk usage) once
+      authorised, with Re-authorize / Revoke actions.
+    * Note: Put.io does NOT expose an "instant cache" lookup API,
+      so cached torrents are NOT pre-flagged in the source list the
+      way RD/PM/AD/TorBox cached torrents are. Resolve still works
+      for both cached (instant) and uncached (waits) torrents.
+
+v2.9.27 (2026-01) - KNABEN AGGREGATOR + RD/AD PERFORMANCE
+- Added: Knaben scraper (https://api.knaben.org). Single API call
+  surfaces results from 1337x, TPB, RuTracker, Nyaa, TGx and
+  ~30 other public trackers, sorted by seeders. No setup or key
+  required. Setting: Aggregators -> "Enable Knaben" (default ON).
+- Real-Debrid: resolve now picks the file matching the requested
+  S/E for TV shows (instead of the largest file, which sometimes
+  fetched a wrong/extra episode) and prefers that link first when
+  unrestricting. Cuts wrong-episode playback to near zero on packs.
+- AllDebrid: resolve rewritten - flattens nested folder responses
+  properly, picks S/E match for TV (else largest video), fixed a
+  crash when AD returned files with size=None, removed a stray
+  debug log line. Both RD and AD now accept the same
+  (title, season, episode) kwargs as TorBox.
+
+v2.9.26 (2026-01) - DEAD TORRENT FILTER + QR DIALOG REWRITE
+- Added: dead-torrent filter. Torrents with 0 (or fewer than
+  "Minimum seeders") seeders are dropped from the source list
+  before you ever click them, so the debrid resolver doesn't
+  hang trying to fetch a magnet nobody is sharing. Cached
+  debrid torrents are exempt (the debrid server already has the
+  files - seeders don't matter). Direct / free hoster sources
+  are exempt (no seed count).
+    * New setting: Advanced -> "Filter dead torrents (no/low
+      seeders)" (default ON).
+    * New setting: Advanced -> "Minimum seeders" slider
+      (range 0..50, default 1).
+- Fixed: TorBox device-code QR code displayed a blank/dim screen
+  because the old implementation layered an OK dialog on top of
+  Kodi's full-screen picture viewer, hiding the QR. Replaced with
+  a custom split-pane dialog: SMALLER QR on the LEFT, full
+  instructions (URL + code) on the RIGHT, both visible at the
+  same time. Press OK or Back to close.
+
+v2.9.25 (2026-01) - STRICT TITLE MATCH + TORBOX UNCACHED RESOLVE
+- Fixed: source list sometimes showed torrents belonging to a different
+  movie or a different episode (e.g. "Saw X" appearing under "Saw",
+  S02E03 appearing under S02E01). Scraper results whose filename does
+  not match the requested title/year (movie) or S/E (TV) are now
+  dropped before the dialog is shown. Direct-stream / free sources
+  are not filtered (they're scraped per-TMDB id and already accurate).
+    * New setting: Advanced -> "Strict title match" (default ON).
+    * If the filter removes every result the un-filtered list is shown
+      as a safety net so exotic titles still surface sources.
+- Fixed: TorBox could not play uncached torrents — the resolver bailed
+  after ~6s because uncached items aren't ready instantly. TorBox can
+  download uncached torrents server-side; SALTS now optionally waits
+  for that with a real progress dialog (download %, speed, seeds).
+    * New setting: TorBox -> "Resolve uncached torrents on TorBox
+      (waits for download)" (default OFF — keeps the old fast-fail
+      behaviour for users on Free plans).
+    * New setting: TorBox -> "Max wait for uncached torrents (minutes)"
+      (1..30, default 5). User can press Cancel at any time; on cancel
+      the torrent is removed from the TorBox cloud.
+
 v2.9.24 (2026-05) - TORBOX DEVICE CODE + QR
 - Authorize TorBox now lets you pick how to sign in: "Device Code"
   (recommended - uses TorBox's official /user/auth/device endpoints,
