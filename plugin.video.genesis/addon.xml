@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.genesis" name="Genesis" version="1.7.8" provider-name="zeus768">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.genesis.skins" version="1.1.0"/>
+        <import addon="script.module.resolveurl" optional="true"/>
+        <import addon="script.module.zeusresolvers" version="1.0.0" optional="true"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup"/>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Genesis - Cloud, Local Media, Free Links, Anime, Debrid, Plex &amp; Emby</summary>
+        <description lang="en">Genesis v1.5.0 - Cloud Browser, Local Scanner, Plex &amp; Emby Integration!
+
+NEW in v1.5.0 - PLEX &amp; EMBY SERVERS:
+- Plex Media Server Integration
+  - Browse your Plex libraries (Movies, TV Shows)
+  - On Deck (Continue Watching)
+  - Recently Added content
+  - Search Plex library
+  - Direct playback from Plex server
+- Emby Media Server Integration
+  - Browse your Emby libraries
+  - Continue Watching / Next Up
+  - Recently Added content
+  - Search Emby library
+  - Direct playback from Emby server
+- TMDb Artwork for Local Media
+  - Automatically fetches posters/fanart for local files
+  - Uses TMDb API for accurate artwork matching
+- Menu categories only visible when server is enabled
+- New themed icons for Plex and Emby
+
+Previous Features v1.4.0 - CLOUD &amp; LOCAL MEDIA:
+- Cloud Browser section (appears when debrid configured)
+  - View Downloaded files from all debrid services
+  - Monitor Currently Downloading items
+  - Browse Cached/History items
+  - Supports: Real-Debrid, AllDebrid, Premiumize, TorBox
+- Local Media Scanner
+  - Scan configured folders for movies and TV shows
+  - Auto-detects movie titles, years, quality
+  - Groups TV shows by series and season
+  - Configure folders in Tools menu
+- Free Links Integration
+  - Scrapes thechains24.com for free streaming links
+  - Integrated into Source Picker (★ symbol)
+  - Uses ResolveURL for link resolution
+  - Filter by "Free Links Only" in source picker
+
+Previous features:
+- Complete Anime Movies section with submenus
+- Complete Anime TV Shows section
+- Networks &amp; Studios browser
+- Manga section
+- 7 Anime Torrent Sites
+- Enhanced X-Ray with Multi-Source Ratings
+- Full Cast &amp; Crew info with profile images
+- Enhanced Source Picker with filters
+- Click-and-Play via 5 Debrid services
+- Scrapes 10+ torrent sites for sources
+- TMDB + OMDB metadata integration
+- Trakt scrobbling and lists support
+- Live Channels with EPG
+
+Created by zeus768.</description>
+        <disclaimer lang="en">This addon does not host any content.</disclaimer>
+        <language>en</language>
+        <platform>all</platform>
+        <license>GPL-2.0-only</license>
+        <news>
+v1.7.0 (2026)
+- NEW: Premiumize Hub - full feature surface for Premiumize.me
+  * Account Dashboard (status, expiry, days left, space used,
+    fair-use, customer ID)
+  * Cloud Files browser with breadcrumbs, parent navigation, sort
+    (folders first), per-item context menu: rename, delete, move,
+    item details, ZIP download, copy direct URL
+  * "+ New Folder" inline action in every folder view
+  * Recursive "Recent Files" (item/listall) showing every file in
+    your cloud, sorted by created_at
+  * Transfers view with live progress bar, status, size and per
+    transfer context menu (open folder, play file, delete)
+  * "+ Add Transfer" submenu - Magnet / Torrent URL / DDL / NZB
+  * Clear Finished Transfers (one click)
+  * Supported Hosters list (services/list) with CACHE / QUEUE /
+    Fair-Use multipliers and aliases
+  * ZIP Generate - bundle items / folders into a downloadable .zip
+  * Generic send_to_pm() helper available for other modules
+- NEW: "Send to Premiumize Cloud" mode in Source Picker (push any
+  magnet / URL from a source list into your cloud, multi-send)
+- UI: Cloud main menu now exposes a top-level ">> Premiumize Hub"
+  entry when Premiumize is linked
+- Fix: dead "cloud_pm_files" and "cloud_pm_transfers" menu items
+  now route to the new hub (previously they did nothing)
+- Fix: multi-file Premiumize torrents now resolvable via the new
+  item_details / transfer_directdl flow
+
+v1.6.0 (2026)
+- NEW: TorBox Hub - full feature surface
+  * Account Dashboard (plan, expiry, totals, server, customer ID)
+  * Torrents browser with live progress bar, ETA, speed,
+    seeds/peers and a context menu for pause / resume /
+    reannounce / stop seeding / queue top &amp; bottom / delete
+  * Multi-file picker when playing torrents from the cloud
+  * Built-in TorBox Search with the same source picker UI
+  * Usenet downloads - add NZB URL, browse, play, control
+  * Web Downloads (DDL) - add hoster URL, browse, play, control
+  * Add Magnet / Hash quick action
+- NEW: "Source Not Cached" confirmation dialog
+  * Clear warning when picking an uncached source
+  * One-click "Queue to TorBox Cloud" so users can come back later
+  * Configurable via Settings - Playback - Warn before playing
+    UNCACHED sources
+- UI: source picker now shows explicit [CACHED] / [TORRENT] /
+  [FREE] badges and a legend header so users can no longer
+  miss why a click "did nothing"
+- Fix: Cloud Browser TorBox playback (requestdl now sends the
+  required ?token= and picks the largest video file for multi-
+  file torrents)
+- Fix: Cloud Browser TorBox delete now uses the correct JSON
+  body shape (no more silent failures)
+- Cloud Browser: TorBox listings now expose download speed, ETA,
+  seeds/peers and ratio fields
+
+v1.5.9 (2026)
+- TorBox: dual authorization - choose at link time:
+  * Get Code (device-code flow via tor.box/link)
+  * Manual API key entry
+- TorBox: fixed cloud-browser playback (requestdl now sends
+  the required `token` query parameter)
+- Settings: "Authorize TorBox (Code or API Key)" replaces the
+  old API-key-only label
+
+v1.5.8 (2026)
+- TorBox: rewritten provider integration
+  - Manual API key authorization (paste key from torbox.app/settings)
+  - Smart magnet resolver with file selection, season/episode
+    matching, sample/extras filtering and m2ts safety check
+  - check_cache uses POST /torrents/checkcached with hash list
+  - Direct download links via /torrents/requestdl
+  - Cloud browser supports both Torrents and Usenet folders
+  - Account info shows plan name (Free/Essential/Pro/Standard)
+- Settings: TorBox auth simplified (single "Set TorBox API Key" action)
+
+v1.5.0 (2026)
+- NEW: Plex Media Server Integration
+  - Browse libraries, On Deck, Recently Added
+  - Search and direct playback
+- NEW: Emby Media Server Integration
+  - Browse libraries, Continue Watching, Next Up
+  - Search and direct playback
+- NEW: TMDb Artwork for Local Media
+  - Auto-fetches posters/fanart for local files
+- Menu categories only visible when enabled
+- New Plex and Emby icons for all themes
+
+v1.4.0 (2026)
+- NEW: Cloud Browser for debrid services
+- NEW: Local Media Scanner
+- NEW: Free Links Integration
+
+v1.3.1 (2026)
+- Renamed to Genesis
+- Added script.genesis.skins as dependency
+- Updated icon and fanart
+
+v1.3.0 (2026)
+- NEW: Full Anime &amp; Manga Category
+- NEW: 7 Anime Torrent Sites
+- NEW: Jikan API integration
+
+v1.2.0 (2026)
+- Enhanced X-Ray with Multi-Source Ratings
+- Enhanced Source Picker with filters
+
+v1.1.0 (2026)
+- Live Channels Section with EPG
+- Latest Releases (In Cinemas Now)
+- X-Ray Metadata
+
+v1.0.0 (2026)
+- Initial release
+        </news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

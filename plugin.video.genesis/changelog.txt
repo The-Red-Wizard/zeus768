@@ -1,0 +1,293 @@
+v1.7.8 - QR BACKDROP HOTFIX (REAL PNG)
+==================================================
+- TorBox link dialog now ships bundled tb_black.png + tb_white.png
+  under resources/media/ and uses them as the QR backdrop instead
+  of relying on ControlImage('', colorDiffuse=...) which is a no-op
+  on several Kodi builds (the colorDiffuse only tints an existing
+  texture - with no texture, nothing renders, so the QR was sitting
+  on whatever was behind the dialog).
+- The QR now has a clearly visible solid BLACK 20-px frame and an
+  inner WHITE quiet-zone, both painted from real PNG textures, so
+  the QR is high-contrast and scannable on every skin.
+- Also switched the dim full-screen layer and the left card to use
+  the same bundled black PNG, fixing the same root cause for those
+  layers.
+
+
+
+v1.7.7 - SALTS-STYLE STREMIO + QR BACKDROP FIX
+==================================================
+- TorBox link dialog: the QR now sits on a SOLID BLACK backdrop
+  (with an inner white quiet-zone) instead of a single white
+  layer that some skins rendered as transparent. The QR is now
+  scannable against any background.
+- Torrentio + Comet rewritten to mirror script.module.salts_scrapers
+  v1.0.4:
+    * Added Cloudflare-friendly browser headers (sec-ch-ua family).
+    * Added fallback mirrors per source (knightcrawler for Torrentio,
+      elfhosted / cf / fast-stream for Comet) - we no longer give up
+      on the first 403 / empty response.
+    * Silent gzip decoding for gateways that ignore Accept-Encoding.
+    * Salts-style display titles: "[Torrentio 4K] filename..." so
+      results are visually consistent with the salts addon.
+    * fileIdx propagated into the magnet (correct file picked on
+      multi-episode packs by all debrids).
+    * Direct-URL streams (debrid-resolved / free providers) are now
+      kept alongside torrent rows instead of being silently dropped.
+
+
+
+v1.7.6 - BENTO DIALOG REFERENCE-GRID FIX
+==================================================
+- Bento Link Searcher rebuilt against Kodi's actual WindowDialog
+  reference grid (1280x720 - same one used by the rest of Genesis'
+  custom dialogs) instead of 1920x1080. The previous build was
+  drawing tiles at literal x=450..1470 in a 1280-wide canvas, so
+  the grid bled off-screen to the right and the title appeared
+  off-center. Card is now correctly centered at x=176, w=928.
+- Tighter tile sizing (200x120) so all 12 scrapers (incl.
+  Torrentio + Comet) fit a 3x4 grid inside the centered card.
+- Font sizes/padding tuned for the smaller tile footprint.
+
+
+v1.7.5 - TORRENTIO + COMET RELIABILITY
+==================================================
+SCRAPER FIXES:
+- Torrentio and Comet now use customisable base URLs (Settings >
+  Scrapers > "Torrentio Base URL" / "Comet Base URL"). Paste your
+  own /configure URL from torrentio.strem.fun/configure or
+  comet.elfhosted.com/configure to get results when the public
+  hosts are Cloudflare-blocked in your region or when you want
+  results pre-filtered for your Real-Debrid / TorBox / AllDebrid.
+- The setting accepts any of these formats - the addon strips
+  trailing /configure, /manifest.json, or /stream/... for you:
+    https://torrentio.strem.fun/sort=quality|qualityfilter=cam/configure
+    https://torrentio.strem.fun/.../manifest.json
+    https://comet.elfhosted.com
+- Dead Torrentio mirror (torrentio.elfhosted.com) removed.
+- Stremio requests now send browser-like headers (Accept, Referer,
+  Origin) to dodge trivial Cloudflare 403 challenges.
+- Detailed scraper logging: kodi.log now shows the exact URL hit
+  per mirror plus "0 streams" / "blocked" diagnostics so you can
+  tell if it is a network block vs an empty result.
+
+
+v1.7.4 - DIALOG POLISH (LINK SEARCHER + TORBOX QR)
+==================================================
+FIXES:
+- Link Searcher (Bento) dialog is now a centered, properly sized
+  card. All 12 scraper tiles (incl. Torrentio and Comet) fit on
+  screen at every Kodi resolution - no more bottom row cut-off.
+- Tile dimensions tuned (240x140) with tighter padding so labels
+  stay inside their cards on 720p/1080p TVs.
+- TorBox link dialog is no longer transparent - the dim layer
+  and inner card are now fully opaque, so movie poster artwork
+  no longer bleeds through the QR/instructions area.
+- QR code PNG is now requested with explicit white background
+  and black foreground for guaranteed opacity on all skins.
+
+
+v1.7.3 - TORRENTIO + COMET + BENTO LINK SEARCHER
+==================================================
+NEW SCRAPERS:
+- Torrentio (Stremio addon) - uses IMDb ID with fallbacks across
+  torrentio.strem.fun and torrentio.elfhosted.com mirrors.
+- Comet via comet.feels.legal (and comet.elfhosted.com fallback) -
+  Stremio's fastest torrent/debrid search aggregator.
+- Both honour Series S/E lookups out of the box.
+
+NEW UI:
+- Bento-style Link Searcher dialog - shows a live grid card for
+  every enabled scraper while results stream in:
+    * Pending (grey) -> Searching (amber) -> Found N + Top Quality
+      (green) -> No results (red)
+    * Live footer with totals + elapsed time
+    * Cancel anytime, or hit Continue to jump to the source picker
+- Toggle under Settings > Playback > Link Searcher UI.
+
+SETTINGS:
+- enable_torrentio, enable_comet (default ON)
+- bento_search (default ON)
+
+INTERNAL:
+- search_all() now accepts imdb_id / media_type / season / episode
+  and an optional progress_cb so any future UI can hook in.
+- Stremio results are seeded directly with hashes and trackers from
+  the addon's sources[] array.
+
+
+v1.7.2 - TORBOX DEVICE-CODE + LEFT-ANCHORED QR DIALOG
+======================================================
+FIXED:
+- TorBox "Get Code" now uses the verified device-code OAuth flow
+  (/v1/api/user/auth/device/start + /token) - same flow Salts uses.
+  The v1.7.1 build incorrectly assumed the endpoint did not exist.
+
+NEW:
+- Built a custom left-anchored linking window:
+    * QR code (320x320) pinned to the LEFT side of the screen,
+      encoding the live verification URL so a phone scan lands the
+      user directly on the TorBox authorize page.
+    * Step-by-step instructions, the live 6-digit user code, URL,
+      and a countdown are stacked on the LEFT.
+    * Background thread polls /user/auth/device/token while the
+      dialog is open - on success the API key is saved automatically
+      and the dialog closes.
+    * "Paste API Key" button (also on the LEFT) as a manual fallback:
+      if the user prefers, they can copy the key straight from
+      torbox.app/settings and paste it in via the on-screen keyboard.
+    * "Cancel" exits without saving.
+- Right half of the screen is left dim/empty (per request).
+
+
+v1.7.1 - TORBOX QR-CODE LINKING
+================================
+FIXED:
+- TorBox "Get Code" no longer errors out. The previous device-code
+  endpoint (/v1/api/user/auth/device/start) does not exist on
+  TorBox - all calls returned ENDPOINT_NOT_FOUND.
+
+NEW:
+- Replaced "Get Code" with a QR-code linking dialog. Open
+  Cloud > Link TorBox > "Scan QR Code & Paste API Key".
+  The QR code and step-by-step instructions are anchored to the
+  LEFT side of the screen. Scan it with your phone, copy your API
+  key from torbox.app/settings/api, then click "Paste API Key" to
+  enter and validate it.
+- Manual "Enter API Key" path still available unchanged.
+
+
+v1.7.0 (2026) - PREMIUMIZE HUB (full feature surface)
+=====================================================
+NEW (Premiumize):
+- Dedicated Premiumize Hub (Cloud > Premiumize Hub) exposes every
+  Premiumize.me API feature in one place:
+    * Account Dashboard (status, expiry, days left, space used,
+      fair-use, customer ID)
+    * Cloud Files browser with breadcrumbs, parent navigation,
+      folders-first sort and per-item context menu (rename,
+      delete, move, details, ZIP download, copy direct URL)
+    * "+ New Folder" inline action in every folder
+    * "Recent Files" - recursive flat view of every file in your
+      cloud (item/listall), sorted by created_at
+    * Transfers view - live progress bar, status, size, per
+      transfer context menu (open folder, play file, delete)
+    * "+ Add Transfer" submenu - Magnet / Torrent URL / DDL / NZB
+    * "Clear Finished Transfers" one click clean-up
+    * Supported Hosters list (services/list) with CACHE / QUEUE /
+      fair-use multipliers and aliases
+    * ZIP Generate - bundle items/folders into a download .zip
+- NEW: "Send to Premiumize Cloud" mode in Source Picker. From any
+  source list, pick "★ Send Mode" to push magnets / URLs to your
+  Premiumize cloud instead of playing (multi-send, no playback).
+- Premiumize backend now wraps the full API surface:
+  folder/list+create+delete+rename+paste+uploadinfo,
+  item/details+rename+delete+listall,
+  transfer/create+list+delete+clearfinished+directdl,
+  zip/generate, services/list
+
+FIX:
+- "cloud_pm_files" and "cloud_pm_transfers" menu items now route
+  to the new hub (previously dead links)
+- Multi-file Premiumize torrents now fully addressable via the
+  new item_details / transfer_directdl flow
+
+
+v1.6.0 (2026-05-20) - TORBOX HUB + UNCACHED CONFIRMATION
+========================================================
+NEW (TorBox):
+- TorBox Hub menu (Cloud > TorBox Hub) exposes every API
+  feature in one place:
+    * Account Dashboard (plan, expiry, totals, server, customer)
+    * Torrents browser - live progress bar, speed, ETA,
+      seeds/peers, plus per-item Pause / Resume / Reannounce /
+      Stop Seeding / Queue Top / Queue Bottom / Delete actions
+    * Multi-file picker when playing a multi-episode torrent
+    * Built-in TorBox Search (uses the familiar source picker)
+    * Usenet - add NZB URL, browse, play, control
+    * Web Downloads (DDL hosters) - add URL, browse, play, control
+    * "Add Magnet/URL/Hash" quick action
+
+NEW (UX):
+- "Source Not Cached" confirmation dialog. Picking a torrent
+  that is NOT cached now offers three explicit choices:
+    1. Try to stream now (may fail)
+    2. Queue to TorBox Cloud (download in background)
+    3. Cancel
+  Toggle via Settings > Playback > "Warn before playing UNCACHED
+  sources".
+- Source picker now shows obvious [CACHED] / [TORRENT] / [FREE]
+  badges and a legend header so users can no longer miss why
+  a click "did nothing".
+
+FIX:
+- Cloud Browser TorBox playback - requestdl now sends the
+  required ?token= query parameter AND picks the largest video
+  file for multi-file torrents (was hard-coded to file_id=0).
+- Cloud Browser TorBox delete - now POSTs the correct JSON
+  body shape; previous form-style call silently failed.
+- TorBox listings expose download_speed, eta, seeds/peers and
+  ratio so the new UI can render a true progress line.
+
+
+
+v1.5.9 (2026-05-15) - TORBOX GET CODE + BUG FIXES
+=================================================
+NEW:
+- TorBox device-code (Get Code) authorization flow.
+  Choose at link time between:
+    * Get Code (link device at tor.box/link)
+    * Enter API Key manually
+  The Kodi UI shows the short user code and verification URL
+  in a progress dialog and polls the TorBox token endpoint
+  until the user activates the device.
+
+FIX:
+- Cloud Browser -> Play file (TorBox) now works.
+  `tb_get_download_link()` previously omitted the required
+  `token` query parameter for /torrents/requestdl, causing
+  every cloud playback to silently return null.
+- Settings entry renamed to "Authorize TorBox (Code or API
+  Key)" to reflect the two options.
+
+ENDPOINTS USED FOR DEVICE FLOW:
+- GET  /v1/api/user/auth/device/start?app=Genesis Kodi
+- POST /v1/api/user/auth/device/token  body {"device_code": ...}
+
+
+v1.5.8 (2026-05-09) - TORBOX PROVIDER REWRITE
+=============================================
+The TorBox debrid integration has been rewritten from
+scratch to match the public TorBox API surface used by
+the wider community. The old device-code flow is gone
+because the official TorBox endpoint is just a long-lived
+API key copied from the user's account page.
+
+NEW:
+- Manual API key authorization. The "Authorize TorBox"
+  action now opens an input dialog. Paste the API key
+  from https://torbox.app/settings - that's it.
+- Smart magnet resolver:
+    * file selection by extension whitelist
+    * season/episode pattern matching for TV packs
+    * sample / trailer / extras filtering
+    * .m2ts safety check (rejects Blu-ray folder rips)
+    * automatic torrent cleanup unless caching is on
+- POST /torrents/checkcached with hash list and
+  ?format=list - much faster than per-hash polling.
+- Direct stream URLs via GET /torrents/requestdl
+  (token + torrent_id + file_id), the canonical TorBox
+  flow used by every other Kodi addon.
+- Cloud browser now lists both Torrents and Usenet
+  downloads side by side.
+- Account dialog now shows plan name (Free, Essential,
+  Pro, Standard), expiry date and total bytes downloaded.
+
+FIX:
+- Replaces the previous device-code flow that never
+  produced a usable token because TorBox does not
+  implement RFC 8628 device authorization.
+
+SETTINGS:
+- TorBox section simplified to a single "Set TorBox
+  API Key" action. The API key field is hidden.
