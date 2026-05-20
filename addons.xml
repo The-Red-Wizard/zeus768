@@ -669,7 +669,7 @@ v2.7.0 (2026-01-10)
         </assets>
     </extension>
 </addon>
-    <addon id="script.module.salts_scrapers" name="Salts Scrapers - Scrape All The Sources" version="1.0.3" provider-name="Zeus768">
+    <addon id="script.module.salts_scrapers" name="Salts Scrapers - Scrape All The Sources" version="1.0.4" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.beautifulsoup4" version="4.9.0"/>
@@ -767,7 +767,7 @@ v1.0.0 (2026-02)
         </assets>
     </extension>
 </addon>
-
+    
 <addon id="plugin.video.tinklepad" name="[COLOR FFFFD700][B]Tinklepad[/B][/COLOR]" version="1.9.10" provider-name="Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
