@@ -295,7 +295,8 @@ v2.3.0 - Added Poseidon Guide (EPG Grid), Program Reminders, Fixed startup issue
     </extension>
 </addon>
 
-<addon id="plugin.video.salts" version="2.9.31" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.salts" version="2.9.55" name="SALTS - Stream All The Sources" provider-name="tknorris, Zeus768">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.resolveurl" version="5.1.0"/>
@@ -370,6 +371,74 @@ authored by Zeus768. It is auto-installed as a dependency.</description>
         <website>https://github.com/zeus768/plugin.video.salts</website>
         <source>https://github.com/zeus768/plugin.video.salts</source>
         <news>
+v2.9.54 (2026-01) - MEDIAFIRE: PUBLIC FOLDER MODE
+- MediaFire closed public developer self-signup years ago, so the old
+  email + password + app_id + api_key flow only works for legacy
+  accounts. SALTS now uses MediaFire's anonymous public-folder API
+  instead - no developer account, no app, no signature required.
+    * Settings -&gt; Cloud -&gt; MediaFire -&gt; "Add MediaFire Public Folder":
+      paste a https://www.mediafire.com/folder/&lt;KEY&gt;/Name link (folder
+      must be shared "Anyone with the link"). SALTS walks every file
+      and subfolder via /folder/get_content.php anonymously.
+    * Add as many public folders as you like; each is stored in
+      special://profile/addon_data/plugin.video.salts/mediafire_folders.json
+    * "Remove a MediaFire Folder" lets you drop one or all of them.
+    * Direct-download URLs are resolved via /file/get_links.php
+      (no auth needed for files inside a public folder).
+- Settings panel for MediaFire simplified: no more app_id, api_key,
+  email or password fields. Just enable + add folder(s).
+
+v2.9.53 (2026-01) - FOUR NEW CLOUD PROVIDERS
+- Added: pCloud (full account browsing).
+    * Settings -> Cloud -> pCloud: pick region (global / EU), enter
+      email + password, press "Authorize pCloud". The addon stores a
+      persistent auth token, walks every folder from root, and indexes
+      all videos for the SALTS smart library.
+    * Direct streaming (host + path resolved via /getfilelink) and
+      public share links (via /getfilepublink) for debrid push.
+- Added: MediaFire (full account browsing).
+    * Requires a free Application ID + API Key from
+      https://www.mediafire.com/developers/ (Apps Manager -> Create App).
+      Setup guide button included in Settings -> Cloud -> MediaFire.
+    * Email + password + app credentials -> session token, then walks
+      every folder under "myfiles" via /folder/get_content.php.
+    * Direct download URLs via /file/get_links.php for streaming and
+      normal_download URLs for debrid push.
+- Added: Sync.com - shared-link mode. Sync.com is zero-knowledge
+  encrypted so there is no account-listing API; instead paste any
+  number of public Sync.com share links into Settings -> Cloud ->
+  Sync.com. SALTS resolves each link page to the direct file URL
+  (when the link is unprotected) or hands the share URL off to the
+  selected debrid service.
+- Added: iDrive - same shared-link mode as Sync.com (iDrive is a
+  backup product without a streaming API).
+- Cloud library scan_all() now sweeps all six providers (Google Drive,
+  MEGA, pCloud, MediaFire, Sync.com, iDrive) in one pass with a single
+  progress dialog.
+- Cloud library get_stream_url / get_share_url dispatch the new
+  providers so playback and send-to-debrid work end-to-end from the
+  Plex-style movies / TV / recently-added views.
+
+v2.9.52 (2026-01) - CONTEXT MENU HARDENING
+- Trakt watchlist toggle now uses this fork's real TraktAPI surface
+  (get_watchlist / add_to_watchlist / remove_from_watchlist) with the
+  correct plural media_type ('movies' / 'shows') and the proper
+  payload shape [{ids: {tmdb: &lt;id&gt;}}]. It is now a TRUE toggle that
+  checks current membership before deciding to add or remove.
+- New: TMDB local cache. All TMDB lookups inside the SALTS Info /
+  Cast / Similar / Trailers window are cached for 7 days at
+  special://profile/addon_data/&lt;addon&gt;/tmdb_cache/, keyed by endpoint
+  + sorted query params. Re-opening a title is instant.
+- New context menu items on every movie/show:
+    * Trakt: Mark Watched / Unwatched (true toggle via /sync/history)
+    * Trakt: Rate (1-10) (posts to /sync/ratings)
+    * Refresh Metadata Cache (drops local TMDB cache for the title)
+    * Play + Continue with Similar (movies only) - plays the title via
+      the normal sources flow, then auto-opens the SALTS Info window
+      for the top-rated similar title when playback ends. Binge mode!
+- Trakt errors are now logged + surfaced as a clear notification
+  instead of failing silently.
+
 v2.9.31 (2026-01) - QR DIALOG FULL-SCREEN BACKDROP
 - Fix: black backdrop on the TorBox auth dialog and Buy Me a Beer
   (Ko-fi) dialog now truly fills the whole screen on every skin
