@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SALTS - Google Drive Setup Guide
+    Custom window XML rendered by default.py::GDriveInfoWindow.
+    Visually identical to debrid_info.xml so users get a consistent
+    "tabbed guide" experience. Only the window id, title and footer
+    hint differ.
+
+    Color palette (same as debrid_info.xml):
+        Background:   FF0d1117
+        Side panel:   FF161b22
+        Card:         FF1c2128
+        Accent:       FFFFD700
+        Soft accent:  FF58a6ff
+        Text:         FFE6EDF3
+        Muted text:   FF8b949e
+-->
+<window type="dialog" id="13111">
+    <defaultcontrol always="true">100</defaultcontrol>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx>
+        <posy>0</posy>
+    </coordinates>
+
+    <controls>
+        <!-- Full-screen dim backdrop -->
+        <control type="image">
+            <left>0</left><top>0</top>
+            <width>1280</width><height>720</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF000000</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Main card -->
+        <control type="image">
+            <left>40</left><top>40</top>
+            <width>1200</width><height>640</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF0d1117</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Top bar -->
+        <control type="image">
+            <left>40</left><top>40</top>
+            <width>1200</width><height>72</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF161b22</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Gold accent strip under the top bar -->
+        <control type="image">
+            <left>40</left><top>112</top>
+            <width>1200</width><height>2</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FFFFD700</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Addon icon -->
+        <control type="image">
+            <left>64</left><top>52</top>
+            <width>48</width><height>48</height>
+            <texture>../../../../icon.png</texture>
+            <aspectratio>keep</aspectratio>
+        </control>
+
+        <!-- Window title -->
+        <control type="label" id="10">
+            <left>128</left><top>56</top>
+            <width>800</width><height>22</height>
+            <font>font13</font>
+            <textcolor>FFFFD700</textcolor>
+            <label>SALTS</label>
+            <align>left</align>
+        </control>
+        <control type="label" id="11">
+            <left>128</left><top>80</top>
+            <width>800</width><height>22</height>
+            <font>font12</font>
+            <textcolor>FFE6EDF3</textcolor>
+            <label>Google Drive Setup Guide  -  follow the steps on the left</label>
+            <align>left</align>
+        </control>
+
+        <!-- Sidebar background -->
+        <control type="image">
+            <left>40</left><top>114</top>
+            <width>340</width><height>506</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF161b22</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Topic list -->
+        <control type="list" id="100">
+            <left>52</left><top>126</top>
+            <width>316</width><height>482</height>
+            <onleft>100</onleft>
+            <onright>201</onright>
+            <onup>100</onup>
+            <ondown>100</ondown>
+            <pagecontrol>-</pagecontrol>
+            <scrolltime>200</scrolltime>
+            <itemlayout height="44" width="316">
+                <control type="image">
+                    <left>0</left><top>2</top>
+                    <width>316</width><height>40</height>
+                    <texture>black-back.png</texture>
+                    <colordiffuse>FF1c2128</colordiffuse>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+                <control type="label">
+                    <left>16</left><top>2</top>
+                    <width>284</width><height>40</height>
+                    <font>font12</font>
+                    <textcolor>FF8b949e</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                </control>
+            </itemlayout>
+            <focusedlayout height="44" width="316">
+                <control type="image">
+                    <left>0</left><top>2</top>
+                    <width>4</width><height>40</height>
+                    <texture>black-back.png</texture>
+                    <colordiffuse>FFFFD700</colordiffuse>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+                <control type="image">
+                    <left>4</left><top>2</top>
+                    <width>312</width><height>40</height>
+                    <texture>black-back.png</texture>
+                    <colordiffuse>FF21262d</colordiffuse>
+                    <aspectratio>stretch</aspectratio>
+                </control>
+                <control type="label">
+                    <left>16</left><top>2</top>
+                    <width>284</width><height>40</height>
+                    <font>font12</font>
+                    <textcolor>FFFFD700</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                </control>
+            </focusedlayout>
+            <content/>
+        </control>
+
+        <!-- Content card background -->
+        <control type="image">
+            <left>400</left><top>114</top>
+            <width>840</width><height>506</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF161b22</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Page title -->
+        <control type="label" id="200">
+            <left>424</left><top>132</top>
+            <width>792</width><height>32</height>
+            <font>font14</font>
+            <textcolor>FFFFD700</textcolor>
+            <label>Pick a step from the left to begin</label>
+            <align>left</align>
+        </control>
+
+        <!-- Gold underline below the page title -->
+        <control type="image">
+            <left>424</left><top>170</top>
+            <width>60</width><height>2</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FFFFD700</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Page body -->
+        <control type="textbox" id="201">
+            <left>424</left><top>188</top>
+            <width>792</width><height>396</height>
+            <font>font12</font>
+            <textcolor>FFE6EDF3</textcolor>
+            <onleft>100</onleft>
+            <onright>300</onright>
+            <onup>100</onup>
+            <ondown>300</ondown>
+            <align>justify</align>
+            <autoscroll>false</autoscroll>
+            <label>Welcome!
+
+This guide walks you through connecting your Google Drive to SALTS.
+
+Start with step 1 on the left, then work your way down. The whole thing takes about 5 minutes.</label>
+        </control>
+
+        <!-- Footer separator -->
+        <control type="image">
+            <left>40</left><top>628</top>
+            <width>1200</width><height>2</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF30363d</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- Footer hint text -->
+        <control type="label" id="12">
+            <left>64</left><top>638</top>
+            <width>900</width><height>28</height>
+            <font>font11</font>
+            <textcolor>FF8b949e</textcolor>
+            <label>Use Up / Down on the list  -  Right to scroll the page  -  press Back or Close to exit</label>
+            <align>left</align>
+        </control>
+
+        <!-- Close button -->
+        <control type="button" id="300">
+            <left>1100</left><top>638</top>
+            <width>120</width><height>32</height>
+            <font>font12</font>
+            <textcolor>FFE6EDF3</textcolor>
+            <focusedcolor>FFFFD700</focusedcolor>
+            <align>center</align>
+            <aligny>center</aligny>
+            <label>Close</label>
+            <onleft>201</onleft>
+            <onright>300</onright>
+            <onup>201</onup>
+            <ondown>300</ondown>
+            <texturefocus colordiffuse="FF21262d">black-back.png</texturefocus>
+            <texturenofocus colordiffuse="FF1c2128">black-back.png</texturenofocus>
+        </control>
+    </controls>
+</window>
