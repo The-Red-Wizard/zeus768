@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings>
+    <category label="General">
+        <setting id="auto_play" type="bool" label="Autoplay (auto-select best source)" default="false"/>
+        <setting id="source_timeout" type="slider" label="Source timeout (seconds)" default="30" range="10,5,120"/>
+        <setting id="max_results" type="slider" label="Maximum results per scraper" default="50" range="10,10,100"/>
+        <setting id="premiere_international" type="bool" label="Show International Premieres" default="false"/>
+    </category>
+
+    <category label="Playback">
+        <setting id="filter_cam" type="bool" label="Filter CAM/TS quality" default="true"/>
+        <setting id="min_quality" type="labelenum" label="Minimum quality" values="Any|480p|720p|1080p|4K" default="Any"/>
+        <setting id="sort_by" type="labelenum" label="Sort sources by" values="Seeds|Quality|Size" default="Seeds"/>
+        <setting id="preferred_quality" type="labelenum" label="Preferred quality" values="2160p|1080p|720p|480p" default="1080p"/>
+        <setting id="next_episode_enabled" type="bool" label="Enable Up Next (auto next episode)" default="true"/>
+        <setting id="skip_intro_enabled" type="bool" label="Enable Skip Intro prompt" default="true"/>
+        <setting id="skip_intro_duration" type="slider" label="Skip Intro duration (seconds)" default="90" range="30,5,180" enable="eq(-1,true)"/>
+    </category>
+
+    <category label="Trakt">
+        <setting id="trakt_enabled" type="bool" label="Enable Trakt" default="false"/>
+        <setting id="trakt_access_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="trakt_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="trakt_expires" type="text" label="Expires" default="0" visible="false"/>
+    </category>
+
+    <category label="PunchPlay">
+        <setting type="lsep" label="PunchPlay.tv (Trakt alternative)"/>
+        <setting id="punchplay_enabled" type="bool" label="Enable PunchPlay scrobbling" default="false"/>
+        <setting id="punchplay_mark_watched" type="bool" label="Mark watched on PunchPlay (at end of playback)" default="true" enable="eq(-1,true)"/>
+        <setting id="punchplay_mirror_trakt" type="bool" label="Mirror Trakt 'mark watched' actions to PunchPlay" default="true" enable="eq(-2,true)"/>
+        <setting id="punchplay_login" type="action" label="Login to PunchPlay" action="RunPlugin(plugin://plugin.video.salts/?mode=punchplay_auth)"/>
+        <setting id="punchplay_logout" type="action" label="Logout of PunchPlay" action="RunPlugin(plugin://plugin.video.salts/?mode=punchplay_revoke)"/>
+        <setting id="punchplay_status" type="action" label="Check PunchPlay status" action="RunPlugin(plugin://plugin.video.salts/?mode=punchplay_status)"/>
+        <setting id="punchplay_base_url" type="text" label="Backend URL (advanced)" default="https://punchplay.tv"/>
+        <setting id="punchplay_continue_watching" type="bool" label="Show 'Continue Watching' on main menu (when API available)" default="true"/>
+        <setting id="punchplay_access_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="punchplay_refresh_token" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="punchplay_expires" type="text" label="Expires" default="0" visible="false"/>
+    </category>
+
+    <category label="Debrid Services">
+        <setting type="lsep" label="Real-Debrid"/>
+        <setting id="realdebrid_enabled" type="bool" label="Enable Real-Debrid" default="false"/>
+        <setting id="realdebrid_token" type="text" label="Access Token" default="" visible="false"/>
+        <setting id="realdebrid_refresh" type="text" label="Refresh Token" default="" visible="false"/>
+        <setting id="realdebrid_client_id" type="text" label="Client ID" default="" visible="false"/>
+        <setting id="realdebrid_client_secret" type="text" label="Client Secret" default="" visible="false"/>
+        <setting id="realdebrid_expires" type="text" label="Expires" default="0" visible="false"/>
+        <setting type="lsep" label="Premiumize"/>
+        <setting id="premiumize_enabled" type="bool" label="Enable Premiumize" default="false"/>
+        <setting id="premiumize_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="AllDebrid"/>
+        <setting id="alldebrid_enabled" type="bool" label="Enable AllDebrid" default="false"/>
+        <setting id="alldebrid_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="TorBox"/>
+        <setting id="torbox_enabled" type="bool" label="Enable TorBox" default="false"/>
+        <setting id="torbox_token" type="text" label="API Key" default="" visible="false"/>
+        <setting id="torbox_cache_check" type="bool" label="Show TorBox cached torrents in source list" default="true" enable="eq(-2,true)"/>
+        <setting id="torbox_store_to_cloud" type="bool" label="Keep resolved torrents in TorBox cloud (do not auto-delete)" default="false" enable="eq(-3,true)"/>
+        <setting id="torbox_allow_uncached" type="bool" label="Auto-play uncached torrents on TorBox (downloads then plays)" default="true" enable="eq(-4,true)"/>
+        <setting id="torbox_uncached_wait_minutes" type="slider" label="    Max wait for uncached torrents (minutes)" default="10" range="1,1,30" enable="eq(-5,true)+eq(-1,true)"/>
+        <setting type="lsep" label="Premium.to"/>
+        <setting id="premiumto_enabled" type="bool" label="Enable Premium.to" default="false"/>
+        <setting id="premiumto_userid" type="text" label="User ID" default="" visible="false"/>
+        <setting id="premiumto_apikey" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="Put.io"/>
+        <setting id="putio_enabled" type="bool" label="Enable Put.io" default="false"/>
+        <setting id="putio_token" type="text" label="OAuth Token" default="" visible="false"/>
+        <setting id="putio_store_to_cloud" type="bool" label="Keep resolved torrents in Put.io cloud (do not auto-delete)" default="false" enable="eq(-2,true)"/>
+        <setting id="putio_allow_uncached" type="bool" label="Auto-play uncached torrents on Put.io (downloads then plays)" default="true" enable="eq(-3,true)"/>
+        <setting id="putio_uncached_wait_minutes" type="slider" label="    Max wait for uncached torrents (minutes)" default="10" range="1,1,30" enable="eq(-4,true)+eq(-1,true)"/>
+        <setting type="lsep" label="EasyDebrid"/>
+        <setting id="easydebrid_enabled" type="bool" label="Enable EasyDebrid" default="false"/>
+        <setting id="easydebrid_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="Debrid-Link"/>
+        <setting id="debridlink_enabled" type="bool" label="Enable Debrid-Link" default="false"/>
+        <setting id="debridlink_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="Offcloud"/>
+        <setting id="offcloud_enabled" type="bool" label="Enable Offcloud" default="false"/>
+        <setting id="offcloud_token" type="text" label="API Key" default="" visible="false"/>
+        <setting type="lsep" label="LinkSnappy (hoster-unlocker)"/>
+        <setting id="linksnappy_enabled" type="bool" label="Enable LinkSnappy" default="false"/>
+        <setting id="linksnappy_username" type="text" label="Username" default="" visible="false"/>
+        <setting id="linksnappy_password" type="text" label="Password" default="" visible="false" option="hidden"/>
+        <setting type="lsep" label="Priority"/>
+        <setting id="debrid_priority_order" type="text" label="Priority order (CSV)" default="" visible="false"/>
+    </category>
+
+    <category label="Stremio Addons">
+        <setting type="lsep" label="Stremio Free Addons"/>
+        <setting id="braflix_enabled" type="bool" label="Braflix" default="true"/>
+        <setting id="streamingcommunity_enabled" type="bool" label="StreamingCommunity" default="true"/>
+        <setting id="themoviearchive_enabled" type="bool" label="TheMovieArchive" default="true"/>
+        <setting id="publicdomainmovies_enabled" type="bool" label="PublicDomainMovies" default="true"/>
+        <setting id="watchhub_enabled" type="bool" label="WatchHub" default="true"/>
+        <setting id="cinemeta_enabled" type="bool" label="Cinemeta" default="false"/>
+        <setting id="knightcrawler_enabled" type="bool" label="KnightCrawler" default="true"/>
+        <setting id="jackettio_enabled" type="bool" label="Jackettio" default="true"/>
+        <setting id="orionoid_enabled" type="bool" label="Orionoid" default="true"/>
+        <setting id="tpbplus_enabled" type="bool" label="TPB Plus" default="true"/>
+        <setting id="yts_stremio_enabled" type="bool" label="YTS Stremio" default="true"/>
+        <setting id="rarbg_stremio_enabled" type="bool" label="RARBG Stremio" default="true"/>
+        <setting id="torrentio_free_enabled" type="bool" label="Torrentio (Free Mode)" default="true"/>
+        <setting id="aiostreams_enabled" type="bool" label="AIOStreams" default="true"/>
+        <setting id="stremthru_enabled" type="bool" label="StremThru" default="true"/>
+        <setting id="mediaflow_enabled" type="bool" label="MediaFlow" default="true"/>
+        <setting id="ddlstream_enabled" type="bool" label="DDLStream" default="true"/>
+        <setting id="plutotv_stremio_enabled" type="bool" label="PlutoTV" default="true"/>
+        <setting id="tubi_stremio_enabled" type="bool" label="Tubi" default="true"/>
+        <setting id="localtv_enabled" type="bool" label="LocalTV" default="false"/>
+        <setting id="opensubs_enabled" type="bool" label="OpenSubtitles" default="false"/>
+        <setting type="lsep" label="Stremio Debrid Addons"/>
+        <setting id="torrentio_enabled" type="bool" label="Torrentio" default="true"/>
+        <setting id="torrentio_url" type="text" label="    Torrentio base URL (paste your configured manifest URL)" default=""/>
+        <setting id="mediafusion_enabled" type="bool" label="MediaFusion" default="true"/>
+        <setting id="mediafusion_url" type="text" label="    MediaFusion base URL (paste your configured manifest URL)" default=""/>
+        <setting id="comet_enabled" type="bool" label="Comet" default="true"/>
+        <setting id="comet_url" type="text" label="    Comet base URL (paste your configured manifest URL)" default=""/>
+        <setting id="easynews_enabled" type="bool" label="EasyNews+" default="false"/>
+    </category>
+
+    <category label="Torrent Sites">
+        <setting type="lsep" label="Primary"/>
+        <setting id="1337x_enabled" type="bool" label="1337x" default="true"/>
+        <setting id="yts_enabled" type="bool" label="YTS (Movies)" default="true"/>
+        <setting id="eztv_enabled" type="bool" label="EZTV (TV)" default="true"/>
+        <setting id="thepiratebay_enabled" type="bool" label="ThePirateBay" default="true"/>
+        <setting id="torrentgalaxy_enabled" type="bool" label="TorrentGalaxy" default="true"/>
+        <setting id="solidtorrents_enabled" type="bool" label="SolidTorrents" default="true"/>
+        <setting type="lsep" label="Secondary"/>
+        <setting id="limetorrents_enabled" type="bool" label="LimeTorrents" default="true"/>
+        <setting id="kickass_enabled" type="bool" label="Kickass" default="true"/>
+        <setting id="torrentdownload_enabled" type="bool" label="TorrentDownload" default="true"/>
+        <setting type="lsep" label="Additional"/>
+        <setting id="bitsearch_enabled" type="bool" label="BitSearch" default="true"/>
+        <setting id="torrentdownloads2_enabled" type="bool" label="TorrentDownloads" default="true"/>
+        <setting id="torlock_enabled" type="bool" label="TorLock" default="true"/>
+        <setting id="torrentfunk_enabled" type="bool" label="TorrentFunk" default="true"/>
+        <setting id="yourbittorrent_enabled" type="bool" label="YourBittorrent" default="true"/>
+        <setting id="leetx_enabled" type="bool" label="LeetX (1337x Mirror)" default="true"/>
+        <setting id="torrentscsv_enabled" type="bool" label="TorrentsCSV" default="true"/>
+        <setting id="solidtorrents2_enabled" type="bool" label="SolidTorrents2" default="true"/>
+    </category>
+
+    <category label="Anime">
+        <setting type="lsep" label="Anime Torrent Sites"/>
+        <setting id="nyaa_enabled" type="bool" label="Nyaa" default="true"/>
+        <setting id="subsplease_enabled" type="bool" label="SubsPlease" default="true"/>
+        <setting id="tokyotosho_enabled" type="bool" label="TokyoTosho" default="true"/>
+        <setting id="animetosho_enabled" type="bool" label="AnimeTosho" default="true"/>
+        <setting type="lsep" label="Anime Stremio"/>
+        <setting id="anime_stremio_enabled" type="bool" label="Anime Stremio" default="true"/>
+        <setting id="animetosho_stremio_enabled" type="bool" label="AnimeTosho Stremio" default="true"/>
+    </category>
+
+    <category label="Regional">
+        <setting type="lsep" label="Russian"/>
+        <setting id="rutracker_enabled" type="bool" label="RuTracker" default="true"/>
+        <setting id="rutor_enabled" type="bool" label="RuTor" default="true"/>
+        <setting id="nnm-club_enabled" type="bool" label="NNM-Club" default="true"/>
+        <setting type="lsep" label="Chinese"/>
+        <setting id="btbtt_enabled" type="bool" label="BTBTT" default="true"/>
+        <setting type="lsep" label="French"/>
+        <setting id="torrent9_enabled" type="bool" label="Torrent9" default="true"/>
+    </category>
+
+    <category label="Aggregators">
+        <setting type="lsep" label="Jackett"/>
+        <setting id="jackett_enabled" type="bool" label="Enable Jackett" default="false"/>
+        <setting id="jackett_url" type="text" label="Jackett URL" default="http://localhost:9117" enable="eq(-1,true)"/>
+        <setting id="jackett_api_key" type="text" label="Jackett API Key" default="" enable="eq(-2,true)"/>
+        <setting type="lsep" label="Prowlarr"/>
+        <setting id="prowlarr_enabled" type="bool" label="Enable Prowlarr" default="false"/>
+        <setting id="prowlarr_url" type="text" label="Prowlarr URL" default="http://localhost:9696" enable="eq(-1,true)"/>
+        <setting id="prowlarr_api_key" type="text" label="Prowlarr API Key" default="" enable="eq(-2,true)"/>
+        <setting type="lsep" label="TorrentAPI"/>
+        <setting id="torrentapi_enabled" type="bool" label="TorrentAPI" default="false"/>
+        <setting type="lsep" label="Knaben (multi-tracker aggregator, no setup)"/>
+        <setting id="knaben_enabled" type="bool" label="Enable Knaben (covers 1337x, TPB, Nyaa, RuTracker, etc.)" default="true"/>
+        <setting type="lsep" label="PlanetScrapers (Torrentio + TPB + TGx + 1337x)"/>
+        <setting id="planetscrapers_enabled" type="bool" label="Enable PlanetScrapers aggregator" default="true"/>
+        <setting id="enable_torrentio" type="bool" label="    PlanetScrapers: Torrentio backend" default="true" enable="eq(-1,true)"/>
+        <setting id="enable_piratebay" type="bool" label="    PlanetScrapers: PirateBay backend" default="true" enable="eq(-2,true)"/>
+        <setting id="enable_torrentgalaxy" type="bool" label="    PlanetScrapers: TorrentGalaxy backend" default="true" enable="eq(-3,true)"/>
+        <setting id="enable_1337x" type="bool" label="    PlanetScrapers: 1337x backend" default="true" enable="eq(-4,true)"/>
+    </category>
+
+    <category label="Cache">
+        <setting id="source_cache_enabled" type="bool" label="Enable source caching" default="true"/>
+        <setting id="source_cache_hours" type="slider" label="Source cache duration (hours)" default="2" range="1,1,12" enable="eq(-1,true)"/>
+        <setting id="preemptive_scrape" type="bool" label="Pre-emptive scrape next episode" default="true"/>
+        <setting id="cache_duration" type="slider" label="General cache duration (hours)" default="8" range="1,1,24"/>
+    </category>
+
+    <category label="Cloud">
+        <setting type="lsep" label="Google Drive"/>
+        <setting id="gdrive_info" type="action" label="Setup Guide (read me first)" action="RunPlugin(plugin://plugin.video.salts/?mode=gdrive_info)"/>
+        <setting id="gdrive_enabled" type="bool" label="Enable Google Drive" default="false"/>
+        <setting id="gdrive_client_id" type="text" label="GDrive OAuth Client ID" default="" option="hidden"/>
+        <setting id="gdrive_client_secret" type="text" label="GDrive OAuth Client Secret" default="" option="hidden"/>
+        <setting id="gdrive_refresh_token" type="text" label="GDrive Refresh Token" default="" visible="false"/>
+        <setting id="gdrive_auth" type="action" label="Authorize Google Drive" action="RunPlugin(plugin://plugin.video.salts/?mode=gdrive_auth)"/>
+        <setting id="gdrive_logout" type="action" label="Logout Google Drive" action="RunPlugin(plugin://plugin.video.salts/?mode=gdrive_logout)"/>
+        <setting type="lsep" label="MEGA.nz"/>
+        <setting id="mega_enabled" type="bool" label="Enable MEGA.nz" default="false"/>
+        <setting id="mega_email" type="text" label="MEGA Email" default=""/>
+        <setting id="mega_password" type="text" label="MEGA Password" default="" option="hidden"/>
+        <setting type="lsep" label="pCloud"/>
+        <setting id="pcloud_enabled" type="bool" label="Enable pCloud" default="false"/>
+        <setting id="pcloud_region" type="labelenum" label="pCloud Region" values="global|eu" default="global"/>
+        <setting id="pcloud_username" type="text" label="pCloud Email" default=""/>
+        <setting id="pcloud_password" type="text" label="pCloud Password" default="" option="hidden"/>
+        <setting id="pcloud_auth_token" type="text" label="pCloud Auth Token" default="" visible="false"/>
+        <setting id="pcloud_auth" type="action" label="Authorize pCloud" action="RunPlugin(plugin://plugin.video.salts/?mode=pcloud_auth)"/>
+        <setting id="pcloud_logout" type="action" label="Logout pCloud" action="RunPlugin(plugin://plugin.video.salts/?mode=pcloud_logout)"/>
+        <setting type="lsep" label="MediaFire (Public Folders)"/>
+        <setting id="mediafire_info" type="action" label="How to share a folder (read me first)" action="RunPlugin(plugin://plugin.video.salts/?mode=mediafire_info)"/>
+        <setting id="mediafire_enabled" type="bool" label="Enable MediaFire" default="false"/>
+        <setting id="mediafire_auth" type="action" label="Add MediaFire Public Folder" action="RunPlugin(plugin://plugin.video.salts/?mode=mediafire_auth)"/>
+        <setting id="mediafire_logout" type="action" label="Remove a MediaFire Folder" action="RunPlugin(plugin://plugin.video.salts/?mode=mediafire_logout)"/>
+        <setting type="lsep" label="Sync.com (Shared Links)"/>
+        <setting id="sync_enabled" type="bool" label="Enable Sync.com Shared Links" default="false"/>
+        <setting id="sync_add" type="action" label="Add Sync.com Share Link" action="RunPlugin(plugin://plugin.video.salts/?mode=sharedlink_add&amp;provider=sync)"/>
+        <setting id="sync_remove" type="action" label="Remove a Sync.com Link" action="RunPlugin(plugin://plugin.video.salts/?mode=sharedlink_remove&amp;provider=sync)"/>
+        <setting type="lsep" label="iDrive Account (WebDAV / e2 S3 - direct play)"/>
+        <setting id="idrive_info" type="action" label="Setup Guide (read me first)" action="RunPlugin(plugin://plugin.video.salts/?mode=idrive_info)"/>
+        <setting id="idrive_enabled" type="bool" label="Enable iDrive" default="false"/>
+        <setting id="idrive_mode" type="labelenum" label="iDrive Auth Mode" values="webdav|s3" default="webdav" enable="eq(-1,true)"/>
+        <setting id="idrive_webdav_url" type="text" label="    WebDAV URL" default="https://www.idrivesync.com/webdav" enable="eq(-2,true)+eq(-1,0)"/>
+        <setting id="idrive_webdav_user" type="text" label="    WebDAV Username" default="" enable="eq(-3,true)+eq(-2,0)"/>
+        <setting id="idrive_webdav_pass" type="text" label="    WebDAV Password" default="" option="hidden" enable="eq(-4,true)+eq(-3,0)"/>
+        <setting id="idrive_s3_endpoint" type="text" label="    e2 Endpoint (e.g. b2v2.va2.idrivee2-XX.com)" default="" enable="eq(-5,true)+eq(-4,1)"/>
+        <setting id="idrive_s3_region" type="text" label="    e2 Region" default="us-east-1" enable="eq(-6,true)+eq(-5,1)"/>
+        <setting id="idrive_s3_key" type="text" label="    e2 Access Key" default="" enable="eq(-7,true)+eq(-6,1)"/>
+        <setting id="idrive_s3_secret" type="text" label="    e2 Secret Key" default="" option="hidden" enable="eq(-8,true)+eq(-7,1)"/>
+        <setting id="idrive_s3_bucket" type="text" label="    e2 Bucket" default="" enable="eq(-9,true)+eq(-8,1)"/>
+        <setting id="idrive_s3_prefix" type="text" label="    e2 Path Prefix (optional)" default="" enable="eq(-10,true)+eq(-9,1)"/>
+        <setting id="idrive_test" type="action" label="Test iDrive Connection" action="RunPlugin(plugin://plugin.video.salts/?mode=idrive_test)" enable="eq(-11,true)"/>
+        <setting id="idrive_logout" type="action" label="Clear iDrive Credentials" action="RunPlugin(plugin://plugin.video.salts/?mode=idrive_logout)" enable="eq(-12,true)"/>
+        <setting type="lsep" label="iDrive (Shared Links - fallback when account fields blank)"/>
+        <setting id="idrive_add" type="action" label="Add iDrive Share Link" action="RunPlugin(plugin://plugin.video.salts/?mode=sharedlink_add&amp;provider=idrive)"/>
+        <setting id="idrive_remove" type="action" label="Remove an iDrive Link" action="RunPlugin(plugin://plugin.video.salts/?mode=sharedlink_remove&amp;provider=idrive)"/>
+        <setting type="lsep" label="Filepax (WebDAV - direct play)"/>
+        <setting id="filepax_info" type="action" label="Setup Guide (read me first)" action="RunPlugin(plugin://plugin.video.salts/?mode=filepax_info)"/>
+        <setting id="filepax_enabled" type="bool" label="Enable Filepax" default="false"/>
+        <setting id="filepax_webdav_url" type="text" label="    WebDAV URL" default="https://filepax.com/webdav" enable="eq(-1,true)"/>
+        <setting id="filepax_username" type="text" label="    WebDAV Username" default="" enable="eq(-2,true)"/>
+        <setting id="filepax_password" type="text" label="    WebDAV Password" default="" option="hidden" enable="eq(-3,true)"/>
+        <setting id="filepax_test" type="action" label="Test Filepax Connection" action="RunPlugin(plugin://plugin.video.salts/?mode=filepax_test)" enable="eq(-4,true)"/>
+        <setting id="filepax_logout" type="action" label="Clear Filepax Credentials" action="RunPlugin(plugin://plugin.video.salts/?mode=filepax_logout)" enable="eq(-5,true)"/>
+        <setting type="lsep" label="Degoo (UNOFFICIAL API - USE AT YOUR OWN RISK)"/>
+        <setting id="degoo_enabled" type="bool" label="Enable Degoo" default="false"/>
+        <setting id="degoo_mode" type="labelenum" label="    Degoo Mode" values="account|sharedlinks" default="account" enable="eq(-1,true)">
+            <level>0</level>
+        </setting>
+        <setting id="degoo_username" type="text" label="    Degoo Email (Account Mode)" default="" enable="eq(-2,account)" visible="eq(-2,account)"/>
+        <setting id="degoo_password" type="text" label="    Degoo Password (Account Mode)" default="" option="hidden" enable="eq(-3,account)" visible="eq(-3,account)"/>
+        <setting id="degoo_token" type="text" label="Degoo Auth Token" default="" visible="false"/>
+        <setting id="degoo_auth" type="action" label="Authorize Degoo Account" action="RunPlugin(plugin://plugin.video.salts/?mode=degoo_auth)" enable="eq(-5,account)"/>
+        <setting id="degoo_logout" type="action" label="Disconnect Degoo Account" action="RunPlugin(plugin://plugin.video.salts/?mode=degoo_logout)" enable="eq(-6,account)"/>
+        <setting id="degoo_add_link" type="action" label="Add Degoo Share Link" action="RunPlugin(plugin://plugin.video.salts/?mode=degoo_add_link)" enable="eq(-7,sharedlinks)"/>
+        <setting id="degoo_remove_link" type="action" label="Remove Degoo Share Link" action="RunPlugin(plugin://plugin.video.salts/?mode=degoo_remove_link)" enable="eq(-8,sharedlinks)"/>
+        <setting id="degoo_test" type="action" label="Test Degoo Connection" action="RunPlugin(plugin://plugin.video.salts/?mode=degoo_test)" enable="eq(-9,true)"/>
+        <setting type="lsep" label="Library"/>
+        <setting id="cloud_library_cache_hours" type="slider" label="Library cache duration (hours)" default="24" range="1,1,168"/>
+        <setting id="cloud_library_rescan" type="action" label="Rescan Cloud Library now" action="RunPlugin(plugin://plugin.video.salts/?mode=cloud_library_rescan)"/>
+    </category>
+
+    <category label="Advanced">
+        <setting id="debug_enabled" type="bool" label="Enable debug logging" default="false"/>
+        <setting id="strict_title_match" type="bool" label="Strict title match (drop torrents from other movies/episodes)" default="true"/>
+        <setting id="filter_dead_torrents" type="bool" label="Filter dead torrents (no/low seeders)" default="true"/>
+        <setting id="min_seeders" type="slider" label="    Minimum seeders" default="1" range="0,1,50" enable="eq(-1,true)"/>
+        <setting id="parallel_scrapers" type="slider" label="Max parallel scrapers" default="50" range="10,5,100"/>
+        <setting id="scraper_timeout" type="slider" label="Scraper timeout (seconds, all scrapers must finish in this time)" default="120" range="30,10,300"/>
+        <setting id="show_all_at_once" type="bool" label="Show all sources at once (no progressive results)" default="true"/>
+        <setting type="lsep" label="AI Search"/>
+        <setting id="ai_search_enabled" type="bool" label="Enable AI Search" default="true"/>
+        <setting id="ai_api_key" type="text" label="OpenAI API Key" default="sk-emergent-4Ed53090b4b04F8606" option="hidden"/>
+        <setting id="ai_model" type="labelenum" label="AI Model" values="gpt-4o-mini|gpt-4o|gpt-5.2" default="0"/>
+    </category>
+</settings>
