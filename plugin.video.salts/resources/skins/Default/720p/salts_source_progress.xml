@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SALTS - Fullscreen Source Search Progress (Salts-style)
+
+    Rendered by salts_lib.sources_window.SaltsSourceProgressWindow.
+
+    Reference resolution: 1280x720
+
+    Control IDs used by Python:
+        110  Backdrop image (fanart of current title)
+        111  Poster image (overlaid left side)
+        120  Title label (movie/show title + year)
+        121  Subtitle label ("Searching for sources...")
+        130  Current scraper line
+        131  Stats line (scrapers / sources / cached / free)
+        140  Percentage label (top-right of progress bar)
+        150  Progress bar fill (image, width updated by Python)
+        160  Cancel button
+-->
+<window type="dialog" id="13121">
+    <defaultcontrol always="true">160</defaultcontrol>
+    <coordinates>
+        <system>1</system>
+        <posx>0</posx><posy>0</posy>
+    </coordinates>
+
+    <animation effect="fade" time="200">WindowOpen</animation>
+    <animation effect="fade" time="160">WindowClose</animation>
+
+    <controls>
+        <!-- ===== Full-screen backdrop (fanart) ===== -->
+        <control type="image" id="110">
+            <left>0</left><top>0</top>
+            <width>1280</width><height>720</height>
+            <texture fallback="../../../../fanart.jpg">../../../../fanart.jpg</texture>
+            <aspectratio>scale</aspectratio>
+        </control>
+
+        <!-- Dark gradient overlay for legibility -->
+        <control type="image">
+            <left>0</left><top>0</top>
+            <width>1280</width><height>720</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>D0000000</colordiffuse>
+            <aspectratio>stretch</aspectratio>
+        </control>
+
+        <!-- ===== Top gold accent bar ===== -->
+        <control type="image">
+            <left>0</left><top>0</top><width>1280</width><height>3</height>
+            <texture>black-back.png</texture><colordiffuse>FFFFD700</colordiffuse>
+        </control>
+
+        <!-- SALTS brand mark, top-left -->
+        <control type="image">
+            <left>40</left><top>32</top><width>40</width><height>40</height>
+            <texture>../../../../icon.png</texture>
+            <aspectratio>keep</aspectratio>
+        </control>
+        <control type="label">
+            <left>92</left><top>36</top><width>400</width><height>32</height>
+            <font>font13</font>
+            <textcolor>FFFFD700</textcolor>
+            <label>SALTS</label>
+            <align>left</align><aligny>center</aligny>
+        </control>
+
+        <!-- ===== Poster, left side ===== -->
+        <control type="image" id="111">
+            <left>80</left><top>140</top><width>300</width><height>440</height>
+            <texture fallback="../../../../icon.png">../../../../icon.png</texture>
+            <aspectratio>keep</aspectratio>
+            <bordertexture border="2" colordiffuse="FFFFD700">black-back.png</bordertexture>
+            <bordersize>2</bordersize>
+        </control>
+
+        <!-- ===== Title block, right of poster ===== -->
+        <control type="label" id="120">
+            <left>420</left><top>150</top><width>780</width><height>56</height>
+            <font>font13</font>
+            <textcolor>FFFFFFFF</textcolor>
+            <label>Title</label>
+            <align>left</align><aligny>center</aligny>
+        </control>
+        <control type="label" id="121">
+            <left>420</left><top>210</top><width>780</width><height>30</height>
+            <font>font12</font>
+            <textcolor>FFFFD700</textcolor>
+            <label>Searching for sources...</label>
+            <align>left</align><aligny>center</aligny>
+        </control>
+
+        <!-- Stats card -->
+        <control type="image">
+            <left>420</left><top>270</top><width>780</width><height>120</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>D00d1117</colordiffuse>
+        </control>
+        <control type="image">
+            <left>420</left><top>270</top><width>4</width><height>120</height>
+            <texture>black-back.png</texture><colordiffuse>FFFFD700</colordiffuse>
+        </control>
+        <control type="label" id="130">
+            <left>444</left><top>286</top><width>740</width><height>30</height>
+            <font>font12</font>
+            <textcolor>FFE6EDF3</textcolor>
+            <label>Starting scrapers...</label>
+            <align>left</align><aligny>center</aligny>
+        </control>
+        <control type="label" id="131">
+            <left>444</left><top>328</top><width>740</width><height>50</height>
+            <font>font11</font>
+            <textcolor>FFB0BAC5</textcolor>
+            <label>Scrapers: 0  |  Sources: 0  |  Cached: 0  |  Free: 0</label>
+            <align>left</align><aligny>center</aligny>
+            <wrapmultiline>true</wrapmultiline>
+        </control>
+
+        <!-- ===== Progress bar ===== -->
+        <control type="label" id="140">
+            <left>420</left><top>420</top><width>780</width><height>26</height>
+            <font>font11</font>
+            <textcolor>FFFFD700</textcolor>
+            <label>0%</label>
+            <align>right</align><aligny>center</aligny>
+        </control>
+        <!-- Track -->
+        <control type="image">
+            <left>420</left><top>456</top><width>780</width><height>14</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FF1a1f2a</colordiffuse>
+        </control>
+        <!-- Fill (width updated by Python: 0..780) -->
+        <control type="image" id="150">
+            <left>420</left><top>456</top><width>1</width><height>14</height>
+            <texture>black-back.png</texture>
+            <colordiffuse>FFFFD700</colordiffuse>
+        </control>
+
+        <!-- ===== Cancel button ===== -->
+        <control type="button" id="160">
+            <left>1060</left><top>540</top><width>140</width><height>40</height>
+            <font>font12</font>
+            <textcolor>FF0d1117</textcolor>
+            <focusedcolor>FF0d1117</focusedcolor>
+            <align>center</align><aligny>center</aligny>
+            <label>Cancel</label>
+            <texturenofocus colordiffuse="FFFFD700">black-back.png</texturenofocus>
+            <texturefocus colordiffuse="FFFFE655">black-back.png</texturefocus>
+        </control>
+
+        <!-- Footer hint -->
+        <control type="label">
+            <left>40</left><top>680</top><width>1200</width><height>22</height>
+            <font>font11</font>
+            <textcolor>FF8b949e</textcolor>
+            <label>Press OK to cancel  |  ESC/Back to abort</label>
+            <align>left</align><aligny>center</aligny>
+        </control>
+    </controls>
+</window>
